@@ -1,0 +1,10 @@
+{
+  "_name": "miplet_002_modernize_system_topology.json",
+  "_path": "prompts/core/miplet_002_modernize_system_topology.json",
+  "target_baseline": "v1.1.1.r1",
+  "target_file": "prompts/core/mip_core.md",
+  "target_section": "Section 2 (Directory Structure & File Routing)",
+  "operation": "modification",
+  "description": "Deprecate legacy tools/ directory hierarchy in favor of standardized src/ package topology, renaming tools/sys/ to src/system/, tests/sys/ to tests/test_system/, and updating runtime anchors.",
+  "payload": "* **Permanent Source Suite (`src/`):**\n  * `src/system/`: Workstation administration, developer environment utilities, Git hook deployment, and script intake automation (governed by `topic_system_tools.md`).\n  * `src/cli/`: Operational CLI entrypoints and orchestrators with Read/Write authority.\n  * `src/gda/`: Core domain packages and shared framework libraries.\n* **Test Suite & Verification Harness (`tests/`):** Co-located verification suites under `tests/test_system/`, `tests/test_gda/`, and `tests/test_cli/`, configured via `pytest` and governed by `topic_test_harness.md`.\n* **Intake & Staging Pipeline (`download/`):** Staging directory for inbound digital assets and candidate code files processed by GSI.\n* **Safe Backups (`archive/`):** Isolated project backup stores (`archive/backups_system/`, `archive/backups_gda/`)."
+}

@@ -1,0 +1,115 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genealogy-digital-archive"
+version = "1.2.0+build.r1"
+description = "Consolidated Digital Archive Engine, CLI & Ancestry Desk UI"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [
+    { name = "Glenn D. Lehman", email = "glnn.lhmn@gmail.com" }
+]
+dependencies = [
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "pandas>=2.2.0",
+    "pyarrow>=15.0.0",
+    "jsonschema>=4.26.0",
+    "referencing>=0.30.0",
+    "rapidfuzz>=3.0.0",
+    "rich>=13.0.0",
+    "us>=3.1.1",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=7.2.0",
+    "pydata-sphinx-theme>=0.15.0",
+    "myst-parser>=2.0.0",
+	"ruff>=0.3.0",
+    "sphinx-autodoc-typehints>=2.0.0",
+]
+test = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.5.0",
+]
+ui = [
+    "textual>=0.50.0",
+]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["gda*", "ancestry_desk*", "cli*", "system*"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-v --basetemp=temp/pytest_tmp"
+testpaths = [
+    "tests/test_gda",
+    "tests/test_ancestry_desk",
+    "tests/test_cli",
+    "tests/test_system"
+]
+pythonpath = ["src"]
+
+markers = [
+    "smoke: Fast sanity checks executed prior to commit (< 5s)",
+    "regression: Boundary and defect tests verifying defensive rules",
+    "burnin: Stress tests and large batch operations",
+    "integration: Multi-component and filesystem operations",
+    "unit: Isolated component tests without disk I/O",
+    "integrity: Whole-archive schema and manifest verification",
+    "slow: Tests with execution duration exceeding 2s"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    "tests/*",
+    "temp/*",
+    "*/__init__.py"
+]
+
+[tool.coverage.report]
+fail_under = 85
+precision = 2
+show_missing = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+src = ["src", "tests"]
+extend-exclude = [
+    "archive",
+    "download",
+    "temp",
+    "logs",
+    "reports"
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes (syntax/unused variables/missing imports)
+    "I",   # isort (clean, deterministic import sorting)
+    "UP",  # pyupgrade (modern Python syntax)
+    "B",   # flake8-bugbear (common design traps)
+]
+ignore = [
+    "E501",  # Line length violations (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true

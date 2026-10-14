@@ -1,0 +1,10 @@
+{
+  "_name": "miplet_001_eliminate_python_header_version.json",
+  "_path": "prompts/core/miplet_001_eliminate_python_header_version.json",
+  "target_baseline": "v1.1.1.r1",
+  "target_file": "prompts/topics/topic_documentation_standards.md",
+  "target_section": "Section 2.3 (Module and Class Docstrings)",
+  "operation": "modification",
+  "description": "Eliminate redundant # Version: comment line from Python source headers, retaining only # Name: and # Path:, while preserving module-level __version__ attribute.",
+  "payload": "### 2.3 Module and Class Docstrings\n\n* **Header Metadata Lines (Lines 1–2):** Every Python source file opens with comments declaring `# Name: [filename]` and `# Path: [relative_path]`, immediately followed by module-level `__version__ = \"<major>.<minor>.<rev>+build.r<counter>\"`.\n* **Modules:** Must open with a module-level docstring summarizing the script's architectural role, CLI usage summary (if executable), and primary interfaces.\n* **Classes:** Must describe the entity, invariants, and state management behavior. Public attributes should be documented in an `Attributes:` section or directly within class-level type annotations."
+}
