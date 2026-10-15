@@ -1,18 +1,37 @@
 # Name: __init__.py
 # Path: src/gda/core/__init__.py
-# Version: 1.0.0+build.r1
-"""Module stub for __init__.py."""
+# Version: 1.0.0+build.r2
 
-import sys
+"""GDA Core framework library.
 
-__version__ = "1.0.0+build.r1"
+Exposes domain-agnostic foundational primitives, configuration schemas,
+structured logging pipelines, runtime introspection mixins, and exception trees.
+"""
 
+from __future__ import annotations
 
-def main() -> None:
-    """Entry point stub."""
-    print("Not implemented: __init__.py")
-    sys.exit(0)
+from gda.core.config import AppConfig, DatabaseConfig, LoggingConfig
+from gda.core.errors import (
+    ConfigError,
+    ConfigParseError,
+    ConfigValidationError,
+    GenealogyDeskError,
+)
+from gda.core.introspectable import IntrospectableMixin
+from gda.core.logging import ConsoleFormatter, GDALogger, JsonFormatter
 
+__version__ = "1.0.0+build.r2"
 
-if __name__ == "__main__":
-    main()
+__all__ = [
+    "AppConfig",
+    "ConfigError",
+    "ConfigParseError",
+    "ConfigValidationError",
+    "ConsoleFormatter",
+    "DatabaseConfig",
+    "GDALogger",
+    "GenealogyDeskError",
+    "IntrospectableMixin",
+    "JsonFormatter",
+    "LoggingConfig",
+]
