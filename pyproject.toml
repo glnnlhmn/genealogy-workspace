@@ -50,7 +50,7 @@ include = ["gda*", "ancestry_desk*", "cli*", "system*"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-v --basetemp=temp/pytest_tmp"
+addopts = "-v --basetemp=gtemp/pytest_tmp"
 testpaths = [
     "tests/test_gda",
     "tests/test_ancestry_desk",
