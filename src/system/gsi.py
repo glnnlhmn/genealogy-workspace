@@ -1,8 +1,6 @@
-# Name: gsi.py
-# Path: src/system/gsi.py
-# Version: 1.4.0+build.r1
+"""Path: src/system/gsi.py
 
-"""Genealogy Script Importer (GSI).
+Genealogy Script Importer (GSI).
 
 Provides hermetic, zero-dependency intake automation for staged candidate files
 residing exclusively within the download/ staging directory. GSI inspects candidate
@@ -21,7 +19,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-__version__ = "1.4.0+build.r1"
+__version__ = "1.4.0+build.r3"
 
 
 def get_workspace_root() -> Path:
@@ -31,7 +29,6 @@ def get_workspace_root() -> Path:
         Path: Absolute path to the repository workspace root.
     """
     script_path = Path(__file__).resolve()
-    # When deployed at src/system/gsi.py, parents[2] points to the workspace root
     if len(script_path.parents) >= 3 and (script_path.parents[2] / "src").is_dir():
         return script_path.parents[2]
     return Path.cwd().resolve()
@@ -42,8 +39,9 @@ def parse_metadata_header(
 ) -> tuple[str | None, Path | None]:
     """Extract destination filename and target path from candidate headers.
 
-    Inspects top-level JSON metadata for .ipynb and .json files, falling back to
-    comment declarations (# Name: / <!-- Name:) within the first 15 lines.
+    Supports the Single-Field Header & Docstring Architecture,
+    Jupyter Notebook metadata, JSON envelope properties, and legacy top-level comment
+    declarations (# Name:, # Path:).
 
     Args:
         file_path: Staged file candidate inside download/.
@@ -62,7 +60,6 @@ def parse_metadata_header(
     target_path_str: str | None = None
     suffix = file_path.suffix.lower()
 
-    # 1. Jupyter Notebook Metadata Parsing
     if suffix == ".ipynb":
         try:
             nb_data = json.loads(content)
@@ -74,7 +71,7 @@ def parse_metadata_header(
                 metadata.get("_path") or metadata.get("path") or nb_data.get("_path")
             )
 
-            if not target_name or not target_path_str:
+            if not target_path_str:
                 cells = nb_data.get("cells", [])
                 if cells and cells[0].get("cell_type") in ("raw", "markdown", "code"):
                     first_cell = "".join(cells[0].get("source", []))
@@ -95,52 +92,70 @@ def parse_metadata_header(
         except Exception:
             return None, None
 
-    # 2. JSON Root Key Parsing
     elif suffix == ".json":
         try:
-            head_block = "\n".join(content.splitlines()[:15])
+            head_block = "\n".join(content.splitlines()[:20])
             name_json = re.search(
                 r'"_?name"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE
             )
             path_json = re.search(
                 r'"_?path"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE
             )
-            if name_json and path_json:
+            if name_json:
                 target_name = name_json.group(1).strip()
+            if path_json:
                 target_path_str = path_json.group(1).strip()
         except Exception:
             return None, None
 
-    # 3. Comment-Based Parsing Across Code, Markdown, and Scripts
-    if not target_name or not target_path_str:
-        head_block = "\n".join(content.splitlines()[:15])
-        name_m = re.search(
-            r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Name:[ \t]*([^\r\n>*/]+)",
-            head_block,
-            re.MULTILINE | re.IGNORECASE,
-        )
-        path_m = re.search(
-            r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Path:[ \t]*([^\r\n>]+)",
-            head_block,
-            re.MULTILINE | re.IGNORECASE,
-        )
-        if name_m:
-            target_name = name_m.group(1).strip()
-        if path_m:
-            target_path_str = path_m.group(1).strip()
+    if not target_path_str:
+        head_block = "\n".join(content.splitlines()[:20])
 
-    if not target_name or not target_path_str:
+        docstring_path_m = re.search(
+            r'^(?:"""|\'\'\')[ \t]*Path:[ \t]*["\']?([^\r\n"\']+)["\']?',
+            head_block,
+            re.MULTILINE | re.IGNORECASE,
+        )
+        if docstring_path_m:
+            target_path_str = docstring_path_m.group(1).strip()
+        else:
+            generic_path_m = re.search(
+                r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Path:[ \t]*[\"']?([^\r\n>\"*]+)[\"']?",
+                head_block,
+                re.MULTILINE | re.IGNORECASE,
+            )
+            if generic_path_m:
+                target_path_str = generic_path_m.group(1).strip()
+
+        if not target_name:
+            name_m = re.search(
+                r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Name:[ \t]*[\"']?([^\r\n>*/\"']+)[\"']?",
+                head_block,
+                re.MULTILINE | re.IGNORECASE,
+            )
+            if name_m:
+                target_name = name_m.group(1).strip()
+
+    if not target_path_str:
         return None, None
 
-    # Sanitize trailing delimiters and enclosing quotation marks
-    target_name = (
-        re.sub(r"[\s\-]*(-->|\*/|-+).*$", "", target_name).strip().strip("\"'")
-    )
     target_path_str = (
-        re.sub(r"[\s\-]*(-->|\*/|-+).*$", "", target_path_str).strip().strip("\"'")
+        re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_path_str)
+        .strip()
+        .strip("\"'")
     )
+    if target_name:
+        target_name = (
+            re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_name)
+            .strip()
+            .strip("\"'")
+        )
 
-    raw_dest = root_dir / Path(target_path_str)
+    path_obj = Path(target_path_str)
+    if not target_name:
+        target_name = path_obj.name
+
+    raw_dest = root_dir / path_obj
     if raw_dest.is_dir() or target_path_str.endswith(("/", "\\")):
         dest_path = (raw_dest / target_name).resolve()
     else:
@@ -186,8 +201,6 @@ def _determine_backup_directory(dest_path: Path, root_dir: Path) -> Path:
             project = "backups_ancestry_desk"
         elif sub_seg == "test_cli":
             project = "backups_cli"
-        elif sub_seg in ("test_system", "test_sys"):
-            project = "backups_system"
         else:
             project = "backups_system"
     else:
@@ -340,7 +353,6 @@ def run_intake(
         print(f"Error: Download directory not found at {download_dir}")
         return 1
 
-    # Filter out hidden files / dotfiles (e.g. .gitkeep, .DS_Store)
     candidates: list[Path] = [
         item
         for item in download_dir.iterdir()

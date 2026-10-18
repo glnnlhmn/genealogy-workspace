@@ -1,7 +1,6 @@
-# Name: test_check_structure.py
-# Path: tests/test_system/test_check_structure.py
+"""Path: tests/test_system/test_check_structure.py
 
-"""Comprehensive unit test suite for directory inspection utility in src.system.check_structure.
+Comprehensive unit test suite for directory inspection utility in src.system.check_structure.
 
 Operational Role:
     Verifies recursive directory traversal, ignore-list filtering, default
@@ -15,13 +14,17 @@ Test Structure & Protocol:
 
 from __future__ import annotations
 
-__version__ = "0.0.1+build.r2"
-
+import runpy
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 import system.check_structure as cs
+
+__version__ = "0.0.1+build.r3"
+
 
 # ==============================================================================
 # GROUP 1: Tree Traversal and Path Filtering
@@ -79,7 +82,7 @@ def test_build_tree_handles_unreadable_or_missing_directory(tmp_path: Path) -> N
 
 
 # ==============================================================================
-# GROUP 2: Execution and File Emission
+# GROUP 2: Execution, File Emission, and Entrypoint
 # ==============================================================================
 
 
@@ -149,3 +152,24 @@ def test_main_with_custom_output_argument(
     assert exit_code == 0
     assert "Report created: custom_report.txt" in captured.out
     assert expected_file.exists()
+
+
+@pytest.mark.smoke
+@pytest.mark.unit
+def test_check_structure_module_execution_entrypoint() -> None:
+    """Verify line 159 entrypoint executes main and exits when invoked as __main__."""
+    saved_module = sys.modules.get("system.check_structure")
+    try:
+        sys.modules.pop("system.check_structure", None)
+        with (
+            patch.object(cs, "main", return_value=0),
+            pytest.raises(SystemExit) as exc,
+        ):
+            with patch.object(sys, "argv", ["check_structure.py"]):
+                runpy.run_module(
+                    "system.check_structure", run_name="__main__", alter_sys=True
+                )
+        assert exc.value.code == 0
+    finally:
+        if saved_module is not None:
+            sys.modules["system.check_structure"] = saved_module

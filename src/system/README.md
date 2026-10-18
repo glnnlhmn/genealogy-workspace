@@ -1,10 +1,9 @@
-<!-- Name: README.md -->
 <!-- Path: src/system/README.md -->
 
 # System Administration & Developer Utilities (`src/system`)
 
 ## Operational Role & Purpose
-Workstation administration, script intake pipeline automation, Git hook lifecycle enforcement, database maintenance, and schema compilation.
+Workstation administration, script intake pipeline automation, Git hook lifecycle enforcement, and workspace directory structure auditing.
 
 ## Operational Contracts & Quality Gates
 System utilities operate under `topic_system_tools.md` and `topic_test_harness.md`:
@@ -13,8 +12,7 @@ System utilities operate under `topic_system_tools.md` and `topic_test_harness.m
 - **GSI Intake Protection**: Code intake and file movements are automated via `src/system/gsi.py`, enforcing header validation and Safe Backup generation in `archive/backups_system/`.
 
 ## Key Tool Inventory
+- `check_structure.py`: Directory tree traversal, cache filtering, and reporting utility.
 - `gsi.py`: Genealogy Script Importer. Manages validated script intake, header inspection, atomic pre-execution backups, and test runner dispatch (`gsi -r`).
-- `install_hooks.py`: Automated installer for Git pre-commit hook wrappers.
+- `install_hooks.py`: Automated installer for Git pre-commit hook wrappers into `.git/hooks/pre-commit`.
 - `hooks/pre_commit.py`: Localized staged pre-commit quality engine running Ruff format/lint validation and targeted test execution.
-- `db_maintenance.py`: Database maintenance, integrity audits, and vacuum routines.
-- `schema_compiler.py`: Schema artifact compilation and model synchronization.

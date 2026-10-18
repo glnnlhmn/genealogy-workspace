@@ -1,7 +1,6 @@
-# Name: check_structure.py
-# Path: src/system/check_structure.py
+"""Path: src/system/check_structure.py
 
-"""Directory tree inspection utility for workspace auditing and reporting.
+Directory tree inspection utility for workspace auditing and reporting.
 
 Operational Role:
     Traverses the workspace hierarchy, ignores transient caches and virtual
@@ -16,11 +15,11 @@ Usage:
 
 from __future__ import annotations
 
-__version__ = "0.0.1+build.r3"
-
 import argparse
 import sys
 from pathlib import Path
+
+__version__ = "0.0.1+build.r4"
 
 # Paths ignored during traversal
 IGNORED_DIRS: set[str] = {
