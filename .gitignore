@@ -116,3 +116,5 @@ reports/*
 # 8. Production Data Store Isolation
 # ==============================================================================
 data/
+# Exclude prompt engineering, miplets, and system instructions
+prompts/

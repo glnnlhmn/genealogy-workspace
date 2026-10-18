@@ -1,7 +1,6 @@
-# Name: install_hooks.py
-# Path: src/system/install_hooks.py
+"""Path: src/system/install_hooks.py
 
-"""Genealogy Workspace Git Hooks Installer.
+Genealogy Workspace Git Hooks Installer.
 
 Operational Role:
     Installs the staged-file aware pre-commit hook from src/system/hooks/
@@ -16,7 +15,7 @@ import stat
 import sys
 from pathlib import Path
 
-__version__ = "1.0.0+build.r1"
+__version__ = "1.0.0+build.r2"
 
 HOOK_WRAPPER_POSIX = """#!/usr/bin/env bash
 # Auto-generated wrapper for Python pre-commit hook
@@ -31,7 +30,6 @@ def get_repo_root() -> Path:
         Path: Canonical workspace root directory.
     """
     script_path = Path(__file__).resolve()
-    # Check parents for .git directory
     for parent in script_path.parents:
         if (parent / ".git").is_dir():
             return parent
@@ -60,7 +58,6 @@ def install_pre_commit_hook(repo_root: Path) -> bool:
     hook_file = hooks_dir / "pre-commit"
     hook_file.write_text(HOOK_WRAPPER_POSIX, encoding="utf-8")
 
-    # Set executable permissions (rwxr-xr-x)
     current_mode = hook_file.stat().st_mode
     hook_file.chmod(current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 

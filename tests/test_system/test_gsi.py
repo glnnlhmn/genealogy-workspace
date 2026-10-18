@@ -1,8 +1,6 @@
-# Name: test_gsi.py
-# Path: tests/test_system/test_gsi.py
-# Version: 1.3.1+build.r1
+"""Path: tests/test_system/test_gsi.py
 
-"""Verification Test Suite for Genealogy Script Importer (GSI).
+Verification Test Suite for Genealogy Script Importer (GSI).
 
 Operational Role:
     Exhaustively verifies GSI intake parsing, destination backup routing into
@@ -30,6 +28,9 @@ import pytest
 
 import system.gsi as gsi
 
+__version__ = "1.4.0+build.r3"
+
+
 # ==============================================================================
 # FIXTURES & ISOLATED SANDBOX SETUP
 # ==============================================================================
@@ -41,7 +42,6 @@ def isolated_workspace(tmp_path: Path) -> Generator[Path]:
     root = tmp_path / "workspace"
     root.mkdir(parents=True, exist_ok=True)
 
-    # Establish workspace directory topology
     (root / "download").mkdir(parents=True, exist_ok=True)
     (root / "archive" / "backups_gda").mkdir(parents=True, exist_ok=True)
     (root / "archive" / "backups_ancestry_desk").mkdir(parents=True, exist_ok=True)
@@ -64,7 +64,6 @@ def isolated_workspace(tmp_path: Path) -> Generator[Path]:
 
 # ==============================================================================
 # GROUP 1: WORKSPACE ROOT RESOLUTION
-# Note: Verifies workspace root resolution across standard and shallow layouts.
 # ==============================================================================
 
 
@@ -99,7 +98,6 @@ def test_get_workspace_root_shallow_fallback(tmp_path: Path) -> None:
 
 # ==============================================================================
 # GROUP 2: HEADER & METADATA EXTRACTION VIA PHYSICAL FIXTURES
-# Note: Verifies metadata extraction from static golden baselines on disk.
 # ==============================================================================
 
 
@@ -176,7 +174,6 @@ def test_parse_metadata_header_golden_ipynb_cell(
 
 # ==============================================================================
 # GROUP 3: DEFECT FIXTURES & PARSING BOUNDARY DEFENSES
-# Note: Verifies defensive rejection of corrupt payloads, traversal, and missing keys.
 # ==============================================================================
 
 
@@ -350,9 +347,38 @@ def test_parse_metadata_header_directory_path_append(isolated_workspace: Path) -
     assert target == isolated_workspace / "src" / "gda" / "core" / "appended_mod.py"
 
 
+@pytest.mark.unit
+def test_parse_metadata_header_single_field_quote_stripping(
+    isolated_workspace: Path,
+) -> None:
+    """Verify in-docstring single field path without explicit name derives name and strips quotes."""
+    f = isolated_workspace / "download" / "single_field.py"
+    f.write_text(
+        '"""Path: "src/gda/core/single_field.py"""\n\nDocstring content.\n',
+        encoding="utf-8",
+    )
+    name, target = gsi.parse_metadata_header(f, isolated_workspace)
+    assert name == "single_field.py"
+    assert target == isolated_workspace / "src" / "gda" / "core" / "single_field.py"
+
+
+@pytest.mark.unit
+def test_parse_metadata_header_with_explicit_name_and_quotes(
+    isolated_workspace: Path,
+) -> None:
+    """Verify explicit Name header with quotes strips quotes and keeps custom name."""
+    f = isolated_workspace / "download" / "custom_named.py"
+    f.write_text(
+        '# Name: "custom.py"\n# Path: "src/gda/core/custom.py"\n',
+        encoding="utf-8",
+    )
+    name, target = gsi.parse_metadata_header(f, isolated_workspace)
+    assert name == "custom.py"
+    assert target == isolated_workspace / "src" / "gda" / "core" / "custom.py"
+
+
 # ==============================================================================
 # GROUP 4: DESTINATION BACKUP ISOLATION ARCHITECTURE
-# Note: Verifies pre-write Safe Backup redirection into isolated archive/ directories.
 # ==============================================================================
 
 
@@ -364,6 +390,7 @@ def test_parse_metadata_header_directory_path_append(isolated_workspace: Path) -
         ("src/ancestry_desk/app.py", "backups_ancestry_desk"),
         ("src/cli/main.py", "backups_cli"),
         ("src/system/gsi.py", "backups_system"),
+        ("src/sys/tool.py", "backups_system"),
         ("src/custom_sub/mod.py", "backups_custom_sub"),
         ("tests/test_gda/test_mod.py", "backups_gda"),
         ("tests/test_ancestry_desk/test_v.py", "backups_ancestry_desk"),
@@ -404,10 +431,8 @@ def test_run_intake_creates_isolated_backup_for_code(isolated_workspace: Path) -
         == "# Name: existing.py\n# Path: src/gda/core/existing.py\nNEW_CONTENT"
     )
 
-    # Backup must NOT reside alongside original
     assert len(list(dest.parent.glob("*.bk"))) == 0
 
-    # Backup MUST reside in archive/backups_gda/src/gda/core/
     backup_repo = (
         isolated_workspace / "archive" / "backups_gda" / "src" / "gda" / "core"
     )
@@ -459,7 +484,6 @@ def test_run_intake_force_flag_overwrites_non_code_without_prompt(
 
 # ==============================================================================
 # GROUP 5: INTERACTIVE PROMPTS, PREFIXES & CLEAN PURGING
-# Note: Verifies interactive confirmation, refusal, prefix filters, and --clean purging.
 # ==============================================================================
 
 
@@ -608,7 +632,6 @@ def test_run_intake_missing_download_directory(
 
 # ==============================================================================
 # GROUP 6: CONTEXTUAL EXECUTION DISPATCH VIA _execute_target
-# Note: Verifies execution dispatch routing across Python, PowerShell, Bash, and documents.
 # ==============================================================================
 
 
@@ -762,7 +785,7 @@ def test_main_cli_dispatch(isolated_workspace: Path) -> None:
 @pytest.mark.smoke
 @pytest.mark.unit
 def test_gsi_main_module_execution_entrypoint() -> None:
-    """Verify line 419 entrypoint executes main and exits when invoked as __main__."""
+    """Verify line entrypoint executes main and exits when invoked as __main__."""
     saved_module = sys.modules.get("system.gsi")
     try:
         sys.modules.pop("system.gsi", None)

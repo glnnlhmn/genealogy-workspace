@@ -1,12 +1,15 @@
-# Name: conftest.py
-# Path: tests/test_system/conftest.py
-# Version: 1.0.1+build.r1
+"""Path: tests/test_system/conftest.py
 
-"""Pytest shared fixtures for system utility verification suites."""
+Pytest shared fixtures for system utility verification suites.
+"""
+
+from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
+
+__version__ = "1.0.1+build.r2"
 
 
 @pytest.fixture(scope="session")
@@ -15,7 +18,6 @@ def fixtures_dir() -> Path:
     root = Path(__file__).resolve().parents[2]
     target = root / "tests" / "fixtures" / "system" / "gsi"
     if not target.is_dir():
-        # Fallback for alternative workspace layouts
         target = Path(__file__).resolve().parent.parent / "fixtures" / "system" / "gsi"
     return target
 
