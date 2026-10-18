@@ -1,7 +1,6 @@
-# Name: geo.py
-# Path: src/gda/model/atom/geo.py
+"""Path: src/gda/model/atom/geo.py
 
-"""Geographic coordinate primitives using Pydantic dataclasses.
+Geographic coordinate primitives using Pydantic dataclasses.
 
 Operational Role:
     Defines validated geospatial atoms (Latitude, Longitude, Coordinates)
@@ -18,11 +17,11 @@ from __future__ import annotations
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelRangeError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.model.atom.errors import AtomRangeError
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.6"
 
 _logger = GDALogger(__name__)
 
@@ -41,7 +40,7 @@ class Latitude(IntrospectableMixin):
             _logger.debug(
                 "Latitude range boundary exceeded", details={"value": self.value}
             )
-            raise AtomRangeError(err_msg, details={"value": self.value})
+            raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __float__(self) -> float:
         return self.value
@@ -65,7 +64,7 @@ class Longitude(IntrospectableMixin):
             _logger.debug(
                 "Longitude range boundary exceeded", details={"value": self.value}
             )
-            raise AtomRangeError(err_msg, details={"value": self.value})
+            raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __float__(self) -> float:
         return self.value

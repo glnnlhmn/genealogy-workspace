@@ -1,7 +1,6 @@
-# Name: test_date.py
-# Path: tests/test_gda/test_model/test_atom/test_date.py
+"""Path: tests/test_gda/test_model/test_atom/test_date.py
 
-"""Comprehensive test suite verifying atomic temporal models and calendar primitives.
+Comprehensive test suite verifying atomic temporal primitives and calendar types.
 
 Operational Role:
     Verifies HistoricalYear, CensusYear, DateString, IsoTimestamp, EventDate,
@@ -20,6 +19,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.model.atom.date import (
     BirthYear,
     CensusYear,
@@ -32,9 +32,8 @@ from gda.model.atom.date import (
     HistoricalYear,
     IsoTimestamp,
 )
-from gda.model.atom.errors import AtomFormatError, AtomRangeError
 
-__version__ = "1.0.0+build.r6"
+__version__ = "1.0.0+build.8"
 
 
 # ==============================================================================
@@ -57,8 +56,8 @@ def test_historical_year_valid_boundaries(valid_year: int) -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("invalid_year", [999, 500, 0, -100, 2101, 3000])
 def test_historical_year_out_of_bounds_raises_range_error(invalid_year: int) -> None:
-    """Verify HistoricalYear raises AtomRangeError outside 1000..2100."""
-    with pytest.raises(AtomRangeError, match="out of range"):
+    """Verify HistoricalYear raises ModelRangeError outside 1000..2100."""
+    with pytest.raises(ModelRangeError, match="out of range"):
         HistoricalYear(invalid_year)
 
 
@@ -73,6 +72,8 @@ def test_birth_and_death_year_subclasses() -> None:
     assert isinstance(dy, HistoricalYear)
     assert by.value == 1865
     assert dy.value == 1942
+    assert repr(by) == "BirthYear(value=1865)"
+    assert repr(dy) == "DeathYear(value=1942)"
 
 
 # ==============================================================================
@@ -115,9 +116,10 @@ def test_census_year_valid_schedules(census_year: int) -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("invalid_census", [1885, 1890, 1960, 1780, 2000])
 def test_census_year_invalid_schedules_raise_range_error(invalid_census: int) -> None:
-    """Verify non-census years and destroyed schedules (1890) raise AtomRangeError."""
+    """Verify non-census years and destroyed schedules (1890) raise ModelRangeError."""
     with pytest.raises(
-        AtomRangeError, match="Must be a valid US Federal Decennial Census"
+        ModelRangeError,
+        match=r"Census enumeration year \(1790\.\.1950, excluding 1890\)",
     ):
         CensusYear(invalid_census)
 
@@ -137,7 +139,7 @@ def test_census_year_enum_membership() -> None:
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_date_string_valid_instantiation() -> None:
-    """Verify DateString trims and preserves textual date representations."""
+    """Verify DateString preserves textual date representations."""
     ds = DateString("14 APR 1865")
     assert ds.value == "14 APR 1865"
     assert str(ds) == "14 APR 1865"
@@ -148,8 +150,8 @@ def test_date_string_valid_instantiation() -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("empty_val", ["", "   ", "\t\n"])
 def test_date_string_empty_raises_format_error(empty_val: str) -> None:
-    """Verify DateString raises AtomFormatError on empty or whitespace strings."""
-    with pytest.raises(AtomFormatError, match="cannot be empty or whitespace"):
+    """Verify DateString raises ModelFormatError on empty or whitespace strings."""
+    with pytest.raises(ModelFormatError, match="cannot be empty or whitespace"):
         DateString(empty_val)
 
 
@@ -194,8 +196,8 @@ def test_iso_timestamp_now_utc() -> None:
     ],
 )
 def test_iso_timestamp_invalid_syntax_raises_format_error(invalid_iso: str) -> None:
-    """Verify IsoTimestamp raises AtomFormatError on malformed timestamps."""
-    with pytest.raises(AtomFormatError, match="Must match ISO 8601 extended format"):
+    """Verify IsoTimestamp raises ModelFormatError on malformed timestamps."""
+    with pytest.raises(ModelFormatError, match="Must match ISO 8601 extended format"):
         IsoTimestamp(invalid_iso)
 
 
@@ -234,6 +236,12 @@ def test_event_date_qualified_formatting() -> None:
 
     ed_aft = EventDate(date=d, modifier=DateModifier.AFTER)
     assert str(ed_aft) == "AFT 1880"
+
+    ed_est = EventDate(date=d, modifier=DateModifier.ESTIMATED)
+    assert str(ed_est) == "EST 1880"
+
+    ed_cal = EventDate(date=d, modifier=DateModifier.CALCULATED)
+    assert str(ed_cal) == "CAL 1880"
 
 
 @pytest.mark.unit

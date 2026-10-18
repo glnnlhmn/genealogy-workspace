@@ -1,7 +1,7 @@
-# Name: __init__.py
-# Path: src/gda/model/atom/__init__.py
+"""Path: src/gda/model/atom/__init__.py
 
-"""Atomic identification, temporal, metric, and spatial primitives package."""
+Atomic identification, temporal, metric, and spatial primitives package.
+"""
 
 from __future__ import annotations
 
@@ -17,11 +17,6 @@ from gda.model.atom.date import (
     HistoricalYear,
     IsoTimestamp,
 )
-from gda.model.atom.errors import (
-    AtomError,
-    AtomFormatError,
-    AtomPrefixMismatchError,
-)
 from gda.model.atom.geo import (
     Coordinates,
     Latitude,
@@ -33,11 +28,11 @@ from gda.model.atom.id import (
     FamilyID,
     IndividualID,
     LocationID,
-    MediaId,
+    MediaID,
     NoteID,
     RepositoryID,
     SiteID,
-    SourceId,
+    SourceID,
     TranscriptID,
     UUIDv4Str,
 )
@@ -49,14 +44,11 @@ from gda.model.atom.scalar import (
     QuayScore,
 )
 
-__version__ = "1.0.0+build.r7"
+__version__ = "1.0.0+build.10"
 
 __all__ = [
     "AhnentafelNumber",
-    "AtomError",
-    "AtomFormatError",
     "AtomID",
-    "AtomPrefixMismatchError",
     "BirthYear",
     "CensusYear",
     "CensusYearEnum",
@@ -75,14 +67,14 @@ __all__ = [
     "Latitude",
     "LocationID",
     "Longitude",
-    "MediaId",
+    "MediaID",
     "NewsCategoryCode",
     "NoteID",
     "PubCode",
     "QuayScore",
     "RepositoryID",
     "SiteID",
-    "SourceId",
+    "SourceID",
     "TranscriptID",
     "UUIDv4Str",
 ]

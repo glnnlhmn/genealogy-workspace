@@ -1,7 +1,6 @@
-# Name: test_geo.py
-# Path: tests/test_gda/test_model/test_atom/test_geo.py
+"""Path: tests/test_gda/test_model/test_atom/test_geo.py
 
-"""Comprehensive test suite verifying geographic coordinate primitives.
+Comprehensive test suite verifying geographic coordinate primitives.
 
 Operational Role:
     Verifies that Latitude and Longitude enforce strict boundary ranges,
@@ -19,10 +18,10 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from gda.model.atom.errors import AtomRangeError
+from gda.core.errors import ModelRangeError
 from gda.model.atom.geo import Coordinates, Latitude, Longitude
 
-__version__ = "1.0.0+build.r5"
+__version__ = "1.0.0+build.7"
 
 
 # ==============================================================================
@@ -49,8 +48,8 @@ def test_latitude_valid_range() -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("invalid_lat", [-90.0001, -100.0, 90.0001, 150.0])
 def test_latitude_out_of_bounds_raises_range_error(invalid_lat: float) -> None:
-    """Verify Latitude raises AtomRangeError when boundary values are exceeded."""
-    with pytest.raises(AtomRangeError, match="out of range"):
+    """Verify Latitude raises ModelRangeError when boundary values are exceeded."""
+    with pytest.raises(ModelRangeError, match="out of range"):
         Latitude(invalid_lat)
 
 
@@ -78,8 +77,8 @@ def test_longitude_valid_range() -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("invalid_lon", [-180.0001, -200.0, 180.0001, 250.0])
 def test_longitude_out_of_bounds_raises_range_error(invalid_lon: float) -> None:
-    """Verify Longitude raises AtomRangeError when boundary values are exceeded."""
-    with pytest.raises(AtomRangeError, match="out of range"):
+    """Verify Longitude raises ModelRangeError when boundary values are exceeded."""
+    with pytest.raises(ModelRangeError, match="out of range"):
         Longitude(invalid_lon)
 
 

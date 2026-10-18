@@ -1,12 +1,11 @@
-# Name: test_id.py
-# Path: tests/test_gda/test_model/test_atom/test_id.py
+"""Path: tests/test_gda/test_model/test_atom/test_id.py
 
-"""Comprehensive test suite verifying AtomID and UUIDv4Str identifier primitives.
+Comprehensive test suite verifying AtomID and UUIDv4Str identifier primitives.
 
 Operational Role:
     Verifies that AtomID enforces the 'AAA-######' format, validates specialized prefixes
     (IND, FID, LOC, SID, FAM, NOT, REP), executes total ordering, and validates
-    RFC 4122 lowercase UUIDv4 identifiers.
+    RFC 4122 lowercase UUIDv4 identifiers including SourceID, MediaID, and TranscriptID.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract mapping.
@@ -20,23 +19,23 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from gda.model.atom.errors import AtomFormatError, AtomPrefixMismatchError
+from gda.core.errors import ModelFormatError, ModelPrefixMismatchError
 from gda.model.atom.id import (
     AtomID,
     FactID,
     FamilyID,
     IndividualID,
     LocationID,
-    MediaId,
+    MediaID,
     NoteID,
     RepositoryID,
     SiteID,
-    SourceId,
+    SourceID,
     TranscriptID,
     UUIDv4Str,
 )
 
-__version__ = "1.0.0+build.r7"
+__version__ = "1.0.0+build.9"
 
 
 # ==============================================================================
@@ -79,9 +78,20 @@ def test_atom_id_valid_formats() -> None:
     ],
 )
 def test_atom_id_invalid_syntax_raises_format_error(invalid_id: str) -> None:
-    """Verify AtomID raises AtomFormatError when syntax deviates from 'AAA-######'."""
-    with pytest.raises(AtomFormatError, match="Invalid AtomID format"):
+    """Verify AtomID raises ModelFormatError when syntax deviates from 'AAA-######'."""
+    with pytest.raises(ModelFormatError, match="Invalid AtomID format"):
         AtomID(invalid_id)
+
+
+@pytest.mark.unit
+@pytest.mark.smoke
+def test_atom_id_explicit_expected_prefix_override() -> None:
+    """Verify AtomID validates against explicitly passed expected_prefix parameter."""
+    atom = AtomID("ABC-000001", expected_prefix="ABC")
+    assert atom.prefix == "ABC"
+
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for AtomID"):
+        AtomID("ABC-000001", expected_prefix="XYZ")
 
 
 # ==============================================================================
@@ -105,9 +115,9 @@ def test_specialized_atom_subclasses_valid_instantiation() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_individual_id_prefix_mismatch_raises_error() -> None:
-    """Verify IndividualID raises AtomPrefixMismatchError when passed non-IND prefix."""
+    """Verify IndividualID raises ModelPrefixMismatchError when passed non-IND prefix."""
     with pytest.raises(
-        AtomPrefixMismatchError, match="Prefix mismatch for IndividualID"
+        ModelPrefixMismatchError, match="Prefix mismatch for IndividualID"
     ):
         IndividualID("FID-000001")
 
@@ -115,49 +125,51 @@ def test_individual_id_prefix_mismatch_raises_error() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_fact_id_prefix_mismatch_raises_error() -> None:
-    """Verify FactID raises AtomPrefixMismatchError when passed non-FID prefix."""
-    with pytest.raises(AtomPrefixMismatchError, match="Prefix mismatch for FactID"):
+    """Verify FactID raises ModelPrefixMismatchError when passed non-FID prefix."""
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for FactID"):
         FactID("IND-000001")
 
 
 @pytest.mark.unit
 @pytest.mark.regression
 def test_location_id_prefix_mismatch_raises_error() -> None:
-    """Verify LocationID raises AtomPrefixMismatchError when passed non-LOC prefix."""
-    with pytest.raises(AtomPrefixMismatchError, match="Prefix mismatch for LocationID"):
+    """Verify LocationID raises ModelPrefixMismatchError when passed non-LOC prefix."""
+    with pytest.raises(
+        ModelPrefixMismatchError, match="Prefix mismatch for LocationID"
+    ):
         LocationID("SID-000001")
 
 
 @pytest.mark.unit
 @pytest.mark.regression
 def test_site_id_prefix_mismatch_raises_error() -> None:
-    """Verify SiteID raises AtomPrefixMismatchError when passed non-SID prefix."""
-    with pytest.raises(AtomPrefixMismatchError, match="Prefix mismatch for SiteID"):
+    """Verify SiteID raises ModelPrefixMismatchError when passed non-SID prefix."""
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for SiteID"):
         SiteID("LOC-000001")
 
 
 @pytest.mark.unit
 @pytest.mark.regression
 def test_family_id_prefix_mismatch_raises_error() -> None:
-    """Verify FamilyID raises AtomPrefixMismatchError when passed non-FAM prefix."""
-    with pytest.raises(AtomPrefixMismatchError, match="Prefix mismatch for FamilyID"):
+    """Verify FamilyID raises ModelPrefixMismatchError when passed non-FAM prefix."""
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for FamilyID"):
         FamilyID("IND-000001")
 
 
 @pytest.mark.unit
 @pytest.mark.regression
 def test_note_id_prefix_mismatch_raises_error() -> None:
-    """Verify NoteID raises AtomPrefixMismatchError when passed non-NOT prefix."""
-    with pytest.raises(AtomPrefixMismatchError, match="Prefix mismatch for NoteID"):
+    """Verify NoteID raises ModelPrefixMismatchError when passed non-NOT prefix."""
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for NoteID"):
         NoteID("REP-000001")
 
 
 @pytest.mark.unit
 @pytest.mark.regression
 def test_repository_id_prefix_mismatch_raises_error() -> None:
-    """Verify RepositoryID raises AtomPrefixMismatchError when passed non-REP prefix."""
+    """Verify RepositoryID raises ModelPrefixMismatchError when passed non-REP prefix."""
     with pytest.raises(
-        AtomPrefixMismatchError, match="Prefix mismatch for RepositoryID"
+        ModelPrefixMismatchError, match="Prefix mismatch for RepositoryID"
     ):
         RepositoryID("NOT-000001")
 
@@ -211,8 +223,8 @@ def test_uuidv4_valid_instantiation() -> None:
     assert str(base_u) == valid_uuid
     assert repr(base_u) == f"UUIDv4Str(value='{valid_uuid}')"
 
-    source_u = SourceId(valid_uuid)
-    media_u = MediaId(valid_uuid)
+    source_u = SourceID(valid_uuid)
+    media_u = MediaID(valid_uuid)
     transcript_u = TranscriptID(valid_uuid)
 
     assert source_u.value == valid_uuid
@@ -235,8 +247,8 @@ def test_uuidv4_valid_instantiation() -> None:
     ],
 )
 def test_uuidv4_invalid_format_raises_error(invalid_uuid: str) -> None:
-    """Verify UUIDv4Str raises AtomFormatError when input is not RFC 4122 lowercase UUIDv4."""
-    with pytest.raises(AtomFormatError, match="Invalid UUIDv4 format"):
+    """Verify UUIDv4Str raises ModelFormatError when input is not RFC 4122 lowercase UUIDv4."""
+    with pytest.raises(ModelFormatError, match="Invalid UUIDv4 format"):
         UUIDv4Str(invalid_uuid)
 
 

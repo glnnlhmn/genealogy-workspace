@@ -1,7 +1,6 @@
-# Name: scalar.py
-# Path: src/gda/model/atom/scalar.py
+"""Path: src/gda/model/atom/scalar.py
 
-"""Domain scalar metrics and code primitives using Pydantic dataclasses.
+Domain scalar metrics and code primitives using Pydantic dataclasses.
 
 Operational Role:
     Encapsulates validated discrete metrics, scores, and taxonomy code scalars
@@ -24,11 +23,11 @@ from typing import ClassVar
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.model.atom.errors import AtomFormatError, AtomRangeError
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.6"
 
 _logger = GDALogger(__name__)
 
@@ -43,7 +42,7 @@ class QuayScore(IntrospectableMixin):
         if not (0 <= self.value <= 3):
             err_msg = f"QuayScore '{self.value}' out of range. Must be between 0 and 3."
             _logger.debug("QuayScore validation failed", details={"value": self.value})
-            raise AtomRangeError(err_msg, details={"value": self.value})
+            raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __int__(self) -> int:
         return self.value
@@ -66,7 +65,7 @@ class AhnentafelNumber(IntrospectableMixin):
             _logger.debug(
                 "AhnentafelNumber validation failed", details={"value": self.value}
             )
-            raise AtomRangeError(err_msg, details={"value": self.value})
+            raise ModelRangeError(err_msg, details={"value": self.value})
 
     @property
     def is_male(self) -> bool | None:
@@ -113,7 +112,7 @@ class ConfidenceScore(IntrospectableMixin):
             _logger.debug(
                 "ConfidenceScore validation failed", details={"value": self.value}
             )
-            raise AtomRangeError(err_msg, details={"value": self.value})
+            raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __float__(self) -> float:
         return self.value
@@ -134,7 +133,7 @@ class PubCode(IntrospectableMixin):
         if not self._PATTERN.match(self.value):
             err_msg = f"Invalid PubCode format: '{self.value}'. Must match '^[A-Z0-9_-]{{2,20}}$'."
             _logger.debug("PubCode validation failed", details={"value": self.value})
-            raise AtomFormatError(err_msg, details={"value": self.value})
+            raise ModelFormatError(err_msg, details={"value": self.value})
 
     def __str__(self) -> str:
         return self.value
@@ -157,7 +156,7 @@ class NewsCategoryCode(IntrospectableMixin):
             _logger.debug(
                 "NewsCategoryCode validation failed", details={"value": self.value}
             )
-            raise AtomFormatError(err_msg, details={"value": self.value})
+            raise ModelFormatError(err_msg, details={"value": self.value})
 
     def __str__(self) -> str:
         return self.value

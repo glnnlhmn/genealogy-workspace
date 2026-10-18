@@ -1,7 +1,6 @@
-# Name: test_scalar.py
-# Path: tests/test_gda/test_model/test_atom/test_scalar.py
+"""Path: tests/test_gda/test_model/test_atom/test_scalar.py
 
-"""Comprehensive test suite verifying domain scalar primitives and metrics.
+Comprehensive test suite verifying domain scalar primitives and metrics.
 
 Operational Role:
     Verifies QuayScore, AhnentafelNumber, ConfidenceScore, PubCode, and
@@ -19,7 +18,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from gda.model.atom.errors import AtomFormatError, AtomRangeError
+from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.model.atom.scalar import (
     AhnentafelNumber,
     ConfidenceScore,
@@ -28,7 +27,7 @@ from gda.model.atom.scalar import (
     QuayScore,
 )
 
-__version__ = "1.0.0+build.r5"
+__version__ = "1.0.0+build.7"
 
 
 # ==============================================================================
@@ -51,8 +50,8 @@ def test_quay_score_valid_values(valid_score: int) -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("invalid_score", [-1, 4, 10, -100])
 def test_quay_score_out_of_bounds_raises_range_error(invalid_score: int) -> None:
-    """Verify QuayScore raises AtomRangeError when value is outside 0..3."""
-    with pytest.raises(AtomRangeError, match="out of range"):
+    """Verify QuayScore raises ModelRangeError when value is outside 0..3."""
+    with pytest.raises(ModelRangeError, match="out of range"):
         QuayScore(invalid_score)
 
 
@@ -99,8 +98,8 @@ def test_ahnentafel_gender_and_relationships() -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("bad_index", [0, -1, -50])
 def test_ahnentafel_invalid_value_raises_range_error(bad_index: int) -> None:
-    """Verify AhnentafelNumber raises AtomRangeError for integers < 1."""
-    with pytest.raises(AtomRangeError, match="must be a positive integer >= 1"):
+    """Verify AhnentafelNumber raises ModelRangeError for integers < 1."""
+    with pytest.raises(ModelRangeError, match="must be a positive integer >= 1"):
         AhnentafelNumber(bad_index)
 
 
@@ -124,8 +123,8 @@ def test_confidence_score_valid_values(valid_conf: float) -> None:
 @pytest.mark.regression
 @pytest.mark.parametrize("invalid_conf", [-0.01, -1.0, 1.01, 2.5])
 def test_confidence_score_out_of_bounds_raises_range_error(invalid_conf: float) -> None:
-    """Verify ConfidenceScore raises AtomRangeError outside 0.0..1.0."""
-    with pytest.raises(AtomRangeError, match="out of range"):
+    """Verify ConfidenceScore raises ModelRangeError outside 0.0..1.0."""
+    with pytest.raises(ModelRangeError, match="out of range"):
         ConfidenceScore(invalid_conf)
 
 
@@ -154,8 +153,8 @@ def test_pub_code_valid_patterns(valid_pub: str) -> None:
     ["", "A", "a_lower", "HAS SPACE", "TOOLONG_TOKEN_NAME_EXCEEDING_LIMIT"],
 )
 def test_pub_code_invalid_syntax_raises_format_error(invalid_pub: str) -> None:
-    """Verify PubCode raises AtomFormatError when pattern violates '^[A-Z0-9_-]{2,20}$'."""
-    with pytest.raises(AtomFormatError, match="Invalid PubCode format"):
+    """Verify PubCode raises ModelFormatError when pattern violates '^[A-Z0-9_-]{2,20}$'."""
+    with pytest.raises(ModelFormatError, match="Invalid PubCode format"):
         PubCode(invalid_pub)
 
 
@@ -178,8 +177,8 @@ def test_news_category_code_valid_patterns(valid_cat: str) -> None:
 def test_news_category_code_invalid_syntax_raises_format_error(
     invalid_cat: str,
 ) -> None:
-    """Verify NewsCategoryCode raises AtomFormatError when pattern violates '^[A-Z]{3,15}$'."""
-    with pytest.raises(AtomFormatError, match="Invalid NewsCategoryCode format"):
+    """Verify NewsCategoryCode raises ModelFormatError when pattern violates '^[A-Z]{3,15}$'."""
+    with pytest.raises(ModelFormatError, match="Invalid NewsCategoryCode format"):
         NewsCategoryCode(invalid_cat)
 
 

@@ -1,20 +1,19 @@
-# Name: id.py
-# Path: src/gda/model/atom/id.py
+"""Path: src/gda/model/atom/id.py
 
-"""Core atomic identifier models and domain subclasses using Pydantic dataclasses.
+Core atomic identifier primitives and domain subclasses using Pydantic dataclasses.
 
 Operational Role:
     Serves as the foundational, indivisible identification layer ('Atom') for the
     Genealogy Digital Archive (GDA). Isolates generic format validation, string
     normalization, prefix/suffix slicing, total ordering, and RFC 4122 UUIDv4
-    verification away from downstream entity models.
+    verification away from downstream entity layers.
 
 Architecture:
     - AtomID: Base Pydantic dataclass validating 'AAA-######' (min 6 digits) with total ordering.
     - Specialized Atom IDs: IndividualID (IND), FactID (FID), LocationID (LOC), SiteID (SID),
       FamilyID (FAM), NoteID (NOT), and RepositoryID (REP).
     - UUIDv4Str: Base Pydantic dataclass validating RFC 4122 lowercase UUIDv4.
-    - Specialized UUID IDs: SourceId, MediaId, and TranscriptID.
+    - Specialized UUID IDs: SourceID, MediaID, and TranscriptID.
 """
 
 from __future__ import annotations
@@ -26,11 +25,11 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError, ModelPrefixMismatchError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.model.atom.errors import AtomFormatError, AtomPrefixMismatchError
 
-__version__ = "1.0.0+build.r6"
+__version__ = "1.0.0+build.8"
 
 _logger = GDALogger(__name__)
 
@@ -61,7 +60,7 @@ class AtomID(IntrospectableMixin):
             _logger.debug(
                 "Identifier syntax validation failed", details={"raw_value": self.value}
             )
-            raise AtomFormatError(err_msg, details={"value": self.value})
+            raise ModelFormatError(err_msg, details={"value": self.value})
 
         parsed_prefix, _ = match.groups()
         target_prefix = (
@@ -84,7 +83,7 @@ class AtomID(IntrospectableMixin):
                     "value": self.value,
                 },
             )
-            raise AtomPrefixMismatchError(
+            raise ModelPrefixMismatchError(
                 err_msg,
                 details={
                     "class": self.__class__.__name__,
@@ -199,7 +198,7 @@ class UUIDv4Str(IntrospectableMixin):
             _logger.debug(
                 "UUIDv4 syntax validation failed", details={"raw_value": self.value}
             )
-            raise AtomFormatError(
+            raise ModelFormatError(
                 err_msg,
                 error_code="ERR_UUID_FORMAT",
                 details={"value": self.value, "class": self.__class__.__name__},
@@ -225,12 +224,12 @@ class UUIDv4Str(IntrospectableMixin):
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
-class SourceId(UUIDv4Str):
+class SourceID(UUIDv4Str):
     """Canonical identifier for primary archival source citations."""
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
-class MediaId(UUIDv4Str):
+class MediaID(UUIDv4Str):
     """Canonical identifier for digital media attachments and files."""
 
 

@@ -1,7 +1,6 @@
-# Name: date.py
-# Path: src/gda/model/atom/date.py
+"""Path: src/gda/model/atom/date.py
 
-"""Core atomic temporal models and historical calendar primitives using Pydantic dataclasses.
+Core atomic temporal primitives and historical calendar types using Pydantic dataclasses.
 
 Operational Role:
     Encapsulates validated historical calendar points, dates, temporal modifiers,
@@ -9,7 +8,7 @@ Operational Role:
 
 Architecture:
     - HistoricalYear: Validated integer year between 1000 and 2100.
-    - CensusYear: Bounded federal decennial census year (1790..1950).
+    - CensusYear: Bounded federal decennial census year derived from CensusYearEnum.
     - DateModifier: Enumeration of standard genealogical date qualifiers.
     - DateString: Normalized, sanitized textual date string.
     - IsoTimestamp: Validated UTC ISO 8601 extended timestamp.
@@ -27,11 +26,11 @@ from typing import ClassVar
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.model.atom.errors import AtomFormatError, AtomRangeError
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.6"
 
 _logger = GDALogger(__name__)
 
@@ -48,7 +47,7 @@ class HistoricalYear(IntrospectableMixin):
             _logger.debug(
                 "HistoricalYear validation failed", details={"value": self.value}
             )
-            raise AtomRangeError(err_msg, details={"value": self.value})
+            raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __int__(self) -> int:
         return self.value
@@ -87,12 +86,13 @@ class CensusYear(IntrospectableMixin):
     def __post_init__(self) -> None:
         valid_years = {member.value for member in CensusYearEnum}
         if self.value not in valid_years:
+            min_year, max_year = min(valid_years), max(valid_years)
             err_msg = (
                 f"Invalid CensusYear '{self.value}'. Must be a valid US Federal Decennial "
-                f"Census enumeration year (1790..1950, excluding 1890)."
+                f"Census enumeration year ({min_year}..{max_year}, excluding 1890)."
             )
             _logger.debug("CensusYear validation failed", details={"value": self.value})
-            raise AtomRangeError(err_msg, details={"value": self.value})
+            raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __int__(self) -> int:
         return self.value
@@ -123,7 +123,7 @@ class DateString(IntrospectableMixin):
         if not self.value.strip():
             err_msg = "DateString value cannot be empty or whitespace."
             _logger.debug("DateString validation failed: empty input")
-            raise AtomFormatError(err_msg, details={"value": self.value})
+            raise ModelFormatError(err_msg, details={"value": self.value})
 
     def __str__(self) -> str:
         return self.value
@@ -151,7 +151,7 @@ class IsoTimestamp(IntrospectableMixin):
             _logger.debug(
                 "IsoTimestamp validation failed", details={"value": self.value}
             )
-            raise AtomFormatError(err_msg, details={"value": self.value})
+            raise ModelFormatError(err_msg, details={"value": self.value})
 
     @classmethod
     def now_utc(cls) -> IsoTimestamp:
