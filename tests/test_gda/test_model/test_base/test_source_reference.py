@@ -1,11 +1,10 @@
-# Name: test_source_ref.py
-# Path: tests/test_gda/test_model/test_base/test_source_ref.py
+"""Path: tests/test_gda/test_model/test_base/test_source_reference.py
 
-"""Comprehensive test suite verifying SourceReferenceModel contracts.
+Comprehensive test suite verifying SourceReference contracts.
 
 Operational Role:
-    Verifies that SourceReferenceModel validates non-empty citations,
-    binds optional SourceId, page, QuayScore, and ConfidenceScore attributes,
+    Verifies that SourceReference validates non-empty citations,
+    binds optional SourceID, page, QuayScore, and ConfidenceScore attributes,
     formats string representations, and enforces immutability.
 
 Test Structure & Protocol:
@@ -20,28 +19,28 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from gda.model.atom.errors import AtomFormatError
-from gda.model.atom.id import SourceId
+from gda.core.errors import ModelFormatError
+from gda.model.atom.id import SourceID
 from gda.model.atom.scalar import ConfidenceScore, QuayScore
-from gda.model.base.source_ref import SourceReferenceModel
+from gda.model.base.source_reference import SourceReference
 
-__version__ = "1.0.0+build.r2"
+__version__ = "1.0.0+build.3"
 
 
 # ==============================================================================
-# GROUP 1: SOURCEREFERENCEMODEL CREATION & FORMATTING
+# GROUP 1: SOURCEREFERENCE CREATION & FORMATTING
 # ==============================================================================
 
 
 @pytest.mark.unit
 @pytest.mark.smoke
-def test_source_ref_valid_creation() -> None:
-    """Verify SourceReferenceModel instantiates with full and partial attributes."""
-    sid = SourceId("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
+def test_source_reference_valid_creation() -> None:
+    """Verify SourceReference instantiates with full and partial attributes."""
+    sid = SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
     quay = QuayScore(3)
     conf = ConfidenceScore(0.95)
 
-    ref = SourceReferenceModel(
+    ref = SourceReference(
         citation_text="1880 US Census, Merrimack County, NH",
         source_id=sid,
         page_or_side="Folio 12B",
@@ -55,17 +54,17 @@ def test_source_ref_valid_creation() -> None:
     assert ref.confidence == conf
     assert str(ref) == "1880 US Census, Merrimack County, NH (p. Folio 12B)"
     assert repr(ref) == (
-        "SourceReferenceModel(citation_text='1880 US Census, Merrimack County, NH', "
-        "source_id=SourceId(value='c9a646d3-9c61-4a70-8b14-c48c8b417c8d'), "
+        "SourceReference(citation_text='1880 US Census, Merrimack County, NH', "
+        "source_id=SourceID(value='c9a646d3-9c61-4a70-8b14-c48c8b417c8d'), "
         "page_or_side='Folio 12B', quay=QuayScore(value=3), confidence=ConfidenceScore(value=0.95))"
     )
 
 
 @pytest.mark.unit
 @pytest.mark.smoke
-def test_source_ref_unadorned_string_formatting() -> None:
-    """Verify SourceReferenceModel string without page_or_side."""
-    ref = SourceReferenceModel(citation_text="Family Bible Records")
+def test_source_reference_unadorned_string_formatting() -> None:
+    """Verify SourceReference string without page_or_side."""
+    ref = SourceReference(citation_text="Family Bible Records")
     assert str(ref) == "Family Bible Records"
     assert ref.source_id is None
     assert ref.page_or_side is None
@@ -79,24 +78,24 @@ def test_source_ref_unadorned_string_formatting() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 @pytest.mark.parametrize("blank_citation", ["", "   ", "\t\n"])
-def test_source_ref_blank_citation_raises_error(blank_citation: str) -> None:
-    """Verify SourceReferenceModel raises AtomFormatError on empty citation_text."""
-    with pytest.raises(AtomFormatError, match="citation_text cannot be empty"):
-        SourceReferenceModel(citation_text=blank_citation)
+def test_source_reference_blank_citation_raises_error(blank_citation: str) -> None:
+    """Verify SourceReference raises ModelFormatError on empty citation_text."""
+    with pytest.raises(ModelFormatError, match="citation_text cannot be empty"):
+        SourceReference(citation_text=blank_citation)
 
 
 @pytest.mark.unit
-def test_source_ref_immutability() -> None:
-    """Verify SourceReferenceModel is frozen and immutable."""
-    ref = SourceReferenceModel(citation_text="Original Record")
+def test_source_reference_immutability() -> None:
+    """Verify SourceReference is frozen and immutable."""
+    ref = SourceReference(citation_text="Original Record")
     with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
         ref.citation_text = "Mutated Record"  # type: ignore[misc]
 
 
 @pytest.mark.unit
-def test_source_ref_introspection() -> None:
-    """Verify .help() renders member directory on SourceReferenceModel."""
-    ref = SourceReferenceModel(citation_text="Archive Memo")
+def test_source_reference_introspection() -> None:
+    """Verify .help() renders member directory on SourceReference."""
+    ref = SourceReference(citation_text="Archive Memo")
     help_text = ref.help(as_str=True)
     assert help_text is not None
-    assert "=== SourceReferenceModel Public Directory ===" in help_text
+    assert "=== SourceReference Public Directory ===" in help_text

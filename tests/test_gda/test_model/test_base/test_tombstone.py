@@ -1,7 +1,6 @@
-# Name: test_tombstone.py
-# Path: tests/test_gda/test_model/test_base/test_tombstone.py
+"""Path: tests/test_gda/test_model/test_base/test_tombstone.py
 
-"""Comprehensive test suite verifying TombstoneRecord invariants and lifecycles.
+Comprehensive test suite verifying TombstoneRecord invariants and lifecycles.
 
 Operational Role:
     Verifies active and deprecated tombstone states, coupled timestamp guards,
@@ -19,12 +18,12 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.errors import AtomFormatError
 from gda.model.atom.id import IndividualID
 from gda.model.base.tombstone import TombstoneRecord
 
-__version__ = "1.0.0+build.r3"
+__version__ = "1.0.0+build.4"
 
 
 # ==============================================================================
@@ -46,10 +45,10 @@ def test_tombstone_active_default_state() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_tombstone_active_with_deprecated_timestamp_raises_error() -> None:
-    """Verify active record raises AtomFormatError if deprecated_at is provided."""
+    """Verify active record raises ModelFormatError if deprecated_at is provided."""
     ts = IsoTimestamp("2026-10-16T12:00:00Z")
     with pytest.raises(
-        AtomFormatError, match="must not possess a deprecated_at timestamp"
+        ModelFormatError, match="must not possess a deprecated_at timestamp"
     ):
         TombstoneRecord(is_deprecated=False, deprecated_at=ts)
 
@@ -57,10 +56,10 @@ def test_tombstone_active_with_deprecated_timestamp_raises_error() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_tombstone_active_with_superseded_by_raises_error() -> None:
-    """Verify active record raises AtomFormatError if superseded_by is provided."""
+    """Verify active record raises ModelFormatError if superseded_by is provided."""
     target_id = IndividualID("IND-000002")
     with pytest.raises(
-        AtomFormatError, match="must not possess a deprecated_at timestamp"
+        ModelFormatError, match="must not possess a deprecated_at timestamp"
     ):
         TombstoneRecord(is_deprecated=False, superseded_by=target_id)
 
@@ -100,8 +99,10 @@ def test_tombstone_deprecated_valid_states() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_tombstone_deprecated_missing_timestamp_raises_error() -> None:
-    """Verify deprecated record raises AtomFormatError if deprecated_at is omitted."""
-    with pytest.raises(AtomFormatError, match="must specify a deprecated_at timestamp"):
+    """Verify deprecated record raises ModelFormatError if deprecated_at is omitted."""
+    with pytest.raises(
+        ModelFormatError, match="must specify a deprecated_at timestamp"
+    ):
         TombstoneRecord(is_deprecated=True, deprecated_at=None)
 
 

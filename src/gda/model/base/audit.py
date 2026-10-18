@@ -1,12 +1,11 @@
-# Name: audit.py
-# Path: src/gda/model/base/audit.py
+"""Path: src/gda/model/base/audit.py
 
-"""Core audit metadata tracking stamp using Pydantic dataclasses.
+Core audit metadata tracking stamp using Pydantic dataclasses.
 
 Operational Role:
     Defines the standard record lifecycle stamp ('AuditStamp') tracking created_at
-    and updated_at ISO timestamps across the Genealogy Digital Archive (GDA).
-    Enforces chronological integrity and immutable state transitions.
+    and updated_at ISO timestamps. Enforces chronological integrity and immutable
+    state transitions.
 
 Architecture:
     - AuditStamp: Pydantic dataclass validating record timestamps.
@@ -17,12 +16,12 @@ from __future__ import annotations
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.errors import AtomFormatError
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.5"
 
 _logger = GDALogger(__name__)
 
@@ -47,7 +46,7 @@ class AuditStamp(IntrospectableMixin):
                     "updated_at": self.updated_at.value,
                 },
             )
-            raise AtomFormatError(
+            raise ModelFormatError(
                 err_msg,
                 details={
                     "created_at": self.created_at.value,
@@ -56,6 +55,7 @@ class AuditStamp(IntrospectableMixin):
             )
 
     def touch(self, updated_at: IsoTimestamp) -> AuditStamp:
+        """Return a new AuditStamp updating only the updated_at timestamp."""
         return AuditStamp(created_at=self.created_at, updated_at=updated_at)
 
     def __repr__(self) -> str:

@@ -1,16 +1,15 @@
-# Name: media.py
-# Path: src/gda/model/base/media.py
+"""Path: src/gda/model/base/media.py
 
-"""Digital media attachment metadata model using Pydantic dataclasses.
+Digital media asset metadata representation using Pydantic dataclasses.
 
 Operational Role:
-    Defines the digital media asset record ('MediaModel') for digitized scans,
-    microfilm frames, photographs, and audio recordings. Pairs a UUIDv4 MediaId
-    with filename, MIME type, physical document side, notes, and an AuditStamp.
+    Defines the digital media asset record ('Media') for digitized scans,
+    microfilm frames, photographs, and audio recordings. Directly composes
+    MediaID, filename, MIME type, physical orientation, notes, and an AuditStamp.
 
 Architecture:
-    - DocumentSide: Enumeration defining physical document orientation/face.
-    - MediaModel: Pydantic dataclass validating media attachment metadata.
+    - DocumentSide: Controlled enumeration for physical document orientation.
+    - Media: Pydantic dataclass validating media attachment metadata.
 """
 
 from __future__ import annotations
@@ -20,12 +19,13 @@ from enum import StrEnum
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError
+from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.model.atom.errors import AtomFormatError
-from gda.model.atom.id import MediaId
-from gda.model.base.auditable import AuditableModel
+from gda.model.atom.id import MediaID
+from gda.model.base.audit import AuditStamp
 
-__version__ = "1.0.0+build.r2"
+__version__ = "1.0.0+build.3"
 
 _logger = GDALogger(__name__)
 
@@ -41,30 +41,29 @@ class DocumentSide(StrEnum):
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
-class MediaModel(AuditableModel):
-    """Digital media file attachment metadata envelope."""
+class Media(IntrospectableMixin):
+    """Digital media file attachment metadata envelope with direct audit composition."""
 
-    media_id: MediaId
+    media_id: MediaID
     file_name: str
     mime_type: str
+    audit: AuditStamp
     side: DocumentSide = DocumentSide.FRONT
     description: str | None = None
 
     def __post_init__(self) -> None:
         if not self.file_name.strip():
-            err_msg = "MediaModel file_name cannot be empty."
-            _logger.debug("MediaModel file_name validation failed")
-            raise AtomFormatError(err_msg, details={"field": "file_name"})
+            err_msg = "Media file_name cannot be empty."
+            _logger.debug("Media file_name validation failed")
+            raise ModelFormatError(err_msg, details={"field": "file_name"})
 
         if not self.mime_type.strip() or "/" not in self.mime_type:
-            err_msg = (
-                f"Invalid MediaModel mime_type: '{self.mime_type}'. Must contain '/'."
-            )
+            err_msg = f"Invalid Media mime_type: '{self.mime_type}'. Must contain '/'."
             _logger.debug(
-                "MediaModel mime_type validation failed",
+                "Media mime_type validation failed",
                 details={"mime_type": self.mime_type},
             )
-            raise AtomFormatError(
+            raise ModelFormatError(
                 err_msg, details={"field": "mime_type", "value": self.mime_type}
             )
 

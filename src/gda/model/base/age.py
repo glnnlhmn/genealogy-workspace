@@ -1,16 +1,14 @@
-# Name: age.py
-# Path: src/gda/model/base/age.py
+"""Path: src/gda/model/base/age.py
 
-"""Age record representation model using Pydantic dataclasses.
+Age record representation using Pydantic dataclasses.
 
 Operational Role:
-    Defines the structured age representation ('AgeRecordModel') recorded
-    at the time of an event across vital certificates, census returns,
-    and mortuary markers in the Genealogy Digital Archive (GDA). Preserves
-    verbatim text while parsing discrete years, months, and days.
+    Defines the structured age representation ('Age') recorded at the time
+    of an event across vital certificates, census returns, and mortuary markers.
+    Preserves verbatim text while parsing discrete years, months, and days.
 
 Architecture:
-    - AgeRecordModel: Pydantic dataclass validating event age assertions.
+    - Age: Pydantic dataclass validating event age assertions.
 """
 
 from __future__ import annotations
@@ -18,17 +16,17 @@ from __future__ import annotations
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.model.atom.errors import AtomFormatError
 
-__version__ = "1.0.0+build.r2"
+__version__ = "1.0.0+build.3"
 
 _logger = GDALogger(__name__)
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
-class AgeRecordModel(IntrospectableMixin):
+class Age(IntrospectableMixin):
     """Event age assertion capturing discrete units and verbatim historical strings."""
 
     raw_text: str | None = None
@@ -43,24 +41,26 @@ class AgeRecordModel(IntrospectableMixin):
         )
 
         if not has_text and not has_numeric:
-            err_msg = "AgeRecordModel must specify raw_text or at least one of (years, months, days)."
-            _logger.debug("AgeRecordModel validation failed: empty record")
-            raise AtomFormatError(err_msg, details={"record": repr(self)})
+            err_msg = (
+                "Age must specify raw_text or at least one of (years, months, days)."
+            )
+            _logger.debug("Age validation failed: empty record")
+            raise ModelFormatError(err_msg, details={"record": repr(self)})
 
         if self.years is not None and self.years < 0:
-            raise AtomFormatError(
+            raise ModelFormatError(
                 f"Age years '{self.years}' cannot be negative.",
                 details={"years": self.years},
             )
 
         if self.months is not None and not (0 <= self.months <= 11):
-            raise AtomFormatError(
+            raise ModelFormatError(
                 f"Age months '{self.months}' must be between 0 and 11.",
                 details={"months": self.months},
             )
 
         if self.days is not None and not (0 <= self.days <= 31):
-            raise AtomFormatError(
+            raise ModelFormatError(
                 f"Age days '{self.days}' must be between 0 and 31.",
                 details={"days": self.days},
             )

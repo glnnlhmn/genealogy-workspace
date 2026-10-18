@@ -1,12 +1,10 @@
-# Name: tombstone.py
-# Path: src/gda/model/base/tombstone.py
+"""Path: src/gda/model/base/tombstone.py
 
-"""In-place entity lifecycle and deprecation tombstone model using Pydantic dataclasses.
+In-place entity lifecycle and deprecation tombstone using Pydantic dataclasses.
 
 Operational Role:
     Defines the standardized tombstone envelope ('TombstoneRecord[ID_T]') governing
-    soft-deletion, record absorption, deduplication, and supersession across the
-    Genealogy Digital Archive (GDA).
+    soft-deletion, record absorption, deduplication, and supersession.
 
 Architecture:
     - TombstoneRecord[ID_T]: Generic Pydantic dataclass managing record deprecation.
@@ -17,12 +15,12 @@ from __future__ import annotations
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.errors import AtomFormatError
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.5"
 
 _logger = GDALogger(__name__)
 
@@ -44,7 +42,7 @@ class TombstoneRecord[ID_T](IntrospectableMixin):
                 "deprecated_at timestamp or superseded_by reference."
             )
             _logger.debug("TombstoneRecord active invariant violated")
-            raise AtomFormatError(
+            raise ModelFormatError(
                 err_msg,
                 details={
                     "is_deprecated": self.is_deprecated,
@@ -56,7 +54,7 @@ class TombstoneRecord[ID_T](IntrospectableMixin):
         if self.is_deprecated and self.deprecated_at is None:
             err_msg = "Deprecated record (is_deprecated=True) must specify a deprecated_at timestamp."
             _logger.debug("TombstoneRecord deprecated timestamp missing")
-            raise AtomFormatError(
+            raise ModelFormatError(
                 err_msg,
                 details={
                     "is_deprecated": self.is_deprecated,
@@ -67,6 +65,7 @@ class TombstoneRecord[ID_T](IntrospectableMixin):
     def retire(
         self, timestamp: IsoTimestamp, superseded_by: ID_T | None = None
     ) -> TombstoneRecord[ID_T]:
+        """Return a retired TombstoneRecord stamped with timestamp and superseding pointer."""
         return TombstoneRecord[ID_T](
             is_deprecated=True,
             deprecated_at=timestamp,

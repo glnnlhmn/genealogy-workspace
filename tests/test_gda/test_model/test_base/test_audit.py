@@ -1,7 +1,6 @@
-# Name: test_audit.py
-# Path: tests/test_gda/test_model/test_base/test_audit.py
+"""Path: tests/test_gda/test_model/test_base/test_audit.py
 
-"""Comprehensive test suite verifying AuditStamp invariants and transitions.
+Comprehensive test suite verifying AuditStamp invariants and transitions.
 
 Operational Role:
     Verifies that AuditStamp enforces valid ISO timestamps, chronological ordering,
@@ -19,11 +18,11 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.errors import AtomFormatError
 from gda.model.base.audit import AuditStamp
 
-__version__ = "1.0.0+build.r2"
+__version__ = "1.0.0+build.3"
 
 
 # ==============================================================================
@@ -53,11 +52,11 @@ def test_audit_stamp_valid_creation() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_audit_stamp_chronological_inversion_raises_error() -> None:
-    """Verify AuditStamp raises AtomFormatError if updated_at precedes created_at."""
+    """Verify AuditStamp raises ModelFormatError if updated_at precedes created_at."""
     t1 = IsoTimestamp("2026-10-16T14:00:00Z")
     t2 = IsoTimestamp("2026-10-16T12:00:00Z")
 
-    with pytest.raises(AtomFormatError, match="cannot precede created_at"):
+    with pytest.raises(ModelFormatError, match="cannot precede created_at"):
         AuditStamp(created_at=t1, updated_at=t2)
 
 

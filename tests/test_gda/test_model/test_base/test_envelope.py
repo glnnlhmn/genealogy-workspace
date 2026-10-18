@@ -1,7 +1,6 @@
-# Name: test_envelope.py
-# Path: tests/test_gda/test_model/test_base/test_envelope.py
+"""Path: tests/test_gda/test_model/test_base/test_envelope.py
 
-"""Comprehensive test suite verifying generic RegistryEnvelope contracts.
+Comprehensive test suite verifying generic RegistryEnvelope contracts.
 
 Operational Role:
     Verifies that RegistryEnvelope validates non-empty schema version strings,
@@ -20,12 +19,12 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.errors import AtomFormatError
 from gda.model.atom.id import IndividualID
 from gda.model.base.envelope import RegistryEnvelope
 
-__version__ = "1.0.0+build.r2"
+__version__ = "1.0.0+build.3"
 
 
 # ==============================================================================
@@ -64,9 +63,9 @@ def test_registry_envelope_valid_creation() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_registry_envelope_empty_schema_version_raises_error() -> None:
-    """Verify RegistryEnvelope raises AtomFormatError on empty schema_version."""
+    """Verify RegistryEnvelope raises ModelFormatError on empty schema_version."""
     ts = IsoTimestamp("2026-10-16T12:00:00Z")
-    with pytest.raises(AtomFormatError, match="schema_version cannot be empty"):
+    with pytest.raises(ModelFormatError, match="schema_version cannot be empty"):
         RegistryEnvelope(
             schema_version="",
             last_modified=ts,
@@ -78,11 +77,11 @@ def test_registry_envelope_empty_schema_version_raises_error() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_registry_envelope_count_mismatch_raises_error() -> None:
-    """Verify RegistryEnvelope raises AtomFormatError when total_count != len(records)."""
+    """Verify RegistryEnvelope raises ModelFormatError when total_count != len(records)."""
     ts = IsoTimestamp("2026-10-16T12:00:00Z")
     records = [IndividualID("IND-000001")]
 
-    with pytest.raises(AtomFormatError, match="total_count mismatch"):
+    with pytest.raises(ModelFormatError, match="total_count mismatch"):
         RegistryEnvelope(
             schema_version="1.0.0",
             last_modified=ts,

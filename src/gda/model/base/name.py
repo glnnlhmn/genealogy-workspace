@@ -1,51 +1,123 @@
-# Name: name.py
-# Path: src/gda/model/base/name.py
+"""Path: src/gda/model/base/name.py
 
-"""Canonical personal name model using Pydantic dataclasses.
+Canonical personal, jurisdictional, and historical naming representations.
 
 Operational Role:
-    Defines the structured personal name representation ('CanonicalNameModel')
-    for individuals across the Genealogy Digital Archive (GDA). Preserves
-    verbatim raw names while breaking down given, middle, surname, suffix,
-    and maiden names.
+    Defines foundational naming models across the digital archive. Provides
+    CanonicalName for individual genealogical personas, and HistoricalName
+    with NameStatus for evolutionary naming across civil jurisdictions,
+    physical sites, and custodial repositories.
 
-Architecture:
-    - CanonicalNameModel: Pydantic dataclass validating personal name segments.
+Classes:
+    NameStatus: Historical and genealogical naming status classifications.
+    HistoricalName: Temporal naming assertion for jurisdictions, sites, and venues.
+    CanonicalName: Structured personal name preserving raw string and components.
 """
 
 from __future__ import annotations
 
-from pydantic import ConfigDict
+from enum import StrEnum
+
+from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.logging import GDALogger
-from gda.model.atom.errors import AtomFormatError
+from gda.model.base.time_period import TimePeriod
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.2"
 
-_logger = GDALogger(__name__)
+
+class NameStatus(StrEnum):
+    """Archival and genealogical status classifications for jurisdictional and site names."""
+
+    PRIMARY = "PRIMARY"
+    HISTORICAL = "HISTORICAL"
+    COLLOQUIAL = "COLLOQUIAL"
+    INDIGENOUS = "INDIGENOUS"
+    COLONIAL = "COLONIAL"
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
-class CanonicalNameModel(IntrospectableMixin):
-    """Structured personal name model preserving verbatim string and parsed components."""
+class HistoricalName(IntrospectableMixin):
+    """Temporal and evolutionary naming record for jurisdictions, sites, and venues."""
 
-    raw_name: str
-    given: str | None = None
-    middle: str | None = None
-    surname: str | None = None
-    suffix: str | None = None
-    maiden_name: str | None = None
+    raw_name: str = Field(
+        ..., description="Verbatim historical name as recorded in sources."
+    )
+    canonical_name: str | None = Field(
+        default=None, description="Standardized, modern or normalized variant."
+    )
+    status: NameStatus = Field(
+        default=NameStatus.HISTORICAL, description="Archival naming classification."
+    )
+    valid_period: TimePeriod | None = Field(
+        default=None, description="Optional temporal bounds when this name was active."
+    )
+    alternate_spellings: list[str] = Field(
+        default_factory=list,
+        description="Phonetic, vernacular, or transcription spellings.",
+    )
+    notes: str | None = Field(
+        default=None, description="Archival justification or etymological notes."
+    )
 
     def __post_init__(self) -> None:
-        if not self.raw_name.strip():
-            err_msg = "CanonicalNameModel raw_name cannot be empty or whitespace."
-            _logger.debug("CanonicalNameModel raw_name validation failed")
-            raise AtomFormatError(err_msg, details={"raw_name": self.raw_name})
+        """Enforce domain naming invariants."""
+        if not self.raw_name or not self.raw_name.strip():
+            raise ModelFormatError(
+                "HistoricalName 'raw_name' cannot be empty or whitespace."
+            )
+
+        if self.canonical_name is not None and not self.canonical_name.strip():
+            raise ModelFormatError(
+                "HistoricalName 'canonical_name' cannot be empty or whitespace if provided."
+            )
+
+        if len(self.alternate_spellings) != len(set(self.alternate_spellings)):
+            raise ModelFormatError("Duplicate entries found in alternate_spellings.")
+
+    @property
+    def display_name(self) -> str:
+        """Return standardized canonical name if available, falling back to raw name."""
+        return self.canonical_name if self.canonical_name else self.raw_name
+
+    def __str__(self) -> str:
+        """Render concise human-readable historical name description."""
+        if self.valid_period:
+            return f"{self.display_name} ({self.status.value}: {self.valid_period})"
+        return f"{self.display_name} ({self.status.value})"
+
+
+@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+class CanonicalName(IntrospectableMixin):
+    """Structured personal name preserving verbatim string and parsed components."""
+
+    raw_name: str = Field(
+        ..., description="Verbatim personal name as recorded in source."
+    )
+    given: str | None = Field(default=None, description="Given or first name.")
+    middle: str | None = Field(default=None, description="Middle name or initial.")
+    surname: str | None = Field(
+        default=None, description="Patronymic or family surname."
+    )
+    suffix: str | None = Field(
+        default=None, description="Generational or honorific suffix."
+    )
+    maiden_name: str | None = Field(
+        default=None, description="Birth or un-married surname."
+    )
+
+    def __post_init__(self) -> None:
+        """Validate naming invariants."""
+        if not self.raw_name or not self.raw_name.strip():
+            raise ModelFormatError(
+                "CanonicalName 'raw_name' cannot be empty or whitespace."
+            )
 
     @property
     def full_name(self) -> str:
+        """Construct structured personal name string from present components."""
         parts: list[str] = []
         if self.given:
             parts.append(self.given)
@@ -55,17 +127,8 @@ class CanonicalNameModel(IntrospectableMixin):
             parts.append(self.surname)
         if self.suffix:
             parts.append(self.suffix)
-
-        if parts:
-            return " ".join(parts)
-        return self.raw_name
+        return " ".join(parts) if parts else self.raw_name
 
     def __str__(self) -> str:
+        """Return full structured personal name representation."""
         return self.full_name
-
-    def __repr__(self) -> str:
-        return (
-            f"CanonicalNameModel(raw_name='{self.raw_name}', given={self.given!r}, "
-            f"middle={self.middle!r}, surname={self.surname!r}, "
-            f"suffix={self.suffix!r}, maiden_name={self.maiden_name!r})"
-        )

@@ -1,13 +1,11 @@
-# Name: envelope.py
-# Path: src/gda/model/base/envelope.py
+"""Path: src/gda/model/base/envelope.py
 
-"""Administrative collection envelope model using Pydantic dataclasses.
+Administrative collection envelope using Pydantic dataclasses.
 
 Operational Role:
     Defines the top-level container envelope ('RegistryEnvelope[T]') for master
-    entity datasets (individuals.json, facts.json, locations.json, sites.json)
-    in the Genealogy Digital Archive (GDA). Enforces schema version tracking,
-    audit modification timestamps, and strict item-count integrity.
+    entity datasets. Enforces schema version tracking, audit modification
+    timestamps, and strict item-count integrity.
 
 Architecture:
     - RegistryEnvelope[T]: Generic Pydantic dataclass validating dataset envelopes.
@@ -18,12 +16,12 @@ from __future__ import annotations
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.errors import AtomFormatError
 
-__version__ = "1.0.0+build.r2"
+__version__ = "1.0.0+build.3"
 
 _logger = GDALogger(__name__)
 
@@ -41,7 +39,7 @@ class RegistryEnvelope[T](IntrospectableMixin):
         if not self.schema_version.strip():
             err_msg = "RegistryEnvelope schema_version cannot be empty."
             _logger.debug("RegistryEnvelope validation failed: empty schema_version")
-            raise AtomFormatError(err_msg, details={"field": "schema_version"})
+            raise ModelFormatError(err_msg, details={"field": "schema_version"})
 
         if self.total_count != len(self.records):
             err_msg = (
@@ -52,7 +50,7 @@ class RegistryEnvelope[T](IntrospectableMixin):
                 "RegistryEnvelope total_count mismatch",
                 details={"declared": self.total_count, "actual": len(self.records)},
             )
-            raise AtomFormatError(
+            raise ModelFormatError(
                 err_msg,
                 details={"declared": self.total_count, "actual": len(self.records)},
             )
