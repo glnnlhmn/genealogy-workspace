@@ -1,0 +1,778 @@
+{
+  "_path": "gda_profile.json",
+  "_name": "gda_profile.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "name": "Genealogy Digital Archive System Profile",
+  "profile_version": "1.4.0",
+  "last_updated": "2026-10-19T11:15:00Z",
+  "root_anchor": "G:/My Drive/genealogy-workspace",
+  "runtime": "Python 3.13 (.venv)",
+  "quality_gates": {
+    "system_coverage_threshold": 100.0,
+    "framework_coverage_threshold": 95.0,
+    "max_line_length": 100,
+    "linter": "ruff"
+  },
+  "estimation_framework": {
+    "unit": "Story Points",
+    "scale": "Modified Fibonacci (1, 2, 3, 5, 8, 13)",
+    "definition_of_done": "Develop -> Unit/Integration Test (>= 95% cov) -> Package README.md Update -> Git Push"
+  },
+  "active_sprint": {
+    "sprint_id": "sprint_1",
+    "title": "Core Cross-References, Entity Collections & Military Records",
+    "status": "ACTIVE",
+    "total_story_points": 11.0,
+    "task_ids": [501, 502, 503, 505]
+  },
+  "groups": {
+    "system": {
+      "name": "System Administration & Automation",
+      "path": "src/system/",
+      "test_path": "tests/test_system/",
+      "subgroups": {}
+    },
+    "core": {
+      "name": "Core Primitives & Introspection",
+      "path": "src/gda/core/",
+      "test_path": "tests/test_gda/test_core/",
+      "subgroups": {}
+    },
+    "enums": {
+      "name": "Authoritative Enumeration Domains",
+      "path": "src/gda/enums/",
+      "test_path": "tests/test_gda/test_enums/",
+      "subgroups": {}
+    },
+    "io": {
+      "name": "I/O, Safe Backup & Persistence",
+      "path": "src/gda/io/",
+      "test_path": "tests/test_gda/test_io/",
+      "subgroups": {}
+    },
+    "types": {
+      "name": "Data Types & Primitives",
+      "path": "src/gda/types/",
+      "test_path": "tests/test_gda/test_types/",
+      "subgroups": {}
+    },
+    "util": {
+      "name": "Utility Algorithms & Sanitizers",
+      "path": "src/gda/util/",
+      "test_path": "tests/test_gda/test_util/",
+      "subgroups": {}
+    },
+    "entity": {
+      "name": "Entity Collections & In-Memory Repositories",
+      "path": "src/gda/entity/",
+      "test_path": "tests/test_gda/test_entity/",
+      "subgroups": {
+        "collections": {
+          "name": "Typed Domain Entity Collections",
+          "path": "src/gda/entity/",
+          "test_path": "tests/test_gda/test_entity/"
+        }
+      }
+    },
+    "model": {
+      "name": "Domain Entity Models & Schema Layer",
+      "path": "src/gda/model/",
+      "test_path": "tests/test_gda/test_model/",
+      "subgroups": {
+        "atom": {
+          "name": "Atomic Value Objects",
+          "path": "src/gda/model/atom/",
+          "test_path": "tests/test_gda/test_model/test_atom/"
+        },
+        "base": {
+          "name": "Composite Base Records",
+          "path": "src/gda/model/base/",
+          "test_path": "tests/test_gda/test_model/test_base/"
+        },
+        "entity": {
+          "name": "Canonical Domain Entities",
+          "path": "src/gda/model/entity/",
+          "test_path": "tests/test_gda/test_model/test_entity/"
+        },
+        "xref": {
+          "name": "Cross-Reference Resolution",
+          "path": "src/gda/model/xref/",
+          "test_path": "tests/test_gda/test_model/test_xref/"
+        },
+        "vital": {
+          "name": "Specialized Vital Records",
+          "path": "src/gda/model/vital/",
+          "test_path": "tests/test_gda/test_model/test_vital/"
+        },
+        "military": {
+          "name": "Military & Conscription Records",
+          "path": "src/gda/model/military/",
+          "test_path": "tests/test_gda/test_model/test_military/"
+        },
+        "orgs": {
+          "name": "Organizational Affiliation Records",
+          "path": "src/gda/model/orgs/",
+          "test_path": "tests/test_gda/test_model/test_orgs/"
+        },
+        "media": {
+          "name": "Media Asset Models",
+          "path": "src/gda/model/media/",
+          "test_path": "tests/test_gda/test_model/test_media/"
+        },
+        "enumerated": {
+          "name": "Census Enumeration Models",
+          "path": "src/gda/model/enumerated/",
+          "test_path": "tests/test_gda/test_model/test_enumerated/"
+        }
+      }
+    },
+    "engine": {
+      "name": "Kinship & Plausibility Engines",
+      "path": "src/gda/engine/",
+      "test_path": "tests/test_gda/test_engine/",
+      "subgroups": {
+        "kinship": {
+          "name": "Kinship Graph Engine",
+          "path": "src/gda/engine/kinship/",
+          "test_path": "tests/test_gda/test_engine/test_kinship/"
+        },
+        "plausibility": {
+          "name": "Biological & Historical Plausibility",
+          "path": "src/gda/engine/plausibility/",
+          "test_path": "tests/test_gda/test_engine/test_plausibility/"
+        }
+      }
+    },
+    "manager": {
+      "name": "Reference & Vocabulary Governance",
+      "path": "src/gda/manager/",
+      "test_path": "tests/test_gda/test_manager/",
+      "subgroups": {
+        "referencer": {
+          "name": "Reference & URN Minting",
+          "path": "src/gda/manager/referencer/",
+          "test_path": "tests/test_gda/test_manager/test_referencer/"
+        },
+        "vocab": {
+          "name": "Controlled Vocabulary Registry",
+          "path": "src/gda/manager/vocab/",
+          "test_path": "tests/test_gda/test_manager/test_vocab/"
+        }
+      }
+    },
+    "cli": {
+      "name": "Operational CLI Interface",
+      "path": "src/cli/",
+      "test_path": "tests/test_cli/",
+      "subgroups": {
+        "commands": {
+          "name": "CLI Command Orchestrators",
+          "path": "src/cli/commands/",
+          "test_path": "tests/test_cli/test_commands/"
+        },
+        "formatters": {
+          "name": "Terminal Output Formatters",
+          "path": "src/cli/formatters/",
+          "test_path": "tests/test_cli/test_formatters/"
+        }
+      }
+    },
+    "ancestry_desk": {
+      "name": "AncestryDesk Desktop Application",
+      "path": "src/ancestry_desk/",
+      "test_path": "tests/test_ancestry_desk/",
+      "subgroups": {
+        "controllers": {
+          "name": "Application Controllers",
+          "path": "src/ancestry_desk/controllers/",
+          "test_path": "tests/test_ancestry_desk/test_controllers/"
+        },
+        "views": {
+          "name": "UI Views & Panels",
+          "path": "src/ancestry_desk/views/",
+          "test_path": "tests/test_ancestry_desk/test_views/"
+        },
+        "state": {
+          "name": "Desktop Application State",
+          "path": "src/ancestry_desk/state/",
+          "test_path": "tests/test_ancestry_desk/test_state/"
+        }
+      }
+    }
+  },
+  "index_by_bin": {
+    "completed": [
+      101, 102, 103, 201, 202, 203, 204, 301, 302, 303, 304, 305, 306, 307,
+      308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321,
+      322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 401,
+      402, 403, 404, 405
+    ],
+    "active_sprint": [
+      501, 502, 503, 505
+    ],
+    "backlog": [
+      504, 506, 507, 508, 601, 602, 701, 702, 801, 802, 901, 902, 903
+    ]
+  },
+  "completed": [
+    {
+      "task_id": 101,
+      "group": "system",
+      "subgroup": null,
+      "title": "Implement GSI script intake pipeline",
+      "description": "Constructed gsi.py for in-docstring metadata extraction and atomic Safe Backups.",
+      "completed_at": "2026-10-15T00:00:00Z"
+    },
+    {
+      "task_id": 102,
+      "group": "system",
+      "subgroup": null,
+      "title": "Implement directory topology verifier",
+      "description": "Constructed check_structure.py enforcing PEP 518/621 directory boundaries.",
+      "completed_at": "2026-10-15T00:00:00Z"
+    },
+    {
+      "task_id": 103,
+      "group": "system",
+      "subgroup": null,
+      "title": "Implement Git hook automation",
+      "description": "Constructed pre-commit hook runner and install_hooks.py installer.",
+      "completed_at": "2026-10-15T00:00:00Z"
+    },
+    {
+      "task_id": 201,
+      "group": "core",
+      "subgroup": null,
+      "title": "Build canonical error taxonomy",
+      "description": "Defined GDA root exception hierarchy and serialization error classes.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 202,
+      "group": "core",
+      "subgroup": null,
+      "title": "Implement Pydantic configuration engine",
+      "description": "Configured immutable settings parsing and path resolvers.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 203,
+      "group": "core",
+      "subgroup": null,
+      "title": "Implement dual-pipeline structured logging",
+      "description": "Built rotating JSON/console log handlers with context formatting.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 204,
+      "group": "core",
+      "subgroup": null,
+      "title": "Implement IntrospectableMixin",
+      "description": "Provided interactive class discovery and docstring inspection via .help().",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 301,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Implement foundational core enums",
+      "description": "Implemented Sex, FactType, QuayScore, AssociatedRole, and quality metrics.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 302,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Implement vital and relational enums",
+      "description": "Defined UnionType, MannerOfDeath, PedigreeType, and marital statuses.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 303,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Implement spatial site and jurisdiction enums",
+      "description": "Standardized LocationType, SiteType, MarkerType, and OperationalStatus.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 304,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Implement archival document and source enums",
+      "description": "Defined SourceRecordCategory, SourceRecordType, and CensusYear schedules.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 305,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Implement fiscal and property enums",
+      "description": "Constructed TaxpayerClassification, HomeOwnership, and residential statuses.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 306,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Implement archival notes and format enums",
+      "description": "Constructed NoteType, NoteCategory, DocumentSide, and legibility ratings.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 307,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Harmonize core enums uppercase tokens",
+      "description": "Standardized FactType, AssociatedRole, and QuayScore aliases.",
+      "completed_at": "2026-10-19T00:00:00Z"
+    },
+    {
+      "task_id": 308,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Modularize enum test suites",
+      "description": "Split test_enums.py into 1:1 module-aligned test files achieving 100% branch coverage.",
+      "completed_at": "2026-10-19T00:00:00Z"
+    },
+    {
+      "task_id": 309,
+      "group": "enums",
+      "subgroup": null,
+      "title": "Centralize NameStatus classification",
+      "description": "Added onomastic NameStatus enum to vital.py and resolved name model dependencies.",
+      "completed_at": "2026-10-19T00:00:00Z"
+    },
+    {
+      "task_id": 310,
+      "group": "model",
+      "subgroup": "atom",
+      "title": "Implement atomic Date models",
+      "description": "Constructed DateString, EventDate, and IsoTimestamp with ISO 8601 parsing.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 311,
+      "group": "model",
+      "subgroup": "atom",
+      "title": "Implement atomic ID primitives",
+      "description": "Implemented prefixed identifiers (IND, FAM, FID, SID, LOC) and UUIDv4 validation.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 312,
+      "group": "model",
+      "subgroup": "atom",
+      "title": "Implement geographic point models",
+      "description": "Implemented GeoPoint, Latitude, Longitude, and coordinate precision bounding.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 313,
+      "group": "model",
+      "subgroup": "atom",
+      "title": "Implement scalar primitives",
+      "description": "Built bounded integer and float scalar types for genealogical records.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 314,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement AuditStamp model",
+      "description": "Constructed immutable created_at and updated_at tracking stamps.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 315,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement TombstoneRecord model",
+      "description": "Constructed deprecation and supersession metadata containers.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 316,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement BaseEntity protocol",
+      "description": "Established root dataclass inheritance structure with audit and tombstone fields.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 317,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Name and Onomastic models",
+      "description": "Constructed PersonName and name component models using NameStatus.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 318,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement SourceReference citation model",
+      "description": "Built evidentiary citation binding linking entities to SourceID and QuayScore.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 319,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement TimePeriod duration model",
+      "description": "Constructed bounded start and end temporal range structures.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 320,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Address model",
+      "description": "Constructed postal and historical street address structures.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 321,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Age representation model",
+      "description": "Built historical recorded age representations with months/days support.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 322,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Association link model",
+      "description": "Constructed non-familial associative links with role taxonomies.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 323,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Envelope wrapper model",
+      "description": "Built serialization payload envelopes for API and export tiers.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 324,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement FamilyBase record model",
+      "description": "Constructed base family relation structures.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 325,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Media record model",
+      "description": "Built digital asset metadata and mime-type binding structures.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 326,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Note model",
+      "description": "Constructed archival research note structures.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 327,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement RecordMetadata model",
+      "description": "Built provenance and archival capture metadata records.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 328,
+      "group": "model",
+      "subgroup": "base",
+      "title": "Implement Transcript record model",
+      "description": "Constructed documentary textual extract models.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 329,
+      "group": "model",
+      "subgroup": "entity",
+      "title": "Implement Individual domain entity",
+      "description": "Constructed primary individual persona entity with name, sex, and link collections.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 330,
+      "group": "model",
+      "subgroup": "entity",
+      "title": "Implement Family domain entity",
+      "description": "Constructed family domestic relationship entity with spouse and child linkages.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 331,
+      "group": "model",
+      "subgroup": "entity",
+      "title": "Implement Location domain entity",
+      "description": "Constructed jurisdictional geographic anchor entity.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 332,
+      "group": "model",
+      "subgroup": "entity",
+      "title": "Implement Fact domain entity",
+      "description": "Implemented Fact and FactParticipant with FID- validation, URN checks, and 100% branch coverage.",
+      "completed_at": "2026-10-19T00:00:00Z"
+    },
+    {
+      "task_id": 333,
+      "group": "model",
+      "subgroup": "entity",
+      "title": "Implement Site domain entity",
+      "description": "Constructed micro-physical facility and cemetery site entity.",
+      "completed_at": "2026-10-18T00:00:00Z"
+    },
+    {
+      "task_id": 334,
+      "group": "types",
+      "subgroup": null,
+      "title": "Implement primitive type bindings",
+      "description": "Defined framework scalar primitives and custom Pydantic validators.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 401,
+      "group": "io",
+      "subgroup": null,
+      "title": "Implement atomic filesystem staging",
+      "description": "Constructed atomic write operations using temporary file renaming.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 402,
+      "group": "io",
+      "subgroup": null,
+      "title": "Implement Safe Backup Protocol",
+      "description": "Built automated pre-execution snapshot mechanism into archive/backups_gda/.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 403,
+      "group": "io",
+      "subgroup": null,
+      "title": "Implement JSON serialization engine",
+      "description": "Constructed UTF-8 JSON encoder and decoder with Pydantic serialization.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 404,
+      "group": "io",
+      "subgroup": null,
+      "title": "Implement Text read/write handlers",
+      "description": "Built line-ending preserving UTF-8 text file handlers.",
+      "completed_at": "2026-10-16T00:00:00Z"
+    },
+    {
+      "task_id": 405,
+      "group": "util",
+      "subgroup": null,
+      "title": "Implement phonetics and text utility algorithms",
+      "description": "Constructed Soundex, NYSIIS, and whitespace normalization utilities.",
+      "completed_at": "2026-10-17T00:00:00Z"
+    }
+  ],
+  "active_sprint_tasks": [
+    {
+      "task_id": 501,
+      "group": "model",
+      "subgroup": "xref",
+      "title": "Implement entity cross-reference resolver",
+      "description": "Build bidirectional graph cross-reference resolver linking Individual, Family, Fact, and SourceReference with 1:1 tests.",
+      "priority": "HIGH",
+      "sprint": "sprint_1",
+      "estimate": 3.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 502,
+      "group": "model",
+      "subgroup": "xref",
+      "title": "Implement media cross-reference indexer",
+      "description": "Construct resolution logic and unit tests for media_xref.py across archival items.",
+      "priority": "MEDIUM",
+      "sprint": "sprint_1",
+      "estimate": 2.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 503,
+      "group": "entity",
+      "subgroup": "collections",
+      "title": "Implement in-memory Entity Collections",
+      "description": "Construct typed repository containers for Individual, Family, Fact, Location, and Site with tombstone filtering and key lookups.",
+      "priority": "HIGH",
+      "sprint": "sprint_1",
+      "estimate": 3.5,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 505,
+      "group": "model",
+      "subgroup": "military",
+      "title": "Implement military service & conscription models",
+      "description": "Construct military service records, muster entries, and draft registration card structures with full test coverage.",
+      "priority": "MEDIUM",
+      "sprint": "sprint_1",
+      "estimate": 2.5,
+      "estimate_status": "CONSENSUS"
+    }
+  ],
+  "backlog": [
+    {
+      "task_id": 504,
+      "group": "model",
+      "subgroup": "vital",
+      "title": "Implement specialized vital record models",
+      "description": "Construct models and tests for civil registrations, birth certificates, death returns, and marriage licenses.",
+      "priority": "MEDIUM",
+      "target_sprint": 2,
+      "estimate": 2.5,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 506,
+      "group": "model",
+      "subgroup": "orgs",
+      "title": "Implement organizational affiliation models",
+      "description": "Construct fraternal organization, church parish, and civic membership record models with tests.",
+      "priority": "LOW",
+      "target_sprint": 3,
+      "estimate": 2.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 507,
+      "group": "model",
+      "subgroup": "media",
+      "title": "Implement media asset & digital provenance models",
+      "description": "Construct models and tests binding physical scan assets, image metadata, and checksum integrity.",
+      "priority": "LOW",
+      "target_sprint": 3,
+      "estimate": 2.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 508,
+      "group": "model",
+      "subgroup": "enumerated",
+      "title": "Implement census enumeration district models",
+      "description": "Construct models and tests representing enumeration districts, visitation orders, and census schedule headings.",
+      "priority": "LOW",
+      "target_sprint": 3,
+      "estimate": 2.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 601,
+      "group": "manager",
+      "subgroup": "referencer",
+      "title": "Implement reference URN minting manager",
+      "description": "Construct ReferenceManager to govern canonical URN lookup, validation, prefix minting, and comprehensive test suite.",
+      "priority": "HIGH",
+      "target_sprint": 2,
+      "estimate": 2.5,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 602,
+      "group": "manager",
+      "subgroup": "vocab",
+      "title": "Implement controlled vocabulary manager",
+      "description": "Build dynamic registry governance detecting enum drift and taxonomy validation with test harness.",
+      "priority": "MEDIUM",
+      "target_sprint": 2,
+      "estimate": 2.5,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 701,
+      "group": "engine",
+      "subgroup": "kinship",
+      "title": "Implement kinship graph resolution engine",
+      "description": "Construct pedigree graph traversals, Ahnentafel indexers, relationship matrix calculators, and test suites.",
+      "priority": "HIGH",
+      "target_sprint": 3,
+      "estimate": 6.5,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 702,
+      "group": "engine",
+      "subgroup": "plausibility",
+      "title": "Implement biological & chronological plausibility engine",
+      "description": "Construct validation guards enforcing birth-before-death, parent age bounds, generational plausibility, and tests.",
+      "priority": "HIGH",
+      "target_sprint": 3,
+      "estimate": 4.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 801,
+      "group": "cli",
+      "subgroup": "commands",
+      "title": "Implement operational CLI command orchestrators",
+      "description": "Construct CLI entry points under src/cli/commands/ for database verification, GSI checks, and record extraction with CLI tests.",
+      "priority": "MEDIUM",
+      "target_sprint": 4,
+      "estimate": 6.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 802,
+      "group": "cli",
+      "subgroup": "formatters",
+      "title": "Implement terminal formatting layer",
+      "description": "Construct rich ANSI terminal formatters, summary tables under src/cli/formatters/, and formatting tests.",
+      "priority": "LOW",
+      "target_sprint": 4,
+      "estimate": 4.0,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 901,
+      "group": "ancestry_desk",
+      "subgroup": "state",
+      "title": "Implement desktop application state manager",
+      "description": "Construct reactive state container under src/ancestry_desk/state/ for desktop workspace with test harness.",
+      "priority": "LOW",
+      "target_sprint": 5,
+      "estimate": 6.5,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 902,
+      "group": "ancestry_desk",
+      "subgroup": "controllers",
+      "title": "Implement desktop workspace controllers",
+      "description": "Build controller logic mediating between GDA domain models and desktop views with test harness.",
+      "priority": "LOW",
+      "target_sprint": 5,
+      "estimate": 6.5,
+      "estimate_status": "CONSENSUS"
+    },
+    {
+      "task_id": 903,
+      "group": "ancestry_desk",
+      "subgroup": "views",
+      "title": "Implement desktop graphical views",
+      "description": "Build user interface panels, tree renderers under src/ancestry_desk/views/, and visual component tests.",
+      "priority": "LOW",
+      "target_sprint": 5,
+      "estimate": 8.0,
+      "estimate_status": "CONSENSUS"
+    }
+  ]
+}
