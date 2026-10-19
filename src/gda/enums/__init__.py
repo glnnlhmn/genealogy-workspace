@@ -1,7 +1,7 @@
-# Name: __init__.py
-# Path: src/gda/enums/__init__.py
+"""Path: src/gda/enums/__init__.py
 
-"""Authoritative controlled enumerations across the digital archive framework."""
+Authoritative controlled enumerations across the digital archive framework.
+"""
 
 from __future__ import annotations
 
@@ -55,10 +55,13 @@ from gda.enums.vital import (
     MannerOfDeath,
     MaritalHistoryDissolution,
     MaritalStatus,
-    UnionStatus,
+    NameStatus,
+    PedigreeType,
+    UnionDissolutionType,
+    UnionType,
 )
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.1.0+build.r2"
 
 __all__ = [
     # Archival
@@ -106,5 +109,8 @@ __all__ = [
     "MannerOfDeath",
     "MaritalHistoryDissolution",
     "MaritalStatus",
-    "UnionStatus",
+    "PedigreeType",
+    "UnionDissolutionType",
+    "UnionType",
+    "NameStatus",
 ]

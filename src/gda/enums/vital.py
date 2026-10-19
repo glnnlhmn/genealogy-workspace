@@ -1,13 +1,13 @@
-# Name: vital.py
-# Path: src/gda/enums/vital.py
+"""Path: src/gda/enums/vital.py
 
-"""Demographic statuses, vital event assertions, and domestic relations enums."""
+Demographic statuses, vital event assertions, and domestic relations enums.
+"""
 
 from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.1.0+build.4"
 
 __all__ = [
     "BirthPlurality",
@@ -17,21 +17,42 @@ __all__ = [
     "MannerOfDeath",
     "MaritalHistoryDissolution",
     "MaritalStatus",
-    "UnionStatus",
+    "PedigreeType",
+    "UnionDissolutionType",
+    "UnionType",
+    "NameStatus",
 ]
 
 
-class UnionStatus(StrEnum):
-    """Legal, domestic, or biological partnership status."""
+class UnionType(StrEnum):
+    """Classification of union or domestic partnership inception."""
 
     MARRIED = "MARRIED"
-    DIVORCED = "DIVORCED"
-    ANNULLED = "ANNULLED"
-    SEPARATED = "SEPARATED"
     COMMON_LAW = "COMMON_LAW"
-    WIDOWED = "WIDOWED"
-    PARTNER = "PARTNER"
+    CIVIL_UNION = "CIVIL_UNION"
+    INFORMAL = "INFORMAL"
     UNKNOWN = "UNKNOWN"
+
+
+class UnionDissolutionType(StrEnum):
+    """Classification of union dissolution, separation, or termination."""
+
+    DIVORCE = "DIVORCE"
+    ANNULMENT = "ANNULMENT"
+    SEPARATION = "SEPARATION"
+    DEATH = "DEATH"
+    DESERTION = "DESERTION"
+    UNKNOWN = "UNKNOWN"
+
+
+class PedigreeType(StrEnum):
+    """Lineage pedigree classification connecting a child to a family unit."""
+
+    BIRTH = "Birth"
+    ADOPTED = "Adopted"
+    STEP = "Step"
+    FOSTER = "Foster"
+    UNKNOWN = "Unknown"
 
 
 class MaritalStatus(StrEnum):
@@ -100,3 +121,13 @@ class MaritalHistoryDissolution(StrEnum):
     DIVORCE = "Divorce"
     ANNULMENT = "Annulment"
     NONE = "None"
+
+
+class NameStatus(StrEnum):
+    """Functional classification of historical personal names and cultural contexts."""
+
+    PRIMARY = "PRIMARY"
+    HISTORICAL = "HISTORICAL"
+    COLLOQUIAL = "COLLOQUIAL"
+    COLONIAL = "COLONIAL"
+    INDIGENOUS = "INDIGENOUS"

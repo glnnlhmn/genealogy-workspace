@@ -1,12 +1,11 @@
-# Name: conftest.py
-# Path: tests/test_gda/test_enums/conftest.py
+"""Path: tests/test_gda/test_enums/conftest.py
 
-"""Shared pytest fixtures for the gda.enums verification suite.
+Shared pytest fixtures for the gda.enums verification suite.
 
 Operational Role:
     Supplies handcrafted in-memory fixtures including comprehensive enum class
-    registries and Pydantic validation harness models for testing serialization,
-    coercion, and rejection boundaries without disk I/O.
+    registries, alias-aware helpers, and Pydantic validation harness models for
+    testing serialization, coercion, and rejection boundaries without disk I/O.
 """
 
 from __future__ import annotations
@@ -19,7 +18,7 @@ from pydantic import BaseModel
 
 import gda.enums as ge
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.1"
 
 
 @pytest.fixture(scope="session")
@@ -46,8 +45,9 @@ class SampleEnumModel(BaseModel):
     census_year: ge.CensusYear
 
     # Vital
-    union_status: ge.UnionStatus
+    union_type: ge.UnionType = ge.UnionType.UNKNOWN
     manner_of_death: ge.MannerOfDeath
+    name_status: ge.NameStatus = ge.NameStatus.PRIMARY
 
     # Site
     location_type: ge.LocationType
@@ -76,11 +76,12 @@ def valid_enum_payload() -> dict[str, Any]:
     return {
         "sex": "M",
         "quay": 3,
-        "fact_type": "Birth",
+        "fact_type": "BIRTH",
         "record_cat": "VITAL",
         "census_year": 1880,
-        "union_status": "MARRIED",
+        "union_type": "MARRIED",
         "manner_of_death": "Natural",
+        "name_status": "PRIMARY",
         "location_type": "COUNTY",
         "site_type": "CEMETERY",
         "note_type": "RESEARCH",

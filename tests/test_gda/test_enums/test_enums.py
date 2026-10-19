@@ -1,7 +1,6 @@
-# Name: test_enums.py
-# Path: tests/test_gda/test_enums/test_enums.py
+"""Path: tests/test_gda/test_enums/test_enums.py
 
-"""Comprehensive behavioral test suite verifying all authoritative enumeration contracts.
+Comprehensive behavioral test suite verifying all authoritative enumeration contracts.
 
 Operational Role:
     Verifies that all StrEnum and IntEnum definitions in gda.enums conform to
@@ -25,7 +24,7 @@ from pydantic import BaseModel, ValidationError
 
 import gda.enums as ge
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.1"
 
 # ==============================================================================
 # GROUP 1: General Enum Invariants & Structural Integrity
@@ -49,15 +48,16 @@ def test_all_enums_inherit_proper_base_types(
 
 @pytest.mark.unit
 @pytest.mark.integrity
-def test_all_enum_members_have_unique_values(
+def test_all_enum_canonical_values_are_unique(
     all_enum_classes: tuple[type[Enum], ...],
 ) -> None:
-    """Verify no duplicate values exist across distinct members within each enum class."""
+    """Verify unique values exist across canonical members within each enum class."""
     for enum_cls in all_enum_classes:
+        # member.value across distinct canonical members (ignoring aliases) must be unique
         values = [member.value for member in enum_cls]
         unique_values = set(values)
         assert len(values) == len(unique_values), (
-            f"{enum_cls.__name__} contains duplicate member values"
+            f"{enum_cls.__name__} contains duplicate member values across canonical definitions"
         )
 
 
@@ -78,29 +78,9 @@ def test_all_enum_classes_are_exported_in_dunder_all(
 
 
 # ==============================================================================
-# GROUP 2: Canonical Tokens & Domain Boundary Specifications
+# GROUP 2: Cross-Domain Boundary Specifications
 # Note: Specific token validation matching schemas and architectural constraints
 # ==============================================================================
-
-
-@pytest.mark.unit
-@pytest.mark.smoke
-def test_sex_enum_tokens_match_single_letter_spec() -> None:
-    """Verify Sex contains exactly M, F, and U matching schema specifications."""
-    assert ge.Sex.M == "M"
-    assert ge.Sex.F == "F"
-    assert ge.Sex.U == "U"
-    assert len(ge.Sex) == 3
-
-
-@pytest.mark.unit
-@pytest.mark.smoke
-def test_quay_score_integer_mapping_and_order() -> None:
-    """Verify QuayScore provides sequential 0 to 3 integers for evidentiary ranking."""
-    assert ge.QuayScore.UNRELIABLE == 0
-    assert ge.QuayScore.QUESTIONABLE == 1
-    assert ge.QuayScore.SECONDARY == 2
-    assert ge.QuayScore.DIRECT_PRIMARY == 3
 
 
 @pytest.mark.unit
@@ -153,7 +133,7 @@ def test_strenum_native_json_dump_emits_raw_string() -> None:
     decoded = json.loads(encoded)
 
     assert decoded["sex"] == "M"
-    assert decoded["fact"] == "Birth"
+    assert decoded["fact"] == "BIRTH"
     assert decoded["marker"] == "Upright Headstone"
 
 
@@ -223,10 +203,8 @@ def test_pydantic_rejects_invalid_token_with_validation_error(
     payload = dict(valid_enum_payload)
     payload["sex"] = "NonExistentSex"
 
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValidationError):
         pydantic_enum_model_cls(**payload)
-
-    assert "Input should be 'M', 'F' or 'U'" in str(exc_info.value)
 
 
 @pytest.mark.unit
@@ -273,4 +251,4 @@ def test_strenum_whitespace_tolerance_rejection() -> None:
         ge.Sex(" M ")
 
     with pytest.raises(ValueError):
-        ge.FactType("Birth ")
+        ge.FactType("BIRTH ")

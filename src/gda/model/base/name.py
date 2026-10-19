@@ -16,26 +16,15 @@ Classes:
 
 from __future__ import annotations
 
-from enum import StrEnum
-
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
+from gda.enums.vital import NameStatus
 from gda.model.base.time_period import TimePeriod
 
 __version__ = "1.0.0+build.2"
-
-
-class NameStatus(StrEnum):
-    """Archival and genealogical status classifications for jurisdictional and site names."""
-
-    PRIMARY = "PRIMARY"
-    HISTORICAL = "HISTORICAL"
-    COLLOQUIAL = "COLLOQUIAL"
-    INDIGENOUS = "INDIGENOUS"
-    COLONIAL = "COLONIAL"
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
