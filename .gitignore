@@ -112,9 +112,14 @@ logs/*
 reports/*
 !reports/.gitkeep
 
+
 # ==============================================================================
-# 8. Production Data Store Isolation
+# 8. Production Data Store Isolation & Sensitive Profiles
 # ==============================================================================
 data/
-# Exclude prompt engineering, miplets, and system instructions
-prompts/
+
+# Operator profile isolation
+glenn_profile.json
+
+# Exclude staged evaluation miplets while allowing prompts
+prompts/core/miplets/

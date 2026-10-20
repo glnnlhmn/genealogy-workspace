@@ -62,11 +62,9 @@ pythonpath = ["src"]
 markers = [
     "smoke: Fast sanity checks executed prior to commit (< 5s)",
     "regression: Boundary and defect tests verifying defensive rules",
-    "burnin: Stress tests and large batch operations",
     "integration: Multi-component and filesystem operations",
     "unit: Isolated component tests without disk I/O",
     "integrity: Whole-archive schema and manifest verification",
-    "slow: Tests with execution duration exceeding 2s"
 ]
 
 [tool.coverage.run]
