@@ -7,8 +7,11 @@ from __future__ import annotations
 
 from gda.enums.archival import (
     DocumentSide,
+    EyeColor,
+    HairColor,
     NoteCategory,
     NoteType,
+    PhysicalBuild,
     PublicationFrequency,
     SelectiveServiceClass,
     TestimonyMedium,
@@ -43,6 +46,7 @@ from gda.enums.sources import (
     EducationLevel,
     MilitaryBranch,
     MilitaryConflict,
+    MilitaryDraftType,
     MilitaryWar,
     SourceRecordCategory,
     SourceRecordType,
@@ -73,6 +77,9 @@ __all__ = [
     "TestimonyMedium",
     "TranscriptLegibility",
     "WwiCardType",
+    "PhysicalBuild",
+    "EyeColor",
+    "HairColor",
     # Core
     "AssociatedRole",
     "DateModifier",
@@ -98,6 +105,7 @@ __all__ = [
     "EducationLevel",
     "MilitaryBranch",
     "MilitaryConflict",
+    "MilitaryDraftType",
     "MilitaryWar",
     "SourceRecordCategory",
     "SourceRecordType",

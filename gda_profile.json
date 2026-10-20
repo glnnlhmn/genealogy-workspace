@@ -4,7 +4,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "name": "Genealogy Digital Archive System Profile",
   "profile_version": "1.4.0",
-  "last_updated": "2026-10-19T11:15:00Z",
+  "last_updated": "2026-10-20T11:35:00Z",
   "root_anchor": "G:/My Drive/genealogy-workspace",
   "runtime": "Python 3.13 (.venv)",
   "quality_gates": {
@@ -23,7 +23,7 @@
     "title": "Core Cross-References, Entity Collections & Military Records",
     "status": "ACTIVE",
     "total_story_points": 11.0,
-    "task_ids": [501, 502, 503, 505]
+    "task_ids": [501, 502, 503]
   },
   "groups": {
     "system": {
@@ -205,10 +205,10 @@
       101, 102, 103, 201, 202, 203, 204, 301, 302, 303, 304, 305, 306, 307,
       308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321,
       322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 401,
-      402, 403, 404, 405
+      402, 403, 404, 405, 505
     ],
     "active_sprint": [
-      501, 502, 503, 505
+      501, 502, 503
     ],
     "backlog": [
       504, 506, 507, 508, 601, 602, 701, 702, 801, 802, 901, 902, 903
@@ -582,6 +582,14 @@
       "title": "Implement phonetics and text utility algorithms",
       "description": "Constructed Soundex, NYSIIS, and whitespace normalization utilities.",
       "completed_at": "2026-10-17T00:00:00Z"
+    },
+    {
+      "task_id": 505,
+      "group": "model",
+      "subgroup": "military",
+      "title": "Implement military service & conscription models",
+      "description": "Construct military service records, muster entries, and draft registration card structures with full test coverage.",
+      "completed_at": "2026-10-20T11:20:00Z"
     }
   ],
   "active_sprint_tasks": [
@@ -616,17 +624,6 @@
       "priority": "HIGH",
       "sprint": "sprint_1",
       "estimate": 3.5,
-      "estimate_status": "CONSENSUS"
-    },
-    {
-      "task_id": 505,
-      "group": "model",
-      "subgroup": "military",
-      "title": "Implement military service & conscription models",
-      "description": "Construct military service records, muster entries, and draft registration card structures with full test coverage.",
-      "priority": "MEDIUM",
-      "sprint": "sprint_1",
-      "estimate": 2.5,
       "estimate_status": "CONSENSUS"
     }
   ],

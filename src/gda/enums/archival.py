@@ -18,6 +18,9 @@ __all__ = [
     "TestimonyMedium",
     "TranscriptLegibility",
     "WwiCardType",
+    "PhysicalBuild",
+    "EyeColor",
+    "HairColor",
 ]
 
 
@@ -108,3 +111,26 @@ class WwiCardType(StrEnum):
     CARD_B = "Card B (1918)"
     CARD_C = "Card C (1918)"
     UNKNOWN = "Unknown"
+
+
+class PhysicalBuild(StrEnum):
+    SLENDER = "SLENDER"
+    MEDIUM = "MEDIUM"
+    STOUT = "STOUT"
+
+
+class EyeColor(StrEnum):
+    BLUE = "BLUE"
+    BROWN = "BROWN"
+    GREY = "GREY"
+    HAZEL = "HAZEL"
+    BLACK = "BLACK"
+
+
+class HairColor(StrEnum):
+    BLONDE = "BLONDE"
+    BROWN = "BROWN"
+    BLACK = "BLACK"
+    RED = "RED"
+    GREY = "GREY"
+    BALD = "BALD"

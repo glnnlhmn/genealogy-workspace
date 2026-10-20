@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from gda.model.base.address import Address
 from gda.model.base.age import Age
-from gda.model.base.association import AssociatedIndividual, AssociationRole
+from gda.model.base.association import AssociatedIndividual
 from gda.model.base.audit import AuditStamp
 from gda.model.base.envelope import RegistryEnvelope
 from gda.model.base.media import DocumentSide, Media
@@ -24,7 +24,6 @@ __all__ = [
     "Address",
     "Age",
     "AssociatedIndividual",
-    "AssociationRole",
     "AuditStamp",
     "CanonicalName",
     "DocumentSide",

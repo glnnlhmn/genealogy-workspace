@@ -6,15 +6,16 @@ Operational Role:
     Inspects Python modules using AST parsing to extract canonical descriptions,
     PEP 440 build versions, and public symbols from module docstrings without
     side-effect imports. Emits standardized, up-to-date README.md files for all
-    completed architectural packages.
+    completed architectural packages or a specifically targeted package.
 """
 
 from __future__ import annotations
 
+import argparse
 import ast
 from pathlib import Path
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 ROOT_ANCHOR = Path("G:/My Drive/genealogy-workspace")
 
@@ -112,6 +113,18 @@ COMPLETED_PACKAGES: list[dict[str, str]] = [
         "test_path": "tests/test_gda/test_model/test_entity",
         "quality_gate": ">= 95.0% Statement & Branch Coverage",
     },
+    {
+        "path": "src/gda/model/military",
+        "title": "Military Records Domain Package (src/gda/model/military)",
+        "role": (
+            "Evidentiary military records domain model suite encompassing conscription "
+            "and draft registrations, active duty muster/service/separation certificates, "
+            "veteran invalid and widow/dependent pension claims, bounty land warrants, "
+            "combat casualties, POW internments, national cemetery burials, and valor awards."
+        ),
+        "test_path": "tests/test_gda/test_model/test_military",
+        "quality_gate": "100.0% Statement & Branch Coverage",
+    },
 ]
 
 
@@ -181,10 +194,34 @@ def generate_package_readme(pkg_info: dict[str, str]) -> str:
         f"- **Verification Suite:** `{pkg_info['test_path']}/`",
         "- **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.",
         "",
-        "## Module Inventory & Descriptions",
-        "| Module | Version | Canonical Description |",
-        "| :--- | :--- | :--- |",
     ]
+
+    subdirs = sorted(
+        [
+            d
+            for d in pkg_dir.iterdir()
+            if d.is_dir() and not d.name.startswith((".", "_"))
+        ]
+    )
+    if subdirs:
+        lines.append("## Subpackages")
+        for subdir in subdirs:
+            init_file = subdir / "__init__.py"
+            desc = "Subpackage domain entities and enumerations."
+            if init_file.exists():
+                meta = extract_module_metadata(init_file)
+                if meta["description"] != "No description available.":
+                    desc = meta["description"]
+            lines.append(f"- **`{subdir.name}/`**: {desc}")
+        lines.append("")
+
+    lines.extend(
+        [
+            "## Module Inventory & Descriptions",
+            "| Module | Version | Canonical Description |",
+            "| :--- | :--- | :--- |",
+        ]
+    )
 
     for py_file in py_files:
         meta = extract_module_metadata(py_file)
@@ -215,9 +252,31 @@ def generate_package_readme(pkg_info: dict[str, str]) -> str:
 
 
 def main() -> None:
-    """Generate README.md files for all completed packages."""
+    """Generate README.md files for all completed packages or a targeted package."""
+    parser = argparse.ArgumentParser(
+        description="Dynamic package documentation generator for completed GDA framework modules."
+    )
+    parser.add_argument(
+        "-t",
+        "--target",
+        type=str,
+        default=None,
+        help="Optional package path to generate README for (e.g. 'src/gda/model/military').",
+    )
+    args = parser.parse_args()
+
+    packages = COMPLETED_PACKAGES
+    if args.target:
+        target_norm = args.target.strip().replace("\\", "/").rstrip("/")
+        packages = [p for p in COMPLETED_PACKAGES if p["path"] == target_norm]
+        if not packages:
+            print(
+                f"[ERROR] Target package '{args.target}' not found in COMPLETED_PACKAGES registry."
+            )
+            return
+
     print("Beginning automated dynamic README generation...")
-    for pkg in COMPLETED_PACKAGES:
+    for pkg in packages:
         target_dir = ROOT_ANCHOR / pkg["path"]
         if not target_dir.exists():
             print(f"[SKIP] Directory not found: {target_dir}")
