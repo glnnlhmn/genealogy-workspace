@@ -1,9 +1,18 @@
-# Name: __init__.py
-# Path: src/gda/engine/__init__.py
+"""Path: src/gda/engine/__init__.py
 
-"""Complex domain rule processors, kinship calculation, and evaluation algorithms."""
+Kinship graph analysis, plausibility engines, and relationship resolvers.
+"""
 
 from __future__ import annotations
 
-__version__ = "0.1.0+build.r1"
-__all__: list[str] = []
+from gda.engine.fact_resolver import FactParticipantResolver
+from gda.engine.media_resolver import MediaXRefResolver
+from gda.engine.resolver import IndividualFamilyResolver
+
+__version__ = "1.0.0+build.4"
+
+__all__ = [
+    "FactParticipantResolver",
+    "IndividualFamilyResolver",
+    "MediaXRefResolver",
+]

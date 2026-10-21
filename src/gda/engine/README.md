@@ -1,17 +1,26 @@
-<!-- Name: README.md -->
-<!-- Path: src/gda/engine/README.md -->
+# Kinship Graph & In-Memory Relationship Resolvers (src/gda/engine)
 
-# GDA Computational & Algorithmic Engines (`gda.engine`)
+## Architectural Role
+High-performance, in-memory graph resolution infrastructure providing O(1) kinship lookups, bidirectional media bindings, secondary event participant indexing, and safe entity eviction.
 
-## Operational Role & Purpose
-Houses domain calculation engines, kinship resolution graphs, demographic plausibility auditors, and business-rule validation pipelines.
+## Quality Gate & Verification Status
+- **Quality Gate:** 100.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_gda/test_engine/`
+- **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
-## Architectural Governance
-- **Stateless Computation**: Focuses on algorithmic analysis and graph traversal rather than persistence or raw data storage.
-- **Core Engine Subpackages**:
-  - `kinship/`: Reciprocal relationship mapping, degree-of-consanguinity calculations, and family tree graph traversals.
-  - `plausibility/`: Biological plausibility checks (e.g., mother child-bearing age ranges, lifespan bounds, chronological sequence validation).
-- **Rule Enforcement**: Evaluates domain entities against strict historical and demographic sanity rules to flag genealogical anomalies.
+## Subpackages
+- **`kinship/`**: Kinship graph traversal, reciprocal calculations, and common ancestor discovery.
+- **`plausibility/`**: Biological plausibility boundary audits and chronological validation rules.
 
-## Development Status
-Active development. Implements algorithmic solvers, graph analyzers, and rule engines.
+## Module Inventory & Descriptions
+| Module | Version | Canonical Description |
+| :--- | :--- | :--- |
+| `fact_resolver.py` | `1.0.0+build.1` | Active in-memory fact participant inverted indexer and relationship resolver. |
+| `media_resolver.py` | `1.0.0+build.2` | Active in-memory media graph indexer and bidirectional resolver. |
+| `resolver.py` | `1.0.0+build.3` | Active in-memory graph indexers and bidirectional relationship resolvers. |
+
+## Public Exports & Consumption Contract
+Exports: `FactParticipantResolver`, `IndividualFamilyResolver`, `MediaXRefResolver`.
+
+---
+Generated dynamically by `src/system/gen_readme.py`.

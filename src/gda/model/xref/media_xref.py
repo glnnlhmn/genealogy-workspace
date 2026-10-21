@@ -1,62 +1,53 @@
 """Path: src/gda/model/xref/media_xref.py
 
-Associative cross-reference linking domain entities to media assets.
+Associative relational cross-reference edge linking domain entities to media assets.
+
+Operational Role:
+    Defines the immutable relational edge ('MediaXRef') connecting domain entities
+    (Individual, Family, Fact, Site, Location) to digital media assets. Enforces
+    UUID boundaries, Pydantic immutability, and boundary validation.
 """
 
 from __future__ import annotations
 
+from uuid import UUID, uuid4
+
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
-from gda.model.atom.id import FactID, FamilyID, IndividualID, MediaID, SiteID
-from gda.model.base.audit import AuditStamp
+from gda.model.atom.date import EventDate, IsoTimestamp
+from gda.model.atom.id import AtomID
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.4"
 
-__all__ = ["MediaRegion", "MediaXRef"]
-
-# Normalized pixel coordinates: [ymin, xmin, ymax, xmax] bounded between 0.0 and 1.0
-BoundingBox = tuple[float, float, float, float]
-LinkedEntityID = IndividualID | FamilyID | FactID | SiteID
-
-
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
-class MediaRegion:
-    """Normalized bounding region identifying a target subject within an image."""
-
-    ymin: float = Field(..., ge=0.0, le=1.0)
-    xmin: float = Field(..., ge=0.0, le=1.0)
-    ymax: float = Field(..., ge=0.0, le=1.0)
-    xmax: float = Field(..., ge=0.0, le=1.0)
-
-    def __post_init__(self) -> None:
-        if self.ymin >= self.ymax:
-            raise ValueError(f"ymin ({self.ymin}) must be less than ymax ({self.ymax})")
-        if self.xmin >= self.xmax:
-            raise ValueError(f"xmin ({self.xmin}) must be less than xmax ({self.xmax})")
+__all__ = ["MediaXRef"]
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
 class MediaXRef:
-    """Associative graph edge binding an entity to a media artifact."""
+    """Relational cross-reference edge linking a domain entity to a digital media asset."""
 
-    entity_id: LinkedEntityID = Field(
-        ..., description="Target domain entity identifier."
+    entity_id: AtomID = Field(
+        ...,
+        description="Linked domain entity identifier (e.g., IND-, FAM-, FID-, SIT-, LOC-).",
     )
-    media_id: MediaID = Field(..., description="Target media asset identifier.")
-    is_primary: bool = Field(
-        default=False,
-        description="Whether this media item serves as the primary visual avatar for the entity.",
+    media_id: UUID = Field(
+        ...,
+        description="Target digital media asset identifier (UUID).",
+    )
+    xref_id: UUID = Field(
+        default_factory=uuid4,
+        description="Unique primary identifier for the cross-reference record.",
     )
     caption: str | None = Field(
         default=None,
-        description="Contextual caption specific to this entity's presence in the media.",
+        description="Contextual description, narrative label, or transcription note.",
     )
-    region: MediaRegion | None = Field(
+    date: EventDate | None = Field(
         default=None,
-        description="Optional spatial coordinates isolating the entity within the image.",
+        description="Genealogical event date representation for media capture or association.",
     )
-    audit: AuditStamp = Field(
-        default_factory=AuditStamp.now_utc,
-        description="Lifecycle timestamps tracking edge creation and modifications.",
+    compiled_at: IsoTimestamp = Field(
+        default_factory=IsoTimestamp.now_utc,
+        description="Edge generation and indexing timestamp.",
     )
