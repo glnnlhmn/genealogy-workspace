@@ -3,8 +3,8 @@
   "_name": "gda_profile.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "name": "Genealogy Digital Archive System Profile",
-  "profile_version": "1.4.0",
-  "last_updated": "2026-10-20T11:35:00Z",
+  "profile_version": "1.4.1",
+  "last_updated": "2026-10-21T23:30:00Z",
   "root_anchor": "G:/My Drive/genealogy-workspace",
   "runtime": "Python 3.13 (.venv)",
   "quality_gates": {
@@ -21,9 +21,9 @@
   "active_sprint": {
     "sprint_id": "sprint_1",
     "title": "Core Cross-References, Entity Collections & Military Records",
-    "status": "ACTIVE",
-    "total_story_points": 11.0,
-    "task_ids": [501, 502, 503]
+    "status": "COMPLETED",
+    "total_story_points": 12.0,
+    "task_ids": [501, 502, 503, 104]
   },
   "groups": {
     "system": {
@@ -202,14 +202,12 @@
   },
   "index_by_bin": {
     "completed": [
-      101, 102, 103, 201, 202, 203, 204, 301, 302, 303, 304, 305, 306, 307,
+      101, 102, 103, 104, 201, 202, 203, 204, 301, 302, 303, 304, 305, 306, 307,
       308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321,
       322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 401,
-      402, 403, 404, 405, 505
+      402, 403, 404, 405, 501, 502, 503, 505
     ],
-    "active_sprint": [
-      501, 502, 503
-    ],
+    "active_sprint": [],
     "backlog": [
       504, 506, 507, 508, 601, 602, 701, 702, 801, 802, 901, 902, 903
     ]
@@ -238,6 +236,14 @@
       "title": "Implement Git hook automation",
       "description": "Constructed pre-commit hook runner and install_hooks.py installer.",
       "completed_at": "2026-10-15T00:00:00Z"
+    },
+    {
+      "task_id": 104,
+      "group": "system",
+      "subgroup": null,
+      "title": "Modernize package README generator",
+      "description": "Constructed gen_readme.py with external TOML config, interactive overwrite prompts, force flags, shell wrapper, and 100% coverage.",
+      "completed_at": "2026-10-21T22:50:00Z"
     },
     {
       "task_id": 201,
@@ -584,6 +590,30 @@
       "completed_at": "2026-10-17T00:00:00Z"
     },
     {
+      "task_id": 501,
+      "group": "model",
+      "subgroup": "xref",
+      "title": "Implement individual/family cross-reference resolver",
+      "description": "Constructed IndividualFamilyXRef and IndividualFamilyResolver with O(1) kinship lookups and 100% coverage.",
+      "completed_at": "2026-10-21T18:00:00Z"
+    },
+    {
+      "task_id": 502,
+      "group": "model",
+      "subgroup": "xref",
+      "title": "Implement media cross-reference indexer",
+      "description": "Constructed MediaXRef and MediaXRefResolver linking entities to media assets with UUIDs and 100% coverage.",
+      "completed_at": "2026-10-21T19:30:00Z"
+    },
+    {
+      "task_id": 503,
+      "group": "model",
+      "subgroup": "xref",
+      "title": "Implement fact participant cross-reference resolver",
+      "description": "Constructed FactParticipantXRef and FactParticipantResolver for secondary event roles with 100% coverage.",
+      "completed_at": "2026-10-21T21:00:00Z"
+    },
+    {
       "task_id": 505,
       "group": "model",
       "subgroup": "military",
@@ -592,41 +622,7 @@
       "completed_at": "2026-10-20T11:20:00Z"
     }
   ],
-  "active_sprint_tasks": [
-    {
-      "task_id": 501,
-      "group": "model",
-      "subgroup": "xref",
-      "title": "Implement entity cross-reference resolver",
-      "description": "Build bidirectional graph cross-reference resolver linking Individual, Family, Fact, and SourceReference with 1:1 tests.",
-      "priority": "HIGH",
-      "sprint": "sprint_1",
-      "estimate": 3.0,
-      "estimate_status": "CONSENSUS"
-    },
-    {
-      "task_id": 502,
-      "group": "model",
-      "subgroup": "xref",
-      "title": "Implement media cross-reference indexer",
-      "description": "Construct resolution logic and unit tests for media_xref.py across archival items.",
-      "priority": "MEDIUM",
-      "sprint": "sprint_1",
-      "estimate": 2.0,
-      "estimate_status": "CONSENSUS"
-    },
-    {
-      "task_id": 503,
-      "group": "entity",
-      "subgroup": "collections",
-      "title": "Implement in-memory Entity Collections",
-      "description": "Construct typed repository containers for Individual, Family, Fact, Location, and Site with tombstone filtering and key lookups.",
-      "priority": "HIGH",
-      "sprint": "sprint_1",
-      "estimate": 3.5,
-      "estimate_status": "CONSENSUS"
-    }
-  ],
+  "active_sprint_tasks": [],
   "backlog": [
     {
       "task_id": 504,
