@@ -1,0 +1,88 @@
+# Path: src/system/gen_readme.toml
+# Authoritative package documentation registry for gen_readme.py
+
+default_root = "G:/My Drive/genealogy-workspace"
+
+[[packages]]
+path = "src/system"
+title = "System Administration & Automation (src/system)"
+role = "Workstation administration, developer environment onboarding, Git hook deployment, dynamic documentation generation, and automated intake pipelines."
+test_path = "tests/test_system"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/core"
+title = "Core Primitives & Introspection (src/gda/core)"
+role = "Domain-agnostic foundational infrastructure providing canonical error taxonomies, immutable Pydantic configuration, structured logging, and runtime class introspection."
+test_path = "tests/test_gda/test_core"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/enums"
+title = "Authoritative Enumeration Domains (src/gda/enums)"
+role = "Authoritative genealogical enumerations inheriting strictly from StrEnum and IntEnum, governing biological sex, evidentiary certainty (QuayScore), events, jurisdictions, and archival classifications."
+test_path = "tests/test_gda/test_enums"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/io"
+title = "I/O, Safe Backup & Persistence Infrastructure (src/gda/io)"
+role = "Governs physical filesystem interactions, line-ending preserving UTF-8 file access, atomic temporary staging, and automated pre-execution Safe Backups."
+test_path = "tests/test_gda/test_io"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/types"
+title = "Data Types & Primitives (src/gda/types)"
+role = "Foundational scalar primitives, string constraints, and custom Pydantic validators."
+test_path = "tests/test_gda/test_types"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/util"
+title = "Utility Algorithms & Text Normalizers (src/gda/util)"
+role = "High-performance phonetics algorithms (Soundex, NYSIIS), cryptographic hashing routines, identifier generators, and text sanitizers."
+test_path = "tests/test_gda/test_util"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/atom"
+title = "Atomic Value Objects (src/gda/model/atom)"
+role = "Immutable atomic value objects enforcing strict domain constraints: prefixed entity identifiers, calendar dates, timestamps, coordinates, and scalars."
+test_path = "tests/test_gda/test_model/test_atom"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/base"
+title = "Composite Base Records (src/gda/model/base)"
+role = "Reusable domain composite building blocks: audit stamps, tombstone records, onomastic personal names, source citations, addresses, and time periods."
+test_path = "tests/test_gda/test_model/test_base"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/entity"
+title = "Canonical Domain Entities (src/gda/model/entity)"
+role = "Primary domain entities enforcing relational integrity, temporal bounds, biological plausibility, and participant linkages (Individual, Family, Fact, Location, Site)."
+test_path = "tests/test_gda/test_model/test_entity"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/military"
+title = "Military Records Domain Package (src/gda/model/military)"
+role = "Evidentiary military records domain model suite encompassing conscription and draft registrations, active duty muster/service/separation certificates, veteran invalid and widow/dependent pension claims, bounty land warrants, combat casualties, POW internments, national cemetery burials, and valor awards."
+test_path = "tests/test_gda/test_model/test_military"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/xref"
+title = "Cross-Reference & Relational Edge Models (src/gda/model/xref)"
+role = "Decoupled, immutable relational edge dataclasses connecting personas, domestic family units, secondary event participants, and digital media assets with deterministic compound primary keys."
+test_path = "tests/test_gda/test_model/test_xref"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/engine"
+title = "Kinship Graph & In-Memory Relationship Resolvers (src/gda/engine)"
+role = "High-performance, in-memory graph resolution infrastructure providing O(1) kinship lookups, bidirectional media bindings, secondary event participant indexing, and safe entity eviction."
+test_path = "tests/test_gda/test_engine"
+quality_gate = "100.0% Statement & Branch Coverage"
