@@ -11,7 +11,7 @@ Domain-agnostic foundational infrastructure providing canonical error taxonomies
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `config.py` | `1.0.0+build.r7` | Multi-tiered configuration engine for GDA Core components. |
+| `config.py` | `1.0.0+build.r10` | Multi-tiered configuration engine for GDA Core components. |
 | `errors.py` | `1.0.0+build.8` | Exception hierarchy and error contracts for GDA Core. |
 | `introspectable.py` | `1.0.0+build.r4` | Provide centralized runtime introspection mixin for self-documenting archive components. |
 | `logging.py` | `1.0.0+build.r6` | Structured JSON and console logging subsystem for GDA Core. |
@@ -20,4 +20,4 @@ Domain-agnostic foundational infrastructure providing canonical error taxonomies
 Exports: `AppConfig`, `ConfigError`, `ConfigParseError`, `ConfigValidationError`, `ConsoleFormatter`, `DatabaseConfig`, `GDALogger`, `GenealogyDeskError`, `IntrospectableMixin`, `JsonFormatter`, `LoggingConfig`.
 
 ---
-Generated dynamically by `src/system/generate_readmes.py`.
+Generated dynamically by `src/system/gen_readme.py`.

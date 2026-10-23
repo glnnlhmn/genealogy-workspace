@@ -1,8 +1,6 @@
-# Name: config.py
-# Path: src/gda/core/config.py
-# Version: 1.0.0+build.r7
+"""Path: src/gda/core/config.py
 
-"""Multi-tiered configuration engine for GDA Core components.
+Multi-tiered configuration engine for GDA Core components.
 
 Operational Role:
     Defines strongly-typed Pydantic schemas for database, logging, and application
@@ -11,7 +9,7 @@ Operational Role:
     and explicit runtime overrides.
 
 Classes:
-    DatabaseConfig: Database connection and pool settings.
+    DatabaseConfig: SQLite connection, busy timeout, and PRAGMA settings.
     LoggingConfig: Logging levels, formats, and persistence routing.
     AppConfig: Root application configuration aggregator.
 """
@@ -24,11 +22,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from gda.core.errors import ConfigParseError, ConfigValidationError
 
-__version__ = "1.0.0+build.r7"
+__version__ = "1.0.0+build.r10"
 
 
 class ImmutableBaseModel(BaseModel):
@@ -38,25 +36,38 @@ class ImmutableBaseModel(BaseModel):
 
 
 class DatabaseConfig(ImmutableBaseModel):
-    """Database connection and connection pool configuration parameters."""
+    """Database connection and PRAGMA configuration parameters."""
 
-    host: str = Field(default="localhost", min_length=1)
-    port: int = Field(default=5432, ge=1, le=65535)
-    database: str = Field(default="genealogy_archive", min_length=1)
-    username: str = Field(default="gda_admin", min_length=1)
-    password: SecretStr = Field(default=SecretStr(""))
-    pool_size: int = Field(default=5, ge=1, le=50)
+    db_path: Path | str = Field(default=Path("data/archive.db"))
+    busy_timeout: int = Field(default=5000, ge=100, le=60000)
+    journal_mode: str = Field(default="WAL")
+    foreign_keys: bool = Field(default=True)
+    synchronous: str = Field(default="NORMAL")
+
+    @field_validator("db_path", mode="before")
+    @classmethod
+    def normalize_db_path(cls, value: Any) -> Path | str:
+        """Coerce filesystem strings to Path instances while preserving in-memory tokens."""
+        if isinstance(value, str):
+            clean = value.strip()
+            if clean in (":memory:", "file::memory:"):
+                return clean
+            return Path(clean)
+        if isinstance(value, Path):
+            return value
+        raise ValueError(f"Invalid db_path type: {type(value)}")
+
+    @property
+    def is_in_memory(self) -> bool:
+        """Check if target database is an ephemeral in-memory instance."""
+        return str(self.db_path) in (":memory:", "file::memory:")
 
     @property
     def connection_string(self) -> str:
-        """Render database connection string with password masked."""
-        if not self.username:
-            auth = ""
-        elif self.password.get_secret_value():
-            auth = f"{self.username}:********@"
-        else:
-            auth = f"{self.username}@"
-        return f"postgresql://{auth}{self.host}:{self.port}/{self.database}"
+        """Render SQLite URI connection string."""
+        if self.is_in_memory:
+            return "sqlite:///:memory:"
+        return f"sqlite:///{Path(self.db_path).as_posix()}"
 
 
 class LoggingConfig(ImmutableBaseModel):
@@ -155,11 +166,9 @@ class AppConfig(ImmutableBaseModel):
         payload: dict[str, Any] = {}
         active_env = os.environ if env_vars is None else env_vars
 
-        # Determine effective root_path
         if root_path is not None:
             payload["root_path"] = root_path
 
-        # Tier 3: TOML configuration discovery
         file_to_load: Path | None = None
         is_pyproject = False
 
@@ -206,7 +215,6 @@ class AppConfig(ImmutableBaseModel):
                     details={"path": str(file_to_load), "syntax_error": str(err)},
                 ) from err
 
-        # Tier 2: Environment variables
         prefix_len = len(env_prefix)
         for env_key, env_val in active_env.items():
             if env_key.startswith(env_prefix) and env_key != "GDA_CONFIG_PATH":
@@ -219,7 +227,6 @@ class AppConfig(ImmutableBaseModel):
                 else:
                     payload[key] = cls._coerce_env_val(env_val)
 
-        # Tier 1: Explicit overrides
         if overrides:
             for k, v in overrides.items():
                 if isinstance(v, dict) and isinstance(payload.get(k), dict):

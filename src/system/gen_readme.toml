@@ -86,3 +86,10 @@ title = "Kinship Graph & In-Memory Relationship Resolvers (src/gda/engine)"
 role = "High-performance, in-memory graph resolution infrastructure providing O(1) kinship lookups, bidirectional media bindings, secondary event participant indexing, and safe entity eviction."
 test_path = "tests/test_gda/test_engine"
 quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/db"
+title = "Embedded Relational Persistence & Schema Management (src/gda/db)"
+role = "Embedded SQLite relational persistence layer providing connection lifecycle management, WAL and foreign key enforcement, atomic write transactions, versioned DDL schema migrations, and bidirectional Pydantic row mapping."
+test_path = "tests/test_gda/test_db"
+quality_gate = ">= 95.0% Statement & Branch Coverage"

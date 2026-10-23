@@ -1,1 +1,0 @@
-# Genealogy Digital Archive Workspace
