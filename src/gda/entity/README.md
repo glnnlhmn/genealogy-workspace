@@ -1,20 +1,21 @@
-<!-- Name: README.md -->
-<!-- Path: src/gda/entity/README.md -->
+<!--Path: src/gda/entity/README.md-->
+# Entity Subsystem Package (`src/gda/entity`)
 
-# GDA Domain Record Entities (`gda.entity`)
+## 1. Architectural Scope & Operational Role
+The `src/gda/entity/` package provides high-performance, in-memory collection managers and graph traversal engines for canonical genealogical domain entities (`Location`, `Individual`, `Family`, `Fact`). It implements in-memory index synchronization, multi-tier relationship traversal, and in-place graveyard soft-deletion protocols.
 
-## Operational Role & Purpose
-Defines domain record state representations, field mutations, and localized validation logic for primary digital archive records.
+## 2. Public Export & Subsystem Matrix
+* **`Locations` (`src/gda/entity/locations.py`):**
+  * **Primary Indexing:** O(1) hash resolution via `LocationID`.
+  * **Secondary Indexing:** O(1) lookups via normalized canonical URN (`urn:gda:loc:...`).
+  * **Graph Traversal:** Bidirectional child-parent hierarchical navigation, root ancestor resolution, and predecessor/successor lineage tracking.
+  * **Graveyard Management:** In-place soft-deletion via `TombstoneRecord[LocationID]`, recursive redirection through `superseded_by` pointers, and cycle detection.
+  * **Temporal Onomastics:** Date-bounded naming variants resolved via `HistoricalName`, `TimePeriod`, and `EventDate`.
 
-## Core Entity Representations
-- `person.py`: Person record state, personal names, demographic attributes, and lifetime milestones.
-- `fact.py`: Atomic evidentiary assertions, citation references, and in-place tombstoning support.
-- `location.py`: Jurisdictional geocoding records, historical boundary markers, and hierarchy.
-- `site.py`: Repositories, cemeteries, libraries, archives, and physical record sites.
+## 3. Consumption Contracts & Import Boundaries
+* **Inbound Dependencies:** Consumes `gda.core` (errors, logging, mixins), `gda.enums` (vital, location classifications), and `gda.model` (primitives, atom IDs, base entities).
+* **Decoupling:** Decoupled from physical disk mutations and serializations; persistence orchestration is delegated strictly to `gda.io`.
 
-## Architectural Governance
-- **State Representation**: Enforces field validation and identity encapsulation for individual records.
-- **Manager Decoupling**: Entities do not interact directly with physical databases, collection caches, or global registries; collection orchestration is handled exclusively by `gda.manager`.
-
-## Development Status
-Active development.
+## 4. Test Harness & Coverage Status
+* **Test Suite:** Co-located under `tests/test_gda/test_entity/test_locations.py`.
+* **Coverage Verification:** 100.00% statement and branch coverage achieved across all test tiers (`unit`, `regression`, `smoke`).
