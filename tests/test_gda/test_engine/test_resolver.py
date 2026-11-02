@@ -18,12 +18,12 @@ from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FamilyID, IndividualID
 from gda.model.base.audit import AuditStamp
 from gda.model.base.family import ChildLink
-from gda.model.base.name import CanonicalName
+from gda.model.base.name import NamePerson
 from gda.model.entity.family import Family
 from gda.model.entity.individual import Individual
 from gda.model.xref.individual_family_xref import IndividualFamilyXRef
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 
 def _make_audit() -> AuditStamp:
@@ -56,7 +56,7 @@ def test_from_collections_smoke() -> None:
     audit = _make_audit()
     ind = Individual(
         id=IndividualID("IND-000001"),
-        name=CanonicalName(raw_name="John Doe", given="John", surname="Doe"),
+        name=NamePerson.create(raw="John Doe", given="John", surname="Doe"),
         canonical_urn="urn:gda:ind:john_doe",
         audit=audit,
     )
@@ -156,7 +156,7 @@ def test_add_xref_partner_and_child_already_in_family_lists() -> None:
         role=AssociatedRole.SPOUSE,
     )
     resolver.add_xref(edge_partner_1)
-    resolver.add_xref(edge_partner_2)  # Exercises line 95->105
+    resolver.add_xref(edge_partner_2)
 
     # 2. Child edge 1
     edge_child_1 = IndividualFamilyXRef(
@@ -175,7 +175,7 @@ def test_add_xref_partner_and_child_already_in_family_lists() -> None:
         role=PedigreeType.BIRTH,
     )
     resolver.add_xref(edge_child_1)
-    resolver.add_xref(edge_child_2)  # Exercises line 102->105
+    resolver.add_xref(edge_child_2)
 
     assert resolver.edge_count == 4
 

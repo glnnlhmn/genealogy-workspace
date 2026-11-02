@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "locations": [
+    {
+      "raw_text": "France"
+    }
+  ],
+  "_path": "tests/fixtures/locations/golden/combo_11_single_token_sovereign_france.json"
+}

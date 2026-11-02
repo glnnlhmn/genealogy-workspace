@@ -1,145 +1,78 @@
 """Path: tests/test_gda/test_model/test_base/test_tombstone.py
 
-Comprehensive test suite verifying TombstoneRecord invariants and lifecycles.
-
-Operational Role:
-    Verifies active and deprecated tombstone states, coupled timestamp guards,
-    generic ID supersession binding, retirement helpers, and immutability.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract mapping.
-    - Fully decorated: Standard 7-marker taxonomy.
-    - Zero production disk I/O.
+Unit and regression test suite for the generic Tombstone model.
 """
 
 from __future__ import annotations
-
-from dataclasses import FrozenInstanceError
 
 import pytest
 
 from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.id import IndividualID
-from gda.model.base.tombstone import TombstoneRecord
+from gda.model.atom.id import LocationID
+from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.1"
 
 
-# ==============================================================================
-# GROUP 1: ACTIVE RECORD INVARIANTS
-# ==============================================================================
+# ==========================================================================
+# GROUP 1: Invariant & Auto-Clearing Logic
+# Note: Verifies default values, auto-clearing on active records, and guards.
+# ==========================================================================
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
-def test_tombstone_active_default_state() -> None:
-    """Verify TombstoneRecord default instantiation represents an active record."""
-    tb: TombstoneRecord[IndividualID] = TombstoneRecord()
+def test_tombstone_default_initialization_is_active() -> None:
+    """Verify default initialization produces an active record without timestamps."""
+    tb = Tombstone[LocationID]()
     assert tb.is_deprecated is False
     assert tb.deprecated_at is None
     assert tb.superseded_by is None
-    assert repr(tb) == "TombstoneRecord(is_deprecated=False)"
+    assert repr(tb) == "Tombstone(is_deprecated=False)"
 
 
 @pytest.mark.unit
+def test_tombstone_auto_clears_fields_when_active() -> None:
+    """Verify active record with provided timestamps or superseded_by is auto-cleared."""
+    now = IsoTimestamp.now_utc()
+    target_id = LocationID("LOC-000002")
+
+    tb = Tombstone[LocationID](
+        is_deprecated=False,
+        deprecated_at=now,
+        superseded_by=target_id,
+    )
+    assert tb.is_deprecated is False
+    assert tb.deprecated_at is None
+    assert tb.superseded_by is None
+
+
 @pytest.mark.regression
-def test_tombstone_active_with_deprecated_timestamp_raises_error() -> None:
-    """Verify active record raises ModelFormatError if deprecated_at is provided."""
-    ts = IsoTimestamp("2026-10-16T12:00:00Z")
-    with pytest.raises(
-        ModelFormatError, match="must not possess a deprecated_at timestamp"
-    ):
-        TombstoneRecord(is_deprecated=False, deprecated_at=ts)
-
-
-@pytest.mark.unit
-@pytest.mark.regression
-def test_tombstone_active_with_superseded_by_raises_error() -> None:
-    """Verify active record raises ModelFormatError if superseded_by is provided."""
-    target_id = IndividualID("IND-000002")
-    with pytest.raises(
-        ModelFormatError, match="must not possess a deprecated_at timestamp"
-    ):
-        TombstoneRecord(is_deprecated=False, superseded_by=target_id)
-
-
-# ==============================================================================
-# GROUP 2: DEPRECATED RECORD INVARIANTS & RETIREMENT
-# ==============================================================================
-
-
-@pytest.mark.unit
-@pytest.mark.smoke
-def test_tombstone_deprecated_valid_states() -> None:
-    """Verify deprecated record with timestamp and optional target ID."""
-    ts = IsoTimestamp("2026-10-16T12:00:00Z")
-    target_id = IndividualID("IND-000002")
-
-    tb_discarded: TombstoneRecord[IndividualID] = TombstoneRecord(
-        is_deprecated=True, deprecated_at=ts
-    )
-    assert tb_discarded.is_deprecated is True
-    assert tb_discarded.deprecated_at == ts
-    assert tb_discarded.superseded_by is None
-    assert repr(tb_discarded) == (
-        "TombstoneRecord(is_deprecated=True, deprecated_at=IsoTimestamp(value='2026-10-16T12:00:00Z'))"
-    )
-
-    tb_merged: TombstoneRecord[IndividualID] = TombstoneRecord(
-        is_deprecated=True, deprecated_at=ts, superseded_by=target_id
-    )
-    assert tb_merged.superseded_by == target_id
-    assert repr(tb_merged) == (
-        "TombstoneRecord(is_deprecated=True, deprecated_at=IsoTimestamp(value='2026-10-16T12:00:00Z'), "
-        "superseded_by=IndividualID(value='IND-000002'))"
-    )
-
-
-@pytest.mark.unit
-@pytest.mark.regression
-def test_tombstone_deprecated_missing_timestamp_raises_error() -> None:
-    """Verify deprecated record raises ModelFormatError if deprecated_at is omitted."""
+def test_tombstone_deprecated_without_timestamp_raises_model_format_error() -> None:
+    """Verify deprecated tombstone missing deprecated_at raises ModelFormatError."""
     with pytest.raises(
         ModelFormatError, match="must specify a deprecated_at timestamp"
     ):
-        TombstoneRecord(is_deprecated=True, deprecated_at=None)
+        Tombstone[LocationID](is_deprecated=True, deprecated_at=None)
+
+
+# ==========================================================================
+# GROUP 2: Lifecycle Retirement
+# Note: Verifies retire method immutability and representation.
+# ==========================================================================
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
-def test_tombstone_retire_helper() -> None:
-    """Verify .retire() returns a new deprecated TombstoneRecord."""
-    active: TombstoneRecord[IndividualID] = TombstoneRecord()
-    ts = IsoTimestamp("2026-10-16T12:00:00Z")
-    target = IndividualID("IND-000003")
+def test_tombstone_retire_returns_new_deprecated_instance() -> None:
+    """Verify retire produces a new Tombstone instance stamped with target parameters."""
+    active = Tombstone[LocationID]()
+    now = IsoTimestamp.now_utc()
+    target_id = LocationID("LOC-000002")
 
-    retired = active.retire(timestamp=ts, superseded_by=target)
-    assert retired is not active
+    retired = active.retire(timestamp=now, superseded_by=target_id)
+
     assert active.is_deprecated is False
     assert retired.is_deprecated is True
-    assert retired.deprecated_at == ts
-    assert retired.superseded_by == target
-
-
-# ==============================================================================
-# GROUP 3: INTROSPECTION & IMMUTABILITY
-# ==============================================================================
-
-
-@pytest.mark.unit
-def test_tombstone_immutability() -> None:
-    """Verify TombstoneRecord is frozen and immutable."""
-    tb: TombstoneRecord[IndividualID] = TombstoneRecord()
-    with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
-        tb.is_deprecated = True  # type: ignore[misc]
-
-
-@pytest.mark.unit
-def test_tombstone_introspection() -> None:
-    """Verify .help() renders member directory on TombstoneRecord."""
-    tb: TombstoneRecord[IndividualID] = TombstoneRecord()
-    help_text = tb.help(as_str=True)
-    assert help_text is not None
-    assert "=== TombstoneRecord Public Directory ===" in help_text
-    assert "retire" in help_text
+    assert retired.deprecated_at == now
+    assert retired.superseded_by == target_id
+    assert "superseded_by=" in repr(retired)

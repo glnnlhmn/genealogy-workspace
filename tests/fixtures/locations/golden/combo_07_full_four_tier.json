@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "locations": [
+    {
+      "country": "USA",
+      "state_or_province": "PA",
+      "county": "Dauphin",
+      "local_jurisdiction": "Harrisburg"
+    }
+  ],
+  "_path": "tests/fixtures/locations/golden/combo_07_full_four_tier.json"
+}

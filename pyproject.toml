@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genealogy-digital-archive"
-version = "1.2.0+build.r1"
+version = "1.0.0+build.4"
 description = "Consolidated Digital Archive Engine, CLI & Ancestry Desk UI"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -21,6 +21,7 @@ dependencies = [
     "rapidfuzz>=3.0.0",
     "rich>=13.0.0",
     "us>=3.1.1",
+    "pycountry>=24.6.1",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +41,16 @@ test = [
 ui = [
     "textual>=0.50.0",
 ]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "pytest-mock>=3.12.0",
+    "pytest-xdist>=3.5.0",
+    "ruff>=0.8.0",
+    "jupyterlab>=4.0.0",
+    "notebook>=7.0.0",
+    "ipykernel>=6.0.0",
+]
 
 [tool.setuptools.package-dir]
 "" = "src"
@@ -50,7 +61,7 @@ include = ["gda*", "ancestry_desk*", "cli*", "system*"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-v --basetemp=gtemp/pytest_tmp"
+addopts = "-ra -q --basetemp=C:/temp/pytest_tmp --strict-markers --import-mode=importlib"
 testpaths = [
     "tests/test_gda",
     "tests/test_ancestry_desk",

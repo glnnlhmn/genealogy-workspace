@@ -7,20 +7,21 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "0.1.0+build.4"
+__version__ = "0.1.0+build.5"
 
 __all__ = [
     "BirthPlurality",
     "DispositionType",
     "DivorceDecreeType",
+    "HistoricNameType",
     "LegalPlaintiff",
     "MannerOfDeath",
     "MaritalHistoryDissolution",
     "MaritalStatus",
+    "NameStatus",
     "PedigreeType",
     "UnionDissolutionType",
     "UnionType",
-    "NameStatus",
 ]
 
 
@@ -123,11 +124,15 @@ class MaritalHistoryDissolution(StrEnum):
     NONE = "None"
 
 
-class NameStatus(StrEnum):
-    """Functional classification of historical personal names and cultural contexts."""
+class HistoricNameType(StrEnum):
+    """Functional classification of historical naming variants and cultural contexts."""
 
     PRIMARY = "PRIMARY"
     HISTORICAL = "HISTORICAL"
     COLLOQUIAL = "COLLOQUIAL"
     COLONIAL = "COLONIAL"
     INDIGENOUS = "INDIGENOUS"
+
+
+# Backward-compatibility alias during refactoring
+NameStatus = HistoricNameType

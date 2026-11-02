@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "locations": [
+    {
+      "country": "NARNIA",
+      "state_or_province": "PA",
+      "local_jurisdiction": "Harrisburg"
+    }
+  ],
+  "_path": "tests/fixtures/locations/failure/edge_03_country_narnia_invalid.json"
+}

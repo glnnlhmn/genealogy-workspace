@@ -25,26 +25,30 @@ import sqlite3
 from abc import ABC, abstractmethod
 from typing import Any
 
-from pydantic import TypeAdapter
-
 from gda.core.introspectable import IntrospectableMixin
 from gda.db.exceptions import EntityMappingError
+from gda.enums.site import SiteType
+from gda.enums.vital import HistoricNameType
 from gda.model.atom.date import IsoTimestamp
+from gda.model.atom.geo import Coordinates
 from gda.model.atom.id import (
     AtomID,
-    FactID,
-    FamilyID,
-    IndividualID,
     LocationID,
     SiteID,
 )
+from gda.model.base.address import Address
+from gda.model.base.audit import AuditStamp
+from gda.model.base.name import NameThing
+from gda.model.base.note import Note
+from gda.model.base.time_period import TimePeriod
+from gda.model.base.tombstone import Tombstone
 from gda.model.entity.fact import Fact
 from gda.model.entity.family import Family
 from gda.model.entity.individual import Individual
-from gda.model.entity.location import Location
+from gda.model.entity.location import JurisdictionCategory, Location
 from gda.model.entity.site import Site
 
-__version__ = "1.0.0+build.15"
+__version__ = "1.0.0+build.22"
 
 _YEAR_PATTERN: re.Pattern[str] = re.compile(r"\b(\d{4})\b")
 
@@ -74,13 +78,8 @@ class BaseRowMapper[T](IntrospectableMixin, ABC):
     """Abstract base contract for bidirectional SQLite row mapping."""
 
     def __init__(self, model_cls: type[T]) -> None:
-        """Initialize row mapper with bound model class and Pydantic adapter.
-
-        Args:
-            model_cls: Concrete Pydantic domain entity class.
-        """
+        """Initialize row mapper with bound model class."""
         self._model_cls = model_cls
-        self._adapter: TypeAdapter[T] = TypeAdapter(model_cls)
 
     @property
     def model_cls(self) -> type[T]:
@@ -89,28 +88,11 @@ class BaseRowMapper[T](IntrospectableMixin, ABC):
 
     @abstractmethod
     def to_row(self, entity: T) -> dict[str, Any]:
-        """Convert a pure domain entity into flat SQLite row parameters.
-
-        Args:
-            entity: Domain model instance.
-
-        Returns:
-            Dictionary mapping table column names to SQLite-compatible values.
-        """
+        """Convert a pure domain entity into flat SQLite row parameters."""
 
     @abstractmethod
     def from_row(self, row: sqlite3.Row | dict[str, Any]) -> T:
-        """Reconstruct a pure domain entity from a SQLite row or dictionary.
-
-        Args:
-            row: SQLite row or dict matching table columns.
-
-        Returns:
-            Strongly-typed, fully validated domain model instance.
-
-        Raises:
-            EntityMappingError: On serialization or validation failure.
-        """
+        """Reconstruct a pure domain entity from a SQLite row or dictionary."""
 
 
 class LocationRowMapper(BaseRowMapper[Location]):
@@ -122,11 +104,11 @@ class LocationRowMapper(BaseRowMapper[Location]):
 
     def to_row(self, entity: Location) -> dict[str, Any]:
         """Project Location entity into locations table row parameters."""
-        raw = self._adapter.dump_python(entity, mode="json")
+        raw = entity.to_dict()
         return {
             "id": entity.id.value,
             "canonical_urn": entity.canonical_urn,
-            "name": entity.name,
+            "name": entity.name.canonical,
             "category": entity.category.value,
             "parent_id": entity.parent_id.value if entity.parent_id else None,
             "is_primary_local_authority": 1 if entity.is_primary_local_authority else 0,
@@ -136,30 +118,22 @@ class LocationRowMapper(BaseRowMapper[Location]):
             ),
             "period_json": json.dumps(raw["period"]) if raw.get("period") else None,
             "historical_names_json": (
-                json.dumps(raw["historical_names"])
-                if raw.get("historical_names")
+                json.dumps([h.to_dict() for h in entity.name.historic])
+                if entity.name.historic
                 else None
             ),
             "alternate_names_json": (
-                json.dumps(raw["alternate_names"])
-                if raw.get("alternate_names")
-                else None
+                json.dumps(list(entity.name.aliases)) if entity.name.aliases else None
             ),
-            "associated_jurisdiction_ids_json": (
-                json.dumps(
-                    [_extract_id_str(i) for i in raw["associated_jurisdiction_ids"]]
-                )
-                if raw.get("associated_jurisdiction_ids")
-                else None
-            ),
+            "associated_jurisdiction_ids_json": None,
             "predecessor_ids_json": (
-                json.dumps([_extract_id_str(i) for i in raw["predecessor_ids"]])
-                if raw.get("predecessor_ids")
+                json.dumps([p.value for p in entity.predecessor_ids])
+                if entity.predecessor_ids
                 else None
             ),
             "successor_ids_json": (
-                json.dumps([_extract_id_str(i) for i in raw["successor_ids"]])
-                if raw.get("successor_ids")
+                json.dumps([s.value for s in entity.successor_ids])
+                if entity.successor_ids
                 else None
             ),
             "is_deprecated": 1 if entity.is_deprecated else 0,
@@ -168,7 +142,11 @@ class LocationRowMapper(BaseRowMapper[Location]):
                 if entity.tombstone and entity.tombstone.superseded_by
                 else None
             ),
-            "notes_json": json.dumps(raw["notes"]) if raw.get("notes") else None,
+            "notes_json": (
+                json.dumps([n.to_dict() for n in entity.notes])
+                if entity.notes
+                else None
+            ),
             "created_at": entity.created_at.value,
             "updated_at": entity.updated_at.value,
         }
@@ -181,75 +159,61 @@ class LocationRowMapper(BaseRowMapper[Location]):
             sup_str = _extract_id_str(data.get("superseded_by"))
             is_dep = bool(data.get("is_deprecated", 0))
 
-            raw_assoc = (
-                json.loads(data["associated_jurisdiction_ids_json"])
-                if data.get("associated_jurisdiction_ids_json")
-                else []
-            )
-            raw_pred = (
-                json.loads(data["predecessor_ids_json"])
-                if data.get("predecessor_ids_json")
-                else []
-            )
-            raw_succ = (
-                json.loads(data["successor_ids_json"])
-                if data.get("successor_ids_json")
-                else []
-            )
+            tombstone: Tombstone[LocationID] = Tombstone[LocationID]()
+            if is_dep:
+                dep_ts = IsoTimestamp(data["updated_at"])
+                sup_id = LocationID(sup_str) if sup_str else None
+                tombstone = tombstone.retire(timestamp=dep_ts, superseded_by=sup_id)
 
-            payload: dict[str, Any] = {
-                "id": LocationID(_extract_id_str(data["id"]) or ""),
-                "canonical_urn": data["canonical_urn"],
-                "name": data["name"],
-                "category": data["category"],
-                "parent_id": LocationID(pid_str) if pid_str else None,
-                "is_primary_local_authority": bool(
+            notes_list: list[Note] = []
+            if data.get("notes_json"):
+                for n_dict in json.loads(data["notes_json"]):
+                    if isinstance(n_dict, dict):
+                        notes_list.append(Note.from_dict(n_dict))
+
+            name_obj = NameThing.create(raw=data["name"], canonical=data["name"])
+            if data.get("alternate_names_json"):
+                for alias in json.loads(data["alternate_names_json"]):
+                    name_obj = name_obj.add_alias(alias)
+
+            if data.get("historical_names_json"):
+                for h in json.loads(data["historical_names_json"]):
+                    if isinstance(h, dict):
+                        name_obj = name_obj.add_historic_variant(
+                            raw=h.get("raw") or h.get("name", ""),
+                            name=h.get("name") or h.get("canonical", ""),
+                            historic_name_type=h.get(
+                                "historic_name_type", HistoricNameType.HISTORICAL
+                            ),
+                        )
+
+            return Location.create(
+                location_id=LocationID(data["id"]),
+                name=name_obj,
+                category=JurisdictionCategory(data["category"]),
+                canonical_urn=data["canonical_urn"],
+                audit=AuditStamp(
+                    created_at=IsoTimestamp(data["created_at"]),
+                    updated_at=IsoTimestamp(data["updated_at"]),
+                ),
+                tombstone=tombstone,
+                notes=notes_list,
+                parent_id=LocationID(pid_str) if pid_str else None,
+                predecessor_ids=(
+                    json.loads(data["predecessor_ids_json"])
+                    if data.get("predecessor_ids_json")
+                    else []
+                ),
+                successor_ids=(
+                    json.loads(data["successor_ids_json"])
+                    if data.get("successor_ids_json")
+                    else []
+                ),
+                is_primary_local_authority=bool(
                     data.get("is_primary_local_authority", 0)
                 ),
-                "is_unincorporated": bool(data.get("is_unincorporated", 0)),
-                "coordinates": (
-                    json.loads(data["coordinates_json"])
-                    if data.get("coordinates_json")
-                    else None
-                ),
-                "period": json.loads(data["period_json"])
-                if data.get("period_json")
-                else None,
-                "historical_names": (
-                    json.loads(data["historical_names_json"])
-                    if data.get("historical_names_json")
-                    else []
-                ),
-                "alternate_names": (
-                    json.loads(data["alternate_names_json"])
-                    if data.get("alternate_names_json")
-                    else []
-                ),
-                "associated_jurisdiction_ids": [
-                    LocationID(_extract_id_str(jid) or "") for jid in raw_assoc
-                ],
-                "predecessor_ids": [
-                    LocationID(_extract_id_str(pid) or "") for pid in raw_pred
-                ],
-                "successor_ids": [
-                    LocationID(_extract_id_str(sid) or "") for sid in raw_succ
-                ],
-                "audit": {
-                    "created_at": IsoTimestamp(data["created_at"]),
-                    "updated_at": IsoTimestamp(data["updated_at"]),
-                },
-                "tombstone": {
-                    "is_deprecated": is_dep,
-                    "deprecated_at": IsoTimestamp(data["updated_at"])
-                    if is_dep
-                    else None,
-                    "superseded_by": LocationID(sup_str) if sup_str else None,
-                },
-                "notes": json.loads(data["notes_json"])
-                if data.get("notes_json")
-                else [],
-            }
-            return self._adapter.validate_python(payload)
+                is_unincorporated=bool(data.get("is_unincorporated", 0)),
+            )
         except Exception as err:
             raise EntityMappingError(
                 f"Failed to map row to Location: {err}",
@@ -266,15 +230,17 @@ class SiteRowMapper(BaseRowMapper[Site]):
 
     def to_row(self, entity: Site) -> dict[str, Any]:
         """Project Site entity into sites table row parameters."""
-        raw = self._adapter.dump_python(entity, mode="json")
+        raw = entity.to_dict()
         return {
             "id": entity.id.value,
             "canonical_urn": entity.canonical_urn,
-            "name": entity.name,
+            "name": entity.name.canonical,
             "category": entity.category.value,
             "location_id": entity.location_id.value,
             "is_active": 1 if entity.is_active else 0,
-            "address_json": json.dumps(raw["address"]) if raw.get("address") else None,
+            "address_json": (
+                json.dumps(raw["address"]) if raw.get("address") else None
+            ),
             "coordinates_json": (
                 json.dumps(raw["coordinates"]) if raw.get("coordinates") else None
             ),
@@ -305,53 +271,69 @@ class SiteRowMapper(BaseRowMapper[Site]):
         try:
             data = dict(row)
             sup_str = _extract_id_str(data.get("superseded_by"))
-            loc_str = _extract_id_str(data["location_id"]) or ""
             is_dep = bool(data.get("is_deprecated", 0))
 
-            payload: dict[str, Any] = {
-                "id": SiteID(_extract_id_str(data["id"]) or ""),
-                "canonical_urn": data["canonical_urn"],
-                "name": data["name"],
-                "category": data["category"],
-                "location_id": LocationID(loc_str),
-                "is_active": bool(data.get("is_active", 1)),
-                "address": json.loads(data["address_json"])
+            tombstone: Tombstone[SiteID] = Tombstone[SiteID]()
+            if is_dep:
+                dep_ts = IsoTimestamp(data["updated_at"])
+                sup_id = SiteID(sup_str) if sup_str else None
+                tombstone = tombstone.retire(timestamp=dep_ts, superseded_by=sup_id)
+
+            notes_list: list[Note] = []
+            if data.get("notes_json"):
+                for n_dict in json.loads(data["notes_json"]):
+                    if isinstance(n_dict, dict):
+                        notes_list.append(Note.from_dict(n_dict))
+
+            addr_obj = (
+                Address.from_dict(json.loads(data["address_json"]))
                 if data.get("address_json")
-                else None,
-                "coordinates": (
-                    json.loads(data["coordinates_json"])
-                    if data.get("coordinates_json")
-                    else None
-                ),
-                "period": json.loads(data["period_json"])
+                else None
+            )
+            coords_obj = (
+                Coordinates.from_dict(json.loads(data["coordinates_json"]))
+                if data.get("coordinates_json")
+                else None
+            )
+            period_obj = (
+                TimePeriod.from_dict(json.loads(data["period_json"]))
                 if data.get("period_json")
-                else None,
-                "historical_names": (
-                    json.loads(data["historical_names_json"])
-                    if data.get("historical_names_json")
-                    else []
+                else None
+            )
+
+            name_obj = NameThing.create(raw=data["name"], canonical=data["name"])
+            if data.get("alternate_names_json"):
+                for alias in json.loads(data["alternate_names_json"]):
+                    name_obj = name_obj.add_alias(alias)
+
+            if data.get("historical_names_json"):
+                for h in json.loads(data["historical_names_json"]):
+                    if isinstance(h, dict):
+                        name_obj = name_obj.add_historic_variant(
+                            raw=h.get("raw") or h.get("name", ""),
+                            name=h.get("name") or h.get("canonical", ""),
+                            historic_name_type=h.get(
+                                "historic_name_type", HistoricNameType.HISTORICAL
+                            ),
+                        )
+
+            return Site.create(
+                site_id=SiteID(data["id"]),
+                name=name_obj,
+                category=SiteType(data["category"]),
+                canonical_urn=data["canonical_urn"],
+                location_id=LocationID(data["location_id"]),
+                is_active=bool(data.get("is_active", 1)),
+                address=addr_obj,
+                coordinates=coords_obj,
+                period=period_obj,
+                audit=AuditStamp(
+                    created_at=IsoTimestamp(data["created_at"]),
+                    updated_at=IsoTimestamp(data["updated_at"]),
                 ),
-                "alternate_names": (
-                    json.loads(data["alternate_names_json"])
-                    if data.get("alternate_names_json")
-                    else []
-                ),
-                "audit": {
-                    "created_at": IsoTimestamp(data["created_at"]),
-                    "updated_at": IsoTimestamp(data["updated_at"]),
-                },
-                "tombstone": {
-                    "is_deprecated": is_dep,
-                    "deprecated_at": IsoTimestamp(data["updated_at"])
-                    if is_dep
-                    else None,
-                    "superseded_by": SiteID(sup_str) if sup_str else None,
-                },
-                "notes": json.loads(data["notes_json"])
-                if data.get("notes_json")
-                else [],
-            }
-            return self._adapter.validate_python(payload)
+                tombstone=tombstone,
+                notes=notes_list,
+            )
         except Exception as err:
             raise EntityMappingError(
                 f"Failed to map row to Site: {err}",
@@ -368,42 +350,25 @@ class IndividualRowMapper(BaseRowMapper[Individual]):
 
     def to_row(self, entity: Individual) -> dict[str, Any]:
         """Project Individual entity into individuals table row parameters."""
-        raw = self._adapter.dump_python(entity, mode="json")
-
-        birth_date_sort = None
-        if entity.birth_date is not None:
-            birth_date_sort = (
-                entity.birth_date.start_date.date.value
-                if hasattr(entity.birth_date, "start_date")
-                else entity.birth_date.date.value
-            )
-
-        death_date_sort = None
-        if entity.death_date is not None:
-            death_date_sort = (
-                entity.death_date.start_date.date.value
-                if hasattr(entity.death_date, "start_date")
-                else entity.death_date.date.value
-            )
-
+        raw = entity.to_dict()
         return {
             "id": entity.id.value,
             "canonical_urn": entity.canonical_urn,
-            "raw_name": entity.name.raw_name,
+            "raw_name": entity.name.raw,
             "given_name": entity.name.given,
             "middle_name": entity.name.middle,
             "surname": entity.name.surname,
             "suffix": entity.name.suffix,
-            "maiden_name": entity.name.maiden_name,
+            "maiden_name": getattr(entity.name, "maiden_name", None),
             "sex": entity.sex,
             "is_deceased": 1 if entity.is_deceased else 0,
             "birth_year": entity.birth_year,
-            "birth_date_sort": birth_date_sort,
+            "birth_date_sort": str(entity.birth_date) if entity.birth_date else None,
             "birth_date_json": (
                 json.dumps(raw["birth_date"]) if raw.get("birth_date") else None
             ),
             "death_year": entity.death_year,
-            "death_date_sort": death_date_sort,
+            "death_date_sort": str(entity.death_date) if entity.death_date else None,
             "death_date_json": (
                 json.dumps(raw["death_date"]) if raw.get("death_date") else None
             ),
@@ -438,36 +403,22 @@ class IndividualRowMapper(BaseRowMapper[Individual]):
         """Hydrate Individual entity from individuals table row."""
         try:
             data = dict(row)
-            name_obj: dict[str, Any] = {
-                "raw_name": data["raw_name"],
-                "given": data.get("given_name"),
-                "middle": data.get("middle_name"),
-                "surname": data.get("surname"),
-                "suffix": data.get("suffix"),
-                "maiden_name": data.get("maiden_name"),
-            }
-            b_place = _extract_id_str(data.get("birth_place_id"))
-            bp = (
-                LocationID(b_place)
-                if b_place and b_place.startswith("LOC")
-                else (SiteID(b_place) if b_place else None)
-            )
-
-            d_place = _extract_id_str(data.get("death_place_id"))
-            dp = (
-                LocationID(d_place)
-                if d_place and d_place.startswith("LOC")
-                else (SiteID(d_place) if d_place else None)
-            )
-
             sup_str = _extract_id_str(data.get("superseded_by"))
             is_dep = bool(data.get("is_deprecated", 0))
 
             payload: dict[str, Any] = {
-                "id": IndividualID(_extract_id_str(data["id"]) or ""),
-                "name": name_obj,
+                "id": data["id"],
                 "canonical_urn": data["canonical_urn"],
-                "sex": data.get("sex", "U"),
+                "name": {
+                    "raw": data.get("raw_name") or "",
+                    "canonical": f"{data.get('given_name', '')} {data.get('surname', '')}".strip(),
+                    "given": data.get("given_name"),
+                    "middle": data.get("middle_name"),
+                    "surname": data.get("surname"),
+                    "suffix": data.get("suffix"),
+                    "maiden_name": data.get("maiden_name"),
+                },
+                "gender": data.get("sex", "U"),
                 "is_deceased": bool(data.get("is_deceased", 1)),
                 "birth_date": (
                     json.loads(data["birth_date_json"])
@@ -479,8 +430,8 @@ class IndividualRowMapper(BaseRowMapper[Individual]):
                     if data.get("death_date_json")
                     else None
                 ),
-                "birth_place_id": bp,
-                "death_place_id": dp,
+                "birth_place_id": data.get("birth_place_id"),
+                "death_place_id": data.get("death_place_id"),
                 "historical_names": (
                     json.loads(data["historical_names_json"])
                     if data.get("historical_names_json")
@@ -492,21 +443,19 @@ class IndividualRowMapper(BaseRowMapper[Individual]):
                     else []
                 ),
                 "audit": {
-                    "created_at": IsoTimestamp(data["created_at"]),
-                    "updated_at": IsoTimestamp(data["updated_at"]),
+                    "created_at": data["created_at"],
+                    "updated_at": data["updated_at"],
                 },
                 "tombstone": {
                     "is_deprecated": is_dep,
-                    "deprecated_at": IsoTimestamp(data["updated_at"])
-                    if is_dep
-                    else None,
-                    "superseded_by": IndividualID(sup_str) if sup_str else None,
+                    "deprecated_at": data["updated_at"] if is_dep else None,
+                    "superseded_by": sup_str,
                 },
-                "notes": json.loads(data["notes_json"])
-                if data.get("notes_json")
-                else [],
+                "notes": (
+                    json.loads(data["notes_json"]) if data.get("notes_json") else []
+                ),
             }
-            return self._adapter.validate_python(payload)
+            return Individual.from_dict(payload)
         except Exception as err:
             raise EntityMappingError(
                 f"Failed to map row to Individual: {err}",
@@ -523,14 +472,12 @@ class FamilyRowMapper(BaseRowMapper[Family]):
 
     def to_row(self, entity: Family) -> dict[str, Any]:
         """Project Family entity into families table row parameters."""
-        raw = self._adapter.dump_python(entity, mode="json")
+        raw = entity.to_dict()
         return {
             "id": entity.id.value,
             "canonical_urn": entity.canonical_urn,
             "union_json": json.dumps(raw["union"]),
-            "partner_ids_json": json.dumps(
-                [_extract_id_str(pid) for pid in raw.get("partner_ids", [])]
-            ),
+            "partner_ids_json": json.dumps([pid.value for pid in entity.partner_ids]),
             "children_json": json.dumps(raw["children"]),
             "is_deprecated": 1 if entity.is_deprecated else 0,
             "superseded_by": (
@@ -549,36 +496,27 @@ class FamilyRowMapper(BaseRowMapper[Family]):
             data = dict(row)
             sup_str = _extract_id_str(data.get("superseded_by"))
             is_dep = bool(data.get("is_deprecated", 0))
-            raw_partners = (
-                json.loads(data["partner_ids_json"])
-                if data.get("partner_ids_json")
-                else []
-            )
 
             payload: dict[str, Any] = {
-                "id": FamilyID(_extract_id_str(data["id"]) or ""),
+                "id": data["id"],
                 "canonical_urn": data["canonical_urn"],
                 "union": json.loads(data["union_json"]),
-                "partner_ids": [
-                    IndividualID(_extract_id_str(pid) or "") for pid in raw_partners
-                ],
+                "partner_ids": json.loads(data["partner_ids_json"]),
                 "children": json.loads(data["children_json"]),
                 "audit": {
-                    "created_at": IsoTimestamp(data["created_at"]),
-                    "updated_at": IsoTimestamp(data["updated_at"]),
+                    "created_at": data["created_at"],
+                    "updated_at": data["updated_at"],
                 },
                 "tombstone": {
                     "is_deprecated": is_dep,
-                    "deprecated_at": IsoTimestamp(data["updated_at"])
-                    if is_dep
-                    else None,
-                    "superseded_by": FamilyID(sup_str) if sup_str else None,
+                    "deprecated_at": data["updated_at"] if is_dep else None,
+                    "superseded_by": sup_str,
                 },
-                "notes": json.loads(data["notes_json"])
-                if data.get("notes_json")
-                else [],
+                "notes": (
+                    json.loads(data["notes_json"]) if data.get("notes_json") else []
+                ),
             }
-            return self._adapter.validate_python(payload)
+            return Family.from_dict(payload)
         except Exception as err:
             raise EntityMappingError(
                 f"Failed to map row to Family: {err}",
@@ -595,17 +533,16 @@ class FactRowMapper(BaseRowMapper[Fact]):
 
     def to_row(self, entity: Fact) -> dict[str, Any]:
         """Project Fact entity into facts table row parameters."""
-        raw = self._adapter.dump_python(entity, mode="json")
+        raw = entity.to_dict()
 
-        fact_date_sort = None
+        fact_date_sort: str | None = None
         if entity.date is not None:
-            fact_date_sort = (
-                entity.date.date.value
-                if hasattr(entity.date, "date")
-                else entity.date.start_date.date.value
-            )
+            if hasattr(entity.date, "date"):
+                fact_date_sort = str(entity.date.date)
+            elif hasattr(entity.date, "start_date") and entity.date.start_date:
+                fact_date_sort = str(entity.date.start_date)
 
-        fact_year = _extract_year_from_text(fact_date_sort)
+        fact_year = entity.year_lower_bound
 
         return {
             "id": entity.id.value,
@@ -642,29 +579,20 @@ class FactRowMapper(BaseRowMapper[Fact]):
         """Hydrate Fact entity from facts table row."""
         try:
             data = dict(row)
-            subj = _extract_id_str(data["primary_subject_id"]) or ""
-            subj_id = (
-                IndividualID(subj)
-                if subj.startswith("IND")
-                else (FamilyID(subj) if subj.startswith("FAM") else IndividualID(subj))
-            )
-
-            loc_str = _extract_id_str(data.get("location_id"))
-            site_str = _extract_id_str(data.get("site_id"))
             sup_str = _extract_id_str(data.get("superseded_by"))
             is_dep = bool(data.get("is_deprecated", 0))
 
             payload: dict[str, Any] = {
-                "id": FactID(_extract_id_str(data["id"]) or ""),
+                "id": data["id"],
                 "canonical_urn": data["canonical_urn"],
                 "fact_type": data["fact_type"],
                 "title": data["title"],
-                "primary_subject_id": subj_id,
-                "date": json.loads(data["date_json"])
-                if data.get("date_json")
-                else None,
-                "location_id": LocationID(loc_str) if loc_str else None,
-                "site_id": SiteID(site_str) if site_str else None,
+                "primary_subject_id": data["primary_subject_id"],
+                "date": (
+                    json.loads(data["date_json"]) if data.get("date_json") else None
+                ),
+                "location_id": data.get("location_id"),
+                "site_id": data.get("site_id"),
                 "value": data.get("value"),
                 "description": data.get("description"),
                 "narrative": data.get("narrative"),
@@ -679,21 +607,19 @@ class FactRowMapper(BaseRowMapper[Fact]):
                     else []
                 ),
                 "audit": {
-                    "created_at": IsoTimestamp(data["created_at"]),
-                    "updated_at": IsoTimestamp(data["updated_at"]),
+                    "created_at": data["created_at"],
+                    "updated_at": data["updated_at"],
                 },
                 "tombstone": {
                     "is_deprecated": is_dep,
-                    "deprecated_at": IsoTimestamp(data["updated_at"])
-                    if is_dep
-                    else None,
-                    "superseded_by": FactID(sup_str) if sup_str else None,
+                    "deprecated_at": data["updated_at"] if is_dep else None,
+                    "superseded_by": sup_str,
                 },
-                "notes": json.loads(data["notes_json"])
-                if data.get("notes_json")
-                else [],
+                "notes": (
+                    json.loads(data["notes_json"]) if data.get("notes_json") else []
+                ),
             }
-            return self._adapter.validate_python(payload)
+            return Fact.from_dict(payload)
         except Exception as err:
             raise EntityMappingError(
                 f"Failed to map row to Fact: {err}",

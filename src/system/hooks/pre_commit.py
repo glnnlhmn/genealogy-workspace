@@ -184,7 +184,7 @@ def run_targeted_tests(repo_root: Path, test_targets: list[str]) -> int:
         "-v",
         "-m",
         "smoke or unit",
-        "--basetemp=temp/pytest_tmp",
+        "--basetemp=C:/temp/pytest_tmp",
     ]
     res = subprocess.run(cmd, cwd=str(repo_root))
     return res.returncode

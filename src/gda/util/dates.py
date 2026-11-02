@@ -1,14 +1,10 @@
-# Name: dates.py
-# Path: src/gda/util/dates.py
+"""Path: src/gda/util/dates.py
 
-"""ISO date and timestamp format definitions, regex patterns, and string validators.
+ISO date and timestamp format definitions, regex patterns, and string validators.
 
 Operational Role:
     Provides stateless validation predicates for ISO 8601 calendar dates and
     extended timestamps using canonical patterns defined in gda.types.primitives.
-
-Note:
-    PRERELEASE: Module is under active development (version 0.0.1+build.1).
 """
 
 from __future__ import annotations
@@ -24,7 +20,7 @@ from gda.types.primitives import (
     ISO_YEAR_FMT,
 )
 
-__version__ = "0.0.1+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "ISO_DATE_FMT",

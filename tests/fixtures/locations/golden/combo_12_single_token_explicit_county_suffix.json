@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "locations": [
+    {
+      "raw_text": "Dauphin County"
+    }
+  ],
+  "_path": "tests/fixtures/locations/golden/combo_12_single_token_explicit_county_suffix.json"
+}

@@ -15,7 +15,7 @@ Embedded SQLite relational persistence layer providing connection lifecycle mana
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 | `exceptions.py` | `1.0.0+build.1` | Database exception hierarchy and error translation contracts for GDA DB. |
-| `mapper.py` | `1.0.0+build.12` | Bidirectional relational row-to-model mappers bridging SQLite and Pydantic entities. |
+| `mapper.py` | `1.0.0+build.18` | Bidirectional relational row-to-model mappers bridging SQLite and Pydantic entities. |
 | `session.py` | `1.0.0+build.5` | Connection lifecycle, transaction orchestration, and PRAGMA management for GDA DB. |
 
 ## Public Exports & Consumption Contract

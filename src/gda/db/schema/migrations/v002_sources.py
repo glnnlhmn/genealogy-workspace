@@ -8,7 +8,7 @@ Operational Role:
 
 from __future__ import annotations
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 VERSION: int = 2
 NAME: str = "canonical_source_records"

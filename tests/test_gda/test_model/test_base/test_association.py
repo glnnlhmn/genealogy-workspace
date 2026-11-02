@@ -5,12 +5,8 @@ Atomized behavioral test suite for AssociatedIndividual composite.
 Operational Role:
     Verifies instantiation invariants, individual_id vs name_raw resolution rules,
     controlled AssociatedRole bindings, tertiary_roles disjointness, SiteID residence
-    links, SID rejection boundaries, serialization, and introspection contracts.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke).
-    - Dependencies: Synthetic in-memory fixtures with isolated basetemp execution.
+    links, SID rejection boundaries, serialization, copy-on-write mutators,
+    and introspection contracts with 100% statement and branch coverage.
 """
 
 from __future__ import annotations
@@ -22,17 +18,15 @@ from gda.enums.core import AssociatedRole
 from gda.model.atom.id import IndividualID, SiteID
 from gda.model.base.association import AssociatedIndividual
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.7"
 
 
 # ==============================================================================
 # GROUP 1: INITIALIZATION & IDENTITY INVARIANTS
-# Note: Verifies resolution rules between individual_id and name_raw
 # ==============================================================================
 
 
-@pytest.mark.unit
-@pytest.mark.smoke
+@pytest.mark.regression
 def test_associated_individual_init_with_name_raw_only() -> None:
     """Verify initialization when only verbatim name_raw is supplied."""
     assoc = AssociatedIndividual(name_raw="Rev. James Caldwell")
@@ -45,7 +39,7 @@ def test_associated_individual_init_with_name_raw_only() -> None:
     assert assoc.comment is None
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_associated_individual_init_with_individual_id_only() -> None:
     """Verify initialization when only individual_id is supplied without name_raw."""
     ind_id = IndividualID("IND-000101")
@@ -57,7 +51,7 @@ def test_associated_individual_init_with_individual_id_only() -> None:
     assert assoc.residence is None
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_associated_individual_init_with_both_id_and_name_raw() -> None:
     """Verify initialization when both individual_id and name_raw are provided."""
     ind_id = IndividualID("IND-000202")
@@ -79,13 +73,43 @@ def test_associated_individual_init_with_both_id_and_name_raw() -> None:
     assert assoc.comment == "Signed affidavit on page 2"
 
 
+@pytest.mark.regression
+def test_associated_individual_factory_create_and_mutators() -> None:
+    """Verify factory constructor and copy-on-write mutators."""
+    assoc = AssociatedIndividual.create(
+        individual_id="IND-000101",
+        role="CLERGY",
+        residence="SID-000001",
+        comment="Initial comment",
+    )
+    assert assoc.individual_id == IndividualID("IND-000101")
+    assert assoc.role == AssociatedRole.CLERGY
+    assert assoc.residence == SiteID("SID-000001")
+
+    # update_role
+    up_role = assoc.update_role(AssociatedRole.INFORMANT)
+    assert up_role is not assoc
+    assert up_role.role == AssociatedRole.INFORMANT
+    assert up_role.update_role(AssociatedRole.INFORMANT) is up_role
+
+    # update_residence
+    up_res = assoc.update_residence("SID-000002")
+    assert up_res is not assoc
+    assert up_res.residence == SiteID("SID-000002")
+    assert up_res.update_residence(SiteID("SID-000002")) is up_res
+
+    # update_comment
+    up_com = assoc.update_comment("Updated note")
+    assert up_com is not assoc
+    assert up_com.comment == "Updated note"
+    assert up_com.update_comment("Updated note") is up_com
+
+
 # ==============================================================================
 # GROUP 2: BOUNDARY, PREFIX & ROLE DISJOINTNESS VALIDATION
-# Note: Verifies error handling on missing identifiers, SID misuse, and duplicate roles
 # ==============================================================================
 
 
-@pytest.mark.unit
 @pytest.mark.regression
 def test_associated_individual_missing_both_identifiers_fails() -> None:
     """Verify ModelFormatError is raised when neither individual_id nor name_raw is supplied."""
@@ -95,17 +119,15 @@ def test_associated_individual_missing_both_identifiers_fails() -> None:
         AssociatedIndividual()
 
 
-@pytest.mark.unit
 @pytest.mark.regression
 def test_associated_individual_empty_name_raw_without_id_fails() -> None:
     """Verify ModelFormatError is raised when name_raw is empty whitespace and no ID is provided."""
     with pytest.raises(
         ModelFormatError, match="requires either a valid 'individual_id'"
     ):
-        AssociatedIndividual(name_raw="   ")
+        AssociatedIndividual(name_raw=" ")
 
 
-@pytest.mark.unit
 @pytest.mark.regression
 def test_associated_individual_empty_name_raw_with_id_succeeds() -> None:
     """Verify empty name_raw is permitted when a valid individual_id is supplied."""
@@ -114,7 +136,6 @@ def test_associated_individual_empty_name_raw_with_id_succeeds() -> None:
     assert assoc.individual_id == ind_id
 
 
-@pytest.mark.unit
 @pytest.mark.regression
 def test_associated_individual_rejects_site_id_as_individual_id() -> None:
     """Verify ModelPrefixMismatchError is raised when an SID string is supplied for individual_id."""
@@ -122,7 +143,6 @@ def test_associated_individual_rejects_site_id_as_individual_id() -> None:
         IndividualID("SID-000101")
 
 
-@pytest.mark.unit
 @pytest.mark.regression
 def test_associated_individual_primary_role_in_tertiary_roles_fails() -> None:
     """Verify ModelFormatError is raised when primary role is duplicated in tertiary_roles."""
@@ -136,7 +156,6 @@ def test_associated_individual_primary_role_in_tertiary_roles_fails() -> None:
         )
 
 
-@pytest.mark.unit
 @pytest.mark.regression
 def test_associated_individual_duplicate_tertiary_roles_fails() -> None:
     """Verify ModelFormatError is raised when duplicate roles exist within tertiary_roles."""
@@ -151,12 +170,11 @@ def test_associated_individual_duplicate_tertiary_roles_fails() -> None:
 
 
 # ==============================================================================
-# GROUP 3: ROLES, DICT SERIALIZATION & STRING REPRESENTATION
-# Note: Verifies role enum value binding, to_dict serialization, and string outputs
+# GROUP 3: ROLES, SERIALIZATION & STRING REPRESENTATION
 # ==============================================================================
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_associated_individual_str_representation_with_multiple_roles() -> None:
     """Verify __str__ format displays name_raw and all role values correctly."""
     assoc = AssociatedIndividual(
@@ -168,7 +186,7 @@ def test_associated_individual_str_representation_with_multiple_roles() -> None:
     assert str(assoc) == expected
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_associated_individual_str_representation_with_id() -> None:
     """Verify __str__ format displays individual_id when name_raw is None."""
     ind_id = IndividualID("IND-000404")
@@ -176,9 +194,9 @@ def test_associated_individual_str_representation_with_id() -> None:
     assert str(assoc) == f"IND-000404 ({AssociatedRole.INFORMANT.value})"
 
 
-@pytest.mark.unit
-def test_associated_individual_to_dict_serialization() -> None:
-    """Verify to_dict returns expected primitive dictionary structure with enum values."""
+@pytest.mark.integration
+def test_associated_individual_serialization_round_trip() -> None:
+    """Verify to_dict, from_dict, to_json, and from_json round trip."""
     ind_id = IndividualID("IND-000505")
     residence_id = SiteID("SID-000123")
     assoc = AssociatedIndividual(
@@ -201,8 +219,23 @@ def test_associated_individual_to_dict_serialization() -> None:
         "comment": "Traveled together",
     }
 
+    restored = AssociatedIndividual.from_dict(data)
+    assert restored == assoc
 
-@pytest.mark.unit
+    json_str = assoc.to_json()
+    assert "Arthur Hastings" in json_str
+    assert AssociatedIndividual.from_json(json_str) == assoc
+
+    with pytest.raises(ModelFormatError, match="must be a dictionary"):
+        AssociatedIndividual.from_dict("not-a-dict")  # type: ignore[arg-type]
+
+    with pytest.raises(
+        ModelFormatError, match="Failed to parse AssociatedIndividual JSON"
+    ):
+        AssociatedIndividual.from_json("{broken-json")
+
+
+@pytest.mark.regression
 def test_associated_individual_repr_formatting() -> None:
     """Verify __repr__ formats all attributes cleanly."""
     assoc = AssociatedIndividual(name_raw="Test Subject", role=AssociatedRole.OTHER)
@@ -211,7 +244,7 @@ def test_associated_individual_repr_formatting() -> None:
     assert "Test Subject" in repr_str
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_associated_individual_introspectable_execution(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

@@ -24,7 +24,7 @@ from gda.model.entity.family import Family
 from gda.model.entity.individual import Individual
 from gda.model.xref.individual_family_xref import IndividualFamilyXRef
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = ["IndividualFamilyResolver"]
 
@@ -117,7 +117,7 @@ class IndividualFamilyResolver(IntrospectableMixin):
             subject_id=ind_id,
             target_id=ind_id,
             relation_type="IDENTITY",
-            display_label=individual.display_name,
+            display_label=individual.full_name,
         )
         self.add_xref(edge)
 

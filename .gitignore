@@ -116,7 +116,13 @@ reports/*
 # ==============================================================================
 # 8. Production Data Store Isolation & Sensitive Profiles
 # ==============================================================================
-data/
+# Ignore everything in data/ by default
+data/*
+!data/.gitkeep
+
+# Whitelist and track reference datasets and structure
+!data/reference/
+!data/reference/**
 
 # Operator profile isolation
 glenn_profile.json

@@ -13,12 +13,11 @@ from gda.model.base.envelope import RegistryEnvelope
 from gda.model.base.media import DocumentSide, Media
 from gda.model.base.name import CanonicalName
 from gda.model.base.note import Note, NoteType
-from gda.model.base.record_metadata import RecordMetadata
-from gda.model.base.source_reference import SourceReference
-from gda.model.base.tombstone import TombstoneRecord
+from gda.model.base.source import RecordMetadata, SourceRecord, SourceReference
+from gda.model.base.tombstone import Tombstone
 from gda.model.base.transcript import Legibility, TextQuality, Transcript
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 __all__ = [
     "Address",
@@ -33,8 +32,9 @@ __all__ = [
     "NoteType",
     "RecordMetadata",
     "RegistryEnvelope",
+    "SourceRecord",
     "SourceReference",
     "TextQuality",
-    "TombstoneRecord",
+    "Tombstone",
     "Transcript",
 ]

@@ -9,7 +9,6 @@ from gda.enums.archival import (
     DocumentSide,
     EyeColor,
     HairColor,
-    NoteCategory,
     NoteType,
     PhysicalBuild,
     PublicationFrequency,
@@ -22,9 +21,11 @@ from gda.enums.core import (
     AssociatedRole,
     DateModifier,
     FactType,
+    IDType,
     QualityAssessment,
     QuayScore,
     Sex,
+    SmartIDPrefix,
     VitalModifier,
 )
 from gda.enums.fiscal import (
@@ -55,6 +56,7 @@ from gda.enums.vital import (
     BirthPlurality,
     DispositionType,
     DivorceDecreeType,
+    HistoricNameType,
     LegalPlaintiff,
     MannerOfDeath,
     MaritalHistoryDissolution,
@@ -65,12 +67,11 @@ from gda.enums.vital import (
     UnionType,
 )
 
-__version__ = "0.1.0+build.r2"
+__version__ = "0.1.0+build.r3"
 
 __all__ = [
     # Archival
     "DocumentSide",
-    "NoteCategory",
     "NoteType",
     "PublicationFrequency",
     "SelectiveServiceClass",
@@ -84,9 +85,11 @@ __all__ = [
     "AssociatedRole",
     "DateModifier",
     "FactType",
+    "IDType",
     "QualityAssessment",
     "QuayScore",
     "Sex",
+    "SmartIDPrefix",
     "VitalModifier",
     # Fiscal
     "CitizenshipStatus",
@@ -113,6 +116,7 @@ __all__ = [
     "BirthPlurality",
     "DispositionType",
     "DivorceDecreeType",
+    "HistoricNameType",
     "LegalPlaintiff",
     "MannerOfDeath",
     "MaritalHistoryDissolution",

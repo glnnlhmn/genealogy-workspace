@@ -13,11 +13,20 @@ __all__ = [
     "AssociatedRole",
     "DateModifier",
     "FactType",
+    "IDType",
     "QualityAssessment",
     "QuayScore",
     "Sex",
+    "SmartIDPrefix",
     "VitalModifier",
 ]
+
+
+class IDType(StrEnum):
+    """Authoritative identifier format categories."""
+
+    SMART_ID = "SMART_ID"
+    UUID = "UUID"
 
 
 class Sex(StrEnum):
@@ -149,6 +158,19 @@ class DateModifier(StrEnum):
     TO = "TO"
     ESTIMATED = "ESTIMATED"
     CALCULATED = "CALCULATED"
+
+
+class SmartIDPrefix(StrEnum):
+    """Canonical 3-letter prefix classifications for smart entity identifiers."""
+
+    IND = "IND"  # Individual
+    FID = "FID"  # Fact
+    LOC = "LOC"  # Location
+    SID = "SID"  # Site
+    FAM = "FAM"  # Family
+    NOT = "NOT"  # Note
+    REP = "REP"  # Repository
+    DRF = "DRF"  # DraftRecord
 
 
 class VitalModifier(StrEnum):

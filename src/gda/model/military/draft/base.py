@@ -21,7 +21,7 @@ from gda.enums.sources import SourceRecordCategory
 from gda.model.atom.date import HistoricalYear
 from gda.model.atom.id import DraftRecordID, IndividualID, LocationID, TranscriptID
 from gda.model.atom.urn import MilitaryDraftUrn
-from gda.model.base.source_record import SourceRecord
+from gda.model.base.source import SourceRecord
 
 __version__ = "1.0.0+build.3"
 

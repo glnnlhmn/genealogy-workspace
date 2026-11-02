@@ -9,7 +9,7 @@ Operational Role:
 
 from __future__ import annotations
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 VERSION: int = 1
 NAME: str = "canonical_core_entities"

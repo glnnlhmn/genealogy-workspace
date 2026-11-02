@@ -1,25 +1,23 @@
-# Name: text.py
-# Path: src/gda/util/text.py
+"""Path: src/gda/util/text.py
 
-"""Pure stateless text normalization, slugging, and historical phonetic algorithms.
+Pure stateless text normalization, slugging, and historical phonetic algorithms.
 
 Operational Role:
     Provides deterministic string manipulation for archival and genealogical
     intake pipelines, including whitespace cleansing, diacritic stripping,
     ASCII conversion, filesystem/URI slugging, Soundex, and canonical NYSIIS encoding.
-
-Note:
-    PRERELEASE: Module is under active development (version 0.0.1+build.r15).
 """
 
 from __future__ import annotations
 
-__version__ = "0.0.1+build.r15"
-
 import re
 import unicodedata
+from typing import Any
+
+__version__ = "1.0.0+build.16"
 
 __all__ = [
+    "clean_string",
     "clean_whitespace",
     "normalize_ascii",
     "phonetic_nysiis",
@@ -30,6 +28,12 @@ __all__ = [
 _WHITESPACE_RUN_REGEX: re.Pattern[str] = re.compile(r"[ \t\f\v]+")
 _SLUG_NON_ALPHANUM_REGEX: re.Pattern[str] = re.compile(r"[^a-z0-9]+")
 _ALPHA_FILTER_REGEX: re.Pattern[str] = re.compile(r"[^A-Z]")
+
+_ENCLOSING_PUNCTUATION_PATTERN: re.Pattern[str] = re.compile(
+    r"^[@#*\"'<>]+|[@#*\"'<>]+$"
+)
+_REPLACE_CHARACTERS_PATTERN: re.Pattern[str] = re.compile(r"[_*?~^=]+")
+_URN_CLEAN_TOKEN_PATTERN: re.Pattern[str] = re.compile(r"[^a-z0-9_:]+")
 
 _SOUNDEX_DIGITS: dict[str, str] = {
     "B": "1",
@@ -53,6 +57,26 @@ _SOUNDEX_DIGITS: dict[str, str] = {
 }
 _SOUNDEX_VOWELS: set[str] = {"A", "E", "I", "O", "U", "Y"}
 _VOWELS: set[str] = {"A", "E", "I", "O", "U"}
+
+
+def clean_string(val: Any) -> str | None:
+    """Clean string by stripping enclosing delimiters, substituting separators, and trimming.
+
+    Args:
+        val: Arbitrary candidate value to clean.
+
+    Returns:
+        Trimmed, normalized string with collapsed internal spaces, or None if empty/non-string.
+    """
+    if not isinstance(val, str):
+        return None
+
+    cleaned = val.strip()
+    cleaned = _ENCLOSING_PUNCTUATION_PATTERN.sub("", cleaned).strip()
+    cleaned = _REPLACE_CHARACTERS_PATTERN.sub(" ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    return cleaned if cleaned else None
 
 
 def clean_whitespace(text: str) -> str:
@@ -96,12 +120,13 @@ def normalize_ascii(text: str) -> str:
     return normalized.encode("ascii", "ignore").decode("ascii")
 
 
-def slugify(text: str, delimiter: str = "-") -> str:
+def slugify(text: str, delimiter: str = "-", allow_colons: bool = False) -> str:
     """Generate a deterministic, lowercase, filesystem- and URI-safe slug.
 
     Args:
         text: Raw source string to convert.
         delimiter: Separator between alphanumeric words. Defaults to '-'.
+        allow_colons: If True, preserves colons for URN segment paths. Defaults to False.
 
     Returns:
         Filesystem- and URI-safe slugified string.
@@ -113,6 +138,13 @@ def slugify(text: str, delimiter: str = "-") -> str:
         raise TypeError(f"Expected str, got {type(text).__name__}.")
 
     ascii_text = normalize_ascii(text).lower()
+
+    if allow_colons:
+        cleaned = re.sub(r"[\s\-]+", delimiter, ascii_text.strip())
+        cleaned = _URN_CLEAN_TOKEN_PATTERN.sub("", cleaned)
+        cleaned = re.sub(rf"{re.escape(delimiter)}+", delimiter, cleaned)
+        return cleaned.strip(f":-_ {delimiter}")
+
     cleaned = _SLUG_NON_ALPHANUM_REGEX.sub(" ", ascii_text).strip()
     return re.sub(r"\s+", delimiter, cleaned)
 

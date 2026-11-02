@@ -1,0 +1,1943 @@
+{
+  "_path": "data/reference/us_pa_nh_locations_preload.json",
+  "description": "Pre-seeded authoritative hierarchy for USA, Pennsylvania (all 67 counties, Lancaster division group townships/municipalities), and New Hampshire.",
+  "schema_version": "1.0.0",
+  "locations": [
+    {
+      "id": "LOC-000001",
+      "name": "USA",
+      "category": "COUNTRY",
+      "canonical_urn": "urn:gda:loc:usa",
+      "parent_id": null,
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "United States",
+        "United States of America",
+        "United States of America (The)",
+        "The United States",
+        "The United States of America",
+        "U.S.A.",
+        "U.S.",
+        "US",
+        "U.S.A",
+        "U S A",
+        "U S",
+        "US of A",
+        "US of America",
+        "U.S. of A.",
+        "840"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000002",
+      "name": "PA",
+      "category": "STATOID",
+      "canonical_urn": "urn:gda:loc:usa:pa",
+      "parent_id": "LOC-000001",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Pennsylvania",
+        "Commonwealth of Pennsylvania",
+        "Penna.",
+        "Penna",
+        "Pa."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000003",
+      "name": "NH",
+      "category": "STATOID",
+      "canonical_urn": "urn:gda:loc:usa:nh",
+      "parent_id": "LOC-000001",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "New Hampshire",
+        "State of New Hampshire",
+        "N.H."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000004",
+      "name": "Lancaster County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Lancaster Co.",
+        "Lancaster"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000005",
+      "name": "York County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:york",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "York Co.",
+        "York"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000006",
+      "name": "Cumberland County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Cumberland Co.",
+        "Cumberland"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000007",
+      "name": "Dauphin County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Dauphin Co.",
+        "Dauphin"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000008",
+      "name": "Chester County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:chester",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Chester Co.",
+        "Chester"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000009",
+      "name": "Adams County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:adams",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Adams Co.",
+        "Adams"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000010",
+      "name": "Allegheny County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:allegheny",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Allegheny Co.",
+        "Allegheny"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000011",
+      "name": "Armstrong County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:armstrong",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Armstrong Co.",
+        "Armstrong"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000012",
+      "name": "Beaver County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:beaver",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Beaver Co.",
+        "Beaver"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000013",
+      "name": "Bedford County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:bedford",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Bedford Co.",
+        "Bedford"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000014",
+      "name": "Berks County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:berks",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Berks Co.",
+        "Berks"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000015",
+      "name": "Blair County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:blair",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Blair Co.",
+        "Blair"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000016",
+      "name": "Bradford County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:bradford",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Bradford Co.",
+        "Bradford"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Ontario County",
+          "canonical_name": "Ontario County",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000017",
+      "name": "Bucks County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:bucks",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Bucks Co.",
+        "Bucks"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000018",
+      "name": "Butler County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:butler",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Butler Co.",
+        "Butler"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000019",
+      "name": "Cambria County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:cambria",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Cambria Co.",
+        "Cambria"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000020",
+      "name": "Cameron County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:cameron",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Cameron Co.",
+        "Cameron"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000021",
+      "name": "Carbon County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:carbon",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Carbon Co.",
+        "Carbon"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000022",
+      "name": "Centre County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:centre",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Centre Co.",
+        "Centre"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000023",
+      "name": "Clarion County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:clarion",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Clarion Co.",
+        "Clarion"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000024",
+      "name": "Clearfield County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:clearfield",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Clearfield Co.",
+        "Clearfield"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000025",
+      "name": "Clinton County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:clinton",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Clinton Co.",
+        "Clinton"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000026",
+      "name": "Columbia County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:columbia",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Columbia Co.",
+        "Columbia"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000027",
+      "name": "Crawford County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:crawford",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Crawford Co.",
+        "Crawford"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000028",
+      "name": "Delaware County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:delaware",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Delaware Co.",
+        "Delaware"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000029",
+      "name": "Elk County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:elk",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Elk Co.",
+        "Elk"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000030",
+      "name": "Erie County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:erie",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Erie Co.",
+        "Erie"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000031",
+      "name": "Fayette County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:fayette",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Fayette Co.",
+        "Fayette"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000032",
+      "name": "Forest County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:forest",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Forest Co.",
+        "Forest"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000033",
+      "name": "Franklin County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:franklin",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Franklin Co.",
+        "Franklin"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000034",
+      "name": "Fulton County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:fulton",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Fulton Co.",
+        "Fulton"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000035",
+      "name": "Greene County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:greene",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Greene Co.",
+        "Greene"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000036",
+      "name": "Huntingdon County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:huntingdon",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Huntingdon Co.",
+        "Huntingdon"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000037",
+      "name": "Indiana County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:indiana",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Indiana Co.",
+        "Indiana"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000038",
+      "name": "Jefferson County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:jefferson",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Jefferson Co.",
+        "Jefferson"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000039",
+      "name": "Juniata County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:juniata",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Juniata Co.",
+        "Juniata"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000040",
+      "name": "Lackawanna County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:lackawanna",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Lackawanna Co.",
+        "Lackawanna"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000041",
+      "name": "Lawrence County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:lawrence",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Lawrence Co.",
+        "Lawrence"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000042",
+      "name": "Lebanon County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:lebanon",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Lebanon Co.",
+        "Lebanon"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000043",
+      "name": "Lehigh County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:lehigh",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Lehigh Co.",
+        "Lehigh"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000044",
+      "name": "Luzerne County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:luzerne",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Luzerne Co.",
+        "Luzerne"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000045",
+      "name": "Lycoming County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:lycoming",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Lycoming Co.",
+        "Lycoming"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000046",
+      "name": "McKean County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:mckean",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "McKean Co.",
+        "McKean"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000047",
+      "name": "Mercer County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:mercer",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Mercer Co.",
+        "Mercer"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000048",
+      "name": "Mifflin County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:mifflin",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Mifflin Co.",
+        "Mifflin"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000049",
+      "name": "Monroe County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:monroe",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Monroe Co.",
+        "Monroe"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000050",
+      "name": "Montgomery County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:montgomery",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Montgomery Co.",
+        "Montgomery"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000051",
+      "name": "Montour County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:montour",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Montour Co.",
+        "Montour"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000052",
+      "name": "Northampton County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:northampton",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Northampton Co.",
+        "Northampton"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000053",
+      "name": "Northumberland County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:northumberland",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Northumberland Co.",
+        "Northumberland"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000054",
+      "name": "Perry County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:perry",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Perry Co.",
+        "Perry"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000055",
+      "name": "Philadelphia County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:philadelphia",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Philadelphia Co.",
+        "Philadelphia",
+        "Phila."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000056",
+      "name": "Pike County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:pike",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Pike Co.",
+        "Pike"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000057",
+      "name": "Potter County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:potter",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Potter Co.",
+        "Potter"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000058",
+      "name": "Schuylkill County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:schuylkill",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Schuylkill Co.",
+        "Schuylkill"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000059",
+      "name": "Snyder County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:snyder",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Snyder Co.",
+        "Snyder"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000060",
+      "name": "Somerset County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:somerset",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Somerset Co.",
+        "Somerset"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000061",
+      "name": "Sullivan County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:sullivan",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Sullivan Co.",
+        "Sullivan"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000062",
+      "name": "Susquehanna County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:susquehanna",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Susquehanna Co.",
+        "Susquehanna"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000063",
+      "name": "Tioga County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:tioga",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Tioga Co.",
+        "Tioga"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000064",
+      "name": "Union County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:union",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Union Co.",
+        "Union"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000065",
+      "name": "Venango County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:venango",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Venango Co.",
+        "Venango"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000066",
+      "name": "Warren County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:warren",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Warren Co.",
+        "Warren"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000067",
+      "name": "Washington County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:washington",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Washington Co.",
+        "Washington"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000068",
+      "name": "Wayne County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:wayne",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Wayne Co.",
+        "Wayne"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000069",
+      "name": "Westmoreland County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:westmoreland",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Westmoreland Co.",
+        "Westmoreland"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000070",
+      "name": "Wyoming County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:pa:wyoming",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Wyoming Co.",
+        "Wyoming"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000071",
+      "name": "Belknap County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:belknap",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Belknap Co.",
+        "Belknap"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000072",
+      "name": "Carroll County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:carroll",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Carroll Co.",
+        "Carroll"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000073",
+      "name": "Cheshire County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:cheshire",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Cheshire Co.",
+        "Cheshire"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000074",
+      "name": "Coos County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:coos",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Coös County",
+        "Coos Co.",
+        "Coos"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000075",
+      "name": "Grafton County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:grafton",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Grafton Co.",
+        "Grafton"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000076",
+      "name": "Hillsborough County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:hillsborough",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Hillsboro County",
+        "Hillsborough Co.",
+        "Hillsborough"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000077",
+      "name": "Merrimack County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:merrimack",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Merrimack Co.",
+        "Merrimack"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000078",
+      "name": "Rockingham County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:rockingham",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Rockingham Co.",
+        "Rockingham"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000079",
+      "name": "Strafford County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:strafford",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Strafford Co.",
+        "Strafford"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000080",
+      "name": "Sullivan County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:usa:nh:sullivan",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Sullivan Co.",
+        "Sullivan"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000081",
+      "name": "Lancaster",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:lancaster",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "City of Lancaster",
+        "Lancaster City",
+        "Lancaster Borough",
+        "Lancaster Boro"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Hickory Town",
+          "canonical_name": "Hickory Town",
+          "status": "COLLOQUIAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000082",
+      "name": "Manheim Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:manheim",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Manheim Twp.",
+        "Manheim Twp"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000083",
+      "name": "Cocalico Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:cocalico",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Cocalico Twp.",
+        "Cocalico"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Koch-Hale-Kung",
+          "canonical_name": "Cocalico",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000084",
+      "name": "Conestoga Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:conestoga",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Conestoga Twp.",
+        "Conestoga"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000085",
+      "name": "Donegal Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:donegal",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Donegal Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000086",
+      "name": "Earl Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:earl",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Earl Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000087",
+      "name": "Hempfield Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:hempfield",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Hempfield Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000088",
+      "name": "Lampeter Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:lampeter",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Lampeter Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000089",
+      "name": "Manor Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:manor",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Manor Twp."
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Conestoga Manor",
+          "canonical_name": "Manor Township",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000090",
+      "name": "Salisbury Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:salisbury",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Salisbury Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000091",
+      "name": "Warwick Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:warwick",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Warwick Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000092",
+      "name": "Ephrata",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:ephrata",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Ephrata Borough",
+        "Ephrata Boro"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Ephrata Cloister Settlement",
+          "canonical_name": "Ephrata",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000093",
+      "name": "Lititz",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:lititz",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Lititz Borough",
+        "Lititz Boro"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000094",
+      "name": "Columbia",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:columbia",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Columbia Borough",
+        "Columbia Boro"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Wright's Ferry",
+          "canonical_name": "Columbia",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000095",
+      "name": "Brickerville",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:lancaster:brickerville",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000096",
+      "name": "York",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:york:york",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "City of York",
+        "York City",
+        "York Borough",
+        "York Boro"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Yorktown",
+          "canonical_name": "York",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000097",
+      "name": "Hanover",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:york:hanover",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Hanover Borough",
+        "Hanover Boro"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "McAllister's Town",
+          "canonical_name": "Hanover",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000098",
+      "name": "Hellam Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:york:hellam",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Hellam Twp.",
+        "Hallam Township"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000099",
+      "name": "Monaghan Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:york:monaghan",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Monaghan Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000100",
+      "name": "Fairview Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:york:fairview",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Fairview Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000101",
+      "name": "Newberry Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:york:newberry",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Newberry Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000102",
+      "name": "Carlisle",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:carlisle",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Carlisle Borough",
+        "Carlisle Boro"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000103",
+      "name": "Mechanicsburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:mechanicsburg",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Mechanicsburg Borough",
+        "Mechanicsburg Boro",
+        "Mechanicsburgh"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Drytown",
+          "canonical_name": "Mechanicsburg",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000104",
+      "name": "Shippensburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:shippensburg",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Shippensburg Borough",
+        "Shippensburg Boro"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000105",
+      "name": "Camp Hill",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:camp_hill",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Camp Hill Borough",
+        "Camp Hill Boro"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000106",
+      "name": "Silver Spring Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:silver_spring",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Silver Spring Twp.",
+        "Silver Springs"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000107",
+      "name": "East Pennsborough Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:east_pennsborough",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "East Pennsboro Township",
+        "East Pennsborough Twp."
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Pennsborough Township",
+          "canonical_name": "East Pennsborough Township",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000108",
+      "name": "Monroe Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:monroe",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Monroe Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000109",
+      "name": "Boiling Springs",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:boiling_springs",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000110",
+      "name": "Newville",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:cumberland:newville",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Newville Borough",
+        "Newville Boro"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000111",
+      "name": "Harrisburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:harrisburg",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "City of Harrisburg",
+        "Harrisburg City",
+        "Harrisburg Borough"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Harris's Ferry",
+          "canonical_name": "Harrisburg",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Louisbourg",
+          "canonical_name": "Harrisburg",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000112",
+      "name": "Hershey",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:hershey",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Derry Church"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Derry Church",
+          "canonical_name": "Hershey",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000113",
+      "name": "Middletown",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:middletown",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Middletown Borough",
+        "Middletown Boro"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000114",
+      "name": "Millersburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:millersburg",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Millersburg Borough",
+        "Millersburg Boro"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000115",
+      "name": "Derry Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:derry",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Derry Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000116",
+      "name": "Londonderry Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:londonderry",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Londonderry Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000117",
+      "name": "Swatara Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:swatara",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Swatara Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000118",
+      "name": "West Hanover Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:west_hanover",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "West Hanover Twp."
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Hanover Township",
+          "canonical_name": "West Hanover Township",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000119",
+      "name": "Susquehanna Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:susquehanna",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [
+        "Susquehanna Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000120",
+      "name": "Colonial Park",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:colonial_park",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000121",
+      "name": "Linglestown",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:pa:dauphin:linglestown",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "alternate_names": [],
+      "historical_names": [
+        {
+          "raw_name": "St. Thomas",
+          "canonical_name": "Linglestown",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000122",
+      "name": "Concord",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:nh:merrimack:concord",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "City of Concord",
+        "Concord City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Pennycook",
+          "canonical_name": "Concord",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Penacook",
+          "canonical_name": "Concord",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Rumford",
+          "canonical_name": "Concord",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000123",
+      "name": "Bow",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:nh:merrimack:bow",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Town of Bow",
+        "Bow Town"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000124",
+      "name": "Hopkinton",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:nh:merrimack:hopkinton",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Town of Hopkinton",
+        "Hopkinton Town",
+        "Contoocook"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Number 5",
+          "canonical_name": "Hopkinton",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000125",
+      "name": "Pembroke",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:nh:merrimack:pembroke",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "Town of Pembroke",
+        "Pembroke Town",
+        "Suncook"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Lovewell's Town",
+          "canonical_name": "Pembroke",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Suncook",
+          "canonical_name": "Pembroke",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000126",
+      "name": "Manchester",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:nh:hillsborough:manchester",
+      "parent_id": "LOC-000076",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "City of Manchester",
+        "Manchester City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Old Harry's Town",
+          "canonical_name": "Manchester",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Derryfield",
+          "canonical_name": "Manchester",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000127",
+      "name": "Nashua",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:nh:hillsborough:nashua",
+      "parent_id": "LOC-000076",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "City of Nashua",
+        "Nashua City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Dunstable",
+          "canonical_name": "Nashua",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000128",
+      "name": "Portsmouth",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:usa:nh:rockingham:portsmouth",
+      "parent_id": "LOC-000078",
+      "is_primary_local_authority": true,
+      "alternate_names": [
+        "City of Portsmouth",
+        "Portsmouth City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Strawbery Banke",
+          "canonical_name": "Portsmouth",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    }
+  ]
+}

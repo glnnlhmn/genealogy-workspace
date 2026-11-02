@@ -19,7 +19,7 @@ from gda.core.errors import ModelFormatError
 from gda.enums.sources import SourceRecordCategory
 from gda.model.atom.date import HistoricalYear
 from gda.model.atom.id import IndividualID, LocationID, TranscriptID
-from gda.model.base.source_record import SourceRecord
+from gda.model.base.source import SourceRecord
 from gda.model.military.pension import (
     PensionClaimantRole,
     PensionPaymentAuthority,
