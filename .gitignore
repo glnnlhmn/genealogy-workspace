@@ -118,3 +118,4 @@ reports/*
 data/
 # Exclude prompt engineering, miplets, and system instructions
 prompts/
+schemas/intake/
