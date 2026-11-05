@@ -11,15 +11,16 @@ Authoritative genealogical enumerations inheriting strictly from StrEnum and Int
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `archival.py` | `0.1.0+build.r1` | Archival notes, transcription clarity, physical media orientation, and formats. |
+| `archival.py` | `1.1.0+build.1` | Archival notes, transcription clarity, physical media orientation, and formats. |
 | `core.py` | `0.2.0+build.5` | Foundational domain classifications, assessment metrics, and certainty scores. |
 | `fiscal.py` | `0.1.0+build.r1` | Economic, real property tenure, directory status, and tax classification enums. |
-| `site.py` | `0.1.0+build.r1` | Spatial jurisdiction levels, facility venues, and cemetery marker enums. |
+| `location.py` | `1.0.0+build.2` | Categorical enumerations for jurisdictional boundaries and administrative tiers. |
+| `site.py` | `1.1.0+build.1` | Spatial jurisdiction levels, facility venues, and cemetery marker enums. |
 | `sources.py` | `0.1.0+build.r1` | Source record categories, document classifications, and historical schedules. |
-| `vital.py` | `0.1.0+build.4` | Demographic statuses, vital event assertions, and domestic relations enums. |
+| `vital.py` | `0.1.0+build.5` | Demographic statuses, vital event assertions, and domestic relations enums. |
 
 ## Public Exports & Consumption Contract
-Exports: `DocumentSide`, `NoteCategory`, `NoteType`, `PublicationFrequency`, `SelectiveServiceClass`, `TestimonyMedium`, `TranscriptLegibility`, `WwiCardType`, `AssociatedRole`, `DateModifier`, `FactType`, `QualityAssessment`, `QuayScore`, `Sex`, `VitalModifier`, `CitizenshipStatus`, `HomeOwnership`, `ResidentialStatus`, `TaxpayerClassification`, `LocationType`, `MarkerCondition`, `MarkerMaterial`, `MarkerType`, `OperationalStatus`, `SiteType`, `CensusYear`, `EducationLevel`, `MilitaryBranch`, `MilitaryConflict`, `MilitaryWar`, `SourceRecordCategory`, `SourceRecordType`, `BirthPlurality`, `DispositionType`, `DivorceDecreeType`, `LegalPlaintiff`, `MannerOfDeath`, `MaritalHistoryDissolution`, `MaritalStatus`, `PedigreeType`, `UnionDissolutionType`, `UnionType`, `NameStatus`.
+Exports: `DocumentSide`, `NoteType`, `PublicationFrequency`, `SelectiveServiceClass`, `TestimonyMedium`, `TranscriptLegibility`, `WwiCardType`, `PhysicalBuild`, `EyeColor`, `HairColor`, `AssociatedRole`, `DateModifier`, `FactType`, `IDType`, `QualityAssessment`, `QuayScore`, `Sex`, `SmartIDPrefix`, `VitalModifier`, `CitizenshipStatus`, `HomeOwnership`, `ResidentialStatus`, `TaxpayerClassification`, `LocationType`, `MarkerCondition`, `MarkerMaterial`, `MarkerType`, `OperationalStatus`, `SiteType`, `CensusYear`, `EducationLevel`, `MilitaryBranch`, `MilitaryConflict`, `MilitaryDraftType`, `MilitaryWar`, `SourceRecordCategory`, `SourceRecordType`, `BirthPlurality`, `DispositionType`, `DivorceDecreeType`, `HistoricNameType`, `LegalPlaintiff`, `MannerOfDeath`, `MaritalHistoryDissolution`, `MaritalStatus`, `PedigreeType`, `UnionDissolutionType`, `UnionType`, `NameStatus`.
 
 ---
-Generated dynamically by `src/system/generate_readmes.py`.
+Generated dynamically by `src/system/gen_readme.py`.

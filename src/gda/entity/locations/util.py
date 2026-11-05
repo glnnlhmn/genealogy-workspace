@@ -69,9 +69,7 @@ def _get_or_create_node(
     if existing:
         return existing
 
-    next_num = (
-        extract_max_smart_id(collection._registry.keys(), prefix=SmartIDPrefix.LOC) + 1
-    )
+    next_num = extract_max_smart_id(collection._registry.keys(), prefix=SmartIDPrefix.LOC) + 1
     loc_id = LocationID(mint_smart_id(SmartIDPrefix.LOC, next_num))
 
     now = IsoTimestamp.now_utc()
@@ -366,9 +364,7 @@ def import_file(collection: Locations, path: Path | str) -> int:
 
         raw_historical = item.get("historical_names", [])
         if raw_historical:
-            existing_variants = {
-                (h.raw, h.name, h.historic_name_type) for h in name_obj.historic
-            }
+            existing_variants = {(h.raw, h.name, h.historic_name_type) for h in name_obj.historic}
             for h in raw_historical:
                 if isinstance(h, dict):
                     h_raw = h.get("raw") or h.get("raw_name", "")

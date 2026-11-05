@@ -31,11 +31,7 @@ __version__ = "1.0.0+build.4"
 __all__ = ["MilitaryServiceRecord"]
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class MilitaryServiceRecord(SourceRecord):
     """Evidentiary military active service, enlistment, or discharge separation record."""
 

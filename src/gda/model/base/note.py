@@ -83,9 +83,7 @@ class Note(IntrospectableMixin):
     ) -> Note:
         """Factory method minting an initial Note instance with synchronized AuditStamp."""
         validated_note_id = note_id if isinstance(note_id, NoteID) else NoteID(note_id)
-        validated_note_type = (
-            note_type if isinstance(note_type, NoteType) else NoteType(note_type)
-        )
+        validated_note_type = note_type if isinstance(note_type, NoteType) else NoteType(note_type)
         if audit is not None:
             validated_audit = audit
         else:
@@ -93,9 +91,7 @@ class Note(IntrospectableMixin):
             validated_audit = AuditStamp(created_at=now_ts, updated_at=now_ts)
 
         validated_sources = (
-            [s if isinstance(s, SourceID) else SourceID(s) for s in sources]
-            if sources
-            else []
+            [s if isinstance(s, SourceID) else SourceID(s) for s in sources] if sources else []
         )
         validated_tags = [t.strip() for t in tags if t and t.strip()] if tags else []
 
@@ -127,13 +123,9 @@ class Note(IntrospectableMixin):
             tags=list(self.tags),
         )
 
-    def update_type(
-        self, note_type: NoteType | str, audit: AuditStamp | None = None
-    ) -> Note:
+    def update_type(self, note_type: NoteType | str, audit: AuditStamp | None = None) -> Note:
         """Return a new immutable Note instance with updated NoteType and refreshed AuditStamp."""
-        validated_type = (
-            note_type if isinstance(note_type, NoteType) else NoteType(note_type)
-        )
+        validated_type = note_type if isinstance(note_type, NoteType) else NoteType(note_type)
         return Note(
             note_id=self.note_id,
             note_type=validated_type,
@@ -163,9 +155,7 @@ class Note(IntrospectableMixin):
         audit: AuditStamp | None = None,
     ) -> Note:
         """Return a new immutable Note instance with replaced sources and refreshed AuditStamp."""
-        validated_sources = [
-            s if isinstance(s, SourceID) else SourceID(s) for s in sources
-        ]
+        validated_sources = [s if isinstance(s, SourceID) else SourceID(s) for s in sources]
         return Note(
             note_id=self.note_id,
             note_type=self.note_type,
@@ -176,13 +166,9 @@ class Note(IntrospectableMixin):
             tags=list(self.tags),
         )
 
-    def add_source(
-        self, source_id: SourceID | str, audit: AuditStamp | None = None
-    ) -> Note:
+    def add_source(self, source_id: SourceID | str, audit: AuditStamp | None = None) -> Note:
         """Return a new immutable Note instance appending a unique source."""
-        validated_source = (
-            source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        )
+        validated_source = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
         if validated_source in self.sources:
             return self
         new_sources = [*self.sources, validated_source]
@@ -196,9 +182,7 @@ class Note(IntrospectableMixin):
             tags=list(self.tags),
         )
 
-    def remove_source(
-        self, source_id: SourceID | str, audit: AuditStamp | None = None
-    ) -> Note:
+    def remove_source(self, source_id: SourceID | str, audit: AuditStamp | None = None) -> Note:
         """Return a new immutable Note instance with the specified source removed."""
         target_str = str(source_id)
         filtered = [s for s in self.sources if str(s) != target_str]
@@ -297,17 +281,13 @@ class Note(IntrospectableMixin):
             audit_stamp = audit_raw
         elif isinstance(audit_raw, dict):
             if "created_at" not in audit_raw or "updated_at" not in audit_raw:
-                raise ModelFormatError(
-                    "Audit dictionary missing created_at or updated_at."
-                )
+                raise ModelFormatError("Audit dictionary missing created_at or updated_at.")
             audit_stamp = AuditStamp(
                 created_at=IsoTimestamp(audit_raw["created_at"]),
                 updated_at=IsoTimestamp(audit_raw["updated_at"]),
             )
         else:
-            raise ModelFormatError(
-                "Note audit must be an AuditStamp or valid dictionary payload."
-            )
+            raise ModelFormatError("Note audit must be an AuditStamp or valid dictionary payload.")
 
         return cls.create(
             note_id=data["note_id"],

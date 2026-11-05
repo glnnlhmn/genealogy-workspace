@@ -34,9 +34,7 @@ def get_workspace_root() -> Path:
     return Path.cwd().resolve()
 
 
-def parse_metadata_header(
-    file_path: Path, root_dir: Path
-) -> tuple[str | None, Path | None]:
+def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, Path | None]:
     """Extract destination filename and target path from candidate headers.
 
     Supports the Single-Field Header & Docstring Architecture,
@@ -64,12 +62,8 @@ def parse_metadata_header(
         try:
             nb_data = json.loads(content)
             metadata = nb_data.get("metadata", {})
-            target_name = (
-                metadata.get("_name") or metadata.get("name") or nb_data.get("_name")
-            )
-            target_path_str = (
-                metadata.get("_path") or metadata.get("path") or nb_data.get("_path")
-            )
+            target_name = metadata.get("_name") or metadata.get("name") or nb_data.get("_name")
+            target_path_str = metadata.get("_path") or metadata.get("path") or nb_data.get("_path")
 
             if not target_path_str:
                 cells = nb_data.get("cells", [])
@@ -95,12 +89,8 @@ def parse_metadata_header(
     elif suffix == ".json":
         try:
             head_block = "\n".join(content.splitlines()[:20])
-            name_json = re.search(
-                r'"_?name"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE
-            )
-            path_json = re.search(
-                r'"_?path"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE
-            )
+            name_json = re.search(r'"_?name"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE)
+            path_json = re.search(r'"_?path"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE)
             if name_json:
                 target_name = name_json.group(1).strip()
             if path_json:
@@ -140,15 +130,11 @@ def parse_metadata_header(
         return None, None
 
     target_path_str = (
-        re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_path_str)
-        .strip()
-        .strip("\"'")
+        re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_path_str).strip().strip("\"'")
     )
     if target_name:
         target_name = (
-            re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_name)
-            .strip()
-            .strip("\"'")
+            re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_name).strip().strip("\"'")
         )
 
     path_obj = Path(target_path_str)
@@ -323,9 +309,7 @@ def _execute_target(path: Path, root_dir: Path) -> int:
     if ext == ".sh":
         return _execute_bash(path, root_dir)
 
-    print(
-        f"Notice: Non-executable file type '{ext}' cannot be executed directly: {path.name}"
-    )
+    print(f"Notice: Non-executable file type '{ext}' cannot be executed directly: {path.name}")
     return 0
 
 
@@ -354,15 +338,11 @@ def run_intake(
         return 1
 
     candidates: list[Path] = [
-        item
-        for item in download_dir.iterdir()
-        if item.is_file() and not item.name.startswith(".")
+        item for item in download_dir.iterdir() if item.is_file() and not item.name.startswith(".")
     ]
 
     if prefix:
-        candidates = [
-            c for c in candidates if c.name.lower().startswith(prefix.lower())
-        ]
+        candidates = [c for c in candidates if c.name.lower().startswith(prefix.lower())]
 
     if not candidates:
         print("No intake candidates found in download/.")
@@ -391,9 +371,7 @@ def run_intake(
                     _backup_destination(dest_path, root_dir)
             else:
                 if not force:
-                    confirmed = _prompt_user_yes_no(
-                        f"Overwrite destination '{dest_path.name}'?"
-                    )
+                    confirmed = _prompt_user_yes_no(f"Overwrite destination '{dest_path.name}'?")
                     if not confirmed:
                         print(f"Skipped relocation: {candidate.name}")
                         continue
@@ -406,9 +384,7 @@ def run_intake(
         if run_target:
             code = _execute_target(dest_path, root_dir)
             if code != 0:
-                print(
-                    f"Execution failed with non-zero exit code {code}: {dest_path.name}"
-                )
+                print(f"Execution failed with non-zero exit code {code}: {dest_path.name}")
                 return code
 
     if moved_files:

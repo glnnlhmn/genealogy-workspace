@@ -45,11 +45,7 @@ class CivilWarEnrollmentClass(StrEnum):
     CONFEDERATE_GENERAL = "CONFEDERATE_GENERAL"  # Standard Confederate conscript class
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class CivilWarDraftRecord(MilitaryDraftRecord):
     """Evidentiary draft enrollment record from the American Civil War (1862-1865)."""
 

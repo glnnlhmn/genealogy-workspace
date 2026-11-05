@@ -31,16 +31,14 @@ class WwiiDraftWave(StrEnum):
     FIRST = "FIRST"  # Oct 16, 1940 (Ages 21-35)
     SECOND = "SECOND"  # July 1, 1941 (Age 21 attained)
     THIRD = "THIRD"  # Feb 16, 1942 (Ages 20-21, 35-44)
-    FOURTH_OLD_MANS = "FOURTH_OLD_MANS"  # April 27, 1942 (Ages 45-64, not liable for military service)
+    FOURTH_OLD_MANS = (
+        "FOURTH_OLD_MANS"  # April 27, 1942 (Ages 45-64, not liable for military service)
+    )
     FIFTH = "FIFTH"  # June 30, 1942 (Ages 18-20)
     SIXTH = "SIXTH"  # Dec 1942 (Age 18 ongoing)
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class WwiiPhysicalMetrics:
     """Physical description reported by the registrar on WWII Form 1/DSS Form 1."""
 
@@ -78,11 +76,7 @@ class WwiiPhysicalMetrics:
     )
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class WwiiDraftCardRecord(MilitaryDraftRecord):
     """Specialized evidentiary record for WWII Selective Service Draft Cards (1940-1946)."""
 

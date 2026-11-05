@@ -73,9 +73,7 @@ _CATEGORY_ALLOWED_COMMA_COUNTS: dict[JurisdictionCategory, set[int]] = {
     JurisdictionCategory.UNINCORPORATED_PLACE: {2, 3, 4},
 }
 
-_VALID_PARENT_CATEGORIES: dict[
-    JurisdictionCategory, tuple[JurisdictionCategory, ...]
-] = {
+_VALID_PARENT_CATEGORIES: dict[JurisdictionCategory, tuple[JurisdictionCategory, ...]] = {
     JurisdictionCategory.STATOID: (JurisdictionCategory.COUNTRY,),
     JurisdictionCategory.COUNTY_EQUIVALENT: (JurisdictionCategory.STATOID,),
     JurisdictionCategory.CIVIL_TOWNSHIP: (JurisdictionCategory.COUNTY_EQUIVALENT,),
@@ -138,9 +136,7 @@ def _split_and_validate_path_parts(path_str: str) -> list[str]:
         raise ModelFormatError("Location path string cannot be empty or whitespace.")
 
     if path_str.strip().startswith(",") or path_str.strip().endswith(","):
-        raise ModelFormatError(
-            "Location path string cannot have leading or trailing commas."
-        )
+        raise ModelFormatError("Location path string cannot have leading or trailing commas.")
 
     raw_parts = cleaned.split(",")
     parts: list[str] = []
@@ -236,15 +232,11 @@ def valid_hierarchy(
     node_map: dict[str, tuple[str | None, JurisdictionCategory, bool]] = {}
     for node in nodes:
         loc_id, parent_id, cat = node[0], node[1], node[2]
-        is_deprecated = (
-            bool(node[3]) if len(node) > 3 and node[3] is not None else False
-        )
+        is_deprecated = bool(node[3]) if len(node) > 3 and node[3] is not None else False
 
         clean_loc_id = clean_string(loc_id)
         if not clean_loc_id:
-            raise ModelFormatError(
-                "Location ID in relational hierarchy cannot be blank."
-            )
+            raise ModelFormatError("Location ID in relational hierarchy cannot be blank.")
 
         clean_parent_id = clean_string(parent_id) if parent_id is not None else None
         res_cat = _resolve_category(cat)
@@ -377,9 +369,7 @@ def valid_collection_roots(collection: Locations) -> bool:
 
         while curr.parent_id is not None:
             if curr.parent_id not in all_nodes:
-                errors.append(
-                    f"Entity '{loc.id}' references missing parent '{curr.parent_id}'"
-                )
+                errors.append(f"Entity '{loc.id}' references missing parent '{curr.parent_id}'")
                 break
             curr = all_nodes[curr.parent_id]
             if curr.id in seen_in_chain:
@@ -406,9 +396,7 @@ def valid_collection_patterns(collection: Locations) -> bool:
     for loc in collection:
         if loc.category == JurisdictionCategory.COUNTRY:
             if loc.parent_id is not None:
-                errors.append(
-                    f"COUNTRY '{loc.id}' cannot have parent '{loc.parent_id}'"
-                )
+                errors.append(f"COUNTRY '{loc.id}' cannot have parent '{loc.parent_id}'")
             continue
 
         if not loc.parent_id or loc.parent_id not in all_nodes:
@@ -449,9 +437,7 @@ def valid_collection_tombstones(collection: Locations) -> bool:
             if not parent:
                 break
             if parent.tombstone.is_deprecated:
-                errors.append(
-                    f"Active entity '{loc.id}' has tombstoned ancestor '{parent.id}'"
-                )
+                errors.append(f"Active entity '{loc.id}' has tombstoned ancestor '{parent.id}'")
                 break
             curr_parent_id = parent.parent_id
 
@@ -463,9 +449,7 @@ def valid_collection_tombstones(collection: Locations) -> bool:
 
         sup_id = loc.tombstone.superseded_by
         if sup_id not in all_nodes:
-            errors.append(
-                f"Tombstoned '{loc.id}' superseded by missing entity '{sup_id}'"
-            )
+            errors.append(f"Tombstoned '{loc.id}' superseded by missing entity '{sup_id}'")
         else:
             replacement = all_nodes[sup_id]
             if replacement.category != loc.category:
@@ -494,9 +478,7 @@ def valid_collection_indexes(collection: Locations) -> bool:
         for alias in loc.alternate_names:
             c_alias = clean_string(alias)
             if c_alias and c_alias.lower() not in collection._alias_index:
-                errors.append(
-                    f"Alias '{alias}' for '{loc.id}' missing from alias index"
-                )
+                errors.append(f"Alias '{alias}' for '{loc.id}' missing from alias index")
 
     for _urn, loc_id in collection._urn_index.items():
         if loc_id not in collection._registry:

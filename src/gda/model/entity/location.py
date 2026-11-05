@@ -127,9 +127,7 @@ class Location(BaseEntity[LocationID]):
             raise ModelFormatError("Location cannot be its own parent.")
 
         if self.id in self.predecessor_ids:
-            raise ModelFormatError(
-                "Location cannot reference itself in predecessor_ids."
-            )
+            raise ModelFormatError("Location cannot reference itself in predecessor_ids.")
 
         if self.id in self.successor_ids:
             raise ModelFormatError("Location cannot reference itself in successor_ids.")
@@ -195,9 +193,7 @@ class Location(BaseEntity[LocationID]):
     ) -> Location:
         """Factory constructor instantiating a validated Location entity."""
         resolved_id = (
-            location_id
-            if isinstance(location_id, LocationID)
-            else LocationID(location_id)
+            location_id if isinstance(location_id, LocationID) else LocationID(location_id)
         )
 
         if isinstance(name, NameThing):
@@ -225,32 +221,22 @@ class Location(BaseEntity[LocationID]):
         )
 
         resolved_preds = (
-            [
-                pid if isinstance(pid, LocationID) else LocationID(pid)
-                for pid in predecessor_ids
-            ]
+            [pid if isinstance(pid, LocationID) else LocationID(pid) for pid in predecessor_ids]
             if predecessor_ids is not None
             else []
         )
 
         resolved_succs = (
-            [
-                sid if isinstance(sid, LocationID) else LocationID(sid)
-                for sid in successor_ids
-            ]
+            [sid if isinstance(sid, LocationID) else LocationID(sid) for sid in successor_ids]
             if successor_ids is not None
             else []
         )
 
         now_ts = IsoTimestamp.now_utc()
         resolved_audit = (
-            audit
-            if audit is not None
-            else AuditStamp(created_at=now_ts, updated_at=now_ts)
+            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
-        resolved_tombstone = (
-            tombstone if tombstone is not None else Tombstone[LocationID]()
-        )
+        resolved_tombstone = tombstone if tombstone is not None else Tombstone[LocationID]()
         resolved_notes = list(notes) if notes is not None else []
 
         kwargs: dict[str, Any] = {
@@ -397,8 +383,7 @@ class Location(BaseEntity[LocationID]):
         clean_urn = canonical_urn.strip() if canonical_urn else ""
         if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
-                f"Invalid canonical_urn format: '{clean_urn}'. "
-                "Must match 'urn:gda:loc:<namespace>'"
+                f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:loc:<namespace>'"
             )
         return replace(
             self,
@@ -428,14 +413,10 @@ class Location(BaseEntity[LocationID]):
     def add_predecessor(self, predecessor_id: LocationID | str) -> Self:
         """Return a new immutable copy with unique predecessor jurisdiction appended."""
         res_id = (
-            predecessor_id
-            if isinstance(predecessor_id, LocationID)
-            else LocationID(predecessor_id)
+            predecessor_id if isinstance(predecessor_id, LocationID) else LocationID(predecessor_id)
         )
         if res_id == self.id:
-            raise ModelFormatError(
-                "Location cannot reference itself in predecessor_ids."
-            )
+            raise ModelFormatError("Location cannot reference itself in predecessor_ids.")
         if res_id in self.predecessor_ids:
             return self
         return replace(
@@ -448,9 +429,7 @@ class Location(BaseEntity[LocationID]):
     def remove_predecessor(self, predecessor_id: LocationID | str) -> Self:
         """Return a new immutable copy with predecessor jurisdiction removed."""
         res_id = (
-            predecessor_id
-            if isinstance(predecessor_id, LocationID)
-            else LocationID(predecessor_id)
+            predecessor_id if isinstance(predecessor_id, LocationID) else LocationID(predecessor_id)
         )
         filtered = [pid for pid in self.predecessor_ids if pid != res_id]
         if len(filtered) == len(self.predecessor_ids):
@@ -464,11 +443,7 @@ class Location(BaseEntity[LocationID]):
 
     def add_successor(self, successor_id: LocationID | str) -> Self:
         """Return a new immutable copy with unique successor jurisdiction appended."""
-        res_id = (
-            successor_id
-            if isinstance(successor_id, LocationID)
-            else LocationID(successor_id)
-        )
+        res_id = successor_id if isinstance(successor_id, LocationID) else LocationID(successor_id)
         if res_id == self.id:
             raise ModelFormatError("Location cannot reference itself in successor_ids.")
         if res_id in self.successor_ids:
@@ -482,11 +457,7 @@ class Location(BaseEntity[LocationID]):
 
     def remove_successor(self, successor_id: LocationID | str) -> Self:
         """Return a new immutable copy with successor jurisdiction removed."""
-        res_id = (
-            successor_id
-            if isinstance(successor_id, LocationID)
-            else LocationID(successor_id)
-        )
+        res_id = successor_id if isinstance(successor_id, LocationID) else LocationID(successor_id)
         filtered = [sid for sid in self.successor_ids if sid != res_id]
         if len(filtered) == len(self.successor_ids):
             return self

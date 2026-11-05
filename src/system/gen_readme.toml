@@ -3,6 +3,10 @@
 
 default_root = "G:/My Drive/genealogy-workspace"
 
+# ==============================================================================
+# 1. System Administration & Workstation Automation
+# ==============================================================================
+
 [[packages]]
 path = "src/system"
 title = "System Administration & Automation (src/system)"
@@ -11,10 +15,106 @@ test_path = "tests/test_system"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
+path = "src/system/generators"
+title = "Synthetic Data & Fixture Generators (src/system/generators)"
+role = "Synthetic fixture generation, geographical location test data synthesis, and testing harness mock builders."
+test_path = "tests/test_system"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/system/hooks"
+title = "Git Lifecycle Automation & Quality Hooks (src/system/hooks)"
+role = "Hermetic Git lifecycle hooks, staged diff analyzers, automated code style enforcement, and pre-commit verification runners."
+test_path = "tests/test_system"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+# ==============================================================================
+# 2. Desktop Application & Presentation Layer (Ancestry Desk)
+# ==============================================================================
+
+[[packages]]
+path = "src/ancestry_desk"
+title = "Ancestry Desk Desktop Application (src/ancestry_desk)"
+role = "Textual terminal desktop user interface, lifecycle coordination, application dispatching, and operator workflow orchestration."
+test_path = "tests/test_ancestry_desk"
+quality_gate = ">= 85.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/ancestry_desk/controllers"
+title = "Ancestry Desk Controllers (src/ancestry_desk/controllers)"
+role = "User input event dispatchers, view-state coordinators, and background domain service orchestrators."
+test_path = "tests/test_ancestry_desk/test_controllers"
+quality_gate = ">= 85.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/ancestry_desk/state"
+title = "Ancestry Desk Reactive State (src/ancestry_desk/state)"
+role = "Reactive user interface state containers, operator session contexts, search filter caches, and workspace selection state."
+test_path = "tests/test_ancestry_desk"
+quality_gate = ">= 85.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/ancestry_desk/views"
+title = "Ancestry Desk Views & Widgets (src/ancestry_desk/views)"
+role = "Textual visual components, responsive record dashboards, search widgets, modal confirmation dialogs, and tabular layouts."
+test_path = "tests/test_ancestry_desk/test_views"
+quality_gate = ">= 85.0% Statement & Branch Coverage"
+
+# ==============================================================================
+# 3. Operational CLI Orchestrators & Administrative Tools
+# ==============================================================================
+
+[[packages]]
+path = "src/cli"
+title = "Operational CLI Orchestrators (src/cli)"
+role = "Command-line entrypoints, archive loading pipelines, location database seeding routines, and administrative batch utilities."
+test_path = "tests/test_cli"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/cli/commands"
+title = "CLI Command Subsystems (src/cli/commands)"
+role = "Subcommand dispatchers, argument parsing specifications, and terminal action handlers for archive maintenance and inspection."
+test_path = "tests/test_cli/test_commands"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/cli/formatters"
+title = "CLI Terminal Output Formatters (src/cli/formatters)"
+role = "Rich terminal tables, colored status banners, structured JSON console serializers, and progress indicators."
+test_path = "tests/test_cli"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+# ==============================================================================
+# 4. Core Foundation, Infrastructure & Persistence
+# ==============================================================================
+
+[[packages]]
+path = "src/gda"
+title = "Genealogy Digital Archive Engine (src/gda)"
+role = "Top-level shared domain framework uniting core primitives, data models, entity resolvers, persistence engines, and archival utilities."
+test_path = "tests/test_gda"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
 path = "src/gda/core"
 title = "Core Primitives & Introspection (src/gda/core)"
 role = "Domain-agnostic foundational infrastructure providing canonical error taxonomies, immutable Pydantic configuration, structured logging, and runtime class introspection."
 test_path = "tests/test_gda/test_core"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/db"
+title = "Embedded Relational Persistence & Sessions (src/gda/db)"
+role = "Embedded SQLite relational persistence layer providing connection lifecycle management, WAL and foreign key enforcement, atomic write transactions, and bidirectional Pydantic row mapping."
+test_path = "tests/test_gda/test_db"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/db/schema"
+title = "Database Relational DDL & Migrations (src/gda/db/schema)"
+role = "Versioned SQLite schema migration runners, table definitions, index initializers, and schema lifecycle managers."
+test_path = "tests/test_gda/test_db"
 quality_gate = ">= 95.0% Statement & Branch Coverage"
 
 [[packages]]
@@ -45,6 +145,84 @@ role = "High-performance phonetics algorithms (Soundex, NYSIIS), cryptographic h
 test_path = "tests/test_gda/test_util"
 quality_gate = ">= 95.0% Statement & Branch Coverage"
 
+# ==============================================================================
+# 5. Entity Managers & Resolution Engines
+# ==============================================================================
+
+[[packages]]
+path = "src/gda/engine"
+title = "Kinship Graph & In-Memory Relationship Resolvers (src/gda/engine)"
+role = "High-performance, in-memory graph resolution infrastructure providing O(1) kinship lookups, bidirectional media bindings, secondary event participant indexing, and safe entity eviction."
+test_path = "tests/test_gda/test_engine"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/engine/kinship"
+title = "Kinship Graph Computation (src/gda/engine/kinship)"
+role = "Consanguinity calculators, pedigree collapse resolvers, canonical ancestor traversal algorithms, and relationship degree mappers."
+test_path = "tests/test_gda/test_engine"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/engine/plausibility"
+title = "Biological & Chronological Plausibility (src/gda/engine/plausibility)"
+role = "Temporal plausibility validators, biological generation gap verifiers, lifespan anomaly detectors, and contradiction engines."
+test_path = "tests/test_gda/test_engine"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity"
+title = "Domain Entity Services (src/gda/entity)"
+role = "Operational domain entity lifecycle controllers, entity registry aggregation, and validation coordinators."
+test_path = "tests/test_gda/test_entity"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity/locations"
+title = "Geographic Location Authority & Collections (src/gda/entity/locations)"
+role = "Hierarchical jurisdictional authority trees, gazetteer reconciliation, boundary change resolvers, and location collections."
+test_path = "tests/test_gda/test_entity/test_locations"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity/sites"
+title = "Historic Site & Facility Collections (src/gda/entity/sites)"
+role = "Physical point-of-interest registry, cemetery plots, religious institutions, homestead parcels, and site validation collections."
+test_path = "tests/test_gda/test_entity/test_sites"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/manager"
+title = "Governance & Reference Minting Managers (src/gda/manager)"
+role = "High-level authority management coordinators overseeing global vocabulary registries, namespace dereferencing, and identifier minting."
+test_path = "tests/test_gda"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/manager/referencer"
+title = "URN Dereferencing & Cross-Domain Indexing (src/gda/manager/referencer)"
+role = "URN resolution dispatchers, global cross-archive entity locator maps, and persistent identifier dereferencing services."
+test_path = "tests/test_gda"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/manager/vocab"
+title = "Controlled Vocabulary Governance (src/gda/manager/vocab)"
+role = "Controlled genealogical terminology authority, concept taxonomy registries, and external schema alignment services."
+test_path = "tests/test_gda"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
+# ==============================================================================
+# 6. Data Models, Value Objects & Domain Schemas
+# ==============================================================================
+
+[[packages]]
+path = "src/gda/model"
+title = "Authoritative Domain Model Suite (src/gda/model)"
+role = "Central structural data model hierarchy defining atomic primitives, composite base structures, primary entities, and relational edges."
+test_path = "tests/test_gda/test_model"
+quality_gate = ">= 95.0% Statement & Branch Coverage"
+
 [[packages]]
 path = "src/gda/model/atom"
 title = "Atomic Value Objects (src/gda/model/atom)"
@@ -67,13 +245,6 @@ test_path = "tests/test_gda/test_model/test_entity"
 quality_gate = ">= 95.0% Statement & Branch Coverage"
 
 [[packages]]
-path = "src/gda/model/military"
-title = "Military Records Domain Package (src/gda/model/military)"
-role = "Evidentiary military records domain model suite encompassing conscription and draft registrations, active duty muster/service/separation certificates, veteran invalid and widow/dependent pension claims, bounty land warrants, combat casualties, POW internments, national cemetery burials, and valor awards."
-test_path = "tests/test_gda/test_model/test_military"
-quality_gate = "100.0% Statement & Branch Coverage"
-
-[[packages]]
 path = "src/gda/model/xref"
 title = "Cross-Reference & Relational Edge Models (src/gda/model/xref)"
 role = "Decoupled, immutable relational edge dataclasses connecting personas, domestic family units, secondary event participants, and digital media assets with deterministic compound primary keys."
@@ -81,15 +252,43 @@ test_path = "tests/test_gda/test_model/test_xref"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
-path = "src/gda/engine"
-title = "Kinship Graph & In-Memory Relationship Resolvers (src/gda/engine)"
-role = "High-performance, in-memory graph resolution infrastructure providing O(1) kinship lookups, bidirectional media bindings, secondary event participant indexing, and safe entity eviction."
-test_path = "tests/test_gda/test_engine"
+path = "src/gda/model/military"
+title = "Military Records Domain Package (src/gda/model/military)"
+role = "Evidentiary military records domain model suite encompassing conscription, active service, pensions, bounty land, casualties, burials, and awards."
+test_path = "tests/test_gda/test_model/test_military"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
-path = "src/gda/db"
-title = "Embedded Relational Persistence & Schema Management (src/gda/db)"
-role = "Embedded SQLite relational persistence layer providing connection lifecycle management, WAL and foreign key enforcement, atomic write transactions, versioned DDL schema migrations, and bidirectional Pydantic row mapping."
-test_path = "tests/test_gda/test_db"
-quality_gate = ">= 95.0% Statement & Branch Coverage"
+path = "src/gda/model/military/awards"
+title = "Military Valor & Service Awards (src/gda/model/military/awards)"
+role = "Valor citations, campaign medals, unit commendations, wound badges, and decoration claim models."
+test_path = "tests/test_gda/test_model/test_military"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/military/casualty"
+title = "Military Casualties, POW & Burials (src/gda/model/military/casualty)"
+role = "Battlefield casualties, combat injury records, POW camp internments, and national cemetery burial records."
+test_path = "tests/test_gda/test_model/test_military"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/military/draft"
+title = "Military Conscription & Draft Registrations (src/gda/model/military/draft)"
+role = "Historical draft registrations, militia enrollment lists, Civil War enrollment, and modern Selective Service records."
+test_path = "tests/test_gda/test_model/test_military"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/military/pension"
+title = "Military Pensions & Bounty Land (src/gda/model/military/pension)"
+role = "Veteran invalid claims, widow and minor dependent pensions, bounty land warrants, and acts of Congress pension files."
+test_path = "tests/test_gda/test_model/test_military"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/military/service"
+title = "Active Military Service & Enlistment (src/gda/model/military/service)"
+role = "Enlistment oaths, company muster rolls, rank assignments, naval postings, and formal discharge certificates."
+test_path = "tests/test_gda/test_model/test_military"
+quality_gate = "100.0% Statement & Branch Coverage"

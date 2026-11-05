@@ -34,11 +34,7 @@ class WwiCitizenshipStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class WwiPhysicalDescription:
     """Registrar's physical description recorded on the reverse of the WWI card."""
 
@@ -68,11 +64,7 @@ class WwiPhysicalDescription:
     )
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class WwiDraftCardRecord(MilitaryDraftRecord):
     """Specialized evidentiary record for WWI Draft Registration Cards (1917-1918)."""
 

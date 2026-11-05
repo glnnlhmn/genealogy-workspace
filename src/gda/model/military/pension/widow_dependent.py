@@ -27,11 +27,7 @@ __version__ = "1.0.0+build.2"
 __all__ = ["PensionWidowDependentRecord"]
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class PensionWidowDependentRecord(MilitaryPensionRecord):
     """Evidentiary military widow, orphan, or dependent parent pension claim record."""
 

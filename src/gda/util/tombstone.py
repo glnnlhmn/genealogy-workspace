@@ -68,9 +68,7 @@ def stamp_tombstone[T](
             **{k: v for k, v in changes.items() if k in fields},
         )
     else:
-        new_tombstone = Tombstone[Any]().retire(
-            timestamp=now, superseded_by=superseded_by
-        )
+        new_tombstone = Tombstone[Any]().retire(timestamp=now, superseded_by=superseded_by)
 
     if hasattr(entity, "model_copy"):
         return entity.model_copy(update={"tombstone": new_tombstone})

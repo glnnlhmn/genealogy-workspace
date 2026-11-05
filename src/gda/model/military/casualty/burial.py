@@ -27,11 +27,7 @@ __version__ = "1.0.0+build.1"
 __all__ = ["MilitaryBurialRecord"]
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class MilitaryBurialRecord(MilitaryCasualtyRecord):
     """Evidentiary military interment or headstone registration record."""
 

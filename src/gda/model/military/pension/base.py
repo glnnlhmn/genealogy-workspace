@@ -30,11 +30,7 @@ __version__ = "1.0.0+build.1"
 __all__ = ["MilitaryPensionRecord"]
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class MilitaryPensionRecord(SourceRecord):
     """Evidentiary military pension application, certificate, or payment ledger record."""
 
@@ -131,14 +127,8 @@ class MilitaryPensionRecord(SourceRecord):
             )
 
     def __str__(self) -> str:
-        cert = (
-            f" Cert#{self.certificate_number_raw}"
-            if self.certificate_number_raw
-            else ""
-        )
-        app = (
-            f" App#{self.application_number_raw}" if self.application_number_raw else ""
-        )
+        cert = f" Cert#{self.certificate_number_raw}" if self.certificate_number_raw else ""
+        app = f" App#{self.application_number_raw}" if self.application_number_raw else ""
         return (
             f"MilitaryPensionRecord [{self.payment_authority.value}] {self.claimant_name_raw} "
             f"({self.claimant_role.value}) - Vet: {self.veteran_name_raw} "

@@ -66,16 +66,12 @@ class AtomID(IntrospectableMixin):
                 f"Invalid AtomID format: '{self.value}'. "
                 "Must match 'AAA-######' (3 uppercase letters, hyphen, 6+ digits)."
             )
-            _logger.debug(
-                "Identifier syntax validation failed", details={"raw_value": self.value}
-            )
+            _logger.debug("Identifier syntax validation failed", details={"raw_value": self.value})
             raise ModelFormatError(err_msg, details={"value": self.value})
 
         parsed_prefix, _ = match.groups()
         target_prefix = (
-            self.expected_prefix
-            if self.expected_prefix is not None
-            else self.EXPECTED_PREFIX
+            self.expected_prefix if self.expected_prefix is not None else self.EXPECTED_PREFIX
         )
 
         if target_prefix is not None and parsed_prefix != target_prefix:
@@ -215,9 +211,7 @@ class UUIDv4Str(IntrospectableMixin):
                 f"Invalid UUIDv4 format for {self.__class__.__name__}: '{self.value}'. "
                 "Must match RFC 4122 lowercase UUIDv4 format."
             )
-            _logger.debug(
-                "UUIDv4 syntax validation failed", details={"raw_value": self.value}
-            )
+            _logger.debug("UUIDv4 syntax validation failed", details={"raw_value": self.value})
             raise ModelFormatError(
                 err_msg,
                 error_code="ERR_UUID_FORMAT",

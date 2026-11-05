@@ -1,0 +1,421 @@
+{
+  "_path": "data/intake/partitioned/08_us_nh_counties_and_towns.json",
+  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-LOC-08-NH",
+  "source_note": "Stage 08: All 10 New Hampshire Counties plus Merrimack, Hillsborough, and Rockingham localities.",
+  "locations": [
+    {
+      "id": "LOC-000078",
+      "name": "Belknap County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:belknap",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Belknap Co."
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000024",
+          "note_type": "RESEARCH",
+          "text": "Organized in 1840 from Strafford and Merrimack counties; seat at Laconia.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000079",
+      "name": "Carroll County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:carroll",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Carroll Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000080",
+      "name": "Cheshire County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:cheshire",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Cheshire Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000081",
+      "name": "Coos County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:coos",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Coos Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000082",
+      "name": "Grafton County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:grafton",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Grafton Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000083",
+      "name": "Hillsborough County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:hillsborough",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Hillsborough Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000084",
+      "name": "Merrimack County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Merrimack Co."
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000030",
+          "note_type": "RESEARCH",
+          "text": "Formed in 1823; seat at Concord (NH State Capital).",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000085",
+      "name": "Rockingham County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:rockingham",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Rockingham Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000086",
+      "name": "Strafford County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:strafford",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Strafford Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000087",
+      "name": "Sullivan County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:sullivan",
+      "parent_id": "LOC-000004",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Sullivan Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000184",
+      "name": "Bow",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:bow_town",
+      "parent_id": "LOC-000084",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Bow"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000047",
+          "note_type": "RESEARCH",
+          "text": "Granted in 1727; birthplace of Mary Baker Eddy.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000185",
+      "name": "Concord",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:concord_city",
+      "parent_id": "LOC-000084",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "State Capital"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Rumford",
+          "canonical_name": "Rumford",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Penacook",
+          "canonical_name": "Penacook",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000048",
+          "note_type": "RESEARCH",
+          "text": "Settled 1725; renamed Rumford in 1734 and Concord in 1765.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000186",
+      "name": "Hopkinton",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:hopkinton_town",
+      "parent_id": "LOC-000084",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Hopkinton"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Number 5",
+          "canonical_name": "Number 5",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000187",
+      "name": "Contoocook",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:hopkinton_town:contoocook",
+      "parent_id": "LOC-000186",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Contoocook Village"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000188",
+      "name": "Dunbarton",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:dunbarton_town",
+      "parent_id": "LOC-000084",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Dunbarton"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Starkstown",
+          "canonical_name": "Starkstown",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000189",
+      "name": "Pembroke",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:pembroke_town",
+      "parent_id": "LOC-000084",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Pembroke"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Suncook",
+          "canonical_name": "Suncook",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000190",
+      "name": "Suncook",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:pembroke_town:suncook",
+      "parent_id": "LOC-000189",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Suncook Village"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000191",
+      "name": "Hooksett",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:hooksett_town",
+      "parent_id": "LOC-000084",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Hooksett"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Chesterfield",
+          "canonical_name": "Chesterfield",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000192",
+      "name": "Manchester",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:hillsborough:manchester_city",
+      "parent_id": "LOC-000083",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Queen City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Derryfield",
+          "canonical_name": "Derryfield",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Amoskeag",
+          "canonical_name": "Amoskeag",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000049",
+          "note_type": "RESEARCH",
+          "text": "Largest municipality in northern New England; center of the Amoskeag textile mills.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000193",
+      "name": "Nashua",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:hillsborough:nashua_city",
+      "parent_id": "LOC-000083",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Gate City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Dunstable",
+          "canonical_name": "Dunstable",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000194",
+      "name": "Portsmouth",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:rockingham:portsmouth_city",
+      "parent_id": "LOC-000085",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [],
+      "historical_names": [
+        {
+          "raw_name": "Strawbery Banke",
+          "canonical_name": "Strawbery Banke",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000050",
+          "note_type": "RESEARCH",
+          "text": "Historic Atlantic colonial port settled in 1630; original provincial seat.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}

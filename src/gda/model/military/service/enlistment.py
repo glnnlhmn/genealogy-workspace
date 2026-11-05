@@ -41,11 +41,7 @@ class MusterRollType(StrEnum):
     SPECIAL_REPRESENTATION = "SPECIAL_REPRESENTATION"
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class EnlistmentMusterRecord(MilitaryServiceRecord):
     """Evidentiary military enlistment or muster roll record."""
 
@@ -92,15 +88,8 @@ class EnlistmentMusterRecord(MilitaryServiceRecord):
         """Enforce muster text sanitization and substitute linkage consistency."""
         super().__post_init__()
 
-        if (
-            self.substitute_for_id is not None
-            or self.substitute_for_name_raw is not None
-        ):
-            name_raw = (
-                self.substitute_for_name_raw.strip()
-                if self.substitute_for_name_raw
-                else ""
-            )
+        if self.substitute_for_id is not None or self.substitute_for_name_raw is not None:
+            name_raw = self.substitute_for_name_raw.strip() if self.substitute_for_name_raw else ""
             if not name_raw and self.substitute_for_id is None:
                 raise ModelFormatError(
                     "EnlistmentMusterRecord requires non-empty substitute_for_name_raw "

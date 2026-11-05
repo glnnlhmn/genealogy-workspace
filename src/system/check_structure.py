@@ -59,9 +59,7 @@ def build_tree(
 
     lines: list[str] = []
     try:
-        entries = sorted(
-            target_dir.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())
-        )
+        entries = sorted(target_dir.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
     except (PermissionError, FileNotFoundError):
         return lines
 
@@ -94,9 +92,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     Returns:
         Parsed argument namespace.
     """
-    parser = argparse.ArgumentParser(
-        description="Audit and report repository directory structure."
-    )
+    parser = argparse.ArgumentParser(description="Audit and report repository directory structure.")
     parser.add_argument(
         "--all",
         action="store_true",

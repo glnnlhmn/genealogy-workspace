@@ -42,9 +42,9 @@ class IndividualFamilyResolver(IntrospectableMixin):
         self._ind_to_fam_partner: dict[IndividualID, set[FamilyID]] = defaultdict(set)
         self._ind_to_fam_child: dict[IndividualID, set[FamilyID]] = defaultdict(set)
         self._fam_to_partners: dict[FamilyID, list[IndividualID]] = defaultdict(list)
-        self._fam_to_children: dict[
-            FamilyID, list[tuple[IndividualID, PedigreeType]]
-        ] = defaultdict(list)
+        self._fam_to_children: dict[FamilyID, list[tuple[IndividualID, PedigreeType]]] = (
+            defaultdict(list)
+        )
 
     @property
     def last_compiled(self) -> IsoTimestamp:
@@ -75,9 +75,7 @@ class IndividualFamilyResolver(IntrospectableMixin):
         return resolver
 
     @classmethod
-    def from_xrefs(
-        cls, xrefs: Iterable[IndividualFamilyXRef]
-    ) -> IndividualFamilyResolver:
+    def from_xrefs(cls, xrefs: Iterable[IndividualFamilyXRef]) -> IndividualFamilyResolver:
         """Hydrate graph index directly from an iterable of pre-formed IndividualFamilyXRef edges."""
         resolver = cls()
         for edge in xrefs:
@@ -98,9 +96,7 @@ class IndividualFamilyResolver(IntrospectableMixin):
                 self._fam_to_partners[edge.target_id].append(edge.subject_id)
 
         elif rel == "CHILD" and isinstance(edge.target_id, FamilyID):
-            pedigree = (
-                edge.role if isinstance(edge.role, PedigreeType) else PedigreeType.BIRTH
-            )
+            pedigree = edge.role if isinstance(edge.role, PedigreeType) else PedigreeType.BIRTH
             self._ind_to_fam_child[edge.subject_id].add(edge.target_id)
             entry = (edge.subject_id, pedigree)
             if entry not in self._fam_to_children[edge.target_id]:
@@ -171,9 +167,7 @@ class IndividualFamilyResolver(IntrospectableMixin):
                 self._fam_to_partners[fam_id] = [p for p in partners if p != entity_id]
 
             for fam_id, children in list(self._fam_to_children.items()):
-                self._fam_to_children[fam_id] = [
-                    c for c in children if c[0] != entity_id
-                ]
+                self._fam_to_children[fam_id] = [c for c in children if c[0] != entity_id]
 
         else:
             self._fam_to_partners.pop(entity_id, None)
@@ -186,15 +180,11 @@ class IndividualFamilyResolver(IntrospectableMixin):
 
         self._mark_updated()
 
-    def get_families_as_partner(
-        self, individual_id: IndividualID
-    ) -> tuple[FamilyID, ...]:
+    def get_families_as_partner(self, individual_id: IndividualID) -> tuple[FamilyID, ...]:
         """Return tuple of FamilyIDs where individual is registered as a partner."""
         return tuple(sorted(self._ind_to_fam_partner.get(individual_id, set())))
 
-    def get_families_as_child(
-        self, individual_id: IndividualID
-    ) -> tuple[FamilyID, ...]:
+    def get_families_as_child(self, individual_id: IndividualID) -> tuple[FamilyID, ...]:
         """Return tuple of FamilyIDs where individual is registered as a child."""
         return tuple(sorted(self._ind_to_fam_child.get(individual_id, set())))
 

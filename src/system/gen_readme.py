@@ -61,13 +61,9 @@ def extract_module_metadata(file_path: Path) -> dict[str, str]:
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
-                        if target.id == "__version__" and isinstance(
-                            node.value, ast.Constant
-                        ):
+                        if target.id == "__version__" and isinstance(node.value, ast.Constant):
                             metadata["version"] = str(node.value.value)
-                        elif target.id == "__all__" and isinstance(
-                            node.value, ast.List
-                        ):
+                        elif target.id == "__all__" and isinstance(node.value, ast.List):
                             names = [
                                 elt.value
                                 for elt in node.value.elts
@@ -84,11 +80,7 @@ def generate_package_readme(pkg_info: dict[str, str], root_path: Path) -> str:
     """Generate standardized Markdown documentation for a package directory."""
     pkg_dir = root_path / pkg_info["path"]
     py_files = sorted(
-        [
-            f
-            for f in pkg_dir.glob("*.py")
-            if f.is_file() and not f.name.startswith((".", "__"))
-        ]
+        [f for f in pkg_dir.glob("*.py") if f.is_file() and not f.name.startswith((".", "__"))]
     )
 
     lines: list[str] = [
@@ -105,11 +97,7 @@ def generate_package_readme(pkg_info: dict[str, str], root_path: Path) -> str:
     ]
 
     subdirs = sorted(
-        [
-            d
-            for d in pkg_dir.iterdir()
-            if d.is_dir() and not d.name.startswith((".", "_"))
-        ]
+        [d for d in pkg_dir.iterdir() if d.is_dir() and not d.name.startswith((".", "_"))]
     )
     if subdirs:
         lines.append("## Subpackages")
@@ -133,9 +121,7 @@ def generate_package_readme(pkg_info: dict[str, str], root_path: Path) -> str:
 
     for py_file in py_files:
         meta = extract_module_metadata(py_file)
-        lines.append(
-            f"| `{py_file.name}` | `{meta['version']}` | {meta['description']} |"
-        )
+        lines.append(f"| `{py_file.name}` | `{meta['version']}` | {meta['description']} |")
 
     lines.append("")
     lines.append("## Public Exports & Consumption Contract")
@@ -145,9 +131,7 @@ def generate_package_readme(pkg_info: dict[str, str], root_path: Path) -> str:
         if init_meta["all_exports"]:
             lines.append(f"Exports: {init_meta['all_exports']}.")
         else:
-            lines.append(
-                "Modules export public interfaces explicitly declared in `__all__`."
-            )
+            lines.append("Modules export public interfaces explicitly declared in `__all__`.")
     else:
         lines.append("Direct submodule imports supported.")
 

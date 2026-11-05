@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from gda.core.errors import ConfigParseError, ConfigValidationError
 
-__version__ = "1.0.0+build.r10"
+__version__ = "1.0.0+build.r12"
 
 
 class ImmutableBaseModel(BaseModel):
@@ -73,9 +73,7 @@ class DatabaseConfig(ImmutableBaseModel):
 class LoggingConfig(ImmutableBaseModel):
     """Structured logging configuration parameters."""
 
-    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
-        default="INFO"
-    )
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(default="INFO")
     log_to_console: bool = Field(default=True)
     log_to_file: bool = Field(default=False)
     log_file_path: str = Field(default="logs/gda.log")
@@ -205,7 +203,11 @@ class AppConfig(ImmutableBaseModel):
                 with open(file_to_load, "rb") as fh:
                     raw_toml = tomllib.load(fh)
                     if is_pyproject:
-                        payload.update(raw_toml.get("tool", {}).get("gda", {}))
+                        gda_section = raw_toml.get("tool", {}).get("gda", {})
+                        # Filter to known AppConfig fields to prevent extra forbidden errors
+                        valid_keys = cls.model_fields.keys()
+                        filtered = {k: v for k, v in gda_section.items() if k in valid_keys}
+                        payload.update(filtered)
                     else:
                         payload.update(raw_toml)
             except tomllib.TOMLDecodeError as err:

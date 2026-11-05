@@ -73,9 +73,7 @@ class MediaXRefResolver(IntrospectableMixin):
 
     def evict_entity(self, entity_id: AtomID) -> None:
         """Safely remove all media cross-reference edges and index mappings for an entity."""
-        keys_to_delete = [
-            k for k, edge in self._edges.items() if edge.entity_id == entity_id
-        ]
+        keys_to_delete = [k for k, edge in self._edges.items() if edge.entity_id == entity_id]
 
         if not keys_to_delete:
             return
@@ -91,9 +89,7 @@ class MediaXRefResolver(IntrospectableMixin):
 
     def evict_media(self, media_id: UUID) -> None:
         """Safely remove all cross-reference edges and index mappings for a media asset."""
-        keys_to_delete = [
-            k for k, edge in self._edges.items() if edge.media_id == media_id
-        ]
+        keys_to_delete = [k for k, edge in self._edges.items() if edge.media_id == media_id]
 
         if not keys_to_delete:
             return

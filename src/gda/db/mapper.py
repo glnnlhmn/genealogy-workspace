@@ -143,9 +143,7 @@ class LocationRowMapper(BaseRowMapper[Location]):
                 else None
             ),
             "notes_json": (
-                json.dumps([n.to_dict() for n in entity.notes])
-                if entity.notes
-                else None
+                json.dumps([n.to_dict() for n in entity.notes]) if entity.notes else None
             ),
             "created_at": entity.created_at.value,
             "updated_at": entity.updated_at.value,
@@ -205,13 +203,9 @@ class LocationRowMapper(BaseRowMapper[Location]):
                     else []
                 ),
                 successor_ids=(
-                    json.loads(data["successor_ids_json"])
-                    if data.get("successor_ids_json")
-                    else []
+                    json.loads(data["successor_ids_json"]) if data.get("successor_ids_json") else []
                 ),
-                is_primary_local_authority=bool(
-                    data.get("is_primary_local_authority", 0)
-                ),
+                is_primary_local_authority=bool(data.get("is_primary_local_authority", 0)),
                 is_unincorporated=bool(data.get("is_unincorporated", 0)),
             )
         except Exception as err:
@@ -238,22 +232,16 @@ class SiteRowMapper(BaseRowMapper[Site]):
             "category": entity.category.value,
             "location_id": entity.location_id.value,
             "is_active": 1 if entity.is_active else 0,
-            "address_json": (
-                json.dumps(raw["address"]) if raw.get("address") else None
-            ),
+            "address_json": (json.dumps(raw["address"]) if raw.get("address") else None),
             "coordinates_json": (
                 json.dumps(raw["coordinates"]) if raw.get("coordinates") else None
             ),
             "period_json": json.dumps(raw["period"]) if raw.get("period") else None,
             "historical_names_json": (
-                json.dumps(raw["historical_names"])
-                if raw.get("historical_names")
-                else None
+                json.dumps(raw["historical_names"]) if raw.get("historical_names") else None
             ),
             "alternate_names_json": (
-                json.dumps(raw["alternate_names"])
-                if raw.get("alternate_names")
-                else None
+                json.dumps(raw["alternate_names"]) if raw.get("alternate_names") else None
             ),
             "is_deprecated": 1 if entity.is_deprecated else 0,
             "superseded_by": (
@@ -364,29 +352,17 @@ class IndividualRowMapper(BaseRowMapper[Individual]):
             "is_deceased": 1 if entity.is_deceased else 0,
             "birth_year": entity.birth_year,
             "birth_date_sort": str(entity.birth_date) if entity.birth_date else None,
-            "birth_date_json": (
-                json.dumps(raw["birth_date"]) if raw.get("birth_date") else None
-            ),
+            "birth_date_json": (json.dumps(raw["birth_date"]) if raw.get("birth_date") else None),
             "death_year": entity.death_year,
             "death_date_sort": str(entity.death_date) if entity.death_date else None,
-            "death_date_json": (
-                json.dumps(raw["death_date"]) if raw.get("death_date") else None
-            ),
-            "birth_place_id": (
-                entity.birth_place_id.value if entity.birth_place_id else None
-            ),
-            "death_place_id": (
-                entity.death_place_id.value if entity.death_place_id else None
-            ),
+            "death_date_json": (json.dumps(raw["death_date"]) if raw.get("death_date") else None),
+            "birth_place_id": (entity.birth_place_id.value if entity.birth_place_id else None),
+            "death_place_id": (entity.death_place_id.value if entity.death_place_id else None),
             "historical_names_json": (
-                json.dumps(raw["historical_names"])
-                if raw.get("historical_names")
-                else None
+                json.dumps(raw["historical_names"]) if raw.get("historical_names") else None
             ),
             "alternate_names_json": (
-                json.dumps(raw["alternate_names"])
-                if raw.get("alternate_names")
-                else None
+                json.dumps(raw["alternate_names"]) if raw.get("alternate_names") else None
             ),
             "is_deprecated": 1 if entity.is_deprecated else 0,
             "superseded_by": (
@@ -421,14 +397,10 @@ class IndividualRowMapper(BaseRowMapper[Individual]):
                 "gender": data.get("sex", "U"),
                 "is_deceased": bool(data.get("is_deceased", 1)),
                 "birth_date": (
-                    json.loads(data["birth_date_json"])
-                    if data.get("birth_date_json")
-                    else None
+                    json.loads(data["birth_date_json"]) if data.get("birth_date_json") else None
                 ),
                 "death_date": (
-                    json.loads(data["death_date_json"])
-                    if data.get("death_date_json")
-                    else None
+                    json.loads(data["death_date_json"]) if data.get("death_date_json") else None
                 ),
                 "birth_place_id": data.get("birth_place_id"),
                 "death_place_id": data.get("death_place_id"),
@@ -451,9 +423,7 @@ class IndividualRowMapper(BaseRowMapper[Individual]):
                     "deprecated_at": data["updated_at"] if is_dep else None,
                     "superseded_by": sup_str,
                 },
-                "notes": (
-                    json.loads(data["notes_json"]) if data.get("notes_json") else []
-                ),
+                "notes": (json.loads(data["notes_json"]) if data.get("notes_json") else []),
             }
             return Individual.from_dict(payload)
         except Exception as err:
@@ -512,9 +482,7 @@ class FamilyRowMapper(BaseRowMapper[Family]):
                     "deprecated_at": data["updated_at"] if is_dep else None,
                     "superseded_by": sup_str,
                 },
-                "notes": (
-                    json.loads(data["notes_json"]) if data.get("notes_json") else []
-                ),
+                "notes": (json.loads(data["notes_json"]) if data.get("notes_json") else []),
             }
             return Family.from_dict(payload)
         except Exception as err:
@@ -561,9 +529,7 @@ class FactRowMapper(BaseRowMapper[Fact]):
             "participants_json": (
                 json.dumps(raw["participants"]) if raw.get("participants") else None
             ),
-            "citations_json": (
-                json.dumps(raw["citations"]) if raw.get("citations") else None
-            ),
+            "citations_json": (json.dumps(raw["citations"]) if raw.get("citations") else None),
             "is_deprecated": 1 if entity.is_deprecated else 0,
             "superseded_by": (
                 entity.tombstone.superseded_by.value
@@ -588,23 +554,17 @@ class FactRowMapper(BaseRowMapper[Fact]):
                 "fact_type": data["fact_type"],
                 "title": data["title"],
                 "primary_subject_id": data["primary_subject_id"],
-                "date": (
-                    json.loads(data["date_json"]) if data.get("date_json") else None
-                ),
+                "date": (json.loads(data["date_json"]) if data.get("date_json") else None),
                 "location_id": data.get("location_id"),
                 "site_id": data.get("site_id"),
                 "value": data.get("value"),
                 "description": data.get("description"),
                 "narrative": data.get("narrative"),
                 "participants": (
-                    json.loads(data["participants_json"])
-                    if data.get("participants_json")
-                    else []
+                    json.loads(data["participants_json"]) if data.get("participants_json") else []
                 ),
                 "citations": (
-                    json.loads(data["citations_json"])
-                    if data.get("citations_json")
-                    else []
+                    json.loads(data["citations_json"]) if data.get("citations_json") else []
                 ),
                 "audit": {
                     "created_at": data["created_at"],
@@ -615,9 +575,7 @@ class FactRowMapper(BaseRowMapper[Fact]):
                     "deprecated_at": data["updated_at"] if is_dep else None,
                     "superseded_by": sup_str,
                 },
-                "notes": (
-                    json.loads(data["notes_json"]) if data.get("notes_json") else []
-                ),
+                "notes": (json.loads(data["notes_json"]) if data.get("notes_json") else []),
             }
             return Fact.from_dict(payload)
         except Exception as err:

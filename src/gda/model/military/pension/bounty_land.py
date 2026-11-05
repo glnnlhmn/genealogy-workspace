@@ -30,11 +30,7 @@ __version__ = "1.0.0+build.1"
 __all__ = ["BountyLandWarrantRecord"]
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class BountyLandWarrantRecord(SourceRecord):
     """Evidentiary military bounty land warrant application, certificate, or patent."""
 
@@ -131,9 +127,7 @@ class BountyLandWarrantRecord(SourceRecord):
         object.__setattr__(self, "warrant_number_raw", warr_num)
 
         if self.assignee_id is not None or self.assignee_name_raw is not None:
-            assignee_str = (
-                self.assignee_name_raw.strip() if self.assignee_name_raw else ""
-            )
+            assignee_str = self.assignee_name_raw.strip() if self.assignee_name_raw else ""
             if not assignee_str and self.assignee_id is None:
                 raise ModelFormatError(
                     "BountyLandWarrantRecord requires non-empty assignee_name_raw "

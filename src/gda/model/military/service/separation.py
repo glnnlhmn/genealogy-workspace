@@ -41,11 +41,7 @@ class SeparationFormType(StrEnum):
     OTHER = "OTHER"
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class SeparationDischargeRecord(MilitaryServiceRecord):
     """Evidentiary military discharge, release, or certificate of separation."""
 

@@ -30,33 +30,23 @@ class ModernDraftEra(StrEnum):
     POST_WWII_1948 = "POST_WWII_1948"  # Selective Service Act of 1948
     KOREAN_WAR = "KOREAN_WAR"  # 1950-1953
     VIETNAM_LOTTERY = "VIETNAM_LOTTERY"  # 1969-1975 (Lottery Drawings)
-    POST_1980_REGISTRATION = (
-        "POST_1980_REGISTRATION"  # July 1980 onward (Proclamation 4771)
-    )
+    POST_1980_REGISTRATION = "POST_1980_REGISTRATION"  # July 1980 onward (Proclamation 4771)
 
 
 class SssClassification(StrEnum):
     """Selective service board classification designation."""
 
     ONE_A = "1-A"  # Available for unrestricted military service
-    ONE_A_O = (
-        "1-A-O"  # Conscientious objector available for noncombatant military service
-    )
+    ONE_A_O = "1-A-O"  # Conscientious objector available for noncombatant military service
     ONE_O = "1-O"  # Conscientious objector available for civilian alternate service
     ONE_D = "1-D"  # Member of reserve component or student in ROTC
     TWO_S = "2-S"  # Student deferment
     THREE_A = "3-A"  # Extreme hardship deferment to dependents
-    FOUR_F = (
-        "4-F"  # Registrant unqualified for military service (physical/mental/moral)
-    )
+    FOUR_F = "4-F"  # Registrant unqualified for military service (physical/mental/moral)
     UNCLASSIFIED = "UNCLASSIFIED"
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class ModernSelectiveServiceRecord(MilitaryDraftRecord):
     """Evidentiary draft record under the modern Selective Service System (1948-present)."""
 

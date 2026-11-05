@@ -3,14 +3,15 @@
 Categorical enumerations for jurisdictional boundaries and administrative tiers.
 
 Operational Role:
-    Defines controlled categorical tiers for civil and geographical entities.
+    Defines controlled categorical tiers for civil and geographical entities,
+    enforcing a strict linear administrative hierarchy rank.
 """
 
 from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.4"
 
 __all__ = ["JurisdictionCategory"]
 
@@ -34,8 +35,8 @@ class JurisdictionCategory(StrEnum):
             self.STATOID: 20,
             self.COUNTY_EQUIVALENT: 30,
             self.CIVIL_TOWNSHIP: 40,
-            self.MUNICIPALITY: 40,
-            self.UNINCORPORATED_PLACE: 50,
-            self.SPECIAL_DISTRICT: 60,
+            self.MUNICIPALITY: 50,
+            self.UNINCORPORATED_PLACE: 60,
+            self.SPECIAL_DISTRICT: 70,
         }
         return ranks[self]

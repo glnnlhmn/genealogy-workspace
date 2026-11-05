@@ -59,7 +59,4 @@ class AuditStamp(IntrospectableMixin):
         return AuditStamp(created_at=self.created_at, updated_at=updated_at)
 
     def __repr__(self) -> str:
-        return (
-            f"AuditStamp(created_at={self.created_at!r}, "
-            f"updated_at={self.updated_at!r})"
-        )
+        return f"AuditStamp(created_at={self.created_at!r}, updated_at={self.updated_at!r})"

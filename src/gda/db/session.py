@@ -51,9 +51,7 @@ class DatabaseSessionManager(IntrospectableMixin):
         self._config = config or DatabaseConfig()
         if db_path is not None:
             self._db_path: Path | str = (
-                db_path
-                if str(db_path) in (":memory:", "file::memory:")
-                else Path(db_path)
+                db_path if str(db_path) in (":memory:", "file::memory:") else Path(db_path)
             )
         else:
             self._db_path = self._config.db_path
@@ -136,9 +134,7 @@ class DatabaseSessionManager(IntrospectableMixin):
             conn.close()
 
     @contextmanager
-    def transaction(
-        self, conn: sqlite3.Connection | None = None
-    ) -> Generator[sqlite3.Connection]:
+    def transaction(self, conn: sqlite3.Connection | None = None) -> Generator[sqlite3.Connection]:
         """Execute an atomic transaction boundary with immediate locking or nested savepoints.
 
         Args:

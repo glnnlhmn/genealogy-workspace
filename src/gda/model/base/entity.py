@@ -106,24 +106,16 @@ class EntityLifecycleMixin(IntrospectableMixin):
             "Deprecating entity",
             details={"entity_id": str(self.id), "superseded_by": str(superseded_by)},
         )
-        new_tombstone = self.tombstone.retire(
-            timestamp=now_ts, superseded_by=superseded_by
-        )
+        new_tombstone = self.tombstone.retire(timestamp=now_ts, superseded_by=superseded_by)
         return replace(self, audit=self.audit.touch(now_ts), tombstone=new_tombstone)
 
     def restore(self, timestamp: IsoTimestamp | None = None) -> Self:
         """Return a copy with tombstone restored to active state."""
         now_ts = timestamp if timestamp is not None else IsoTimestamp.now_utc()
-        _logger.debug(
-            "Restoring deprecated entity", details={"entity_id": str(self.id)}
-        )
+        _logger.debug("Restoring deprecated entity", details={"entity_id": str(self.id)})
         target_tombstone_cls = type(self.tombstone)
-        restored_tombstone = target_tombstone_cls(
-            is_deprecated=False, superseded_by=None
-        )
-        return replace(
-            self, audit=self.audit.touch(now_ts), tombstone=restored_tombstone
-        )
+        restored_tombstone = target_tombstone_cls(is_deprecated=False, superseded_by=None)
+        return replace(self, audit=self.audit.touch(now_ts), tombstone=restored_tombstone)
 
     # ==========================================================================
     # SECTION 3: EMBEDDED NOTE CONTAINER HELPERS
@@ -215,9 +207,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
         results = list(self.notes)
 
         if note_type is not None:
-            resolved_type = (
-                note_type if isinstance(note_type, NoteType) else NoteType(note_type)
-            )
+            resolved_type = note_type if isinstance(note_type, NoteType) else NoteType(note_type)
             results = [n for n in results if n.note_type == resolved_type]
 
         if tag is not None:
@@ -227,9 +217,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
         if text is not None:
             sub = text.strip().lower()
             results = [
-                n
-                for n in results
-                if sub in n.text.lower() or (n.title and sub in n.title.lower())
+                n for n in results if sub in n.text.lower() or (n.title and sub in n.title.lower())
             ]
 
         if sort_by is not None:

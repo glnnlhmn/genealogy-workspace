@@ -52,9 +52,7 @@ class HistoricVariant(IntrospectableMixin):
     """Discrete historical naming phase for an evolutionary place, site, or artifact."""
 
     raw: str = Field(..., description="Verbatim historical name as recorded in source.")
-    name: str = Field(
-        ..., description="Standardized or normalized historical name form."
-    )
+    name: str = Field(..., description="Standardized or normalized historical name form.")
     historic_name_type: HistoricNameType = Field(
         default=HistoricNameType.HISTORICAL,
         description="Classification of historical name variant.",
@@ -69,13 +67,9 @@ class HistoricVariant(IntrospectableMixin):
     def __post_init__(self) -> None:
         """Enforce non-empty string boundaries."""
         if not self.raw or not self.raw.strip():
-            raise ModelFormatError(
-                "HistoricVariant 'raw' cannot be empty or whitespace."
-            )
+            raise ModelFormatError("HistoricVariant 'raw' cannot be empty or whitespace.")
         if not self.name or not self.name.strip():
-            raise ModelFormatError(
-                "HistoricVariant 'name' cannot be empty or whitespace."
-            )
+            raise ModelFormatError("HistoricVariant 'name' cannot be empty or whitespace.")
 
     @classmethod
     def create(
@@ -109,14 +103,8 @@ class HistoricVariant(IntrospectableMixin):
             "historic_name_type": self.historic_name_type.value,
         }
         if self.valid_period is not None:
-            start_str = (
-                str(self.valid_period.start_date)
-                if self.valid_period.start_date
-                else None
-            )
-            end_str = (
-                str(self.valid_period.end_date) if self.valid_period.end_date else None
-            )
+            start_str = str(self.valid_period.start_date) if self.valid_period.start_date else None
+            end_str = str(self.valid_period.end_date) if self.valid_period.end_date else None
             data["valid_period"] = {
                 "start_date": start_str,
                 "end_date": end_str,
@@ -160,9 +148,7 @@ class HistoricVariant(IntrospectableMixin):
         return cls.create(
             raw=str(raw_val),
             name=str(name_val),
-            historic_name_type=data.get(
-                "historic_name_type", HistoricNameType.HISTORICAL
-            ),
+            historic_name_type=data.get("historic_name_type", HistoricNameType.HISTORICAL),
             valid_period=period_obj,
             comment=data.get("comment"),
         )
@@ -212,9 +198,7 @@ class NameLifecycleMixin(IntrospectableMixin):
         current_spellings: list[str] = getattr(self, "alt_spellings", [])
         if clean in current_spellings:
             return self
-        return cast(
-            Self, replace(cast(Any, self), alt_spellings=[*current_spellings, clean])
-        )
+        return cast(Self, replace(cast(Any, self), alt_spellings=[*current_spellings, clean]))
 
     def remove_spelling(self, spelling: str) -> Self:
         """Return a new immutable copy with target alternate spelling removed."""
@@ -255,9 +239,7 @@ class NameBase(NameLifecycleMixin):
         if not self.raw or not self.raw.strip():
             raise ModelFormatError(f"{self.__class__.__name__} 'raw' cannot be empty.")
         if not self.canonical or not self.canonical.strip():
-            raise ModelFormatError(
-                f"{self.__class__.__name__} 'canonical' cannot be empty."
-            )
+            raise ModelFormatError(f"{self.__class__.__name__} 'canonical' cannot be empty.")
         if len(self.aliases) != len(set(self.aliases)):
             raise ModelFormatError("Duplicate entries found in aliases.")
         if len(self.alt_spellings) != len(set(self.alt_spellings)):
@@ -271,17 +253,11 @@ class NameBase(NameLifecycleMixin):
 class NamePerson(NameBase):
     """Specialized persona noun model supporting discrete titles, parts, and married names."""
 
-    prefix: str | None = Field(
-        default=None, description="Title, rank, or honorific style."
-    )
+    prefix: str | None = Field(default=None, description="Title, rank, or honorific style.")
     given: str | None = Field(default=None, description="First or given name.")
     middle: str | None = Field(default=None, description="Middle name(s) or initials.")
-    surname: str | None = Field(
-        default=None, description="Birth surname (patronymic/matronymic)."
-    )
-    suffix: str | None = Field(
-        default=None, description="Generational or post-nominal suffix."
-    )
+    surname: str | None = Field(default=None, description="Birth surname (patronymic/matronymic).")
+    suffix: str | None = Field(default=None, description="Generational or post-nominal suffix.")
     married: list[str] = Field(
         default_factory=list, description="Searchable list of all married surnames."
     )
@@ -302,9 +278,7 @@ class NamePerson(NameBase):
             self.surname,
             self.suffix,
         )
-        parts: list[str] = [
-            p for p in candidate_parts if isinstance(p, str) and p.strip()
-        ]
+        parts: list[str] = [p for p in candidate_parts if isinstance(p, str) and p.strip()]
         return " ".join(parts) if parts else self.canonical
 
     @classmethod
@@ -344,9 +318,7 @@ class NamePerson(NameBase):
                 if c and c not in clean_spellings:
                     clean_spellings.append(c)
 
-        computed_canonical = (
-            canonical.strip() if canonical and canonical.strip() else None
-        )
+        computed_canonical = canonical.strip() if canonical and canonical.strip() else None
         if not computed_canonical:
             name_parts = [
                 p
@@ -480,9 +452,7 @@ class NamePerson(NameBase):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse NamePerson JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse NamePerson JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:
@@ -531,9 +501,7 @@ class NameThing(NameBase):
                 if c and c not in clean_spellings:
                     clean_spellings.append(c)
 
-        computed_can = (
-            canonical.strip() if canonical and canonical.strip() else raw.strip()
-        )
+        computed_can = canonical.strip() if canonical and canonical.strip() else raw.strip()
 
         kwargs: dict[str, Any] = {
             "raw": raw.strip(),
@@ -638,9 +606,7 @@ class NameThing(NameBase):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse NameThing JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse NameThing JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:

@@ -92,15 +92,9 @@ class Address(IntrospectableMixin):
         """Factory constructor instantiating a validated Address."""
         clean_1 = address_line_1.strip() if address_line_1 else ""
         if not clean_1:
-            raise ModelFormatError(
-                "Address address_line_1 cannot be empty or whitespace."
-            )
+            raise ModelFormatError("Address address_line_1 cannot be empty or whitespace.")
 
-        clean_2 = (
-            address_line_2.strip()
-            if address_line_2 and address_line_2.strip()
-            else None
-        )
+        clean_2 = address_line_2.strip() if address_line_2 and address_line_2.strip() else None
         clean_city = city.strip() if city and city.strip() else None
         clean_state = state.strip() if state and state.strip() else None
         clean_zip = postal_code.strip() if postal_code and postal_code.strip() else None
@@ -118,18 +112,12 @@ class Address(IntrospectableMixin):
         """Return a new immutable copy with updated primary street address line."""
         clean = address_line_1.strip() if address_line_1 else ""
         if not clean:
-            raise ModelFormatError(
-                "Address address_line_1 cannot be empty or whitespace."
-            )
+            raise ModelFormatError("Address address_line_1 cannot be empty or whitespace.")
         return replace(self, address_line_1=clean)
 
     def update_line_2(self, address_line_2: str | None) -> Self:
         """Return a new immutable copy with updated secondary street address line."""
-        clean = (
-            address_line_2.strip()
-            if address_line_2 and address_line_2.strip()
-            else None
-        )
+        clean = address_line_2.strip() if address_line_2 and address_line_2.strip() else None
         return replace(self, address_line_2=clean)
 
     def update_city(self, city: str | None) -> Self:
@@ -179,9 +167,7 @@ class Address(IntrospectableMixin):
 
         raw_1 = data.get("address_line_1")
         if not raw_1 or not str(raw_1).strip():
-            raise ModelFormatError(
-                "Missing required field 'address_line_1' for Address."
-            )
+            raise ModelFormatError("Missing required field 'address_line_1' for Address.")
 
         coords_obj: Coordinates | None = None
         raw_coords = data.get("coordinates")
@@ -189,9 +175,7 @@ class Address(IntrospectableMixin):
             lat = raw_coords.get("latitude")
             lon = raw_coords.get("longitude")
             if lat is not None and lon is not None:
-                coords_obj = Coordinates(
-                    latitude=Latitude(lat), longitude=Longitude(lon)
-                )
+                coords_obj = Coordinates(latitude=Latitude(lat), longitude=Longitude(lon))
         elif isinstance(raw_coords, Coordinates):
             coords_obj = raw_coords
 
@@ -214,9 +198,7 @@ class Address(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse Address JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse Address JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:

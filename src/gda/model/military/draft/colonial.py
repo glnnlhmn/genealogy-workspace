@@ -42,17 +42,11 @@ class ColonialMilitiaClass(StrEnum):
     TRAINBAND = "TRAINBAND"  # Standard active defense company (typically ages 16-50/60)
     ALARM_LIST = "ALARM_LIST"  # Secondary home reserve (exempt men, boys, seniors)
     MINUTEMAN = "MINUTEMAN"  # Rapid deployment detachment
-    CONTINENTAL_LEVY = (
-        "CONTINENTAL_LEVY"  # Drafted to fulfill provincial Continental Line quota
-    )
+    CONTINENTAL_LEVY = "CONTINENTAL_LEVY"  # Drafted to fulfill provincial Continental Line quota
     TOWN_CLASS = "TOWN_CLASS"  # Quota class subdivision assigned to procure a soldier
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class ColonialMilitiaRecord(MilitaryDraftRecord):
     """Evidentiary record for colonial militia enrollments, muster rolls, and levies."""
 

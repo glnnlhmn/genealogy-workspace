@@ -50,9 +50,7 @@ class HistoricalYear(IntrospectableMixin):
     def __post_init__(self) -> None:
         if not (1000 <= self.value <= 2100):
             err_msg = f"HistoricalYear '{self.value}' out of range. Must be between 1000 and 2100."
-            _logger.debug(
-                "HistoricalYear validation failed", details={"value": self.value}
-            )
+            _logger.debug("HistoricalYear validation failed", details={"value": self.value})
             raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __int__(self) -> int:
@@ -183,9 +181,7 @@ class IsoTimestamp(IntrospectableMixin):
                 f"Invalid IsoTimestamp format: '{self.value}'. "
                 "Must match ISO 8601 extended format (e.g., '2026-10-16T12:00:00Z')."
             )
-            _logger.debug(
-                "IsoTimestamp validation failed", details={"value": self.value}
-            )
+            _logger.debug("IsoTimestamp validation failed", details={"value": self.value})
             raise ModelFormatError(err_msg, details={"value": self.value})
 
     @classmethod
@@ -283,9 +279,7 @@ class EventDate(IntrospectableMixin):
         """Support chronological ordering comparisons."""
         if isinstance(other, EventDate):
             s_yr = self.year_lower_bound if self.year_lower_bound is not None else 9999
-            o_yr = (
-                other.year_lower_bound if other.year_lower_bound is not None else 9999
-            )
+            o_yr = other.year_lower_bound if other.year_lower_bound is not None else 9999
             if s_yr != o_yr:
                 return s_yr < o_yr
             return str(self.date) < str(other.date)
@@ -324,22 +318,14 @@ class EventDateRange(IntrospectableMixin):
         modifier: DateModifier | str = DateModifier.BETWEEN,
     ) -> EventDateRange:
         """Factory constructor instantiating a validated EventDateRange."""
-        s = (
-            start_date
-            if isinstance(start_date, EventDate)
-            else EventDate.create(start_date)
-        )
+        s = start_date if isinstance(start_date, EventDate) else EventDate.create(start_date)
         e = end_date if isinstance(end_date, EventDate) else EventDate.create(end_date)
         m = _normalize_modifier(modifier) or DateModifier.BETWEEN
         return cls(start_date=s, end_date=e, modifier=m)
 
     def update_start(self, start_date: EventDate | str) -> Self:
         """Return a new immutable copy with updated start date."""
-        s = (
-            start_date
-            if isinstance(start_date, EventDate)
-            else EventDate.create(start_date)
-        )
+        s = start_date if isinstance(start_date, EventDate) else EventDate.create(start_date)
         return replace(self, start_date=s)
 
     def update_end(self, end_date: EventDate | str) -> Self:
@@ -363,15 +349,9 @@ class EventDateRange(IntrospectableMixin):
         s = data.get("start_date")
         e = data.get("end_date")
         if not s or not e:
-            raise ModelFormatError(
-                "EventDateRange requires 'start_date' and 'end_date'."
-            )
-        s_date = (
-            EventDate.from_dict(s) if isinstance(s, dict) else EventDate.create(str(s))
-        )
-        e_date = (
-            EventDate.from_dict(e) if isinstance(e, dict) else EventDate.create(str(e))
-        )
+            raise ModelFormatError("EventDateRange requires 'start_date' and 'end_date'.")
+        s_date = EventDate.from_dict(s) if isinstance(s, dict) else EventDate.create(str(s))
+        e_date = EventDate.from_dict(e) if isinstance(e, dict) else EventDate.create(str(e))
         return cls.create(
             start_date=s_date,
             end_date=e_date,
@@ -388,9 +368,7 @@ class EventDateRange(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse EventDateRange JSON: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse EventDateRange JSON: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:
@@ -406,9 +384,7 @@ class EventDateRange(IntrospectableMixin):
         """Support chronological ordering comparisons."""
         if isinstance(other, (EventDateRange, EventDate)):
             s_yr = self.year_lower_bound if self.year_lower_bound is not None else 9999
-            o_yr = (
-                other.year_lower_bound if other.year_lower_bound is not None else 9999
-            )
+            o_yr = other.year_lower_bound if other.year_lower_bound is not None else 9999
             if s_yr != o_yr:
                 return s_yr < o_yr
             return str(self.start_date) < str(getattr(other, "start_date", other))

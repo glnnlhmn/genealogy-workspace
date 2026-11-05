@@ -57,9 +57,7 @@ class GDAJsonIO(IntrospectableMixin):
         try:
             return json.loads(content)
         except json.JSONDecodeError as err:
-            raise SerializationError(
-                f"Failed to decode JSON from '{target}': {err}"
-            ) from err
+            raise SerializationError(f"Failed to decode JSON from '{target}': {err}") from err
 
     @classmethod
     def write(

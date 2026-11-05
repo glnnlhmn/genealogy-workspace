@@ -45,9 +45,7 @@ ISO_TIMESTAMP_FMT: str = "%Y-%m-%dT%H:%M:%SZ"
 # ------------------------------------------------------------------------------
 # Structural Regex Patterns (from schemas/defs/_shared_defs.schema.json)
 # ------------------------------------------------------------------------------
-UUID_V4_PATTERN: str = (
-    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-)
+UUID_V4_PATTERN: str = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 ISO_DATE_PATTERN: str = r"^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$"
 ISO_TIMESTAMP_PATTERN: str = (
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$"

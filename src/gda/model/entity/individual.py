@@ -233,9 +233,7 @@ class Individual(BaseEntity[IndividualID]):
         elif isinstance(name, str):
             clean_str = name.strip()
             if not clean_str:
-                raise ModelFormatError(
-                    "Individual 'name' cannot be empty or whitespace."
-                )
+                raise ModelFormatError("Individual 'name' cannot be empty or whitespace.")
             resolved_name = NamePerson.create(raw=clean_str)
         else:
             raise TypeError(
@@ -287,13 +285,9 @@ class Individual(BaseEntity[IndividualID]):
 
         now_ts = IsoTimestamp.now_utc()
         resolved_audit = (
-            audit
-            if audit is not None
-            else AuditStamp(created_at=now_ts, updated_at=now_ts)
+            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
-        resolved_tombstone = (
-            tombstone if tombstone is not None else Tombstone[IndividualID]()
-        )
+        resolved_tombstone = tombstone if tombstone is not None else Tombstone[IndividualID]()
         resolved_notes = list(notes) if notes is not None else []
 
         kwargs: dict[str, Any] = {
@@ -381,9 +375,7 @@ class Individual(BaseEntity[IndividualID]):
         elif isinstance(name, str):
             clean_str = name.strip()
             if not clean_str:
-                raise ModelFormatError(
-                    "Individual 'name' cannot be empty or whitespace."
-                )
+                raise ModelFormatError("Individual 'name' cannot be empty or whitespace.")
             new_name = NamePerson.create(raw=clean_str)
         else:
             raise TypeError(
@@ -414,10 +406,7 @@ class Individual(BaseEntity[IndividualID]):
         """Return a new immutable copy with updated birth event bounds."""
         resolved_date = (
             birth_date
-            if (
-                birth_date is None
-                or isinstance(birth_date, (EventDate, EventDateRange))
-            )
+            if (birth_date is None or isinstance(birth_date, (EventDate, EventDateRange)))
             else EventDate.create(birth_date)
         )
 
@@ -427,9 +416,7 @@ class Individual(BaseEntity[IndividualID]):
                 resolved_place = birth_place_id
             else:
                 str_bp = str(birth_place_id).strip()
-                resolved_place = (
-                    SiteID(str_bp) if str_bp.startswith("SID-") else LocationID(str_bp)
-                )
+                resolved_place = SiteID(str_bp) if str_bp.startswith("SID-") else LocationID(str_bp)
         else:
             resolved_place = self.birth_place_id
 
@@ -450,10 +437,7 @@ class Individual(BaseEntity[IndividualID]):
         """Return a new immutable copy with updated death event bounds."""
         resolved_date = (
             death_date
-            if (
-                death_date is None
-                or isinstance(death_date, (EventDate, EventDateRange))
-            )
+            if (death_date is None or isinstance(death_date, (EventDate, EventDateRange)))
             else EventDate.create(death_date)
         )
 
@@ -463,9 +447,7 @@ class Individual(BaseEntity[IndividualID]):
                 resolved_place = death_place_id
             else:
                 str_dp = str(death_place_id).strip()
-                resolved_place = (
-                    SiteID(str_dp) if str_dp.startswith("SID-") else LocationID(str_dp)
-                )
+                resolved_place = SiteID(str_dp) if str_dp.startswith("SID-") else LocationID(str_dp)
         else:
             resolved_place = self.death_place_id
 
@@ -483,8 +465,7 @@ class Individual(BaseEntity[IndividualID]):
         clean_urn = canonical_urn.strip() if canonical_urn else ""
         if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
-                f"Invalid canonical_urn format: '{clean_urn}'. "
-                "Must match 'urn:gda:ind:<slug>'."
+                f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:ind:<slug>'."
             )
         return replace(
             self,
@@ -652,9 +633,7 @@ class Individual(BaseEntity[IndividualID]):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse Individual JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse Individual JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:

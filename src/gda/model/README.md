@@ -1,22 +1,22 @@
-# Package Documentation (src/gda/model)
+# Authoritative Domain Model Suite (src/gda/model)
 
 ## Architectural Role
-Architectural subsystem package.
+Central structural data model hierarchy defining atomic primitives, composite base structures, primary entities, and relational edges.
 
 ## Quality Gate & Verification Status
 - **Quality Gate:** >= 95.0% Statement & Branch Coverage
-- **Verification Suite:** `tests/test_model/`
+- **Verification Suite:** `tests/test_gda/test_model/`
 - **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
 ## Subpackages
 - **`atom/`**: Atomic identification, temporal, metric, and spatial primitives package.
 - **`base/`**: Base model value objects, audit envelopes, and tombstoning contracts.
 - **`entity/`**: Authoritative domain entity dataclass definitions extending BaseEntity.
-- **`enumerated/`**: Enumerated records covering census listings, tax assessments, and directories.
-- **`media/`**: Digital asset metadata, transcript bindings, and MIME classification models.
+- **`enumerated/`**: Enumerated classification models and taxonomy wrappers.
+- **`media/`**: Digital media, artifact metadata, and citation binding models.
 - **`military/`**: Military evidentiary domain models partitioned by record classification.
-- **`orgs/`**: Organizational structures, religious bodies, fraternities, and institutions.
-- **`vital/`**: Vital event models covering birth, marriage, divorce, death, and burial.
+- **`orgs/`**: Institutional, religious, military, and civil organization models.
+- **`vital/`**: Vital event record definitions.
 - **`xref/`**: Cross-reference and relational edge models for the genealogical digital archive.
 
 ## Module Inventory & Descriptions

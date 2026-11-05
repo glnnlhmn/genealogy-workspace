@@ -1,0 +1,509 @@
+{
+  "_path": "data/intake/sites_cemeteries_and_landmarks.json",
+  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "site_export",
+  "batch_id": "BATCH-SITE-CEMETERIES-LANDMARKS",
+  "total_count": 12,
+  "sites": [
+    {
+      "id": "SID-000053",
+      "name": {
+        "raw": "Shope's Mennonite Cemetery",
+        "canonical": "Shope's Mennonite Cemetery"
+      },
+      "category": "CEMETERY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_swatara:shopes_mennonite_cemetery",
+      "location_id": "LOC-000104",
+      "is_active": true,
+      "address": {
+        "address_line_1": "Lumber St & Spring Garden Dr",
+        "address_line_2": null,
+        "city": "Middletown",
+        "state": "PA",
+        "postal_code": "17057",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2213,
+        "longitude": -76.7761
+      },
+      "period": {
+        "start_date": "1820",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Shope's Cemetery",
+        "Strickler's Sister Cemetery",
+        "Middletown Mennonite Cemetery"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Shope's Meeting House Burial Ground",
+          "canonical_name": "Shope's Meeting House Burial Ground",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000137",
+          "note_type": "RESEARCH",
+          "text": "Historical 1.8-acre Mennonite burial ground on Lumber Street in Middletown.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000054",
+      "name": {
+        "raw": "Shoop's Cemetery & Garden of Rest",
+        "canonical": "Shoop's Cemetery & Garden of Rest"
+      },
+      "category": "CEMETERY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:shoops_cemetery",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "4332 Lexington St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2974,
+        "longitude": -76.8152
+      },
+      "period": {
+        "start_date": "1783",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Shoop's Cemetery",
+        "Shoops Cemetery on US 22",
+        "Shoops Garden of Rest"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Shoop's Church Burial Ground",
+          "canonical_name": "Shoop's Church Burial Ground",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000138",
+          "note_type": "GENERAL",
+          "text": "Large historic cemetery bordering Route 22 / Jonestown Road in Colonial Park.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000055",
+      "name": {
+        "raw": "Rolling Green Cemetery",
+        "canonical": "Rolling Green Cemetery"
+      },
+      "category": "CEMETERY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:camp_hill:rolling_green_cemetery",
+      "location_id": "LOC-000154",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1811 Carlisle Rd",
+        "address_line_2": null,
+        "city": "Camp Hill",
+        "state": "PA",
+        "postal_code": "17011",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2285,
+        "longitude": -76.9458
+      },
+      "period": {
+        "start_date": "1928",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Rolling Green Memorial Park"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000139",
+          "note_type": "RESEARCH",
+          "text": "Burial site of Daniel W. Lehman Jr. (1941\u20132018).",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000056",
+      "name": {
+        "raw": "Prospect Hill Cemetery (Newville)",
+        "canonical": "Prospect Hill Cemetery (Newville)"
+      },
+      "category": "CEMETERY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:prospect_hill_cemetery",
+      "location_id": "LOC-000156",
+      "is_active": true,
+      "address": {
+        "address_line_1": "Cemetery Rd",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.1785,
+        "longitude": -77.3942
+      },
+      "period": {
+        "start_date": "1850",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Newville Cemetery",
+        "Prospect Hill Cemetery"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000140",
+          "note_type": "RESEARCH",
+          "text": "Primary community cemetery for Newville; interments for William L. Lehman and Annie E. (Failor) Lehman.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000057",
+      "name": {
+        "raw": "Old Public Graveyard (Carlisle)",
+        "canonical": "Old Public Graveyard (Carlisle)"
+      },
+      "category": "CEMETERY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:old_public_graveyard",
+      "location_id": "LOC-000152",
+      "is_active": false,
+      "address": {
+        "address_line_1": "S Bedford & E South Sts",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.1995,
+        "longitude": -77.1852
+      },
+      "period": {
+        "start_date": "1757",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Carlisle Old Graveyard"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000141",
+          "note_type": "GENERAL",
+          "text": "Colonial burial ground; final resting place of Revolutionary heroine Molly Pitcher.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000058",
+      "name": {
+        "raw": "Dauphin County Courthouse",
+        "canonical": "Dauphin County Courthouse"
+      },
+      "category": "GOVERNMENT",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:dauphin_county_courthouse",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "101 Market St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17101",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2589,
+        "longitude": -76.8835
+      },
+      "period": {
+        "start_date": "1942",
+        "end_date": null
+      },
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000142",
+          "note_type": "RESEARCH",
+          "text": "Art Deco courthouse housing register of wills, probate, deed registries, and vital records.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000059",
+      "name": {
+        "raw": "Cumberland County Courthouse",
+        "canonical": "Cumberland County Courthouse"
+      },
+      "category": "GOVERNMENT",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:cumberland_county_courthouse",
+      "location_id": "LOC-000152",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1 Courthouse Sq",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2014,
+        "longitude": -77.1882
+      },
+      "period": {
+        "start_date": "1846",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Old Cumberland County Courthouse"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000143",
+          "note_type": "GENERAL",
+          "text": "Classic revival courthouse on the square bearing Confederate shell strikes from the 1863 bombardment.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000060",
+      "name": {
+        "raw": "Silver Spring Township Municipal Building",
+        "canonical": "Silver Spring Township Municipal Building"
+      },
+      "category": "GOVERNMENT",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:silver_spring:silver_spring_municipal_hall",
+      "location_id": "LOC-000134",
+      "is_active": true,
+      "address": {
+        "address_line_1": "8 Flowers Dr",
+        "address_line_2": null,
+        "city": "Mechanicsburg",
+        "state": "PA",
+        "postal_code": "17050",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2465,
+        "longitude": -77.0341
+      },
+      "period": {
+        "start_date": "1980",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Silver Spring Township Municipal Hall"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000061",
+      "name": {
+        "raw": "Central Dauphin School District Garage",
+        "canonical": "Central Dauphin School District Garage"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:progress:cd_transportation_garage",
+      "location_id": "LOC-000211",
+      "is_active": true,
+      "address": {
+        "address_line_1": "Progress Ave",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2831,
+        "longitude": -76.8402
+      },
+      "period": {
+        "start_date": "1968",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Central Dauphin Transportation Facility"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000144",
+          "note_type": "RESEARCH",
+          "text": "Bus garage facility in Progress managed during Daniel W. Lehman Jr.'s tenure as transportation coordinator.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000062",
+      "name": {
+        "raw": "J.B. Martin Motors",
+        "canonical": "J.B. Martin Motors"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:jb_martin_motors",
+      "location_id": "LOC-000118",
+      "is_active": false,
+      "address": {
+        "address_line_1": "S Cameron St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17104",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2512,
+        "longitude": -76.8715
+      },
+      "period": {
+        "start_date": "1950",
+        "end_date": "1975"
+      },
+      "alternate_names": [
+        "J. B. Martin Motors Inc."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000063",
+      "name": {
+        "raw": "Carlisle Barracks",
+        "canonical": "Carlisle Barracks"
+      },
+      "category": "LANDMARK",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle_barracks:carlisle_barracks_post",
+      "location_id": "LOC-000225",
+      "is_active": true,
+      "address": {
+        "address_line_1": "Ashburn Dr",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2118,
+        "longitude": -77.1772
+      },
+      "period": {
+        "start_date": "1757",
+        "end_date": null
+      },
+      "alternate_names": [
+        "U.S. Army War College"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000145",
+          "note_type": "GENERAL",
+          "text": "Second-oldest active military post in the United States; established 1757.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000064",
+      "name": {
+        "raw": "Pine Grove Iron Furnace",
+        "canonical": "Pine Grove Iron Furnace"
+      },
+      "category": "LANDMARK",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:cooke:pine_grove_furnace",
+      "location_id": "LOC-000143",
+      "is_active": false,
+      "address": {
+        "address_line_1": "Pine Grove Rd",
+        "address_line_2": null,
+        "city": "Gardners",
+        "state": "PA",
+        "postal_code": "17324",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.0325,
+        "longitude": -77.3054
+      },
+      "period": {
+        "start_date": "1764",
+        "end_date": "1895"
+      },
+      "alternate_names": [
+        "Pine Grove Furnace State Park"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000146",
+          "note_type": "GENERAL",
+          "text": "Historic 18th-century South Mountain charcoal iron plantation operating from 1764 to 1895.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}

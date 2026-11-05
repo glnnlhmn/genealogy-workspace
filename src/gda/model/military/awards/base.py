@@ -31,11 +31,7 @@ __version__ = "1.0.0+build.1"
 __all__ = ["MilitaryAwardRecord"]
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class MilitaryAwardRecord(SourceRecord):
     """Evidentiary military medal, decoration, or citation award record."""
 

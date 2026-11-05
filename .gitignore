@@ -114,17 +114,34 @@ reports/*
 
 
 # ==============================================================================
-# 8. Production Data Store Isolation & Sensitive Profiles
+# 8. Production Data Store, Database & Intake Isolation
 # ==============================================================================
-# Ignore everything in data/ by default
+# Universal database file ignores (sqlite3 / temporary journals / locks)
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.sqlite-journal
+
+# Ignore all dynamic data directory contents by default
 data/*
 !data/.gitkeep
 
-# Whitelist and track reference datasets and structure
+# Track directory hierarchy via .gitkeep sentinels
+!data/db/
+!data/db/.gitkeep
+!data/intake/
+!data/intake/**/
+!data/intake/**/.gitkeep
+
+# Whitelist canonical shared reference datasets and profiles
+!data/profiles/
+!data/profiles/**
 !data/reference/
 !data/reference/**
 
-# Operator profile isolation
+# Operator profile isolation (keep private)
 glenn_profile.json
 
 # Exclude staged evaluation miplets while allowing prompts

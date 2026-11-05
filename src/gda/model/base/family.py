@@ -103,9 +103,7 @@ def _normalize_dissolution(
 class ChildLink(IntrospectableMixin):
     """Associative child relationship link within a domestic or biological family unit."""
 
-    child_id: IndividualID = Field(
-        ..., description="Canonical IndividualID of the child."
-    )
+    child_id: IndividualID = Field(..., description="Canonical IndividualID of the child.")
     pedigree: PedigreeType = Field(
         default=PedigreeType.BIRTH,
         description="Lineage classification: Birth, Adopted, Step, Foster, Unknown.",
@@ -157,9 +155,7 @@ class ChildLink(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse ChildLink JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse ChildLink JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:
@@ -215,9 +211,7 @@ class FamilyUnion(IntrospectableMixin):
             return self
         return replace(self, union_type=u_type)
 
-    def update_dissolution(
-        self, dissolution_type: UnionDissolutionType | str | None
-    ) -> Self:
+    def update_dissolution(self, dissolution_type: UnionDissolutionType | str | None) -> Self:
         """Return a new immutable copy with updated dissolution type."""
         d_type = _normalize_dissolution(dissolution_type)
         if d_type == self.dissolution_type:
@@ -233,9 +227,7 @@ class FamilyUnion(IntrospectableMixin):
     def update_marriage_date(self, date: EventDate | str | None) -> Self:
         """Return a new immutable copy updating the start (marriage/union) date."""
         resolved_date = (
-            date
-            if (date is None or isinstance(date, EventDate))
-            else EventDate.create(date)
+            date if (date is None or isinstance(date, EventDate)) else EventDate.create(date)
         )
         end = self.period.end_date if self.period is not None else None
         if resolved_date is None and end is None:
@@ -247,9 +239,7 @@ class FamilyUnion(IntrospectableMixin):
     def update_dissolution_date(self, date: EventDate | str | None) -> Self:
         """Return a new immutable copy updating the end (dissolution) date."""
         resolved_date = (
-            date
-            if (date is None or isinstance(date, EventDate))
-            else EventDate.create(date)
+            date if (date is None or isinstance(date, EventDate)) else EventDate.create(date)
         )
         start = self.period.start_date if self.period is not None else None
         if start is None and resolved_date is None:
@@ -305,9 +295,7 @@ class FamilyUnion(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse FamilyUnion JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse FamilyUnion JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:

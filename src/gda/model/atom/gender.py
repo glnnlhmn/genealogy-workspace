@@ -34,9 +34,7 @@ _VALID_CODES: set[str] = {"M", "F", "U"}
 class GenderAtom(IntrospectableMixin):
     """Immutable atomic representation of biological sex or gender recorded at birth."""
 
-    value: str = Field(
-        ..., description="Canonical single-character code: 'M', 'F', or 'U'."
-    )
+    value: str = Field(..., description="Canonical single-character code: 'M', 'F', or 'U'.")
 
     VALID_CODES: ClassVar[set[str]] = _VALID_CODES
 

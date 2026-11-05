@@ -1,0 +1,435 @@
+{
+  "_path": "data/intake/partitioned/03_us_pa_counties.json",
+  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-LOC-03-PA-COUNTIES",
+  "source_note": "Stage 03: Complete inventory of all 67 Pennsylvania Counties.",
+  "locations": [
+    {
+      "id": "LOC-000011",
+      "name": "Adams County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:adams",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Adams Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000011",
+          "note_type": "RESEARCH",
+          "text": "Erected January 22, 1800, from York County; named for President John Adams.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000012",
+      "name": "Allegheny County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:allegheny",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Allegheny Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000012",
+          "note_type": "RESEARCH",
+          "text": "Created September 24, 1788, from parts of Westmoreland and Washington counties.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000013", "name": "Armstrong County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:armstrong", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Armstrong Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000014", "name": "Beaver County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:beaver", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Beaver Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000015",
+      "name": "Bedford County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:bedford",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Bedford Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000015",
+          "note_type": "RESEARCH",
+          "text": "Created March 9, 1771, from Cumberland County; known as Old Mother Bedford.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000016",
+      "name": "Berks County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:berks",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Berks Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000016",
+          "note_type": "RESEARCH",
+          "text": "Formed March 11, 1752, from parts of Philadelphia, Chester, and Lancaster counties.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000017", "name": "Blair County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:blair", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Blair Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000018", "name": "Bradford County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:bradford", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Bradford Co."], "historical_names": [{"raw_name": "Ontario County", "canonical_name": "Ontario County", "status": "HISTORICAL"}], "notes": [] },
+    {
+      "id": "LOC-000019",
+      "name": "Bucks County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:bucks",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Bucks Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000019",
+          "note_type": "RESEARCH",
+          "text": "One of William Penn's three original counties established in November 1682.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000020", "name": "Butler County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:butler", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Butler Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000021", "name": "Cambria County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:cambria", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Cambria Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000022", "name": "Cameron County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:cameron", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Cameron Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000023", "name": "Carbon County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:carbon", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Carbon Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000024", "name": "Centre County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:centre", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Centre Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000025",
+      "name": "Chester County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:chester",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Chester Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000025",
+          "note_type": "RESEARCH",
+          "text": "Original county established in November 1682 by William Penn.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000026", "name": "Clarion County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:clarion", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Clarion Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000027", "name": "Clearfield County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:clearfield", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Clearfield Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000028", "name": "Clinton County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:clinton", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Clinton Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000029", "name": "Columbia County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:columbia", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Columbia Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000030", "name": "Crawford County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:crawford", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Crawford Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000031",
+      "name": "Cumberland County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:cumberland",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Cumberland Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000031",
+          "note_type": "RESEARCH",
+          "text": "Erected January 27, 1750, from Lancaster County; seat at Carlisle.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000032",
+      "name": "Dauphin County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Dauphin Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000032",
+          "note_type": "RESEARCH",
+          "text": "Erected March 4, 1785, from Lancaster County; seat at Harrisburg (PA State Capital).",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000033",
+      "name": "Delaware County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:delaware",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Delaware Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000033",
+          "note_type": "RESEARCH",
+          "text": "Separated from Chester County on September 26, 1789; seat at Media.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000034", "name": "Elk County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:elk", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Elk Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000035",
+      "name": "Erie County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:erie",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Erie Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000035",
+          "note_type": "RESEARCH",
+          "text": "Formed March 12, 1800, from Allegheny County; incorporates the historic Erie Triangle.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000036", "name": "Fayette County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:fayette", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Fayette Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000037", "name": "Forest County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:forest", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Forest Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000038",
+      "name": "Franklin County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:franklin",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Franklin Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000038",
+          "note_type": "RESEARCH",
+          "text": "Formed September 9, 1784, from southwestern part of Cumberland County; seat at Chambersburg.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000039", "name": "Fulton County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:fulton", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Fulton Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000040", "name": "Greene County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:greene", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Greene Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000041", "name": "Huntingdon County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:huntingdon", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Huntingdon Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000042", "name": "Indiana County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:indiana", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Indiana Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000043", "name": "Jefferson County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:jefferson", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Jefferson Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000044", "name": "Juniata County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:juniata", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Juniata Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000045",
+      "name": "Lackawanna County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lackawanna",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Lackawanna Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000045",
+          "note_type": "RESEARCH",
+          "text": "Formed August 13, 1878, from part of Luzerne County; final county established in PA.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000046",
+      "name": "Lancaster County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Lancaster Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000046",
+          "note_type": "RESEARCH",
+          "text": "Erected May 10, 1729, from Chester County; primary inland gateway for German and Scots-Irish migration.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000047", "name": "Lawrence County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lawrence", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Lawrence Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000048",
+      "name": "Lebanon County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lebanon",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Lebanon Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000048",
+          "note_type": "RESEARCH",
+          "text": "Created February 16, 1813, from parts of Dauphin and Lancaster counties.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000049", "name": "Lehigh County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lehigh", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Lehigh Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000050", "name": "Luzerne County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:luzerne", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Luzerne Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000051", "name": "Lycoming County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lycoming", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Lycoming Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000052", "name": "McKean County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:mckean", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["McKean Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000053", "name": "Mercer County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:mercer", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Mercer Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000054", "name": "Mifflin County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:mifflin", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Mifflin Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000055", "name": "Monroe County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:monroe", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Monroe Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000056", "name": "Montgomery County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:montgomery", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Montgomery Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000057", "name": "Montour County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:montour", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Montour Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000058", "name": "Northampton County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:northampton", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Northampton Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000059", "name": "Northumberland County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:northumberland", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Northumberland Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000060",
+      "name": "Perry County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:perry",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Perry Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000060",
+          "note_type": "RESEARCH",
+          "text": "Separated from Cumberland County on March 22, 1820; seat at New Bloomfield.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000061",
+      "name": "Philadelphia County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:philadelphia",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["Philadelphia Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000061",
+          "note_type": "RESEARCH",
+          "text": "One of William Penn's three original counties established in November 1682; consolidated with City in 1854.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    { "id": "LOC-000062", "name": "Pike County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:pike", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Pike Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000063", "name": "Potter County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:potter", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Potter Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000064", "name": "Schuylkill County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:schuylkill", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Schuylkill Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000065", "name": "Snyder County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:snyder", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Snyder Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000066", "name": "Somerset County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:somerset", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Somerset Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000067", "name": "Sullivan County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:sullivan", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Sullivan Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000068", "name": "Susquehanna County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:susquehanna", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Susquehanna Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000069", "name": "Tioga County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:tioga", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Tioga Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000070", "name": "Union County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:union", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Union Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000071", "name": "Venango County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:venango", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Venango Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000072", "name": "Warren County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:warren", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Warren Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000073", "name": "Washington County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:washington", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Washington Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000074", "name": "Wayne County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:wayne", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Wayne Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000075", "name": "Westmoreland County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:westmoreland", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Westmoreland Co."], "historical_names": [], "notes": [] },
+    { "id": "LOC-000076", "name": "Wyoming County", "category": "COUNTY_EQUIVALENT", "canonical_urn": "urn:gda:loc:united_states:pennsylvania:wyoming", "parent_id": "LOC-000003", "is_primary_local_authority": false, "is_unincorporated": false, "alternate_names": ["Wyoming Co."], "historical_names": [], "notes": [] },
+    {
+      "id": "LOC-000077",
+      "name": "York County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["York Co."],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000077",
+          "note_type": "RESEARCH",
+          "text": "Created August 19, 1749, from Lancaster County; seat at York (adoption of Articles of Confederation).",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}

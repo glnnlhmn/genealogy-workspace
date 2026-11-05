@@ -103,9 +103,7 @@ class Site(BaseEntity[SiteID]):
 
         raw_id = self.id.value
         if not self._ID_PATTERN.match(raw_id):
-            raise ModelFormatError(
-                f"Invalid SiteID format: '{raw_id}'. Must match 'SID-######'."
-            )
+            raise ModelFormatError(f"Invalid SiteID format: '{raw_id}'. Must match 'SID-######'.")
 
         if not self.canonical_urn or not self._URN_PATTERN.match(self.canonical_urn):
             raise ModelFormatError(
@@ -186,20 +184,14 @@ class Site(BaseEntity[SiteID]):
                 f"Site 'name' must be an instance of NameThing or str, got {type(name).__name__}."
             )
 
-        resolved_cat = (
-            category if isinstance(category, SiteType) else SiteType(category)
-        )
+        resolved_cat = category if isinstance(category, SiteType) else SiteType(category)
         resolved_loc = (
-            location_id
-            if isinstance(location_id, LocationID)
-            else LocationID(location_id)
+            location_id if isinstance(location_id, LocationID) else LocationID(location_id)
         )
 
         now_ts = IsoTimestamp.now_utc()
         resolved_audit = (
-            audit
-            if audit is not None
-            else AuditStamp(created_at=now_ts, updated_at=now_ts)
+            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[SiteID]()
         resolved_notes = list(notes) if notes is not None else []
@@ -323,11 +315,7 @@ class Site(BaseEntity[SiteID]):
 
     def update_location(self, location_id: LocationID | str) -> Self:
         """Return a new immutable copy with updated governing jurisdiction."""
-        res_loc = (
-            location_id
-            if isinstance(location_id, LocationID)
-            else LocationID(location_id)
-        )
+        res_loc = location_id if isinstance(location_id, LocationID) else LocationID(location_id)
         return replace(
             self,
             location_id=res_loc,

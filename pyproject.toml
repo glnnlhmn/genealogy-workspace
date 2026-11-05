@@ -1,7 +1,19 @@
+# ==============================================================================
+# Genealogy Digital Archive (GDA) - Project Configuration
+# Governs PEP 517/621 builds, runtime toolchains, test harnesses, and environments.
+# Canonical Workspace Root: G:/My Drive/genealogy-workspace
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. BUILD SYSTEM CONFIGURATION
+# ------------------------------------------------------------------------------
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+# ------------------------------------------------------------------------------
+# 2. CORE PROJECT METADATA & RUNTIME DEPENDENCIES
+# ------------------------------------------------------------------------------
 [project]
 name = "genealogy-digital-archive"
 version = "1.0.0+build.4"
@@ -12,34 +24,38 @@ authors = [
     { name = "Glenn D. Lehman", email = "glnn.lhmn@gmail.com" }
 ]
 dependencies = [
-    "pydantic>=2.6.0",
-    "pydantic-settings>=2.2.0",
-    "pandas>=2.2.0",
-    "pyarrow>=15.0.0",
-    "jsonschema>=4.26.0",
-    "referencing>=0.30.0",
-    "rapidfuzz>=3.0.0",
-    "rich>=13.0.0",
-    "us>=3.1.1",
-    "pycountry>=24.6.1",
+    "pydantic>=2.6.0",          # Immutable model schemas and type contracts
+    "pydantic-settings>=2.2.0", # Environment setting loading and resolution
+    "pandas>=2.2.0",             # Tabular analysis and dataset parsing
+    "pyarrow>=15.0.0",           # Columnar in-memory data representations
+    "jsonschema>=4.26.0",        # Schema validation for profiles and metadata
+    "referencing>=0.30.0",       # JSON Schema URI dereferencing
+    "rapidfuzz>=3.0.0",          # Onomastic phonetic matching and string distance
+    "rich>=13.0.0",              # Rich terminal formatting and system display
+    "us>=3.1.1",                 # United States geographical authority data
+    "pycountry>=24.6.1",         # ISO standard country code lookups
+    "tomlkit>=0.13.0",           # Comment-preserving TOML manipulation
 ]
 
+# ------------------------------------------------------------------------------
+# 3. OPTIONAL & SUBSYSTEM DEPENDENCY TIERS
+# ------------------------------------------------------------------------------
 [project.optional-dependencies]
 docs = [
     "sphinx>=7.2.0",
     "pydata-sphinx-theme>=0.15.0",
     "myst-parser>=2.0.0",
-	"ruff>=0.3.0",
+    "ruff>=0.8.0",
     "sphinx-autodoc-typehints>=2.0.0",
 ]
 test = [
     "pytest>=8.0.0",
-    "pytest-cov>=4.1.0",
+    "pytest-cov>=5.0.0",
     "pytest-mock>=3.12.0",
     "pytest-xdist>=3.5.0",
 ]
 ui = [
-    "textual>=0.50.0",
+    "textual>=0.50.0",           # Ancestry Desk terminal UI engine
 ]
 dev = [
     "pytest>=8.0.0",
@@ -50,8 +66,12 @@ dev = [
     "jupyterlab>=4.0.0",
     "notebook>=7.0.0",
     "ipykernel>=6.0.0",
+    "tomlkit>=0.13.0",
 ]
 
+# ------------------------------------------------------------------------------
+# 4. PACKAGE DISCOVERY & SOURCE DIRECTORY MAPPINGS
+# ------------------------------------------------------------------------------
 [tool.setuptools.package-dir]
 "" = "src"
 
@@ -59,47 +79,56 @@ dev = [
 where = ["src"]
 include = ["gda*", "ancestry_desk*", "cli*", "system*"]
 
+# ------------------------------------------------------------------------------
+# 5. PYTEST HARNESS & TEST RUNNER SETTINGS
+# ------------------------------------------------------------------------------
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra -q --basetemp=C:/temp/pytest_tmp --strict-markers --import-mode=importlib"
 testpaths = [
     "tests/test_gda",
-    "tests/test_ancestry_desk",
-    "tests/test_cli",
     "tests/test_system"
 ]
 pythonpath = ["src"]
 
 markers = [
     "smoke: Fast sanity checks executed prior to commit (< 5s)",
-    "regression: Boundary and defect tests verifying defensive rules",
-    "integration: Multi-component and filesystem operations",
-    "unit: Isolated component tests without disk I/O",
-    "integrity: Whole-archive schema and manifest verification",
+    "regression: Boundary, edge case, and defect tests verifying defensive rules",
+    "integration: Multi-component, filesystem, and external subprocess operations",
+    "unit: Isolated in-memory component tests with zero disk I/O",
+    "integrity: Whole-archive schema, enum parity, and manifest drift verification",
 ]
 
+# ------------------------------------------------------------------------------
+# 6. CODE COVERAGE GATES (pytest-cov)
+# ------------------------------------------------------------------------------
 [tool.coverage.run]
 branch = true
 source = ["src"]
 omit = [
     "tests/*",
     "temp/*",
+    "gtemp/*",
     "*/__init__.py"
 ]
 
 [tool.coverage.report]
-fail_under = 85
+fail_under = 95
 precision = 2
 show_missing = true
 
+# ------------------------------------------------------------------------------
+# 7. RUFF LINTING, FORMATTING & IMPORT SORTING
+# ------------------------------------------------------------------------------
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py313"
 src = ["src", "tests"]
 extend-exclude = [
     "archive",
     "download",
     "temp",
+    "gtemp",
     "logs",
     "reports"
 ]
@@ -110,15 +139,70 @@ select = [
     "W",   # pycodestyle warnings
     "F",   # Pyflakes (syntax/unused variables/missing imports)
     "I",   # isort (clean, deterministic import sorting)
-    "UP",  # pyupgrade (modern Python syntax)
-    "B",   # flake8-bugbear (common design traps)
+    "UP",  # pyupgrade (modern Python 3.13 syntax upgrades)
+    "B",   # flake8-bugbear (common design bugs and antipatterns)
 ]
 ignore = [
-    "E501",  # Line length violations (handled by formatter)
+    "E501",  # Line length violations (handled directly by ruff format)
 ]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gda", "ancestry_desk", "cli", "system"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
 docstring-code-format = true
+
+# ------------------------------------------------------------------------------
+# 8. GDA CANONICAL WORKSPACE STORAGE ROOTS
+# ------------------------------------------------------------------------------
+[tool.gda.storage]
+profiles_dir = "data/profiles"
+reference_dir = "data/reference"
+archive_dir = "archive"
+backup_root = "archive/backups_workspace"
+
+# ------------------------------------------------------------------------------
+# 9. GDA ENVIRONMENT & DATABASE TARGET PROFILES
+# ------------------------------------------------------------------------------
+[tool.gda.environments.DEV]
+description = "Local sandbox for rapid prototyping, migrations, and UI testing."
+db_path = "data/db/gen_desk_dev.sqlite"
+intake_dir = "data/intake/dev"
+export_dir = "reports/dev"
+backup_tier_dir = "archive/backups_workspace/db/dev"
+read_only = false
+debug = true
+timeout_seconds = 30.0
+
+[tool.gda.environments.TEST]
+description = "Automated test target for pytest fixtures and integration suites."
+db_path = "data/db/gen_desk_test.sqlite"
+intake_dir = "data/intake/test"
+export_dir = "gtemp/reports_test"
+backup_tier_dir = "archive/backups_workspace/db/test"
+read_only = false
+debug = true
+timeout_seconds = 10.0
+
+[tool.gda.environments.STAGING]
+description = "Production-mirror sandbox for full-volume validation before release."
+db_path = "data/db/gen_desk_staging.sqlite"
+intake_dir = "data/intake/staging"
+export_dir = "reports/staging"
+backup_tier_dir = "archive/backups_workspace/db/staging"
+read_only = false
+debug = false
+timeout_seconds = 60.0
+
+[tool.gda.environments.PROD]
+description = "Authoritative digital archive master repository and persistent records."
+db_path = "data/db/gen_desk_prod.sqlite"
+intake_dir = "data/intake/prod"
+export_dir = "reports/prod"
+backup_tier_dir = "archive/backups_workspace/db/prod"
+read_only = false
+debug = false
+timeout_seconds = 60.0

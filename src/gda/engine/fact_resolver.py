@@ -37,12 +37,12 @@ class FactParticipantResolver(IntrospectableMixin):
         self._last_compiled: IsoTimestamp = IsoTimestamp.now_utc()
         self._edges: dict[str, FactParticipantXRef] = {}
 
-        self._ind_to_facts: dict[IndividualID, set[tuple[FactID, AssociatedRole]]] = (
-            defaultdict(set)
+        self._ind_to_facts: dict[IndividualID, set[tuple[FactID, AssociatedRole]]] = defaultdict(
+            set
         )
-        self._fact_to_participants: dict[
-            FactID, list[tuple[IndividualID, AssociatedRole]]
-        ] = defaultdict(list)
+        self._fact_to_participants: dict[FactID, list[tuple[IndividualID, AssociatedRole]]] = (
+            defaultdict(list)
+        )
 
     @property
     def last_compiled(self) -> IsoTimestamp:
@@ -67,9 +67,7 @@ class FactParticipantResolver(IntrospectableMixin):
         return resolver
 
     @classmethod
-    def from_xrefs(
-        cls, xrefs: Iterable[FactParticipantXRef]
-    ) -> FactParticipantResolver:
+    def from_xrefs(cls, xrefs: Iterable[FactParticipantXRef]) -> FactParticipantResolver:
         """Hydrate graph index directly from an iterable of pre-formed FactParticipantXRef edges."""
         resolver = cls()
         for edge in xrefs:
@@ -115,9 +113,7 @@ class FactParticipantResolver(IntrospectableMixin):
     def evict_individual(self, individual_id: IndividualID) -> None:
         """Safely remove all participation edges and index mappings for an individual."""
         keys_to_delete = [
-            k
-            for k, edge in self._edges.items()
-            if edge.associated_ind_id == individual_id
+            k for k, edge in self._edges.items() if edge.associated_ind_id == individual_id
         ]
 
         if not keys_to_delete:
@@ -129,18 +125,14 @@ class FactParticipantResolver(IntrospectableMixin):
         associated_facts = self._ind_to_facts.pop(individual_id, set())
         for fid, _ in associated_facts:
             self._fact_to_participants[fid] = [
-                (iid, r)
-                for iid, r in self._fact_to_participants[fid]
-                if iid != individual_id
+                (iid, r) for iid, r in self._fact_to_participants[fid] if iid != individual_id
             ]
 
         self._mark_updated()
 
     def evict_fact(self, fact_id: FactID) -> None:
         """Safely remove all participant edges and index mappings for a fact."""
-        keys_to_delete = [
-            k for k, edge in self._edges.items() if edge.fact_id == fact_id
-        ]
+        keys_to_delete = [k for k, edge in self._edges.items() if edge.fact_id == fact_id]
 
         if not keys_to_delete:
             return
@@ -171,9 +163,7 @@ class FactParticipantResolver(IntrospectableMixin):
         """Return ordered tuple of all participants and roles linked to a fact assertion."""
         return tuple(self._fact_to_participants.get(fact_id, []))
 
-    def get_roles_for_individual(
-        self, individual_id: IndividualID
-    ) -> tuple[AssociatedRole, ...]:
+    def get_roles_for_individual(self, individual_id: IndividualID) -> tuple[AssociatedRole, ...]:
         """Return sorted tuple of unique roles an individual has served in across all facts."""
         entries = self._ind_to_facts.get(individual_id, set())
         return tuple(sorted({r for _, r in entries}, key=lambda x: x.value))

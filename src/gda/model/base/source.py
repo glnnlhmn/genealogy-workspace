@@ -40,15 +40,9 @@ _logger = GDALogger(__name__)
 class SourceReference(IntrospectableMixin):
     """Archival source pointer attaching evidence to assertions."""
 
-    citation_text: str = Field(
-        ..., description="Documentary citation or entry description."
-    )
-    source_id: SourceID | None = Field(
-        default=None, description="Linked archival SourceID UUID."
-    )
-    page_or_side: str | None = Field(
-        default=None, description="Physical folio, page, or side."
-    )
+    citation_text: str = Field(..., description="Documentary citation or entry description.")
+    source_id: SourceID | None = Field(default=None, description="Linked archival SourceID UUID.")
+    page_or_side: str | None = Field(default=None, description="Physical folio, page, or side.")
     quay: QuayScore | None = Field(
         default=None, description="Genealogical evidentiary certainty score (0..3)."
     )
@@ -80,9 +74,7 @@ class SourceReference(IntrospectableMixin):
             if (source_id is None or isinstance(source_id, SourceID))
             else SourceID(source_id)
         )
-        resolved_quay = (
-            quay if (quay is None or isinstance(quay, QuayScore)) else QuayScore(quay)
-        )
+        resolved_quay = quay if (quay is None or isinstance(quay, QuayScore)) else QuayScore(quay)
         resolved_conf = (
             confidence
             if (confidence is None or isinstance(confidence, ConfidenceScore))
@@ -126,9 +118,7 @@ class SourceReference(IntrospectableMixin):
 
     def update_quay(self, quay: QuayScore | int | None) -> Self:
         """Return a new immutable copy with updated QuayScore."""
-        resolved = (
-            quay if (quay is None or isinstance(quay, QuayScore)) else QuayScore(quay)
-        )
+        resolved = quay if (quay is None or isinstance(quay, QuayScore)) else QuayScore(quay)
         if resolved == self.quay:
             return self
         return replace(self, quay=resolved)
@@ -164,9 +154,7 @@ class SourceReference(IntrospectableMixin):
             raise ModelFormatError("SourceReference payload must be a dictionary.")
         text = data.get("citation_text")
         if not text:
-            raise ModelFormatError(
-                "Missing required field 'citation_text' for SourceReference."
-            )
+            raise ModelFormatError("Missing required field 'citation_text' for SourceReference.")
         return cls.create(
             citation_text=str(text),
             source_id=data.get("source_id"),
@@ -185,9 +173,7 @@ class SourceReference(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse SourceReference JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse SourceReference JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:
@@ -210,12 +196,8 @@ class RecordMetadata(IntrospectableMixin):
 
     source_id: SourceID = Field(..., description="Canonical surrogate UUIDv4 SourceID.")
     source_urn: str = Field(..., description="Resolvable semantic archival URN string.")
-    record_category: str = Field(
-        ..., description="Archival category classification token."
-    )
-    record_type: str = Field(
-        ..., description="Specific archival record type designation."
-    )
+    record_category: str = Field(..., description="Archival category classification token.")
+    record_type: str = Field(..., description="Specific archival record type designation.")
     repository_id: RepositoryID | None = Field(
         default=None, description="Custodial repository foreign key."
     )
@@ -234,9 +216,7 @@ class RecordMetadata(IntrospectableMixin):
         ):
             if not value.strip():
                 err_msg = f"RecordMetadata '{field_name}' cannot be empty."
-                _logger.debug(
-                    "RecordMetadata validation failed", details={"field": field_name}
-                )
+                _logger.debug("RecordMetadata validation failed", details={"field": field_name})
                 raise ModelFormatError(err_msg, details={"field": field_name})
 
     @classmethod
@@ -249,9 +229,7 @@ class RecordMetadata(IntrospectableMixin):
         repository_id: RepositoryID | str | None = None,
     ) -> RecordMetadata:
         """Factory constructor instantiating a validated RecordMetadata."""
-        resolved_sid = (
-            source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        )
+        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
         resolved_rep = (
             repository_id
             if (repository_id is None or isinstance(repository_id, RepositoryID))
@@ -308,9 +286,7 @@ class RecordMetadata(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse RecordMetadata JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse RecordMetadata JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __repr__(self) -> str:
@@ -330,12 +306,8 @@ class SourceRecord(IntrospectableMixin):
     record_category: SourceRecordCategory = Field(
         ..., description="Authoritative source category enum."
     )
-    description: str = Field(
-        ..., description="Detailed textual description or abstract."
-    )
-    repository_id: RepositoryID = Field(
-        ..., description="Custodial repository foreign key."
-    )
+    description: str = Field(..., description="Detailed textual description or abstract.")
+    repository_id: RepositoryID = Field(..., description="Custodial repository foreign key.")
     audit: AuditStamp = Field(..., description="Lifecycle audit stamps.")
     media_ids: list[MediaID] = Field(
         default_factory=list, description="Attached media identifier array."
@@ -398,9 +370,7 @@ class SourceRecord(IntrospectableMixin):
         tombstone: Tombstone | None = None,
     ) -> SourceRecord:
         """Factory constructor instantiating a validated SourceRecord."""
-        resolved_sid = (
-            source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        )
+        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
         resolved_rep = (
             repository_id
             if isinstance(repository_id, RepositoryID)
@@ -412,13 +382,9 @@ class SourceRecord(IntrospectableMixin):
             else SourceRecordCategory(record_category)
         )
         resolved_urn = (
-            source_urn
-            if isinstance(source_urn, ArchivalURN)
-            else SourceURN(str(source_urn))
+            source_urn if isinstance(source_urn, ArchivalURN) else SourceURN(str(source_urn))
         )
-        resolved_media = [
-            m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])
-        ]
+        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
         return cls(
             source_id=resolved_sid,
             source_urn=resolved_urn,
@@ -505,8 +471,7 @@ class SourceRecord(IntrospectableMixin):
             audit=audit_obj,
             media_ids=data.get("media_ids", []),
             associated_people=[
-                AssociatedIndividual.from_dict(p)
-                for p in data.get("associated_people", [])
+                AssociatedIndividual.from_dict(p) for p in data.get("associated_people", [])
             ],
             tombstone=tombstone_obj,
         )
@@ -521,9 +486,7 @@ class SourceRecord(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse SourceRecord JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse SourceRecord JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:

@@ -140,9 +140,7 @@ class FactParticipant(IntrospectableMixin):
             raise ModelFormatError("FactParticipant payload must be a dictionary.")
         ind_id = data.get("individual_id")
         if not ind_id:
-            raise ModelFormatError(
-                "Missing required field 'individual_id' for FactParticipant."
-            )
+            raise ModelFormatError("Missing required field 'individual_id' for FactParticipant.")
         return cls.create(
             individual_id=str(ind_id),
             role=data.get("role", AssociatedRole.WITNESS),
@@ -159,9 +157,7 @@ class FactParticipant(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse FactParticipant JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse FactParticipant JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:
@@ -252,9 +248,7 @@ class Fact(BaseEntity[FactID]):
 
         raw_id = self.id.value
         if not self._ID_PATTERN.match(raw_id):
-            raise ModelFormatError(
-                f"Invalid FactID format: '{raw_id}'. Must match 'FID-######'."
-            )
+            raise ModelFormatError(f"Invalid FactID format: '{raw_id}'. Must match 'FID-######'.")
 
         if not self.canonical_urn or not self._URN_PATTERN.match(self.canonical_urn):
             raise ModelFormatError(
@@ -282,9 +276,7 @@ class Fact(BaseEntity[FactID]):
 
         participant_ids = [p.individual_id for p in self.participants]
         if len(participant_ids) != len(set(participant_ids)):
-            raise ModelFormatError(
-                "Duplicate individual entries found in participants."
-            )
+            raise ModelFormatError("Duplicate individual entries found in participants.")
 
         if (
             isinstance(self.primary_subject_id, IndividualID)
@@ -381,14 +373,8 @@ class Fact(BaseEntity[FactID]):
             resolved_date = EventDate.create(date)
         elif isinstance(date, dict):
             if "start_date" in date or "end_date" in date:
-                s_date = (
-                    EventDate.create(date["start_date"])
-                    if date.get("start_date")
-                    else None
-                )
-                e_date = (
-                    EventDate.create(date["end_date"]) if date.get("end_date") else None
-                )
+                s_date = EventDate.create(date["start_date"]) if date.get("start_date") else None
+                e_date = EventDate.create(date["end_date"]) if date.get("end_date") else None
                 resolved_date = TimePeriod(start_date=s_date, end_date=e_date)
             else:
                 resolved_date = EventDate.from_dict(date)
@@ -399,9 +385,7 @@ class Fact(BaseEntity[FactID]):
             else LocationID(location_id)
         )
         resolved_site = (
-            site_id
-            if (site_id is None or isinstance(site_id, SiteID))
-            else SiteID(site_id)
+            site_id if (site_id is None or isinstance(site_id, SiteID)) else SiteID(site_id)
         )
 
         resolved_participants: list[FactParticipant] = []
@@ -426,9 +410,7 @@ class Fact(BaseEntity[FactID]):
 
         now_ts = IsoTimestamp.now_utc()
         resolved_audit = (
-            audit
-            if audit is not None
-            else AuditStamp(created_at=now_ts, updated_at=now_ts)
+            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[FactID]()
         resolved_notes = list(notes) if notes is not None else []
@@ -525,11 +507,7 @@ class Fact(BaseEntity[FactID]):
 
     def update_site(self, site_id: SiteID | str | None) -> Self:
         """Return a new immutable copy with updated micro venue anchor."""
-        resolved = (
-            site_id
-            if (site_id is None or isinstance(site_id, SiteID))
-            else SiteID(site_id)
-        )
+        resolved = site_id if (site_id is None or isinstance(site_id, SiteID)) else SiteID(site_id)
         if resolved == self.site_id:
             return self
         return replace(
@@ -580,8 +558,7 @@ class Fact(BaseEntity[FactID]):
         clean_urn = canonical_urn.strip() if canonical_urn else ""
         if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
-                f"Invalid canonical_urn format: '{clean_urn}'. "
-                "Must match 'urn:gda:fact:<slug>'."
+                f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:fact:<slug>'."
             )
         if clean_urn == self.canonical_urn:
             return self
@@ -661,9 +638,7 @@ class Fact(BaseEntity[FactID]):
                 new_participants.append(p)
 
         if not found:
-            raise ModelFormatError(
-                f"Participant '{target_str}' not found in fact participants."
-            )
+            raise ModelFormatError(f"Participant '{target_str}' not found in fact participants.")
 
         if new_participants == self.participants:
             return self
@@ -771,9 +746,7 @@ class Fact(BaseEntity[FactID]):
                 data["date"] = self.date.to_dict()
             else:
                 data["date"] = {
-                    "start_date": str(self.date.start_date)
-                    if self.date.start_date
-                    else None,
+                    "start_date": str(self.date.start_date) if self.date.start_date else None,
                     "end_date": str(self.date.end_date) if self.date.end_date else None,
                 }
 
@@ -806,9 +779,7 @@ class Fact(BaseEntity[FactID]):
         subject = data.get("primary_subject_id")
 
         if not all((fact_type, title, subject)):
-            raise ModelFormatError(
-                "Fact requires 'fact_type', 'title', and 'primary_subject_id'."
-            )
+            raise ModelFormatError("Fact requires 'fact_type', 'title', and 'primary_subject_id'.")
 
         audit_payload = data.get("audit")
         audit_obj: AuditStamp | None = None
@@ -840,17 +811,13 @@ class Fact(BaseEntity[FactID]):
 
         participants_payload = data.get("participants", [])
         participants_list = [
-            FactParticipant.from_dict(p)
-            if isinstance(p, dict)
-            else FactParticipant.create(str(p))
+            FactParticipant.from_dict(p) if isinstance(p, dict) else FactParticipant.create(str(p))
             for p in participants_payload
         ]
 
         citations_payload = data.get("citations", [])
         citations_list = [
-            SourceReference.from_dict(c)
-            if isinstance(c, dict)
-            else SourceReference.create(str(c))
+            SourceReference.from_dict(c) if isinstance(c, dict) else SourceReference.create(str(c))
             for c in citations_payload
         ]
 

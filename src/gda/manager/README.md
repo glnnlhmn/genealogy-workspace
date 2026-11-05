@@ -1,17 +1,23 @@
-<!-- Name: README.md -->
-<!-- Path: src/gda/manager/README.md -->
+# Governance & Reference Minting Managers (src/gda/manager)
 
-# GDA Collection & Authority Management (`gda.manager`)
+## Architectural Role
+High-level authority management coordinators overseeing global vocabulary registries, namespace dereferencing, and identifier minting.
 
-## Operational Role & Purpose
-Provides collection-level managers, transactional orchestrators, and cache coordinators for reference indexing and controlled vocabulary governance.
+## Quality Gate & Verification Status
+- **Quality Gate:** >= 95.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_gda/`
+- **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
-## Architectural Governance
-- **Collection Management**: Coordinates complex transactions across entity collections, managing cached indexes and resolving entity links.
-- **Key Subpackages**:
-  - `referencer/`: Reference resolution and cross-entity reference validation.
-  - `vocab/`: Vocabulary management, kinship taxonomies, and schema enumeration drift detection.
-- **Decoupling**: Consumes entity state models from `gda.entity` and Pydantic schemas from `gda.model` without embedding low-level database operations.
+## Subpackages
+- **`referencer/`**: Canonical URN minting, URI resolution, and colloquial geographic mapping.
+- **`vocab/`**: Controlled vocabulary token governance, taxonomy indexing, and drift detection.
 
-## Development Status
-Active development. Serves as the middle-tier transaction layer between entity state and database interfaces.
+## Module Inventory & Descriptions
+| Module | Version | Canonical Description |
+| :--- | :--- | :--- |
+
+## Public Exports & Consumption Contract
+Modules export public interfaces explicitly declared in `__all__`.
+
+---
+Generated dynamically by `src/system/gen_readme.py`.

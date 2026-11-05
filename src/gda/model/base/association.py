@@ -121,17 +121,13 @@ class AssociatedIndividual(IntrospectableMixin):
             if (individual_id is None or isinstance(individual_id, IndividualID))
             else IndividualID(individual_id)
         )
-        resolved_role = (
-            role if isinstance(role, AssociatedRole) else AssociatedRole(role)
-        )
+        resolved_role = role if isinstance(role, AssociatedRole) else AssociatedRole(role)
         resolved_tertiary = [
             r if isinstance(r, AssociatedRole) else AssociatedRole(r)
             for r in (tertiary_roles or [])
         ]
         resolved_residence = (
-            residence
-            if (residence is None or isinstance(residence, SiteID))
-            else SiteID(residence)
+            residence if (residence is None or isinstance(residence, SiteID)) else SiteID(residence)
         )
         clean_name = name_raw.strip() if name_raw is not None else None
         clean_comment = comment.strip() if comment is not None else None
@@ -149,9 +145,7 @@ class AssociatedIndividual(IntrospectableMixin):
 
     def update_role(self, role: AssociatedRole | str) -> Self:
         """Return a new immutable copy with updated primary role."""
-        resolved_role = (
-            role if isinstance(role, AssociatedRole) else AssociatedRole(role)
-        )
+        resolved_role = role if isinstance(role, AssociatedRole) else AssociatedRole(role)
         if resolved_role == self.role:
             return self
         return replace(self, role=resolved_role)
@@ -159,9 +153,7 @@ class AssociatedIndividual(IntrospectableMixin):
     def update_residence(self, residence: SiteID | str | None) -> Self:
         """Return a new immutable copy with updated residence anchor."""
         resolved = (
-            residence
-            if (residence is None or isinstance(residence, SiteID))
-            else SiteID(residence)
+            residence if (residence is None or isinstance(residence, SiteID)) else SiteID(residence)
         )
         if resolved == self.residence:
             return self
@@ -211,17 +203,11 @@ class AssociatedIndividual(IntrospectableMixin):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse AssociatedIndividual JSON: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse AssociatedIndividual JSON: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:
-        label = (
-            str(self.individual_id)
-            if self.individual_id
-            else (self.name_raw or "Unknown")
-        )
+        label = str(self.individual_id) if self.individual_id else (self.name_raw or "Unknown")
         roles_summary = [self.role.value] + [r.value for r in self.tertiary_roles]
         return f"{label} ({', '.join(roles_summary)})"
 

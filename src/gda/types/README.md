@@ -17,4 +17,4 @@ Foundational scalar primitives, string constraints, and custom Pydantic validato
 Modules export public interfaces explicitly declared in `__all__`.
 
 ---
-Generated dynamically by `src/system/generate_readmes.py`.
+Generated dynamically by `src/system/gen_readme.py`.

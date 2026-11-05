@@ -36,14 +36,10 @@ class Age(IntrospectableMixin):
 
     def __post_init__(self) -> None:
         has_text = self.raw_text is not None and bool(self.raw_text.strip())
-        has_numeric = (
-            self.years is not None or self.months is not None or self.days is not None
-        )
+        has_numeric = self.years is not None or self.months is not None or self.days is not None
 
         if not has_text and not has_numeric:
-            err_msg = (
-                "Age must specify raw_text or at least one of (years, months, days)."
-            )
+            err_msg = "Age must specify raw_text or at least one of (years, months, days)."
             _logger.debug("Age validation failed: empty record")
             raise ModelFormatError(err_msg, details={"record": repr(self)})
 

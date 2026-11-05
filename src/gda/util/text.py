@@ -29,9 +29,7 @@ _WHITESPACE_RUN_REGEX: re.Pattern[str] = re.compile(r"[ \t\f\v]+")
 _SLUG_NON_ALPHANUM_REGEX: re.Pattern[str] = re.compile(r"[^a-z0-9]+")
 _ALPHA_FILTER_REGEX: re.Pattern[str] = re.compile(r"[^A-Z]")
 
-_ENCLOSING_PUNCTUATION_PATTERN: re.Pattern[str] = re.compile(
-    r"^[@#*\"'<>]+|[@#*\"'<>]+$"
-)
+_ENCLOSING_PUNCTUATION_PATTERN: re.Pattern[str] = re.compile(r"^[@#*\"'<>]+|[@#*\"'<>]+$")
 _REPLACE_CHARACTERS_PATTERN: re.Pattern[str] = re.compile(r"[_*?~^=]+")
 _URN_CLEAN_TOKEN_PATTERN: re.Pattern[str] = re.compile(r"[^a-z0-9_:]+")
 

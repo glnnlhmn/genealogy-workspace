@@ -1,0 +1,242 @@
+{
+  "_path": "data/intake/partitioned/06_us_pa_lancaster.json",
+  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-LOC-06-PA-LANCASTER",
+  "source_note": "Stage 06: Lancaster County PA representative and historical civil divisions.",
+  "locations": [
+    {
+      "id": "LOC-000163",
+      "name": "Manheim Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:manheim_township",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Manheim Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000164",
+      "name": "Ephrata Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:ephrata_township",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Ephrata Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000165",
+      "name": "Strasburg Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:strasburg_township",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Strasburg Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000166",
+      "name": "East Lampeter Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:east_lampeter_township",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "East Lampeter Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000167",
+      "name": "West Lampeter Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:west_lampeter_township",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "West Lampeter Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000168",
+      "name": "Manor Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:manor_township",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Manor Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000169",
+      "name": "Warwick Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:warwick_township",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Warwick Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000170",
+      "name": "Lancaster",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:lancaster_city",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Lancaster City",
+        "Red Rose City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Hickory Town",
+          "canonical_name": "Hickory Town",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000043",
+          "note_type": "GENERAL",
+          "text": "Capital of the American colonies for one day: September 27, 1777.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000171",
+      "name": "Lititz",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:lititz_borough",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Lititz"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000044",
+          "note_type": "RESEARCH",
+          "text": "Settled in 1756 by the Moravian Church.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000172",
+      "name": "Manheim",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:manheim_borough",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Manheim"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000173",
+      "name": "Ephrata",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:ephrata_borough",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Ephrata"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Ephrata Cloister Settlement",
+          "canonical_name": "Ephrata Cloister",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000174",
+      "name": "Strasburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:strasburg_borough",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Strasburg"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000175",
+      "name": "Columbia",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:lancaster:columbia_borough",
+      "parent_id": "LOC-000046",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Columbia"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Wright's Ferry",
+          "canonical_name": "Wright's Ferry",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000045",
+          "note_type": "GENERAL",
+          "text": "Established in 1726 by John Wright; Susquehanna River crossing point.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}

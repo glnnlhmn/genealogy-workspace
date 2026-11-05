@@ -21,4 +21,4 @@ Governs physical filesystem interactions, line-ending preserving UTF-8 file acce
 Exports: `AtomicWriteError`, `AtomicWriter`, `BackupError`, `DirectoryCreationError`, `FileLockError`, `FileReadError`, `GDAIOError`, `GDAJsonIO`, `GDATextIO`, `GDABackupManager`, `SerializationError`, `atomic_write`, `atomic_write_bytes`, `atomic_write_stream`, `atomic_write_text`.
 
 ---
-Generated dynamically by `src/system/generate_readmes.py`.
+Generated dynamically by `src/system/gen_readme.py`.

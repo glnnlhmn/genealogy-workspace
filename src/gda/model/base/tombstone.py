@@ -45,7 +45,9 @@ class Tombstone[ID_T](IntrospectableMixin):
             object.__setattr__(self, "superseded_by", None)
 
         if self.is_deprecated and self.deprecated_at is None:
-            err_msg = "Deprecated record (is_deprecated=True) must specify a deprecated_at timestamp."
+            err_msg = (
+                "Deprecated record (is_deprecated=True) must specify a deprecated_at timestamp."
+            )
             _logger.debug("Tombstone deprecated timestamp missing")
             raise ModelFormatError(
                 err_msg,
@@ -55,9 +57,7 @@ class Tombstone[ID_T](IntrospectableMixin):
                 },
             )
 
-    def retire(
-        self, timestamp: IsoTimestamp, superseded_by: ID_T | None = None
-    ) -> Tombstone[ID_T]:
+    def retire(self, timestamp: IsoTimestamp, superseded_by: ID_T | None = None) -> Tombstone[ID_T]:
         """Return a retired Tombstone stamped with timestamp and superseding pointer."""
         return Tombstone[ID_T](
             is_deprecated=True,
@@ -68,10 +68,5 @@ class Tombstone[ID_T](IntrospectableMixin):
     def __repr__(self) -> str:
         if not self.is_deprecated:
             return "Tombstone(is_deprecated=False)"
-        target_repr = (
-            f", superseded_by={self.superseded_by!r}" if self.superseded_by else ""
-        )
-        return (
-            f"Tombstone(is_deprecated=True, "
-            f"deprecated_at={self.deprecated_at!r}{target_repr})"
-        )
+        target_repr = f", superseded_by={self.superseded_by!r}" if self.superseded_by else ""
+        return f"Tombstone(is_deprecated=True, deprecated_at={self.deprecated_at!r}{target_repr})"

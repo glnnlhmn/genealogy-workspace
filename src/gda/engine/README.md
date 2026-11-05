@@ -17,7 +17,7 @@ High-performance, in-memory graph resolution infrastructure providing O(1) kinsh
 | :--- | :--- | :--- |
 | `fact_resolver.py` | `1.0.0+build.1` | Active in-memory fact participant inverted indexer and relationship resolver. |
 | `media_resolver.py` | `1.0.0+build.2` | Active in-memory media graph indexer and bidirectional resolver. |
-| `resolver.py` | `1.0.0+build.3` | Active in-memory graph indexers and bidirectional relationship resolvers. |
+| `resolver.py` | `1.0.0+build.4` | Active in-memory graph indexers and bidirectional relationship resolvers. |
 
 ## Public Exports & Consumption Contract
 Exports: `FactParticipantResolver`, `IndividualFamilyResolver`, `MediaXRefResolver`.

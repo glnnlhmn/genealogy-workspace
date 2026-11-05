@@ -1,7 +1,7 @@
 # Military Records Domain Package (src/gda/model/military)
 
 ## Architectural Role
-Evidentiary military records domain model suite encompassing conscription and draft registrations, active duty muster/service/separation certificates, veteran invalid and widow/dependent pension claims, bounty land warrants, combat casualties, POW internments, national cemetery burials, and valor awards.
+Evidentiary military records domain model suite encompassing conscription, active service, pensions, bounty land, casualties, burials, and awards.
 
 ## Quality Gate & Verification Status
 - **Quality Gate:** 100.0% Statement & Branch Coverage
@@ -23,4 +23,4 @@ Evidentiary military records domain model suite encompassing conscription and dr
 Exports: `AwardScope`, `BountyLandAct`, `BountyLandWarrantRecord`, `CasualtyCategory`, `CivilWarConscriptionAllegiance`, `CivilWarDraftRecord`, `CivilWarEnrollmentClass`, `ColonialMilitiaClass`, `ColonialMilitiaRecord`, `ColonialWarPeriod`, `CombatCasualtyRecord`, `DraftCardTier`, `EnlistmentMusterRecord`, `IntermentCemeteryType`, `MilitaryAwardRecord`, `MilitaryAwardTier`, `MilitaryBranch`, `MilitaryBurialRecord`, `MilitaryCasualtyRecord`, `MilitaryDraftRecord`, `MilitaryPensionRecord`, `MilitaryServiceRecord`, `ModernDraftEra`, `ModernSelectiveServiceRecord`, `MusterRollType`, `PensionClaimantRole`, `PensionPaymentAuthority`, `PensionVeteranClaimRecord`, `PensionWidowDependentRecord`, `PowCampType`, `PrisonerOfWarRecord`, `SeparationCharacter`, `SeparationDischargeRecord`, `SeparationFormType`, `ServiceComponent`, `SssClassification`, `WwiCitizenshipStatus`, `WwiDraftCardRecord`, `WwiPhysicalDescription`, `WwiiDraftCardRecord`, `WwiiDraftWave`, `WwiiPhysicalMetrics`.
 
 ---
-Generated dynamically by `src/system/generate_readmes.py`.
+Generated dynamically by `src/system/gen_readme.py`.

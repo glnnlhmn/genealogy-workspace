@@ -79,9 +79,7 @@ class Locations(IntrospectableMixin):
 
     def __len__(self) -> int:
         """Return the count of active (non-tombstoned) locations in the collection."""
-        return sum(
-            1 for loc in self._registry.values() if not loc.tombstone.is_deprecated
-        )
+        return sum(1 for loc in self._registry.values() if not loc.tombstone.is_deprecated)
 
     def __iter__(self) -> Iterator[Location]:
         """Iterate over active (non-tombstoned) locations in the collection."""
@@ -127,9 +125,7 @@ class Locations(IntrospectableMixin):
             raise LocationNotFoundError(f"Location has been tombstoned: {item}")
         return loc
 
-    def get(
-        self, item: LocationID | str, default: Location | None = None
-    ) -> Location | None:
+    def get(self, item: LocationID | str, default: Location | None = None) -> Location | None:
         """Retrieve an active location by identifier, returning default if absent."""
         try:
             return self[item]
@@ -139,9 +135,7 @@ class Locations(IntrospectableMixin):
     def add(self, location: Location) -> None:
         """Add a location entity to registry and update lookup indexes."""
         if not isinstance(location, Location):
-            raise TypeError(
-                f"Expected Location instance, got {type(location).__name__}"
-            )
+            raise TypeError(f"Expected Location instance, got {type(location).__name__}")
 
         self._registry[location.id] = location
         self._urn_index[location.canonical_urn] = location.id
@@ -156,9 +150,7 @@ class Locations(IntrospectableMixin):
     def update(self, location: Location) -> None:
         """Replace an existing entity in the collection, re-indexing aliases and URNs."""
         if not isinstance(location, Location):
-            raise TypeError(
-                f"Expected Location instance, got {type(location).__name__}"
-            )
+            raise TypeError(f"Expected Location instance, got {type(location).__name__}")
 
         target_id = location.id
         if target_id not in self._registry:
@@ -248,9 +240,7 @@ class Locations(IntrospectableMixin):
         segment = slugify(cleaned_name, delimiter="_")
         canonical_urn = f"{parent_urn}:{segment}"
 
-        next_num = (
-            extract_max_smart_id(self._registry.keys(), prefix=SmartIDPrefix.LOC) + 1
-        )
+        next_num = extract_max_smart_id(self._registry.keys(), prefix=SmartIDPrefix.LOC) + 1
         loc_id = LocationID(mint_smart_id(SmartIDPrefix.LOC, next_num))
 
         now = IsoTimestamp.now_utc()

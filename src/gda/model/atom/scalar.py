@@ -59,12 +59,8 @@ class AhnentafelNumber(IntrospectableMixin):
 
     def __post_init__(self) -> None:
         if self.value < 1:
-            err_msg = (
-                f"AhnentafelNumber '{self.value}' must be a positive integer >= 1."
-            )
-            _logger.debug(
-                "AhnentafelNumber validation failed", details={"value": self.value}
-            )
+            err_msg = f"AhnentafelNumber '{self.value}' must be a positive integer >= 1."
+            _logger.debug("AhnentafelNumber validation failed", details={"value": self.value})
             raise ModelRangeError(err_msg, details={"value": self.value})
 
     @property
@@ -109,9 +105,7 @@ class ConfidenceScore(IntrospectableMixin):
     def __post_init__(self) -> None:
         if not (0.0 <= self.value <= 1.0):
             err_msg = f"ConfidenceScore '{self.value}' out of range. Must be between 0.0 and 1.0."
-            _logger.debug(
-                "ConfidenceScore validation failed", details={"value": self.value}
-            )
+            _logger.debug("ConfidenceScore validation failed", details={"value": self.value})
             raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __float__(self) -> float:
@@ -152,10 +146,10 @@ class NewsCategoryCode(IntrospectableMixin):
 
     def __post_init__(self) -> None:
         if not self._PATTERN.match(self.value):
-            err_msg = f"Invalid NewsCategoryCode format: '{self.value}'. Must match '^[A-Z]{{3,15}}$'."
-            _logger.debug(
-                "NewsCategoryCode validation failed", details={"value": self.value}
+            err_msg = (
+                f"Invalid NewsCategoryCode format: '{self.value}'. Must match '^[A-Z]{{3,15}}$'."
             )
+            _logger.debug("NewsCategoryCode validation failed", details={"value": self.value})
             raise ModelFormatError(err_msg, details={"value": self.value})
 
     def __str__(self) -> str:

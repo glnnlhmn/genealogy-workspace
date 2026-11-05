@@ -1,0 +1,117 @@
+{
+  "_path": "data/intake/00_root_countries.json",
+  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-LOC-00-ROOT",
+  "source_note": "Stage 00: Root sovereign nations.",
+  "locations": [
+    {
+      "id": "LOC-000001",
+      "name": "United States",
+      "category": "COUNTRY",
+      "canonical_urn": "urn:gda:loc:united_states",
+      "parent_id": null,
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "USA",
+        "United States of America",
+        "U.S."
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Thirteen United Colonies",
+          "canonical_name": "Thirteen United Colonies",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000001",
+          "note_type": "GENERAL",
+          "text": "Sovereign federal republic established July 4, 1776.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000002",
+      "name": "United Kingdom",
+      "category": "COUNTRY",
+      "canonical_urn": "urn:gda:loc:united_kingdom",
+      "parent_id": null,
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "UK",
+        "Great Britain",
+        "Britain"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Kingdom of Great Britain",
+          "canonical_name": "Kingdom of Great Britain",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000002",
+          "note_type": "GENERAL",
+          "text": "Formed via Acts of Union 1707 uniting England and Scotland.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000003",
+      "name": "Germany",
+      "category": "COUNTRY",
+      "canonical_urn": "urn:gda:loc:germany",
+      "parent_id": null,
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Deutschland",
+        "Federal Republic of Germany"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "German Empire",
+          "canonical_name": "German Empire",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000004",
+      "name": "Ireland",
+      "category": "COUNTRY",
+      "canonical_urn": "urn:gda:loc:ireland",
+      "parent_id": null,
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "\u00c9ire",
+        "Republic of Ireland"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Kingdom of Ireland",
+          "canonical_name": "Kingdom of Ireland",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    }
+  ]
+}

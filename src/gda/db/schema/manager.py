@@ -114,11 +114,7 @@ class SchemaManager(IntrospectableMixin):
                         )
                     applied_versions.append(mig.version)
                 except (sqlite3.Error, DatabaseOperationalError) as err:
-                    err_msg = (
-                        err.message
-                        if isinstance(err, DatabaseOperationalError)
-                        else str(err)
-                    )
+                    err_msg = err.message if isinstance(err, DatabaseOperationalError) else str(err)
                     raise DatabaseOperationalError(
                         f"Migration {mig.version} ('{mig.name}') failed: {err_msg}",
                         details={"version": mig.version, "name": mig.name},

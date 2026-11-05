@@ -83,9 +83,7 @@ class Family(BaseEntity[FamilyID]):
 
         raw_id = self.id.value
         if not self._ID_PATTERN.match(raw_id):
-            raise ModelFormatError(
-                f"Invalid FamilyID format: '{raw_id}'. Must match 'FAM-######'."
-            )
+            raise ModelFormatError(f"Invalid FamilyID format: '{raw_id}'. Must match 'FAM-######'.")
 
         if not self.canonical_urn or not self._URN_PATTERN.match(self.canonical_urn):
             raise ModelFormatError(
@@ -110,9 +108,7 @@ class Family(BaseEntity[FamilyID]):
 
         child_ids = [link.child_id for link in self.children]
         if len(child_ids) != len(set(child_ids)):
-            raise ModelFormatError(
-                "Duplicate child entries found in family children links."
-            )
+            raise ModelFormatError("Duplicate child entries found in family children links.")
 
         partner_set = set(self.partner_ids)
         if any(c_id in partner_set for c_id in child_ids):
@@ -185,9 +181,7 @@ class Family(BaseEntity[FamilyID]):
         family_id: FamilyID | str,
         canonical_urn: str,
         partner_ids: list[IndividualID | str] | None = None,
-        children: list[
-            ChildLink | tuple[IndividualID | str, PedigreeType | str] | dict[str, Any]
-        ]
+        children: list[ChildLink | tuple[IndividualID | str, PedigreeType | str] | dict[str, Any]]
         | None = None,
         union: FamilyUnion | dict[str, Any] | None = None,
         audit: AuditStamp | None = None,
@@ -195,15 +189,12 @@ class Family(BaseEntity[FamilyID]):
         notes: list[Note] | None = None,
     ) -> Family:
         """Factory constructor instantiating a validated Family entity."""
-        resolved_id = (
-            family_id if isinstance(family_id, FamilyID) else FamilyID(family_id)
-        )
+        resolved_id = family_id if isinstance(family_id, FamilyID) else FamilyID(family_id)
 
         resolved_partners: list[IndividualID] = []
         if partner_ids is not None:
             resolved_partners = [
-                pid if isinstance(pid, IndividualID) else IndividualID(pid)
-                for pid in partner_ids
+                pid if isinstance(pid, IndividualID) else IndividualID(pid) for pid in partner_ids
             ]
 
         resolved_children: list[ChildLink] = []
@@ -227,13 +218,9 @@ class Family(BaseEntity[FamilyID]):
 
         now_ts = IsoTimestamp.now_utc()
         resolved_audit = (
-            audit
-            if audit is not None
-            else AuditStamp(created_at=now_ts, updated_at=now_ts)
+            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
-        resolved_tombstone = (
-            tombstone if tombstone is not None else Tombstone[FamilyID]()
-        )
+        resolved_tombstone = tombstone if tombstone is not None else Tombstone[FamilyID]()
         resolved_notes = list(notes) if notes is not None else []
 
         kwargs: dict[str, Any] = {
@@ -265,9 +252,7 @@ class Family(BaseEntity[FamilyID]):
     def add_partner(self, partner_id: IndividualID | str) -> Self:
         """Return a new immutable copy appending a partner IndividualID."""
         resolved_pid = (
-            partner_id
-            if isinstance(partner_id, IndividualID)
-            else IndividualID(partner_id)
+            partner_id if isinstance(partner_id, IndividualID) else IndividualID(partner_id)
         )
         if resolved_pid in self.partner_ids:
             return self
@@ -363,9 +348,7 @@ class Family(BaseEntity[FamilyID]):
                 updated_links.append(c)
 
         if not found:
-            raise ModelFormatError(
-                f"Child '{target_str}' not found in family children."
-            )
+            raise ModelFormatError(f"Child '{target_str}' not found in family children.")
 
         if updated_links == self.children:
             return self
@@ -400,9 +383,7 @@ class Family(BaseEntity[FamilyID]):
             _dirty=True,
         )
 
-    def update_dissolution(
-        self, dissolution_type: UnionDissolutionType | str | None
-    ) -> Self:
+    def update_dissolution(self, dissolution_type: UnionDissolutionType | str | None) -> Self:
         """Return a new immutable copy with updated union dissolution type."""
         new_union = self.union.update_dissolution(dissolution_type)
         if new_union is self.union:
@@ -455,8 +436,7 @@ class Family(BaseEntity[FamilyID]):
         clean_urn = canonical_urn.strip() if canonical_urn else ""
         if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
-                f"Invalid canonical_urn format: '{clean_urn}'. "
-                "Must match 'urn:gda:fam:<slug>'."
+                f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:fam:<slug>'."
             )
         return replace(
             self,
@@ -599,18 +579,12 @@ class Family(BaseEntity[FamilyID]):
         try:
             data = json.loads(payload)
         except Exception as exc:
-            raise ModelFormatError(
-                f"Failed to parse Family JSON string: {exc}"
-            ) from exc
+            raise ModelFormatError(f"Failed to parse Family JSON string: {exc}") from exc
         return cls.from_dict(data)
 
     def __str__(self) -> str:
         """Render concise human-readable family summary."""
-        partner_str = (
-            " & ".join(p.value for p in self.partner_ids)
-            if self.partner_ids
-            else "None"
-        )
+        partner_str = " & ".join(p.value for p in self.partner_ids) if self.partner_ids else "None"
         union_summary = f"[{self.union.union_type.value}"
         if self.union.dissolution_type:
             union_summary += f"/{self.union.dissolution_type.value}"

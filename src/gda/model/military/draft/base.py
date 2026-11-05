@@ -38,11 +38,7 @@ class DraftCardTier(StrEnum):
     OTHER = "OTHER"
 
 
-@dataclass(
-    config=ConfigDict(
-        kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True
-    )
-)
+@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class MilitaryDraftRecord(SourceRecord):
     """Evidentiary draft registration card record (WWI/WWII)."""
 
