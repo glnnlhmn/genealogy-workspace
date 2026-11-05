@@ -146,3 +146,5 @@ glenn_profile.json
 
 # Exclude staged evaluation miplets while allowing prompts
 prompts/core/miplets/
+# Local SQLite database binaries and WAL journals
+data/db/
