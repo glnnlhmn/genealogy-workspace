@@ -115,9 +115,7 @@ def test_database_error_custom_parameters_binding() -> None:
     custom_code = "ERR_DB_CORRUPTED_PARTITION"
     custom_details = {"partition": "main", "sector": 4096}
 
-    err = DatabaseError(
-        message=custom_msg, error_code=custom_code, details=custom_details
-    )
+    err = DatabaseError(message=custom_msg, error_code=custom_code, details=custom_details)
 
     assert err.message == custom_msg
     assert err.error_code == custom_code

@@ -85,9 +85,7 @@ def test_time_period_end_date_only() -> None:
 @pytest.mark.regression
 def test_time_period_both_none_raises_error() -> None:
     """Verify TimePeriod raises ModelFormatError if both boundaries are None."""
-    with pytest.raises(
-        ModelFormatError, match="must define at least one boundary date"
-    ):
+    with pytest.raises(ModelFormatError, match="must define at least one boundary date"):
         TimePeriod(start_date=None, end_date=None)
 
 
@@ -98,9 +96,7 @@ def test_time_period_inverted_years_raises_range_error() -> None:
     d_start = EventDate(date=DateString("1890"), modifier=DateModifier.EXACT)
     d_end = EventDate(date=DateString("1850"), modifier=DateModifier.EXACT)
 
-    with pytest.raises(
-        ModelRangeError, match="Conclusion year .* cannot precede inception year"
-    ):
+    with pytest.raises(ModelRangeError, match="Conclusion year .* cannot precede inception year"):
         TimePeriod(start_date=d_start, end_date=d_end)
 
 
@@ -120,9 +116,7 @@ def test_time_period_equal_years_valid() -> None:
 @pytest.mark.regression
 def test_time_period_both_non_numeric_dates_pass() -> None:
     """Verify TimePeriod passes validation when neither date contains a 4-digit year."""
-    d_start = EventDate(
-        date=DateString("Colonial Settlement"), modifier=DateModifier.ABOUT
-    )
+    d_start = EventDate(date=DateString("Colonial Settlement"), modifier=DateModifier.ABOUT)
     d_end = EventDate(date=DateString("Antebellum Era"), modifier=DateModifier.ABOUT)
 
     period = TimePeriod(start_date=d_start, end_date=d_end)
@@ -166,9 +160,7 @@ def test_time_period_immutability() -> None:
     period = TimePeriod(start_date=d_start)
 
     with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
-        period.start_date = EventDate(
-            date=DateString("1850"), modifier=DateModifier.EXACT
-        )  # type: ignore[misc]
+        period.start_date = EventDate(date=DateString("1850"), modifier=DateModifier.EXACT)  # type: ignore[misc]
 
 
 @pytest.mark.unit

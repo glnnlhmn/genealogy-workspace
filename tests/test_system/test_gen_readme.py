@@ -160,9 +160,7 @@ def test_generate_package_readme_content_with_subpackages(tmp_path: Path) -> Non
 
     # Submodule
     mod = pkg_dir / "worker.py"
-    mod.write_text(
-        '"""Worker description."""\n__version__ = "1.0.0"\n', encoding="utf-8"
-    )
+    mod.write_text('"""Worker description."""\n__version__ = "1.0.0"\n', encoding="utf-8")
 
     # Subpackage
     subpkg = pkg_dir / "sub"
@@ -226,9 +224,7 @@ def test_generate_package_readme_no_init_exports(tmp_path: Path) -> None:
     }
 
     readme = generate_package_readme(pkg_info, tmp_path)
-    assert (
-        "Modules export public interfaces explicitly declared in `__all__`." in readme
-    )
+    assert "Modules export public interfaces explicitly declared in `__all__`." in readme
 
 
 @pytest.mark.unit
@@ -255,9 +251,7 @@ def test_generate_package_readme_without_init_file(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_prompt_overwrite_decisions(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_prompt_overwrite_decisions(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Verify prompt_overwrite parses y, n, a, and q responses correctly."""
     target = tmp_path / "README.md"
 
@@ -289,9 +283,7 @@ def test_prompt_overwrite_invalid_input_retry(
 
 
 @pytest.mark.regression
-def test_prompt_overwrite_eof_returns_quit(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_prompt_overwrite_eof_returns_quit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Verify encountering EOFError gracefully returns 'q'."""
     target = tmp_path / "README.md"
 
@@ -346,9 +338,7 @@ def test_run_empty_packages_list_skips_loop(tmp_path: Path) -> None:
 
 
 @pytest.mark.regression
-def test_run_overwrite_prompt_skip(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_run_overwrite_prompt_skip(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Verify declining overwrite via interactive prompt preserves original content."""
     pkg_dir = tmp_path / "src" / "core"
     pkg_dir.mkdir(parents=True)
@@ -399,9 +389,7 @@ def test_run_force_flag_bypasses_prompt(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_run_overwrite_all_option(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_run_overwrite_all_option(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Verify selecting 'all' overwrites the first and subsequent files without prompting."""
     p1 = tmp_path / "src" / "p1"
     p2 = tmp_path / "src" / "p2"
@@ -439,9 +427,7 @@ def test_run_overwrite_all_option(
 
 
 @pytest.mark.unit
-def test_run_quit_aborts_immediately(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_run_quit_aborts_immediately(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Verify selecting 'quit' terminates execution early."""
     pkg_dir = tmp_path / "src" / "core"
     pkg_dir.mkdir(parents=True)
@@ -589,9 +575,7 @@ def test_main_cli_execution_with_target_flag(
 
 
 @pytest.mark.unit
-def test_main_dunder_entrypoint_invoked(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_main_dunder_entrypoint_invoked(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Verify if __name__ == '__main__' branch executes via runpy without warnings."""
     cfg = tmp_path / "dunder_config.toml"
     cfg.write_text(

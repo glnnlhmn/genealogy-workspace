@@ -39,9 +39,7 @@ def test_valid_urn_pattern_1_country_valid() -> None:
 @pytest.mark.regression
 def test_valid_urn_pattern_2_statoid_valid() -> None:
     """Verify Pattern 2 Statoid URN succeeds with exactly 2 segments."""
-    assert (
-        valid_urn("urn:gda:loc:united_states:nh", JurisdictionCategory.STATOID) is True
-    )
+    assert valid_urn("urn:gda:loc:united_states:nh", JurisdictionCategory.STATOID) is True
 
 
 @pytest.mark.regression
@@ -194,9 +192,7 @@ def test_valid_display_text_pattern_1_valid() -> None:
 @pytest.mark.regression
 def test_valid_display_text_pattern_2_valid() -> None:
     """Verify Statoid path string passes with 1 comma."""
-    assert (
-        valid_display_text("New Hampshire, USA", JurisdictionCategory.STATOID) is True
-    )
+    assert valid_display_text("New Hampshire, USA", JurisdictionCategory.STATOID) is True
 
 
 @pytest.mark.regression
@@ -238,10 +234,7 @@ def test_valid_display_text_pattern_5_valid() -> None:
 @pytest.mark.regression
 def test_valid_display_text_pattern_7_edge_case_valid() -> None:
     """Verify Pattern 7 independent city passes with 2 commas."""
-    assert (
-        valid_display_text("Richmond, Virginia, USA", JurisdictionCategory.MUNICIPALITY)
-        is True
-    )
+    assert valid_display_text("Richmond, Virginia, USA", JurisdictionCategory.MUNICIPALITY) is True
 
 
 @pytest.mark.unit
@@ -260,14 +253,10 @@ def test_valid_display_text_empty_raises_error() -> None:
 @pytest.mark.regression
 def test_valid_display_text_leading_or_trailing_comma_raises_error() -> None:
     """Verify path strings with leading or trailing commas raise ModelFormatError."""
-    with pytest.raises(
-        ModelFormatError, match="cannot have leading or trailing commas"
-    ):
+    with pytest.raises(ModelFormatError, match="cannot have leading or trailing commas"):
         valid_display_text(", USA")
 
-    with pytest.raises(
-        ModelFormatError, match="cannot have leading or trailing commas"
-    ):
+    with pytest.raises(ModelFormatError, match="cannot have leading or trailing commas"):
         valid_display_text("USA, ")
 
 
@@ -396,25 +385,19 @@ def test_valid_hierarchy_active_node_with_tombstoned_parent_raises_error() -> No
         ("LOC-000001", None, JurisdictionCategory.COUNTRY, True),
         ("LOC-000002", "LOC-000001", JurisdictionCategory.STATOID, False),
     ]
-    with pytest.raises(
-        LocationHierarchyError, match="cannot link to tombstoned parent"
-    ):
+    with pytest.raises(LocationHierarchyError, match="cannot link to tombstoned parent"):
         valid_hierarchy(nodes)
 
 
 @pytest.mark.regression
-def test_valid_hierarchy_active_node_with_distant_tombstoned_ancestor_raises_error() -> (
-    None
-):
+def test_valid_hierarchy_active_node_with_distant_tombstoned_ancestor_raises_error() -> None:
     """Verify active child with deprecated distant ancestor raises LocationHierarchyError."""
     nodes = [
         ("LOC-000003", "LOC-000002", JurisdictionCategory.COUNTY_EQUIVALENT, False),
         ("LOC-000002", "LOC-000001", JurisdictionCategory.STATOID, False),
         ("LOC-000001", None, JurisdictionCategory.COUNTRY, True),
     ]
-    with pytest.raises(
-        LocationHierarchyError, match="has tombstoned ancestor 'LOC-000001'"
-    ):
+    with pytest.raises(LocationHierarchyError, match="has tombstoned ancestor 'LOC-000001'"):
         valid_hierarchy(nodes)
 
 
@@ -462,9 +445,7 @@ def test_valid_hierarchy_civil_township_under_non_county_raises_error() -> None:
         ("LOC-000002", "LOC-000001", JurisdictionCategory.STATOID, False),
         ("LOC-000003", "LOC-000002", JurisdictionCategory.CIVIL_TOWNSHIP, False),
     ]
-    with pytest.raises(
-        ModelFormatError, match="Expected parent of type: COUNTY_EQUIVALENT"
-    ):
+    with pytest.raises(ModelFormatError, match="Expected parent of type: COUNTY_EQUIVALENT"):
         valid_hierarchy(nodes)
 
 

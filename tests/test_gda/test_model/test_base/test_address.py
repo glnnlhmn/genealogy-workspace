@@ -251,9 +251,7 @@ def test_address_deserialization_defensive_errors() -> None:
     with pytest.raises(ModelFormatError, match="payload must be a dictionary"):
         Address.from_dict("not-a-dict")  # type: ignore[arg-type]
 
-    with pytest.raises(
-        ModelFormatError, match="Missing required field 'address_line_1'"
-    ):
+    with pytest.raises(ModelFormatError, match="Missing required field 'address_line_1'"):
         Address.from_dict({"address_line_2": "Suite 1"})
 
     with pytest.raises(ModelFormatError, match="address_line_1 cannot be empty"):

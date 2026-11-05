@@ -237,9 +237,7 @@ def test_military_draft_record_empty_jurisdiction_fails(
     valid_draft_record_id: DraftRecordID,
 ) -> None:
     """Verify ModelFormatError raised if board_jurisdiction_raw is whitespace."""
-    with pytest.raises(
-        ModelFormatError, match="board_jurisdiction_raw.*cannot be empty"
-    ):
+    with pytest.raises(ModelFormatError, match="board_jurisdiction_raw.*cannot be empty"):
         MilitaryDraftRecord(
             source_id=valid_source_id,
             source_urn=valid_draft_urn,

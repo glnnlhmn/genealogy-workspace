@@ -166,9 +166,7 @@ def test_check_structure_module_execution_entrypoint() -> None:
             pytest.raises(SystemExit) as exc,
         ):
             with patch.object(sys, "argv", ["check_structure.py"]):
-                runpy.run_module(
-                    "system.check_structure", run_name="__main__", alter_sys=True
-                )
+                runpy.run_module("system.check_structure", run_name="__main__", alter_sys=True)
         assert exc.value.code == 0
     finally:
         if saved_module is not None:

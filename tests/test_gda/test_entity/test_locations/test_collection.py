@@ -93,9 +93,7 @@ def test_locations_contains_fallback_branches(
     populated_collection.soft_delete("LOC-000005")
     assert (LocationID("LOC-000005") in populated_collection) is False
     assert ("LOC-000005" in populated_collection) is False
-    assert (
-        "urn:gda:loc:united_states:nh:merrimack:bow:center" in populated_collection
-    ) is False
+    assert ("urn:gda:loc:united_states:nh:merrimack:bow:center" in populated_collection) is False
 
 
 @pytest.mark.regression
@@ -222,9 +220,7 @@ def test_locations_update_handles_unindexed_or_blank_old_aliases(
     populated_collection.update(clean_loc)
 
     # Mismatched alias in index must not be deleted because it pointed to another ID
-    assert populated_collection._alias_index.get("mismatched alias") == LocationID(
-        "LOC-999999"
-    )
+    assert populated_collection._alias_index.get("mismatched alias") == LocationID("LOC-999999")
     assert "clean alias" in populated_collection._alias_index
 
 
@@ -254,9 +250,7 @@ def test_locations_create_generates_and_registers_new_entity(
     empty_collection: Locations,
 ) -> None:
     """Verify create() mints new sequential ID, registers entity, and returns it."""
-    loc1 = empty_collection.create(
-        name="United States", category=JurisdictionCategory.COUNTRY
-    )
+    loc1 = empty_collection.create(name="United States", category=JurisdictionCategory.COUNTRY)
     assert loc1.id == LocationID("LOC-000001")
     assert loc1.canonical_urn == "urn:gda:loc:united_states"
 
@@ -298,10 +292,7 @@ def test_locations_create_hierarchy_full_chain(
         local="Bow Center",
     )
     assert leaf.category == JurisdictionCategory.MUNICIPALITY
-    assert (
-        leaf.canonical_urn
-        == "urn:gda:loc:united_states:new_hampshire:merrimack:bow:bow_center"
-    )
+    assert leaf.canonical_urn == "urn:gda:loc:united_states:new_hampshire:merrimack:bow:bow_center"
     assert len(empty_collection) == 5
 
 
@@ -359,9 +350,7 @@ def test_locations_soft_delete_raises_on_category_mismatch(
     populated_collection: Locations,
 ) -> None:
     """Verify soft_delete raises LocationHierarchyError on category tier mismatch."""
-    with pytest.raises(
-        LocationHierarchyError, match="must match the jurisdiction tier"
-    ):
+    with pytest.raises(LocationHierarchyError, match="must match the jurisdiction tier"):
         populated_collection.soft_delete("LOC-000004", superseded_by="LOC-000001")
 
 
@@ -397,9 +386,7 @@ def test_locations_save_to_db_and_load_from_db_facades(
 
 
 @pytest.mark.integration
-def test_locations_file_io_facades(
-    populated_collection: Locations, tmp_path: Path
-) -> None:
+def test_locations_file_io_facades(populated_collection: Locations, tmp_path: Path) -> None:
     """Verify export_file and import_file pass through paths to util helpers."""
     out_path = tmp_path / "locations_export.json"
     mock_export = MagicMock(return_value=5)
@@ -411,9 +398,7 @@ def test_locations_file_io_facades(
     ):
         res_exp = populated_collection.export_file(out_path, include_graveyard=True)
         assert res_exp == 5
-        mock_export.assert_called_once_with(
-            populated_collection, out_path, include_graveyard=True
-        )
+        mock_export.assert_called_once_with(populated_collection, out_path, include_graveyard=True)
 
         res_imp = populated_collection.import_file(out_path)
         assert res_imp == 5

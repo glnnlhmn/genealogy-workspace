@@ -56,12 +56,8 @@ def valid_family(valid_audit: AuditStamp, valid_period: TimePeriod) -> Family:
     """Fixture providing a complete standard Family instance."""
     p1 = IndividualID(value="IND-000101")
     p2 = IndividualID(value="IND-000102")
-    c1 = ChildLink(
-        child_id=IndividualID(value="IND-000201"), pedigree=PedigreeType.BIRTH
-    )
-    c2 = ChildLink(
-        child_id=IndividualID(value="IND-000202"), pedigree=PedigreeType.ADOPTED
-    )
+    c1 = ChildLink(child_id=IndividualID(value="IND-000201"), pedigree=PedigreeType.BIRTH)
+    c2 = ChildLink(child_id=IndividualID(value="IND-000202"), pedigree=PedigreeType.ADOPTED)
     union = FamilyUnion(
         union_type=UnionType.MARRIED,
         dissolution_type=UnionDissolutionType.DIVORCE,
@@ -248,23 +244,17 @@ def test_family_child_mutators(valid_family: Family) -> None:
     assert with_c3.child_count == 3
     assert with_c3.children[-1].pedigree == PedigreeType.FOSTER
     assert with_c3.is_dirty is True
-    assert (
-        with_c3.add_child("IND-000203", PedigreeType.FOSTER) is with_c3
-    )  # idempotent no-op
+    assert with_c3.add_child("IND-000203", PedigreeType.FOSTER) is with_c3  # idempotent no-op
 
     # Error adding duplicate child ID with different pedigree
-    with pytest.raises(
-        ModelFormatError, match="already registered with a different pedigree"
-    ):
+    with pytest.raises(ModelFormatError, match="already registered with a different pedigree"):
         with_c3.add_child("IND-000203", PedigreeType.STEP)
 
     # update_child_pedigree
     up_ped = with_c3.update_child_pedigree("IND-000203", "Step")
     assert up_ped is not with_c3
     assert up_ped.children[-1].pedigree == PedigreeType.STEP
-    assert (
-        up_ped.update_child_pedigree("IND-000203", "Step") is up_ped
-    )  # idempotent no-op
+    assert up_ped.update_child_pedigree("IND-000203", "Step") is up_ped  # idempotent no-op
 
     with pytest.raises(ModelFormatError, match="not found in family children"):
         with_c3.update_child_pedigree("IND-999999", "Step")
@@ -312,10 +302,7 @@ def test_family_union_mutators(valid_family: Family) -> None:
     with_diss_date = with_marr.update_dissolution_date("1885-12-31")
     assert with_diss_date is not with_marr
     assert str(with_diss_date.dissolution_date) == "1885-12-31"
-    assert (
-        with_diss_date.update_dissolution_date(with_diss_date.dissolution_date)
-        is with_diss_date
-    )
+    assert with_diss_date.update_dissolution_date(with_diss_date.dissolution_date) is with_diss_date
 
     # update_union whole object
     new_union = FamilyUnion.create(UnionType.INFORMAL)
@@ -603,9 +590,7 @@ def test_family_superseded_by_other_allowed(valid_audit: AuditStamp) -> None:
 def test_family_duplicate_partner_ids(valid_audit: AuditStamp) -> None:
     """Verify ModelFormatError when partner_ids contains duplicates."""
     p1 = IndividualID(value="IND-000101")
-    with pytest.raises(
-        ModelFormatError, match="Duplicate entries found in partner_ids"
-    ):
+    with pytest.raises(ModelFormatError, match="Duplicate entries found in partner_ids"):
         Family(
             id=FamilyID(value="FAM-000001"),
             audit=valid_audit,
@@ -634,12 +619,8 @@ def test_family_partner_count_exceeds_two_in_constructor(
 @pytest.mark.regression
 def test_family_duplicate_children(valid_audit: AuditStamp) -> None:
     """Verify ModelFormatError when a child appears more than once in children."""
-    c1 = ChildLink(
-        child_id=IndividualID(value="IND-000201"), pedigree=PedigreeType.BIRTH
-    )
-    c1_dup = ChildLink(
-        child_id=IndividualID(value="IND-000201"), pedigree=PedigreeType.STEP
-    )
+    c1 = ChildLink(child_id=IndividualID(value="IND-000201"), pedigree=PedigreeType.BIRTH)
+    c1_dup = ChildLink(child_id=IndividualID(value="IND-000201"), pedigree=PedigreeType.STEP)
 
     with pytest.raises(ModelFormatError, match="Duplicate child entries found"):
         Family(

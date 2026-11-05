@@ -155,9 +155,7 @@ def test_colonial_militia_invalid_year_fails(
     valid_audit: AuditStamp,
 ) -> None:
     """Verify ModelFormatError raised if draft_year outside 1607-1815."""
-    with pytest.raises(
-        ModelFormatError, match="draft_year must be between 1607 and 1815"
-    ):
+    with pytest.raises(ModelFormatError, match="draft_year must be between 1607 and 1815"):
         ColonialMilitiaRecord(
             source_id=valid_source_id,
             source_urn=valid_draft_urn,

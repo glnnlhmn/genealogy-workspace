@@ -63,10 +63,7 @@ def test_locations_subsystem_gateway_smoke_pipeline(
 
     assert isinstance(leaf.id, LocationID)
     assert leaf.category == JurisdictionCategory.MUNICIPALITY
-    assert (
-        leaf.canonical_urn
-        == "urn:gda:loc:united_states:new_hampshire:merrimack:bow:bow_center"
-    )
+    assert leaf.canonical_urn == "urn:gda:loc:united_states:new_hampshire:merrimack:bow:bow_center"
     assert len(empty_collection) == 5
     assert leaf.id in empty_collection
     assert leaf.canonical_urn in empty_collection
@@ -105,9 +102,7 @@ def test_locations_pkg_module_dunder_all_contract() -> None:
     }
     assert set(loc_pkg.__all__) == expected_exports
     for attr in expected_exports:
-        assert hasattr(loc_pkg, attr), (
-            f"Export '{attr}' missing from gda.entity.locations"
-        )
+        assert hasattr(loc_pkg, attr), f"Export '{attr}' missing from gda.entity.locations"
 
 
 @pytest.mark.regression

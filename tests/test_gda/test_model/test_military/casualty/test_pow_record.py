@@ -188,9 +188,7 @@ def test_pow_record_invalid_category_fails(
     valid_audit: AuditStamp,
 ) -> None:
     """Verify ModelFormatError raised if casualty_category is not PRISONER_OF_WAR."""
-    with pytest.raises(
-        ModelFormatError, match="requires casualty_category 'PRISONER_OF_WAR'"
-    ):
+    with pytest.raises(ModelFormatError, match="requires casualty_category 'PRISONER_OF_WAR'"):
         PrisonerOfWarRecord(
             source_id=valid_source_id,
             source_urn=valid_casualty_urn,

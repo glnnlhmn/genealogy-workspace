@@ -108,9 +108,7 @@ def valid_individual(
 
 
 @pytest.mark.regression
-def test_individual_init_minimal_defaults(
-    valid_audit: AuditStamp, valid_name: NamePerson
-) -> None:
+def test_individual_init_minimal_defaults(valid_audit: AuditStamp, valid_name: NamePerson) -> None:
     """Verify minimal instantiation defaults and unpopulated fields."""
     ind = Individual(
         id=IndividualID(value="IND-000001"),
@@ -138,9 +136,7 @@ def test_individual_init_minimal_defaults(
 
 
 @pytest.mark.regression
-def test_individual_flexible_place_ids(
-    valid_audit: AuditStamp, valid_name: NamePerson
-) -> None:
+def test_individual_flexible_place_ids(valid_audit: AuditStamp, valid_name: NamePerson) -> None:
     """Verify birth_place_id and death_place_id accept both LocationID and SiteID."""
     loc_id = LocationID(value="LOC-000001")
     sid_id = SiteID(value="SID-000002")
@@ -227,8 +223,7 @@ def test_individual_str_representation_range_death(
 ) -> None:
     """Verify string formatting renders vitals with an EventDateRange death date."""
     expected = (
-        "Johnathan Edward Smith [M] (b. 1842-05-12, "
-        "d. BET 1910-01-01 AND 1912-12-31) (IND-000101)"
+        "Johnathan Edward Smith [M] (b. 1842-05-12, d. BET 1910-01-01 AND 1912-12-31) (IND-000101)"
     )
     assert str(valid_individual) == expected
 
@@ -250,10 +245,7 @@ def test_individual_str_representation_point_death(
         birth_date=point_birth_date,
         death_date=point_death_date,
     )
-    assert (
-        str(ind)
-        == "Johnathan Edward Smith [M] (b. 1842-05-12, d. 1910-10-15) (IND-000102)"
-    )
+    assert str(ind) == "Johnathan Edward Smith [M] (b. 1842-05-12, d. 1910-10-15) (IND-000102)"
 
 
 @pytest.mark.regression
@@ -308,9 +300,7 @@ def test_individual_str_death_only(
 
 
 @pytest.mark.regression
-def test_individual_str_no_dates(
-    valid_audit: AuditStamp, valid_name: NamePerson
-) -> None:
+def test_individual_str_no_dates(valid_audit: AuditStamp, valid_name: NamePerson) -> None:
     """Verify string formatting when no dates are present."""
     ind = Individual(
         id=IndividualID(value="IND-000004"),
@@ -739,9 +729,7 @@ def test_individual_deserialization_defensive_errors() -> None:
     with pytest.raises(ModelFormatError, match="Missing required field 'name'"):
         Individual.from_dict({"id": "IND-000001"})
 
-    with pytest.raises(
-        ModelFormatError, match="Failed to parse Individual JSON string"
-    ):
+    with pytest.raises(ModelFormatError, match="Failed to parse Individual JSON string"):
         Individual.from_json("{broken-json")
 
 
@@ -837,9 +825,7 @@ def test_individual_blank_name_raises_format_error(
     blank_name: str, valid_audit: AuditStamp
 ) -> None:
     """Verify Individual.create raises ModelFormatError if name is blank."""
-    with pytest.raises(
-        ModelFormatError, match="Individual 'name' cannot be empty or whitespace"
-    ):
+    with pytest.raises(ModelFormatError, match="Individual 'name' cannot be empty or whitespace"):
         Individual.create(
             individual_id=IndividualID("IND-000001"),
             audit=valid_audit,
@@ -884,9 +870,7 @@ def test_individual_self_supersession_forbidden(
         deprecated_at=IsoTimestamp.now_utc(),
         superseded_by=ind_id,
     )
-    with pytest.raises(
-        ModelFormatError, match="Individual cannot be superseded by itself"
-    ):
+    with pytest.raises(ModelFormatError, match="Individual cannot be superseded by itself"):
         Individual(
             id=ind_id,
             audit=valid_audit,
@@ -936,9 +920,7 @@ def test_individual_living_cannot_possess_death_data(
             is_deceased=False,
         )
 
-    with pytest.raises(
-        ModelFormatError, match="death_place_id while is_deceased is False"
-    ):
+    with pytest.raises(ModelFormatError, match="death_place_id while is_deceased is False"):
         Individual(
             id=IndividualID(value="IND-000001"),
             audit=valid_audit,

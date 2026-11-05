@@ -101,9 +101,7 @@ def test_fact_participant_factory_and_mutators() -> None:
     assert p.individual_id == IndividualID("IND-000001")
     assert p.role == AssociatedRole.CLERGY
     assert p.notes == "Officiating minister"
-    assert (
-        str(p) == f"IND-000001 [{AssociatedRole.CLERGY.value}] (Officiating minister)"
-    )
+    assert str(p) == f"IND-000001 [{AssociatedRole.CLERGY.value}] (Officiating minister)"
 
     # update_role
     up_role = p.update_role(AssociatedRole.WITNESS)
@@ -172,9 +170,7 @@ def test_fact_participant_defensive_errors() -> None:
     with pytest.raises(ModelFormatError, match="must be a dictionary"):
         FactParticipant.from_dict("not-a-dict")  # type: ignore[arg-type]
 
-    with pytest.raises(
-        ModelFormatError, match="Missing required field 'individual_id'"
-    ):
+    with pytest.raises(ModelFormatError, match="Missing required field 'individual_id'"):
         FactParticipant.from_dict({"role": "Witness"})
 
     with pytest.raises(ModelFormatError, match="Failed to parse FactParticipant JSON"):
@@ -415,44 +411,30 @@ def test_fact_participant_and_citation_mutators(valid_fact: Fact) -> None:
     with_p2 = fact.add_participant("IND-000003", AssociatedRole.CLERGY, "Officiant")
     assert with_p2 is not fact
     assert with_p2.participant_count == 2
-    assert (
-        with_p2.add_participant("IND-000003", AssociatedRole.CLERGY, "Officiant")
-        is with_p2
-    )
+    assert with_p2.add_participant("IND-000003", AssociatedRole.CLERGY, "Officiant") is with_p2
 
     # Duplicate individual ID with different role raises error
     with pytest.raises(ModelFormatError, match="already recorded"):
         with_p2.add_participant("IND-000003", AssociatedRole.WITNESS)
 
     # update_participant_role with notes
-    up_part = with_p2.update_participant_role(
-        "IND-000003", AssociatedRole.WITNESS, "Updated note"
-    )
+    up_part = with_p2.update_participant_role("IND-000003", AssociatedRole.WITNESS, "Updated note")
     assert up_part is not with_p2
-    target_p = [
-        p for p in up_part.participants if p.individual_id.value == "IND-000003"
-    ][0]
+    target_p = [p for p in up_part.participants if p.individual_id.value == "IND-000003"][0]
     assert target_p.role == AssociatedRole.WITNESS
     assert target_p.notes == "Updated note"
 
     # update_participant_role with notes=None
-    up_part_no_notes = with_p2.update_participant_role(
-        "IND-000003", AssociatedRole.ATTENDANT
-    )
-    target_p2 = [
-        p
-        for p in up_part_no_notes.participants
-        if p.individual_id.value == "IND-000003"
-    ][0]
+    up_part_no_notes = with_p2.update_participant_role("IND-000003", AssociatedRole.ATTENDANT)
+    target_p2 = [p for p in up_part_no_notes.participants if p.individual_id.value == "IND-000003"][
+        0
+    ]
     assert target_p2.role == AssociatedRole.ATTENDANT
     assert target_p2.notes == "Officiant"
 
     # update_participant_role no-op
     assert (
-        with_p2.update_participant_role(
-            "IND-000003", AssociatedRole.CLERGY, "Officiant"
-        )
-        is with_p2
+        with_p2.update_participant_role("IND-000003", AssociatedRole.CLERGY, "Officiant") is with_p2
     )
 
     with pytest.raises(ModelFormatError, match="not found in fact participants"):
@@ -702,9 +684,7 @@ def test_fact_post_init_id_pattern_defensive(valid_fact: Fact) -> None:
 @pytest.mark.regression
 def test_fact_empty_title_raises_error(valid_audit: AuditStamp) -> None:
     """Verify Fact raises ModelFormatError when title is empty or whitespace."""
-    with pytest.raises(
-        ModelFormatError, match="Fact 'title' cannot be empty or whitespace"
-    ):
+    with pytest.raises(ModelFormatError, match="Fact 'title' cannot be empty or whitespace"):
         Fact(
             id=FactID("FID-000001"),
             audit=valid_audit,
@@ -714,9 +694,7 @@ def test_fact_empty_title_raises_error(valid_audit: AuditStamp) -> None:
             primary_subject_id=IndividualID("IND-000001"),
         )
 
-    with pytest.raises(
-        ModelFormatError, match="Fact 'title' cannot be empty or whitespace"
-    ):
+    with pytest.raises(ModelFormatError, match="Fact 'title' cannot be empty or whitespace"):
         Fact.create(
             fact_id="FID-000001",
             canonical_urn="urn:gda:fact:empty_title",
@@ -737,9 +715,7 @@ def test_fact_invalid_subject_type_raises_error(valid_audit: AuditStamp) -> None
         primary_subject_id="IND-000001",
         audit=valid_audit,
     )
-    object.__setattr__(
-        fact, "primary_subject_id", SourceID("a0000000-0000-4000-8000-000000000001")
-    )
+    object.__setattr__(fact, "primary_subject_id", SourceID("a0000000-0000-4000-8000-000000000001"))
     with pytest.raises(TypeError, match="must be IndividualID or FamilyID"):
         fact.__post_init__()
 

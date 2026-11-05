@@ -167,14 +167,10 @@ def test_source_reference_defensive_errors() -> None:
     with pytest.raises(ModelFormatError, match="must be a dictionary"):
         SourceReference.from_dict("not-a-dict")  # type: ignore[arg-type]
 
-    with pytest.raises(
-        ModelFormatError, match="Missing required field 'citation_text'"
-    ):
+    with pytest.raises(ModelFormatError, match="Missing required field 'citation_text'"):
         SourceReference.from_dict({"source_id": "c9a646d3-9c61-4a70-8b14-c48c8b417c8d"})
 
-    with pytest.raises(
-        ModelFormatError, match="Failed to parse SourceReference JSON string"
-    ):
+    with pytest.raises(ModelFormatError, match="Failed to parse SourceReference JSON string"):
         SourceReference.from_json("{broken-json")
 
 
@@ -253,9 +249,7 @@ def test_record_metadata_defensive_errors() -> None:
     with pytest.raises(ModelFormatError, match="requires source_id, source_urn"):
         RecordMetadata.from_dict({"source_id": "abc"})
 
-    with pytest.raises(
-        ModelFormatError, match="Failed to parse RecordMetadata JSON string"
-    ):
+    with pytest.raises(ModelFormatError, match="Failed to parse RecordMetadata JSON string"):
         RecordMetadata.from_json("{broken-json")
 
 
@@ -405,9 +399,7 @@ def test_source_record_defensive_errors(
     with pytest.raises(ModelFormatError, match="requires source_id, source_urn"):
         SourceRecord.from_dict({"source_id": str(sid)})
 
-    with pytest.raises(
-        ModelFormatError, match="Failed to parse SourceRecord JSON string"
-    ):
+    with pytest.raises(ModelFormatError, match="Failed to parse SourceRecord JSON string"):
         SourceRecord.from_json("{broken-json")
 
 
@@ -451,9 +443,7 @@ def test_source_models_immutability_and_introspection(
     with pytest.raises((FrozenInstanceError, TypeError)):
         ref.citation_text = "New"  # type: ignore[misc]
 
-    meta = RecordMetadata.create(
-        "c9a646d3-9c61-4a70-8b14-c48c8b417c8d", "urn:x", "CAT", "TYPE"
-    )
+    meta = RecordMetadata.create("c9a646d3-9c61-4a70-8b14-c48c8b417c8d", "urn:x", "CAT", "TYPE")
     with pytest.raises((FrozenInstanceError, TypeError)):
         meta.record_type = "OTHER"  # type: ignore[misc]
 

@@ -92,9 +92,7 @@ def test_create_backup_resolves_subsecond_collisions(
     fixed_time = "20261012_120000"
     mock_dt = MagicMock()
     mock_dt.strftime.return_value = fixed_time
-    monkeypatch.setattr(
-        "gda.io.backup.datetime", MagicMock(now=MagicMock(return_value=mock_dt))
-    )
+    monkeypatch.setattr("gda.io.backup.datetime", MagicMock(now=MagicMock(return_value=mock_dt)))
 
     b1 = GDABackupManager.create_backup(target)
     target.write_text("v2", encoding="utf-8")

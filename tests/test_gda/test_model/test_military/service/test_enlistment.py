@@ -206,9 +206,7 @@ def test_enlistment_muster_empty_substitute_name_fails(
     valid_service_record_id: ServiceRecordID,
 ) -> None:
     """Verify ModelFormatError raised when substitute name is empty without an ID."""
-    with pytest.raises(
-        ModelFormatError, match="requires non-empty substitute_for_name_raw"
-    ):
+    with pytest.raises(ModelFormatError, match="requires non-empty substitute_for_name_raw"):
         EnlistmentMusterRecord(
             source_id=valid_source_id,
             source_urn=valid_service_urn,

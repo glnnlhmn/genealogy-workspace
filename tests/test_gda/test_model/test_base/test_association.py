@@ -113,18 +113,14 @@ def test_associated_individual_factory_create_and_mutators() -> None:
 @pytest.mark.regression
 def test_associated_individual_missing_both_identifiers_fails() -> None:
     """Verify ModelFormatError is raised when neither individual_id nor name_raw is supplied."""
-    with pytest.raises(
-        ModelFormatError, match="requires either a valid 'individual_id'"
-    ):
+    with pytest.raises(ModelFormatError, match="requires either a valid 'individual_id'"):
         AssociatedIndividual()
 
 
 @pytest.mark.regression
 def test_associated_individual_empty_name_raw_without_id_fails() -> None:
     """Verify ModelFormatError is raised when name_raw is empty whitespace and no ID is provided."""
-    with pytest.raises(
-        ModelFormatError, match="requires either a valid 'individual_id'"
-    ):
+    with pytest.raises(ModelFormatError, match="requires either a valid 'individual_id'"):
         AssociatedIndividual(name_raw=" ")
 
 
@@ -146,9 +142,7 @@ def test_associated_individual_rejects_site_id_as_individual_id() -> None:
 @pytest.mark.regression
 def test_associated_individual_primary_role_in_tertiary_roles_fails() -> None:
     """Verify ModelFormatError is raised when primary role is duplicated in tertiary_roles."""
-    with pytest.raises(
-        ModelFormatError, match="cannot be duplicated in tertiary_roles"
-    ):
+    with pytest.raises(ModelFormatError, match="cannot be duplicated in tertiary_roles"):
         AssociatedIndividual(
             name_raw="John Doe",
             role=AssociatedRole.EMPLOYER,
@@ -159,9 +153,7 @@ def test_associated_individual_primary_role_in_tertiary_roles_fails() -> None:
 @pytest.mark.regression
 def test_associated_individual_duplicate_tertiary_roles_fails() -> None:
     """Verify ModelFormatError is raised when duplicate roles exist within tertiary_roles."""
-    with pytest.raises(
-        ModelFormatError, match="Duplicate roles detected within tertiary_roles"
-    ):
+    with pytest.raises(ModelFormatError, match="Duplicate roles detected within tertiary_roles"):
         AssociatedIndividual(
             name_raw="John Doe",
             role=AssociatedRole.EMPLOYER,
@@ -229,9 +221,7 @@ def test_associated_individual_serialization_round_trip() -> None:
     with pytest.raises(ModelFormatError, match="must be a dictionary"):
         AssociatedIndividual.from_dict("not-a-dict")  # type: ignore[arg-type]
 
-    with pytest.raises(
-        ModelFormatError, match="Failed to parse AssociatedIndividual JSON"
-    ):
+    with pytest.raises(ModelFormatError, match="Failed to parse AssociatedIndividual JSON"):
         AssociatedIndividual.from_json("{broken-json")
 
 

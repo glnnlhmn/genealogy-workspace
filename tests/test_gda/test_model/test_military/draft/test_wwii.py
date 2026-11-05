@@ -163,9 +163,7 @@ def test_wwii_draft_card_invalid_year_fails(
     valid_audit: AuditStamp,
 ) -> None:
     """Verify ModelFormatError raised if draft_year outside 1940-1946."""
-    with pytest.raises(
-        ModelFormatError, match="draft_year must be between 1940 and 1946"
-    ):
+    with pytest.raises(ModelFormatError, match="draft_year must be between 1940 and 1946"):
         WwiiDraftCardRecord(
             source_id=valid_source_id,
             source_urn=valid_draft_urn,

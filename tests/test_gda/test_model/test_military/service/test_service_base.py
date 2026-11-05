@@ -259,9 +259,7 @@ def test_military_service_record_chronological_sequence_fails(
     valid_service_record_id: ServiceRecordID,
 ) -> None:
     """Verify ModelFormatError raised if separation_year precedes enlistment_year."""
-    with pytest.raises(
-        ModelFormatError, match="cannot precede enlistment_year"
-    ) as exc_info:
+    with pytest.raises(ModelFormatError, match="cannot precede enlistment_year") as exc_info:
         MilitaryServiceRecord(
             source_id=valid_source_id,
             source_urn=valid_service_urn,

@@ -131,9 +131,7 @@ def test_site_valid_creation_and_alias_equivalence(
     assert site.canonical_name == "Old Bow Center Cemetery"
     assert site.category == SiteType.CEMETERY
     assert site.category == SiteCategory.CEMETERY
-    assert (
-        site.canonical_urn == "urn:gda:site:us:nh:merrimack:bow:old-bow-center-cemetery"
-    )
+    assert site.canonical_urn == "urn:gda:site:us:nh:merrimack:bow:old-bow-center-cemetery"
     assert site.location_id == LocationID("LOC-000004")
     assert site.address == golden_address
     assert site.coordinates is not None
@@ -272,10 +270,7 @@ def test_site_naming_mutators(golden_site: Site, golden_period: TimePeriod) -> N
     assert with_removed_variant is not with_variant
     assert len(with_removed_variant.historical_names) == 1
     assert with_removed_variant.historical_names[0].raw == "Meetinghouse Hill Cemetery"
-    assert (
-        with_removed_variant.remove_historic_variant("NONEXISTENT")
-        is with_removed_variant
-    )
+    assert with_removed_variant.remove_historic_variant("NONEXISTENT") is with_removed_variant
 
 
 @pytest.mark.regression
@@ -568,13 +563,9 @@ def test_site_invalid_name_type_raises_error(golden_audit: AuditStamp) -> None:
 
 @pytest.mark.regression
 @pytest.mark.parametrize("blank_name", ["", "   ", "\t\n"])
-def test_site_blank_name_raises_format_error(
-    blank_name: str, golden_audit: AuditStamp
-) -> None:
+def test_site_blank_name_raises_format_error(blank_name: str, golden_audit: AuditStamp) -> None:
     """Verify Site.create raises ModelFormatError if name is blank."""
-    with pytest.raises(
-        ModelFormatError, match="Site 'name' cannot be empty or whitespace"
-    ):
+    with pytest.raises(ModelFormatError, match="Site 'name' cannot be empty or whitespace"):
         Site.create(
             site_id=SiteID("SID-000001"),
             audit=golden_audit,
@@ -597,9 +588,7 @@ def test_site_blank_name_raises_format_error(
         "urn:gda:site:invalid space",
     ],
 )
-def test_site_invalid_urn_raises_format_error(
-    invalid_urn: str, golden_audit: AuditStamp
-) -> None:
+def test_site_invalid_urn_raises_format_error(invalid_urn: str, golden_audit: AuditStamp) -> None:
     """Verify Site raises ModelFormatError when canonical_urn is malformed."""
     with pytest.raises(ModelFormatError, match="Invalid canonical_urn format"):
         Site(

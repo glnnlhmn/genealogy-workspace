@@ -207,10 +207,7 @@ def test_event_date_exact_formatting_and_year() -> None:
 
     ed_exact = EventDate.create("12 MAY 1880", DateModifier.EXACT)
     assert str(ed_exact) == "12 MAY 1880"
-    assert (
-        repr(ed_exact)
-        == "EventDate(date=DateString(value='12 MAY 1880'), modifier=EXACT)"
-    )
+    assert repr(ed_exact) == "EventDate(date=DateString(value='12 MAY 1880'), modifier=EXACT)"
 
 
 @pytest.mark.regression

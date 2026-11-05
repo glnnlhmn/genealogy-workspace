@@ -38,9 +38,7 @@ def golden_import_path() -> Path:
         / "location_import_envelope_golden.json"
     )
     if not fixture_path.exists():
-        fixture_path = Path(
-            "tests/fixtures/locations/golden/location_import_envelope_golden.json"
-        )
+        fixture_path = Path("tests/fixtures/locations/golden/location_import_envelope_golden.json")
     return fixture_path
 
 

@@ -72,9 +72,7 @@ class SyntheticEntityWithPlainTombstone:
         self.id = id_val
         self.tombstone = tombstone
 
-    def model_copy(
-        self, update: dict[str, Any] | None = None
-    ) -> SyntheticEntityWithPlainTombstone:
+    def model_copy(self, update: dict[str, Any] | None = None) -> SyntheticEntityWithPlainTombstone:
         new_tomb = update.get("tombstone") if update else self.tombstone
         return SyntheticEntityWithPlainTombstone(self.id, new_tomb)
 
@@ -206,8 +204,6 @@ def test_stamp_tombstone_missing_tombstone_raises_attribute_error() -> None:
 @pytest.mark.regression
 def test_stamp_tombstone_unsupported_copy_mechanisms_raises_type_error() -> None:
     """Verify objects lacking copy mechanisms raise TypeError."""
-    unsupported = SyntheticUnsupportedEntity(
-        "ID-99", SyntheticCustomTombstone(is_deprecated=False)
-    )
+    unsupported = SyntheticUnsupportedEntity("ID-99", SyntheticCustomTombstone(is_deprecated=False))
     with pytest.raises(TypeError, match="does not support immutable copy mechanisms"):
         stamp_tombstone(unsupported, reason="Cannot copy")

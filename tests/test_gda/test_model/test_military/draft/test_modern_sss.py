@@ -175,9 +175,7 @@ def test_modern_sss_lottery_number_outside_vietnam_era_fails(
     valid_audit: AuditStamp,
 ) -> None:
     """Verify ModelFormatError raised if lottery_sequence_number specified outside Vietnam era."""
-    with pytest.raises(
-        ModelFormatError, match="only applicable during the VIETNAM_LOTTERY era"
-    ):
+    with pytest.raises(ModelFormatError, match="only applicable during the VIETNAM_LOTTERY era"):
         ModernSelectiveServiceRecord(
             source_id=valid_source_id,
             source_urn=valid_draft_urn,

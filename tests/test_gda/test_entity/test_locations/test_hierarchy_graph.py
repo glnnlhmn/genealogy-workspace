@@ -410,9 +410,7 @@ def test_valid_collection_indexes_passes_with_populated_aliases() -> None:
     col = Locations()
     now = IsoTimestamp.now_utc()
     name = (
-        NameThing.create(raw="USA", canonical="USA")
-        .add_alias("United States")
-        .add_alias("America")
+        NameThing.create(raw="USA", canonical="USA").add_alias("United States").add_alias("America")
     )
     c = Location(
         id=LocationID("LOC-000001"),

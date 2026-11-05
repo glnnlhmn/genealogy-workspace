@@ -64,9 +64,7 @@ def test_name_base_duplicate_aliases_or_spellings_raises_error() -> None:
             aliases=["Jack", "Jack"],
         )
 
-    with pytest.raises(
-        ModelFormatError, match="Duplicate entries found in alt_spellings"
-    ):
+    with pytest.raises(ModelFormatError, match="Duplicate entries found in alt_spellings"):
         NamePerson(
             raw="John",
             canonical="John",
@@ -253,9 +251,7 @@ def test_name_person_to_dict_omits_none_attributes() -> None:
     assert "comment" not in data
     assert data["surname"] == "Plato"
 
-    given_only = NamePerson.create(
-        raw="Aristotle", canonical="Aristotle", given="Aristotle"
-    )
+    given_only = NamePerson.create(raw="Aristotle", canonical="Aristotle", given="Aristotle")
     data_given = given_only.to_dict()
     assert "surname" not in data_given
     assert data_given["given"] == "Aristotle"
@@ -648,9 +644,7 @@ def test_name_deserializer_defensive_errors(failure_note_blank_text: str) -> Non
     with pytest.raises(ModelFormatError, match="Missing required field 'raw'"):
         NamePerson.from_dict({"raw": failure_note_blank_text})
 
-    with pytest.raises(
-        ModelFormatError, match="Failed to parse NamePerson JSON string"
-    ):
+    with pytest.raises(ModelFormatError, match="Failed to parse NamePerson JSON string"):
         NamePerson.from_json("{broken json")
 
     with pytest.raises(ModelFormatError, match="payload must be a dictionary"):
@@ -665,9 +659,7 @@ def test_name_deserializer_defensive_errors(failure_note_blank_text: str) -> Non
     with pytest.raises(ModelFormatError, match="Failed to parse NameThing JSON string"):
         NameThing.from_json("{broken json")
 
-    with pytest.raises(
-        ModelFormatError, match="HistoricVariant payload must be a dictionary"
-    ):
+    with pytest.raises(ModelFormatError, match="HistoricVariant payload must be a dictionary"):
         HistoricVariant.from_dict(["not", "dict"])  # type: ignore[arg-type]
 
     with pytest.raises(ModelFormatError, match="Missing required field 'raw'"):

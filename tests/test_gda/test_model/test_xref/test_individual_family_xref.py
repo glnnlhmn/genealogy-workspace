@@ -62,10 +62,7 @@ def test_create_key_formatting_combinations() -> None:
     p1 = IndividualID("IND-000001")
     f1 = FamilyID("FAM-000001")
 
-    assert (
-        IndividualFamilyXRef.create_key(p1, "PARTNER", f1)
-        == "IND-000001::PARTNER::FAM-000001"
-    )
+    assert IndividualFamilyXRef.create_key(p1, "PARTNER", f1) == "IND-000001::PARTNER::FAM-000001"
     assert (
         IndividualFamilyXRef.create_key(p1, "CHILD", f1, PedigreeType.ADOPTED)
         == "IND-000001::CHILD::FAM-000001::Adopted"
@@ -106,14 +103,10 @@ def test_individual_family_xref_empty_strings_rejected() -> None:
     f1 = FamilyID("FAM-000001")
 
     with pytest.raises(ModelFormatError, match="xref_id"):
-        IndividualFamilyXRef(
-            xref_id="   ", subject_id=p1, target_id=f1, relation_type="PARTNER"
-        )
+        IndividualFamilyXRef(xref_id="   ", subject_id=p1, target_id=f1, relation_type="PARTNER")
 
     with pytest.raises(ModelFormatError, match="relation_type"):
-        IndividualFamilyXRef(
-            xref_id="KEY", subject_id=p1, target_id=f1, relation_type="   "
-        )
+        IndividualFamilyXRef(xref_id="KEY", subject_id=p1, target_id=f1, relation_type="   ")
 
 
 @pytest.mark.regression

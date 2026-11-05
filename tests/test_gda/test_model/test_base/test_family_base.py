@@ -39,13 +39,10 @@ def test_child_link_defaults_and_explicit_instantiation() -> None:
     assert link_default.pedigree == PedigreeType.BIRTH
     assert str(link_default) == "IND-000001 (Birth)"
     assert (
-        repr(link_default)
-        == "ChildLink(child_id=IndividualID(value='IND-000001'), pedigree=Birth)"
+        repr(link_default) == "ChildLink(child_id=IndividualID(value='IND-000001'), pedigree=Birth)"
     )
 
-    link_explicit = ChildLink(
-        child_id=IndividualID("IND-000002"), pedigree=PedigreeType.ADOPTED
-    )
+    link_explicit = ChildLink(child_id=IndividualID("IND-000002"), pedigree=PedigreeType.ADOPTED)
     assert link_explicit.pedigree == PedigreeType.ADOPTED
     assert str(link_explicit) == "IND-000002 (Adopted)"
 
@@ -188,9 +185,7 @@ def test_family_union_factory_dissolution_normalization(
     expected_dissolution: UnionDissolutionType | None,
 ) -> None:
     """Verify FamilyUnion.create normalizes dissolution type tokens."""
-    u = FamilyUnion.create(
-        union_type=UnionType.MARRIED, dissolution_type=raw_dissolution
-    )
+    u = FamilyUnion.create(union_type=UnionType.MARRIED, dissolution_type=raw_dissolution)
     assert u.dissolution_type == expected_dissolution
 
 
@@ -364,9 +359,7 @@ def test_family_union_defensive_errors() -> None:
     with pytest.raises(ModelFormatError, match="must be a dictionary"):
         FamilyUnion.from_dict("not-a-dict")  # type: ignore[arg-type]
 
-    with pytest.raises(
-        ModelFormatError, match="Failed to parse FamilyUnion JSON string"
-    ):
+    with pytest.raises(ModelFormatError, match="Failed to parse FamilyUnion JSON string"):
         FamilyUnion.from_json("{broken-json")
 
 

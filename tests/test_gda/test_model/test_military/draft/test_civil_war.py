@@ -148,9 +148,7 @@ def test_civil_war_draft_invalid_year_fails(
     valid_audit: AuditStamp,
 ) -> None:
     """Verify ModelFormatError raised if draft_year outside 1862-1865 range."""
-    with pytest.raises(
-        ModelFormatError, match="draft_year must be between 1862 and 1865"
-    ):
+    with pytest.raises(ModelFormatError, match="draft_year must be between 1862 and 1865"):
         CivilWarDraftRecord(
             source_id=valid_source_id,
             source_urn=valid_draft_urn,

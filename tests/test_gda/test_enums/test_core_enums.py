@@ -73,9 +73,7 @@ def test_sex_from_input_maps_standard_tokens() -> None:
 @pytest.mark.regression
 def test_sex_from_input_rejects_invalid_tokens() -> None:
     """Verify Sex.from_input raises ValueError on invalid or unrecognized strings."""
-    with pytest.raises(
-        ValueError, match="Cannot map 'alien' to a valid Sex enum member."
-    ):
+    with pytest.raises(ValueError, match="Cannot map 'alien' to a valid Sex enum member."):
         Sex.from_input("alien")
 
 

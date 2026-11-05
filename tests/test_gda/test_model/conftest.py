@@ -94,9 +94,7 @@ def golden_audit(golden_timestamp: IsoTimestamp) -> AuditStamp:
 
 
 @pytest.fixture
-def modified_audit(
-    golden_timestamp: IsoTimestamp, advanced_timestamp: IsoTimestamp
-) -> AuditStamp:
+def modified_audit(golden_timestamp: IsoTimestamp, advanced_timestamp: IsoTimestamp) -> AuditStamp:
     """Provide an AuditStamp with advanced updated_at for is_modified testing."""
     return AuditStamp(created_at=golden_timestamp, updated_at=advanced_timestamp)
 

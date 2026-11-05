@@ -36,7 +36,7 @@ from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
 
-__version__ = "1.0.0+build.34"
+__version__ = "1.0.0+build.35"
 
 
 # ==============================================================================
@@ -104,9 +104,9 @@ def test_jurisdiction_category_members_and_ranks() -> None:
     assert JurisdictionCategory.STATOID.administrative_rank == 20
     assert JurisdictionCategory.COUNTY_EQUIVALENT.administrative_rank == 30
     assert JurisdictionCategory.CIVIL_TOWNSHIP.administrative_rank == 40
-    assert JurisdictionCategory.MUNICIPALITY.administrative_rank == 40
-    assert JurisdictionCategory.UNINCORPORATED_PLACE.administrative_rank == 50
-    assert JurisdictionCategory.SPECIAL_DISTRICT.administrative_rank == 60
+    assert JurisdictionCategory.MUNICIPALITY.administrative_rank == 50
+    assert JurisdictionCategory.UNINCORPORATED_PLACE.administrative_rank == 60
+    assert JurisdictionCategory.SPECIAL_DISTRICT.administrative_rank == 70
 
 
 # ==============================================================================
@@ -264,10 +264,7 @@ def test_location_naming_mutators(
     assert with_removed_variant is not with_variant
     assert len(with_removed_variant.historical_names) == 1
     assert with_removed_variant.historical_names[0].raw == "Suncook"
-    assert (
-        with_removed_variant.remove_historic_variant("NONEXISTENT")
-        is with_removed_variant
-    )
+    assert with_removed_variant.remove_historic_variant("NONEXISTENT") is with_removed_variant
 
 
 @pytest.mark.regression
@@ -382,14 +379,10 @@ def test_location_attribute_mutators_defensive_errors(
     with pytest.raises(ModelFormatError, match="Invalid canonical_urn format"):
         loc.update_urn("invalid_urn")
 
-    with pytest.raises(
-        ModelFormatError, match="cannot reference itself in predecessor_ids"
-    ):
+    with pytest.raises(ModelFormatError, match="cannot reference itself in predecessor_ids"):
         loc.add_predecessor(loc.id)
 
-    with pytest.raises(
-        ModelFormatError, match="cannot reference itself in successor_ids"
-    ):
+    with pytest.raises(ModelFormatError, match="cannot reference itself in successor_ids"):
         loc.add_successor(loc.id)
 
 
@@ -578,13 +571,9 @@ def test_location_invalid_name_type_raises_error(golden_audit: AuditStamp) -> No
 
 @pytest.mark.regression
 @pytest.mark.parametrize("blank_name", ["", " ", "\t\n"])
-def test_location_blank_name_raises_format_error(
-    blank_name: str, golden_audit: AuditStamp
-) -> None:
+def test_location_blank_name_raises_format_error(blank_name: str, golden_audit: AuditStamp) -> None:
     """Verify Location.create raises ModelFormatError if name string is blank."""
-    with pytest.raises(
-        ModelFormatError, match="Location 'name' cannot be empty or whitespace"
-    ):
+    with pytest.raises(ModelFormatError, match="Location 'name' cannot be empty or whitespace"):
         Location.create(
             location_id=LocationID("LOC-000001"),
             audit=golden_audit,
@@ -656,9 +645,7 @@ def test_location_self_referential_predecessor_ids_raises_format_error(
 ) -> None:
     """Verify Location rejects self-references in predecessor_ids."""
     loc_id = LocationID("LOC-000005")
-    with pytest.raises(
-        ModelFormatError, match="cannot reference itself in predecessor_ids"
-    ):
+    with pytest.raises(ModelFormatError, match="cannot reference itself in predecessor_ids"):
         Location(
             id=loc_id,
             audit=golden_audit,
@@ -675,9 +662,7 @@ def test_location_self_referential_successor_ids_raises_format_error(
 ) -> None:
     """Verify Location rejects self-references in successor_ids."""
     loc_id = LocationID("LOC-000005")
-    with pytest.raises(
-        ModelFormatError, match="cannot reference itself in successor_ids"
-    ):
+    with pytest.raises(ModelFormatError, match="cannot reference itself in successor_ids"):
         Location(
             id=loc_id,
             audit=golden_audit,
@@ -694,9 +679,7 @@ def test_location_duplicate_predecessors_or_successors_raises_format_error(
 ) -> None:
     """Verify Location rejects duplicate IDs in predecessor_ids or successor_ids."""
     dup_id = LocationID("LOC-000006")
-    with pytest.raises(
-        ModelFormatError, match="Duplicate entries found in predecessor_ids"
-    ):
+    with pytest.raises(ModelFormatError, match="Duplicate entries found in predecessor_ids"):
         Location(
             id=LocationID("LOC-000005"),
             audit=golden_audit,
@@ -706,9 +689,7 @@ def test_location_duplicate_predecessors_or_successors_raises_format_error(
             predecessor_ids=[dup_id, dup_id],
         )
 
-    with pytest.raises(
-        ModelFormatError, match="Duplicate entries found in successor_ids"
-    ):
+    with pytest.raises(ModelFormatError, match="Duplicate entries found in successor_ids"):
         Location(
             id=LocationID("LOC-000005"),
             audit=golden_audit,
@@ -730,9 +711,7 @@ def test_location_self_supersession_raises_format_error(
         deprecated_at=golden_audit.updated_at,
         superseded_by=loc_id,
     )
-    with pytest.raises(
-        ModelFormatError, match="Location cannot be superseded by itself"
-    ):
+    with pytest.raises(ModelFormatError, match="Location cannot be superseded by itself"):
         Location(
             id=loc_id,
             audit=golden_audit,

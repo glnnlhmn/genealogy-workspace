@@ -34,9 +34,7 @@ __version__ = "1.0.0+build.6"
 
 
 @pytest.mark.unit
-def test_note_instantiation_complete(
-    golden_audit: AuditStamp, golden_source_id: SourceID
-) -> None:
+def test_note_instantiation_complete(golden_audit: AuditStamp, golden_source_id: SourceID) -> None:
     """Verify Note instantiates with all explicit attributes."""
     note = Note(
         note_id=NoteID("NOT-000001"),
@@ -100,9 +98,7 @@ def test_note_update_text_returns_new_instance(
         audit=golden_audit,
         title="Hypothesis A",
     )
-    custom_audit = AuditStamp(
-        created_at=golden_audit.created_at, updated_at=advanced_timestamp
-    )
+    custom_audit = AuditStamp(created_at=golden_audit.created_at, updated_at=advanced_timestamp)
     updated = original.update_text("Revised hypothesis.", audit=custom_audit)
 
     assert updated is not original
@@ -180,10 +176,7 @@ def test_note_sources_copy_on_write_mutators(
     with_removed = with_added.remove_source(s1)
     assert with_removed.sources == [SourceID(s2)]
     # no-op removal returns same instance
-    assert (
-        with_removed.remove_source("00000000-0000-4000-8000-000000000999")
-        is with_removed
-    )
+    assert with_removed.remove_source("00000000-0000-4000-8000-000000000999") is with_removed
 
     # update_sources
     replaced = with_removed.update_sources([s3, s4])
@@ -227,18 +220,14 @@ def test_note_tags_copy_on_write_mutators() -> None:
 @pytest.mark.regression
 def test_note_text_empty_rejection(failure_note_blank_text: str) -> None:
     """Verify empty or whitespace-only text raises ModelFormatError."""
-    with pytest.raises(
-        ModelFormatError, match="Note text cannot be empty or whitespace."
-    ):
+    with pytest.raises(ModelFormatError, match="Note text cannot be empty or whitespace."):
         Note.create(
             note_id="NOT-000009",
             note_type=NoteType.GENERAL,
             text="",
         )
 
-    with pytest.raises(
-        ModelFormatError, match="Note text cannot be empty or whitespace."
-    ):
+    with pytest.raises(ModelFormatError, match="Note text cannot be empty or whitespace."):
         Note.create(
             note_id="NOT-000009",
             note_type=NoteType.GENERAL,
@@ -249,9 +238,7 @@ def test_note_text_empty_rejection(failure_note_blank_text: str) -> None:
 @pytest.mark.regression
 def test_note_title_whitespace_rejection(failure_note_blank_text: str) -> None:
     """Verify title composed solely of whitespace raises ModelFormatError."""
-    with pytest.raises(
-        ModelFormatError, match="Note title cannot be blank if provided."
-    ):
+    with pytest.raises(ModelFormatError, match="Note title cannot be blank if provided."):
         Note.create(
             note_id="NOT-000010",
             note_type=NoteType.GENERAL,
@@ -268,9 +255,7 @@ def test_note_add_tag_empty_rejection(failure_note_blank_text: str) -> None:
         note_type=NoteType.GENERAL,
         text="Valid text",
     )
-    with pytest.raises(
-        ModelFormatError, match="Note tag cannot be empty or whitespace."
-    ):
+    with pytest.raises(ModelFormatError, match="Note tag cannot be empty or whitespace."):
         note.add_tag(failure_note_blank_text)
 
 

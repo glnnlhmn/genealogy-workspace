@@ -67,9 +67,7 @@ def test_from_collections_smoke() -> None:
         audit=audit,
     )
 
-    resolver = IndividualFamilyResolver.from_collections(
-        individuals=[ind], families=[fam]
-    )
+    resolver = IndividualFamilyResolver.from_collections(individuals=[ind], families=[fam])
     assert resolver.edge_count == 2
     assert resolver.get_families_as_partner(ind.id) == (fam.id,)
 
@@ -85,9 +83,7 @@ def test_from_xrefs_bulk_hydration() -> None:
     )
     resolver = IndividualFamilyResolver.from_xrefs([edge])
     assert resolver.edge_count == 1
-    assert resolver.get_families_as_child(IndividualID("IND-000002")) == (
-        FamilyID("FAM-000001"),
-    )
+    assert resolver.get_families_as_child(IndividualID("IND-000002")) == (FamilyID("FAM-000001"),)
 
 
 # ==============================================================================

@@ -83,9 +83,7 @@ def test_military_root_reexports_match_subpackages() -> None:
 
     root_all = set(military_root.__all__)
     missing_in_root = accumulated_sub_all - root_all
-    assert not missing_in_root, (
-        f"Symbols missing from military root __all__: {missing_in_root}"
-    )
+    assert not missing_in_root, f"Symbols missing from military root __all__: {missing_in_root}"
 
 
 @pytest.mark.integrity

@@ -314,9 +314,7 @@ def test_military_award_empty_optional_strings_fail(
             general_order_raw="   ",
         )
 
-    with pytest.raises(
-        ModelFormatError, match="issuing_authority_raw.*cannot be empty"
-    ):
+    with pytest.raises(ModelFormatError, match="issuing_authority_raw.*cannot be empty"):
         MilitaryAwardRecord(
             source_id=valid_source_id,
             source_urn=valid_award_urn,

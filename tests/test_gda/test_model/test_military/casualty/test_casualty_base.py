@@ -190,9 +190,7 @@ def test_military_casualty_empty_required_strings_fail(
     valid_audit: AuditStamp,
 ) -> None:
     """Verify ModelFormatError raised if required text fields are empty or whitespace."""
-    with pytest.raises(
-        ModelFormatError, match="servicemember_name_raw.*cannot be empty"
-    ):
+    with pytest.raises(ModelFormatError, match="servicemember_name_raw.*cannot be empty"):
         MilitaryCasualtyRecord(
             source_id=valid_source_id,
             source_urn=valid_casualty_urn,
@@ -271,9 +269,7 @@ def test_military_casualty_empty_optional_strings_fail(
             service_number_raw="   ",
         )
 
-    with pytest.raises(
-        ModelFormatError, match="casualty_location_raw.*cannot be empty"
-    ):
+    with pytest.raises(ModelFormatError, match="casualty_location_raw.*cannot be empty"):
         MilitaryCasualtyRecord(
             source_id=valid_source_id,
             source_urn=valid_casualty_urn,

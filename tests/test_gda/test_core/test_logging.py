@@ -172,10 +172,7 @@ def test_console_formatter_formatting() -> None:
     record.details = {"usage_pct": 89}  # type: ignore[attr-defined]
 
     output = formatter.format(record)
-    assert (
-        output
-        == "[WARNING] [gda.cli] Disk approaching threshold | details={'usage_pct': 89}"
-    )
+    assert output == "[WARNING] [gda.cli] Disk approaching threshold | details={'usage_pct': 89}"
 
 
 @pytest.mark.unit

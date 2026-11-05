@@ -110,10 +110,7 @@ def test_build_jurisdiction_hierarchy_full_five_tiers(
         local="Bow Center",
     )
     assert leaf.category == JurisdictionCategory.MUNICIPALITY
-    assert (
-        leaf.canonical_urn
-        == "urn:gda:loc:united_states:new_hampshire:merrimack:bow:bow_center"
-    )
+    assert leaf.canonical_urn == "urn:gda:loc:united_states:new_hampshire:merrimack:bow:bow_center"
     assert leaf.parent_id is not None
     assert len(empty_collection) == 5
 
@@ -163,10 +160,7 @@ def test_build_jurisdiction_hierarchy_independent_locality_without_township(
     )
     assert leaf.category == JurisdictionCategory.MUNICIPALITY
     assert leaf.canonical_urn == "urn:gda:loc:usa:california:los_angeles:los_angeles"
-    assert (
-        leaf.parent_id
-        == empty_collection.get("urn:gda:loc:usa:california:los_angeles").id
-    )
+    assert leaf.parent_id == empty_collection.get("urn:gda:loc:usa:california:los_angeles").id
     assert len(empty_collection) == 4
 
 
@@ -479,9 +473,7 @@ def test_export_file_excludes_graveyard_when_flag_false(
     tombstone_location(populated_collection, "LOC-000005", reason="Dissolved")
     out_path = tmp_path / "active_only.json"
 
-    exported_count = export_file(
-        populated_collection, out_path, include_graveyard=False
-    )
+    exported_count = export_file(populated_collection, out_path, include_graveyard=False)
     assert exported_count == 4
 
 
@@ -495,9 +487,7 @@ def test_export_file_serializes_non_empty_historical_names(
     loc = Location.create(
         location_id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
-        name=NameThing.create(
-            raw="Old Province", canonical="Old Province"
-        ).add_historic_variant(
+        name=NameThing.create(raw="Old Province", canonical="Old Province").add_historic_variant(
             raw="Ancient Province",
             name="Ancient Province",
             historic_name_type=HistoricNameType.HISTORICAL,
@@ -636,9 +626,7 @@ def test_save_to_db_and_load_from_db_execution(
 ) -> None:
     """Verify save_to_db commits entities and load_from_db populates collection."""
     mock_cursor = MagicMock()
-    mock_cursor.fetchall.return_value = [
-        {"id": "LOC-000001", "name": "USA", "category": "COUNTRY"}
-    ]
+    mock_cursor.fetchall.return_value = [{"id": "LOC-000001", "name": "USA", "category": "COUNTRY"}]
 
     mock_conn = MagicMock()
     mock_conn.execute.return_value = mock_cursor

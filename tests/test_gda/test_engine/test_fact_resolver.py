@@ -62,18 +62,14 @@ def test_resolver_from_facts_smoke() -> None:
         fact_type=FactType.MARRIAGE,
         title="Marriage Ceremony",
         primary_subject_id=subject,
-        participants=[
-            FactParticipant(individual_id=ind_witness, role=AssociatedRole.WITNESS)
-        ],
+        participants=[FactParticipant(individual_id=ind_witness, role=AssociatedRole.WITNESS)],
         audit=audit,
     )
 
     resolver = FactParticipantResolver.from_facts([fact])
     assert resolver.edge_count == 1
     assert resolver.get_facts_as_participant(ind_witness) == (fact.id,)
-    assert resolver.get_participants_for_fact(fact.id) == (
-        (ind_witness, AssociatedRole.WITNESS),
-    )
+    assert resolver.get_participants_for_fact(fact.id) == ((ind_witness, AssociatedRole.WITNESS),)
 
 
 @pytest.mark.unit
@@ -130,12 +126,8 @@ def test_get_facts_as_participant_all_and_filtered_by_role() -> None:
     )
 
     assert resolver.get_facts_as_participant(witness) == (f1, f2)
-    assert resolver.get_facts_as_participant(witness, role=AssociatedRole.WITNESS) == (
-        f1,
-    )
-    assert resolver.get_facts_as_participant(
-        witness, role=AssociatedRole.INFORMANT
-    ) == (f2,)
+    assert resolver.get_facts_as_participant(witness, role=AssociatedRole.WITNESS) == (f1,)
+    assert resolver.get_facts_as_participant(witness, role=AssociatedRole.INFORMANT) == (f2,)
     assert resolver.get_facts_as_participant(witness, role=AssociatedRole.CLERGY) == ()
 
 
@@ -249,9 +241,7 @@ def test_evict_individual_purges_all_references() -> None:
     resolver.evict_individual(witness1)
     assert resolver.edge_count == 1
     assert resolver.get_facts_as_participant(witness1) == ()
-    assert resolver.get_participants_for_fact(fact) == (
-        (witness2, AssociatedRole.INFORMANT),
-    )
+    assert resolver.get_participants_for_fact(fact) == ((witness2, AssociatedRole.INFORMANT),)
 
 
 @pytest.mark.regression

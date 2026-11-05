@@ -52,9 +52,7 @@ def test_base_entity_default_creation(golden_audit: AuditStamp) -> None:
 
 
 @pytest.mark.unit
-def test_base_entity_deprecated_with_notes(
-    golden_audit: AuditStamp, sample_note: Note
-) -> None:
+def test_base_entity_deprecated_with_notes(golden_audit: AuditStamp, sample_note: Note) -> None:
     """Verify BaseEntity with deprecated tombstone and embedded Note instance."""
     eid = IndividualID("IND-000001")
     tombstone = Tombstone[IndividualID](
@@ -286,9 +284,7 @@ def test_base_entity_find_notes_filtering_and_sorting(
 
 
 @pytest.mark.unit
-def test_base_entity_guid_valid_creation(
-    golden_guid: str, golden_audit: AuditStamp
-) -> None:
+def test_base_entity_guid_valid_creation(golden_guid: str, golden_audit: AuditStamp) -> None:
     """Verify BaseEntityGUID instantiates with string surrogate ID and delegates audit."""
     entity = BaseEntityGUID(id=golden_guid, audit=golden_audit)
     assert entity.id == golden_guid
@@ -342,9 +338,7 @@ def test_base_entity_guid_superseded_by_type_mismatch_raises_type_error(
 
 
 @pytest.mark.integration
-def test_base_entity_to_dict_serialization(
-    golden_audit: AuditStamp, sample_note: Note
-) -> None:
+def test_base_entity_to_dict_serialization(golden_audit: AuditStamp, sample_note: Note) -> None:
     """Verify to_dict serialization converts entity and embedded notes into dictionary."""
     eid = IndividualID("IND-000001")
     entity = BaseEntity(id=eid, audit=golden_audit, notes=[sample_note])

@@ -41,9 +41,7 @@ def test_all_enums_inherit_proper_base_types(
     for enum_cls in all_enum_classes:
         is_str = issubclass(enum_cls, StrEnum)
         is_int = issubclass(enum_cls, IntEnum)
-        assert is_str or is_int, (
-            f"{enum_cls.__name__} does not inherit from StrEnum or IntEnum"
-        )
+        assert is_str or is_int, f"{enum_cls.__name__} does not inherit from StrEnum or IntEnum"
 
 
 @pytest.mark.unit
@@ -72,9 +70,7 @@ def test_all_enum_classes_are_exported_in_dunder_all(
         "Discrepancy between __all__ and exported classes"
     )
     for enum_cls in all_enum_classes:
-        assert enum_cls.__name__ in exported_names, (
-            f"{enum_cls.__name__} missing from __all__"
-        )
+        assert enum_cls.__name__ in exported_names, f"{enum_cls.__name__} missing from __all__"
 
 
 # ==============================================================================

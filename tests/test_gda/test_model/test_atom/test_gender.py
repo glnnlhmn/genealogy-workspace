@@ -69,9 +69,7 @@ def test_gender_atom_valid_canonical_codes(code: str) -> None:
         (None, "U"),
     ],
 )
-def test_gender_atom_from_input_normalization(
-    raw_input: str | None, expected_code: str
-) -> None:
+def test_gender_atom_from_input_normalization(raw_input: str | None, expected_code: str) -> None:
     """Verify GenderAtom.from_input maps various tokens to canonical representations."""
     atom = GenderAtom.from_input(raw_input)
     assert atom.value == expected_code
@@ -117,9 +115,7 @@ def test_gender_atom_enum_conversions() -> None:
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "invalid_code", ["", " ", "X", "NON-BINARY", "OTHER", "123", "INVALID"]
-)
+@pytest.mark.parametrize("invalid_code", ["", " ", "X", "NON-BINARY", "OTHER", "123", "INVALID"])
 def test_gender_atom_invalid_code_raises_format_error(invalid_code: str) -> None:
     """Verify GenderAtom rejects non-canonical values in direct instantiation."""
     with pytest.raises(ModelFormatError, match="Invalid GenderAtom code"):

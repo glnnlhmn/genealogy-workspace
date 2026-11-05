@@ -164,9 +164,7 @@ def test_schema_manager_location_parent_foreign_key_on_delete_set_null(
         tx.execute("DELETE FROM locations WHERE id = 'LOC-000001';")
 
     with session.get_connection() as conn:
-        child = conn.execute(
-            "SELECT parent_id FROM locations WHERE id = 'LOC-000002';"
-        ).fetchone()
+        child = conn.execute("SELECT parent_id FROM locations WHERE id = 'LOC-000002';").fetchone()
         assert child["parent_id"] is None
 
 
