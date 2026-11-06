@@ -1,20 +1,23 @@
-<!-- Name: README.md -->
-<!-- Path: src/gda/entity/README.md -->
+# Domain Entity Services (src/gda/entity)
 
-# GDA Domain Record Entities (`gda.entity`)
+## Architectural Role
+Operational domain entity lifecycle controllers, entity registry aggregation, and validation coordinators.
 
-## Operational Role & Purpose
-Defines domain record state representations, field mutations, and localized validation logic for primary digital archive records.
+## Quality Gate & Verification Status
+- **Quality Gate:** >= 95.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_gda/test_entity/`
+- **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
-## Core Entity Representations
-- `person.py`: Person record state, personal names, demographic attributes, and lifetime milestones.
-- `fact.py`: Atomic evidentiary assertions, citation references, and in-place tombstoning support.
-- `location.py`: Jurisdictional geocoding records, historical boundary markers, and hierarchy.
-- `site.py`: Repositories, cemeteries, libraries, archives, and physical record sites.
+## Subpackages
+- **`locations/`**: Locations domain entity package exposing collection, utility, and validation entry points.
+- **`sites/`**: Authoritative physical site entity management subpackage.
 
-## Architectural Governance
-- **State Representation**: Enforces field validation and identity encapsulation for individual records.
-- **Manager Decoupling**: Entities do not interact directly with physical databases, collection caches, or global registries; collection orchestration is handled exclusively by `gda.manager`.
+## Module Inventory & Descriptions
+| Module | Version | Canonical Description |
+| :--- | :--- | :--- |
 
-## Development Status
-Active development.
+## Public Exports & Consumption Contract
+Modules export public interfaces explicitly declared in `__all__`.
+
+---
+Generated dynamically by `src/system/gen_readme.py`.

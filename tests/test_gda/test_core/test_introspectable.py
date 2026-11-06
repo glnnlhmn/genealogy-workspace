@@ -176,8 +176,7 @@ def test_property_help_on_class() -> None:
     assert output is not None
     assert "Help on property 'SampleEntity.display_name':" in output
     assert (
-        "Current Value: <Unbound property: call help() on an instance to inspect value>"
-        in output
+        "Current Value: <Unbound property: call help() on an instance to inspect value>" in output
     )
     assert "Description:   Return the formatted display name for the entity." in output
 

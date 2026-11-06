@@ -68,9 +68,7 @@ def test_ensure_directory_raises_on_os_error(
         raise OSError("Access denied")
 
     monkeypatch.setattr(Path, "mkdir", mock_mkdir)
-    with pytest.raises(
-        DirectoryCreationError, match="Failed to create directory structure"
-    ):
+    with pytest.raises(DirectoryCreationError, match="Failed to create directory structure"):
         AtomicWriter.ensure_directory(tmp_path / "denied_dir")
 
 
@@ -85,9 +83,7 @@ def test_replace_with_retry_raises_when_source_missing(tmp_path: Path) -> None:
     """Verify AtomicWriteError is raised if the source staging file does not exist."""
     missing_src = tmp_path / "missing_staged.tmp"
     dst = tmp_path / "final.txt"
-    with pytest.raises(
-        AtomicWriteError, match="Atomic source staging file .* does not exist"
-    ):
+    with pytest.raises(AtomicWriteError, match="Atomic source staging file .* does not exist"):
         AtomicWriter.replace_with_retry(missing_src, dst)
 
 
@@ -177,9 +173,7 @@ def test_replace_with_retry_exhausts_and_raises(
     monkeypatch.setattr("os.replace", mock_replace)
     monkeypatch.setattr("time.sleep", lambda _: None)
 
-    with pytest.raises(
-        AtomicWriteError, match="Atomic replacement failed .* after 3 attempts"
-    ):
+    with pytest.raises(AtomicWriteError, match="Atomic replacement failed .* after 3 attempts"):
         AtomicWriter.replace_with_retry(src, dst, max_retries=3, backoff_factor=0.001)
 
 
@@ -199,9 +193,7 @@ def test_replace_with_retry_exhausts_on_first_attempt(
     sleep_mock = MagicMock()
     monkeypatch.setattr("time.sleep", sleep_mock)
 
-    with pytest.raises(
-        AtomicWriteError, match="Atomic replacement failed .* after 1 attempts"
-    ):
+    with pytest.raises(AtomicWriteError, match="Atomic replacement failed .* after 1 attempts"):
         AtomicWriter.replace_with_retry(src, dst, max_retries=1, backoff_factor=0.01)
 
     assert sleep_mock.call_count == 0

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "locations": [
+    {
+      "country": "USA",
+      "state_or_province": "PA",
+      "county": "York",
+      "local_jurisdiction": "York City"
+    },
+    {
+      "country": "USA",
+      "state_or_province": "PA",
+      "county": "York",
+      "township": "York Township"
+    }
+  ],
+  "_path": "tests/fixtures/locations/golden/combo_09_york_disambiguation.json"
+}

@@ -1,0 +1,506 @@
+{
+  "_path": "data/intake/sites_churches.json",
+  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "site_export",
+  "batch_id": "BATCH-SITE-CHURCHES",
+  "total_count": 13,
+  "sites": [
+    {
+      "id": "SID-000040",
+      "name": {
+        "raw": "Saint Peter's Lutheran Church (Brick Church)",
+        "canonical": "Saint Peter's Lutheran Church"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:upper_frankford:brick_church",
+      "location_id": "LOC-000150",
+      "is_active": true,
+      "address": {
+        "address_line_1": "Brick Church Rd",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2482,
+        "longitude": -77.3195
+      },
+      "period": {
+        "start_date": "1790",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Brick Church",
+        "Upper Frankford Brick Church",
+        "St. Peter's Brick Church"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000130",
+          "note_type": "GENERAL",
+          "text": "Known colloquially throughout northern Cumberland County as the Brick Church; 19th-century church and cemetery on Brick Church Road.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000041",
+      "name": {
+        "raw": "Big Spring Presbyterian Church",
+        "canonical": "Big Spring Presbyterian Church"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:big_spring_presbyterian",
+      "location_id": "LOC-000156",
+      "is_active": true,
+      "address": {
+        "address_line_1": "25 S Corporation St",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.1738,
+        "longitude": -77.4024
+      },
+      "period": {
+        "start_date": "1737",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Big Spring Church"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000131",
+          "note_type": "GENERAL",
+          "text": "Organized in 1737; historic 1789 limestone sanctuary anchor for Scots-Irish settlers.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000042",
+      "name": {
+        "raw": "Zion Lutheran Church (Newville)",
+        "canonical": "Zion Lutheran Church (Newville)"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:zion_lutheran",
+      "location_id": "LOC-000156",
+      "is_active": true,
+      "address": {
+        "address_line_1": "51 W Main St",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.1749,
+        "longitude": -77.4041
+      },
+      "period": {
+        "start_date": "1795",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Zion Evangelical Lutheran Church of Newville"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000043",
+      "name": {
+        "raw": "Heberlig Church of God",
+        "canonical": "Heberlig Church of God"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:upper_frankford:heberlig_church",
+      "location_id": "LOC-000150",
+      "is_active": true,
+      "address": {
+        "address_line_1": "Doubling Gap Rd",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2641,
+        "longitude": -77.3308
+      },
+      "period": {
+        "start_date": "1870",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Heberlig Bethel",
+        "Doubling Gap Church of God"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000044",
+      "name": {
+        "raw": "Historic Peace Church",
+        "canonical": "Historic Peace Church"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:hampden:peace_church",
+      "location_id": "LOC-000133",
+      "is_active": false,
+      "address": {
+        "address_line_1": "Trindle & St. Johns Rds",
+        "address_line_2": null,
+        "city": "Camp Hill",
+        "state": "PA",
+        "postal_code": "17011",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2392,
+        "longitude": -76.9745
+      },
+      "period": {
+        "start_date": "1798",
+        "end_date": "1966"
+      },
+      "alternate_names": [
+        "Old Peace Church"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000132",
+          "note_type": "GENERAL",
+          "text": "Built in 1798 as a Reformed and Lutheran union church; site of Civil War artillery observation in 1863.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000045",
+      "name": {
+        "raw": "First Presbyterian Church (Carlisle)",
+        "canonical": "First Presbyterian Church (Carlisle)"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:first_presbyterian",
+      "location_id": "LOC-000152",
+      "is_active": true,
+      "address": {
+        "address_line_1": "2 N Hanover St",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2018,
+        "longitude": -77.1887
+      },
+      "period": {
+        "start_date": "1734",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Carlisle Presbyterian Church on the Square"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000046",
+      "name": {
+        "raw": "Zion Lutheran Church (Penbrook)",
+        "canonical": "Zion Lutheran Church (Penbrook)"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:penbrook:zion_lutheran",
+      "location_id": "LOC-000209",
+      "is_active": true,
+      "address": {
+        "address_line_1": "2730 Booser Ave",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17103",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2741,
+        "longitude": -76.8482
+      },
+      "period": {
+        "start_date": "1888",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Zion Evangelical Lutheran Church",
+        "Zion Lutheran of Penbrook"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000133",
+          "note_type": "RESEARCH",
+          "text": "Venue of the 1961 wedding between Daniel W. Lehman Jr. and Karen L. Witmer officiated by Rev. Kendig Bergstresser.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000047",
+      "name": {
+        "raw": "Lighthouse Baptist Church",
+        "canonical": "Lighthouse Baptist Church"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:lighthouse_baptist",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "600 Hershey Rd",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17112",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.3204,
+        "longitude": -76.7584
+      },
+      "period": {
+        "start_date": "1975",
+        "end_date": null
+      },
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000134",
+          "note_type": "RESEARCH",
+          "text": "Venue of the 2018 funeral service for Daniel W. Lehman Jr.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000048",
+      "name": {
+        "raw": "First Church of the Brethren (Harrisburg)",
+        "canonical": "First Church of the Brethren (Harrisburg)"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:first_church_of_the_brethren",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "219 Hummel St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17104",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2541,
+        "longitude": -76.8687
+      },
+      "period": {
+        "start_date": "1896",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Harrisburg First Church of the Brethren",
+        "Hummel Street Brethren"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000135",
+          "note_type": "GENERAL",
+          "text": "Longstanding urban Anabaptist Brethren congregation active in South Harrisburg.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000049",
+      "name": {
+        "raw": "Hanoverdale Church of the Brethren",
+        "canonical": "Hanoverdale Church of the Brethren"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:west_hanover:hanoverdale_brethren",
+      "location_id": "LOC-000115",
+      "is_active": true,
+      "address": {
+        "address_line_1": "577 Hershey Rd",
+        "address_line_2": null,
+        "city": "Hummelstown",
+        "state": "PA",
+        "postal_code": "17036",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.3012,
+        "longitude": -76.7185
+      },
+      "period": {
+        "start_date": "1860",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Hanoverdale Brethren"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000050",
+      "name": {
+        "raw": "Grace United Methodist Church",
+        "canonical": "Grace United Methodist Church"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:grace_methodist",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "216 State St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17101",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2635,
+        "longitude": -76.8841
+      },
+      "period": {
+        "start_date": "1810",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Locust Street Methodist Episcopal Church",
+        "Grace Methodist"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Locust Street Methodist Episcopal Church",
+          "canonical_name": "Locust Street Methodist Episcopal Church",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000136",
+          "note_type": "GENERAL",
+          "text": "Historic State Street Methodist sanctuary; hosted state legislative sessions following the 1897 Capitol fire.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000051",
+      "name": {
+        "raw": "Christ Evangelical Lutheran Church",
+        "canonical": "Christ Evangelical Lutheran Church"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:christ_lutheran",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "124 S 13th St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17104",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2592,
+        "longitude": -76.8681
+      },
+      "period": {
+        "start_date": "1887",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Christ Lutheran of Allison Hill"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000052",
+      "name": {
+        "raw": "Colonial Park United Methodist Church",
+        "canonical": "Colonial Park United Methodist Church"
+      },
+      "category": "CHURCH",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:colonial_park_methodist",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "4305 Colonial Park Dr",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.3015,
+        "longitude": -76.8182
+      },
+      "period": {
+        "start_date": "1858",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Colonial Park Methodist"
+      ],
+      "historical_names": [],
+      "notes": []
+    }
+  ]
+}

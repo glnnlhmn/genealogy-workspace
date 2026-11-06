@@ -1,24 +1,30 @@
-<!-- Name: README.md -->
-<!-- Path: src/gda/model/README.md -->
+# Authoritative Domain Model Suite (src/gda/model)
 
-# GDA Canonical Model Package (`gda.model`)
+## Architectural Role
+Central structural data model hierarchy defining atomic primitives, composite base structures, primary entities, and relational edges.
 
-## Operational Role & Purpose
-Houses the centralized Pydantic domain models, reference resolution engines, controlled vocabulary governance, and partitioned entity schemas.
+## Quality Gate & Verification Status
+- **Quality Gate:** >= 95.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_gda/test_model/`
+- **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
-## Package Architecture & Boundaries
-Consolidated from legacy plural modeling packages into a singular canonical package:
-- `reference.py`: URN validation, citation resolution, and reference authority management.
-- `vocabulary.py`: Master controlled vocabulary lookup and taxonomy governance.
-- `types.py`: High-level data types and composite structures.
-- `entity/`: Typed Pydantic models representing primary domain entities (person, fact, location, site).
-- `base/`: Base validation classes, serialization mixins, and common model wrappers.
-- `enumerated/`: Typed enumeration models wrapping canonical enums.
-- `media/`: Digital media, asset metadata, and cryptographic checksum models.
-- `military/`: Military service records, regiments, and conflict classifications.
-- `orgs/`: Historical religious, fraternal, municipal, and commercial organization schemas.
-- `vital/`: Vital statistics and milestone lifecycle schemas.
+## Subpackages
+- **`atom/`**: Atomic identification, temporal, metric, and spatial primitives package.
+- **`base/`**: Base model value objects, audit envelopes, and tombstoning contracts.
+- **`entity/`**: Authoritative domain entity dataclass definitions extending BaseEntity.
+- **`enumerated/`**: Enumerated classification models and taxonomy wrappers.
+- **`media/`**: Digital media, artifact metadata, and citation binding models.
+- **`military/`**: Military evidentiary domain models partitioned by record classification.
+- **`orgs/`**: Institutional, religious, military, and civil organization models.
+- **`vital/`**: Vital event record definitions.
+- **`xref/`**: Cross-reference and relational edge models for the genealogical digital archive.
 
-## Architectural Contracts
-- **Pydantic Validation**: All schemas inherit from Pydantic `BaseModel` to enforce rigorous typing and structural constraints.
-- **I/O Decoupling**: Models contain zero direct physical I/O or database access logic. Persistence operations are strictly delegated to `gda.io` and `gda.data`.
+## Module Inventory & Descriptions
+| Module | Version | Canonical Description |
+| :--- | :--- | :--- |
+
+## Public Exports & Consumption Contract
+Modules export public interfaces explicitly declared in `__all__`.
+
+---
+Generated dynamically by `src/system/gen_readme.py`.

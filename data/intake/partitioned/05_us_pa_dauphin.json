@@ -1,0 +1,807 @@
+{
+  "_path": "data/intake/partitioned/05_us_pa_dauphin.json",
+  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-LOC-05-PA-DAUPHIN",
+  "source_note": "Stage 05: Dauphin County PA comprehensive civil divisions (23 Townships, 17 Cities/Boroughs, 15 CDPs).",
+  "locations": [
+    {
+      "id": "LOC-000096",
+      "name": "Conewago Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:conewago_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Conewago Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000097",
+      "name": "Derry Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:derry_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Derry Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000098",
+      "name": "East Hanover Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:east_hanover_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "East Hanover Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000099",
+      "name": "Halifax Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:halifax_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Halifax Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000100",
+      "name": "Jackson Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:jackson_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Jackson Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000101",
+      "name": "Jefferson Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:jefferson_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Jefferson Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000102",
+      "name": "Londonderry Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:londonderry_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Londonderry Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000103",
+      "name": "Lower Paxton Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lower_paxton_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Lower Paxton Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000104",
+      "name": "Lower Swatara Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lower_swatara_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Lower Swatara Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000105",
+      "name": "Middle Paxton Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:middle_paxton_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Middle Paxton Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000106",
+      "name": "Mifflin Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:mifflin_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Mifflin Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000107",
+      "name": "Reed Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:reed_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Reed Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000108",
+      "name": "Rush Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:rush_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Rush Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000109",
+      "name": "South Hanover Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:south_hanover_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "South Hanover Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000110",
+      "name": "Susquehanna Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:susquehanna_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Susquehanna Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000111",
+      "name": "Swatara Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:swatara_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Swatara Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000112",
+      "name": "Upper Paxton Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:upper_paxton_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Upper Paxton Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000113",
+      "name": "Washington Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:washington_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Washington Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000114",
+      "name": "Wayne Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:wayne_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Wayne Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000115",
+      "name": "West Hanover Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:west_hanover_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "West Hanover Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000116",
+      "name": "Williams Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:williams_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Williams Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000117",
+      "name": "Wiconisco Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:wiconisco_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Wiconisco Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000231",
+      "name": "Lykens Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lykens_township",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Lykens Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000118",
+      "name": "Harrisburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:harrisburg_city",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "City of Harrisburg",
+        "State Capital"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Harris Ferry",
+          "canonical_name": "Harris Ferry",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000119",
+      "name": "Middletown",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:middletown_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Middletown"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000120",
+      "name": "Hummelstown",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:hummelstown_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Hummelstown"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Frederickstown",
+          "canonical_name": "Frederickstown",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000121",
+      "name": "Steelton",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:steelton_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Steelton"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Baldwin",
+          "canonical_name": "Baldwin",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000122",
+      "name": "Millersburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:millersburg_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Millersburg"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000123",
+      "name": "Halifax",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:halifax_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Halifax"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000124",
+      "name": "Elizabethville",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:elizabethville_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Elizabethville"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000125",
+      "name": "Gratz",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:gratz_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Gratz"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000126",
+      "name": "Lykens",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lykens_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Lykens"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000127",
+      "name": "Williamstown",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:williamstown_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Williamstown"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000128",
+      "name": "Pillow",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:pillow_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Pillow"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Uniontown",
+          "canonical_name": "Uniontown",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000209",
+      "name": "Penbrook",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:penbrook_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Penbrook"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000232",
+      "name": "Berrysburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:berrysburg_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Berrysburg"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000233",
+      "name": "Dauphin",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:dauphin_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Dauphin"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000234",
+      "name": "Highspire",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:highspire_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Highspire"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000235",
+      "name": "Paxtang",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:paxtang_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Paxtang"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000236",
+      "name": "Royalton",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:royalton_borough",
+      "parent_id": "LOC-000032",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Royalton"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000129",
+      "name": "Hershey",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:derry_township:hershey",
+      "parent_id": "LOC-000097",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Chocolatetown",
+        "Hershey CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000130",
+      "name": "Linglestown",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lower_paxton_township:linglestown",
+      "parent_id": "LOC-000103",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Linglestown CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000131",
+      "name": "Colonial Park",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lower_paxton_township:colonial_park",
+      "parent_id": "LOC-000103",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Colonial Park CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000211",
+      "name": "Progress",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lower_paxton_township:progress",
+      "parent_id": "LOC-000103",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Progress CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000237",
+      "name": "Bressler",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:swatara_township:bressler",
+      "parent_id": "LOC-000111",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Bressler CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000238",
+      "name": "Enhaut",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:swatara_township:enhaut",
+      "parent_id": "LOC-000111",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Enhaut CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000239",
+      "name": "Lawnton",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:swatara_township:lawnton",
+      "parent_id": "LOC-000111",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Lawnton CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000240",
+      "name": "Oberlin",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:swatara_township:oberlin",
+      "parent_id": "LOC-000111",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Oberlin CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000241",
+      "name": "Rutherford",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:swatara_township:rutherford",
+      "parent_id": "LOC-000111",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Rutherford CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000242",
+      "name": "Lenkerville",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:upper_paxton_township:lenkerville",
+      "parent_id": "LOC-000112",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Lenkerville CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000243",
+      "name": "Palmdale",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:derry_township:palmdale",
+      "parent_id": "LOC-000097",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Palmdale CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000244",
+      "name": "Paxtonia",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:lower_paxton_township:paxtonia",
+      "parent_id": "LOC-000103",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Paxtonia CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000245",
+      "name": "Skyline View",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:west_hanover_township:skyline_view",
+      "parent_id": "LOC-000115",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Skyline View CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000246",
+      "name": "Union Deposit",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:south_hanover_township:union_deposit",
+      "parent_id": "LOC-000109",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Union Deposit CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000247",
+      "name": "Wiconisco CDP",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:dauphin:wiconisco_township:wiconisco_cdp",
+      "parent_id": "LOC-000117",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Wiconisco CDP CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    }
+  ]
+}

@@ -71,9 +71,7 @@ def test_age_raw_text_only() -> None:
 @pytest.mark.regression
 def test_age_empty_raises_error() -> None:
     """Verify Age raises ModelFormatError when completely unpopulated."""
-    with pytest.raises(
-        ModelFormatError, match="must specify raw_text or at least one of"
-    ):
+    with pytest.raises(ModelFormatError, match="must specify raw_text or at least one of"):
         Age()
 
 

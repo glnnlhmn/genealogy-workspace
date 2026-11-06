@@ -112,10 +112,46 @@ logs/*
 reports/*
 !reports/.gitkeep
 
+
 # ==============================================================================
-# 8. Production Data Store Isolation
+# 8. Production Data Store, Database & Intake Isolation
 # ==============================================================================
+<<<<<<< HEAD
 data/
 # Exclude prompt engineering, miplets, and system instructions
 prompts/
 schemas/intake/
+=======
+# Universal database file ignores (sqlite3 / temporary journals / locks)
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.sqlite-journal
+
+# Ignore all dynamic data directory contents by default
+data/*
+!data/.gitkeep
+
+# Track directory hierarchy via .gitkeep sentinels
+!data/db/
+!data/db/.gitkeep
+!data/intake/
+!data/intake/**/
+!data/intake/**/.gitkeep
+
+# Whitelist canonical shared reference datasets and profiles
+!data/profiles/
+!data/profiles/**
+!data/reference/
+!data/reference/**
+
+# Operator profile isolation (keep private)
+glenn_profile.json
+
+# Exclude staged evaluation miplets while allowing prompts
+prompts/core/miplets/
+# Local SQLite database binaries and WAL journals
+data/db/
+

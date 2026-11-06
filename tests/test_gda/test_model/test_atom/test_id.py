@@ -116,9 +116,7 @@ def test_specialized_atom_subclasses_valid_instantiation() -> None:
 @pytest.mark.regression
 def test_individual_id_prefix_mismatch_raises_error() -> None:
     """Verify IndividualID raises ModelPrefixMismatchError when passed non-IND prefix."""
-    with pytest.raises(
-        ModelPrefixMismatchError, match="Prefix mismatch for IndividualID"
-    ):
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for IndividualID"):
         IndividualID("FID-000001")
 
 
@@ -134,9 +132,7 @@ def test_fact_id_prefix_mismatch_raises_error() -> None:
 @pytest.mark.regression
 def test_location_id_prefix_mismatch_raises_error() -> None:
     """Verify LocationID raises ModelPrefixMismatchError when passed non-LOC prefix."""
-    with pytest.raises(
-        ModelPrefixMismatchError, match="Prefix mismatch for LocationID"
-    ):
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for LocationID"):
         LocationID("SID-000001")
 
 
@@ -168,9 +164,7 @@ def test_note_id_prefix_mismatch_raises_error() -> None:
 @pytest.mark.regression
 def test_repository_id_prefix_mismatch_raises_error() -> None:
     """Verify RepositoryID raises ModelPrefixMismatchError when passed non-REP prefix."""
-    with pytest.raises(
-        ModelPrefixMismatchError, match="Prefix mismatch for RepositoryID"
-    ):
+    with pytest.raises(ModelPrefixMismatchError, match="Prefix mismatch for RepositoryID"):
         RepositoryID("NOT-000001")
 
 

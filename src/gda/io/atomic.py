@@ -80,9 +80,7 @@ class AtomicWriter(IntrospectableMixin):
         dst = Path(destination).resolve()
 
         if not src.exists():
-            raise AtomicWriteError(
-                f"Atomic source staging file '{src}' does not exist."
-            )
+            raise AtomicWriteError(f"Atomic source staging file '{src}' does not exist.")
 
         cls.ensure_directory(dst.parent)
 

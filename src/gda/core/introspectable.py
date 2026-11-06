@@ -77,33 +77,27 @@ class _HybridHelpDescriptor:
                         except Exception as err:
                             current_val = f"<Error evaluating: {err}>"
                     else:
-                        current_val = "<Unbound property: call help() on an instance to inspect value>"
+                        current_val = (
+                            "<Unbound property: call help() on an instance to inspect value>"
+                        )
 
-                    output_lines.append(
-                        f"\nHelp on property '{cls.__name__}.{clean_name}':"
-                    )
+                    output_lines.append(f"\nHelp on property '{cls.__name__}.{clean_name}':")
                     output_lines.append(f"  Current Value: {current_val}")
                     output_lines.append(f"  Description:   {doc}\n")
                 elif callable(cls_attr):
                     doc = inspect.getdoc(cls_attr) or "No documentation provided."
                     target_callable = (
-                        getattr(instance, clean_name)
-                        if instance is not None
-                        else cls_attr
+                        getattr(instance, clean_name) if instance is not None else cls_attr
                     )
                     try:
                         sig = inspect.signature(target_callable)
                     except (ValueError, TypeError):
                         sig = "(...)"  # type: ignore[assignment]
-                    output_lines.append(
-                        f"\nHelp on method '{cls.__name__}.{clean_name}':"
-                    )
+                    output_lines.append(f"\nHelp on method '{cls.__name__}.{clean_name}':")
                     output_lines.append(f"  Signature:   {clean_name}{sig}")
                     output_lines.append(f"  Description: {doc}\n")
                 else:
-                    output_lines.append(
-                        f"\nHelp on attribute '{cls.__name__}.{clean_name}':"
-                    )
+                    output_lines.append(f"\nHelp on attribute '{cls.__name__}.{clean_name}':")
                     output_lines.append(f"  Value: {cls_attr}")
                     output_lines.append(f"  Type:  {type(cls_attr).__name__}\n")
 
@@ -121,14 +115,8 @@ class _HybridHelpDescriptor:
                 lines.append("\nProperties (Attributes & Paths):")
                 for p in props:
                     prop_obj = getattr(cls, p, None)
-                    doc = (
-                        inspect.getdoc(prop_obj.fget)
-                        if isinstance(prop_obj, property)
-                        else None
-                    )
-                    first_line = (
-                        doc.split("\n")[0] if doc else "No description available."
-                    )
+                    doc = inspect.getdoc(prop_obj.fget) if isinstance(prop_obj, property) else None
+                    first_line = doc.split("\n")[0] if doc else "No description available."
                     lines.append(f"  • {p:<25} - {first_line}")
 
             if meths:
@@ -136,14 +124,10 @@ class _HybridHelpDescriptor:
                 for m in meths:
                     meth_obj = getattr(cls, m, None)
                     doc = inspect.getdoc(meth_obj) if callable(meth_obj) else None
-                    first_line = (
-                        doc.split("\n")[0] if doc else "No description available."
-                    )
+                    first_line = doc.split("\n")[0] if doc else "No description available."
                     lines.append(f"  • {m:<25} - {first_line}")
 
-            lines.append(
-                "\nTip: Call .help('name') on your instance or class for full details.\n"
-            )
+            lines.append("\nTip: Call .help('name') on your instance or class for full details.\n")
             result = "\n".join(lines)
             if as_str:
                 return result

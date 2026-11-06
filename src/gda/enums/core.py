@@ -1,31 +1,186 @@
-# Name: core.py
-# Path: src/gda/enums/core.py
+"""Path: src/gda/enums/core.py
 
-"""Core taxonomic enums, evidentiary ratings, and temporal precision modifiers."""
+Foundational domain classifications, assessment metrics, and certainty scores.
+"""
 
 from __future__ import annotations
 
 from enum import IntEnum, StrEnum
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.5"
 
 __all__ = [
     "AssociatedRole",
     "DateModifier",
     "FactType",
+    "IDType",
     "QualityAssessment",
     "QuayScore",
     "Sex",
+    "SmartIDPrefix",
     "VitalModifier",
 ]
 
 
+class IDType(StrEnum):
+    """Authoritative identifier format categories."""
+
+    SMART_ID = "SMART_ID"
+    UUID = "UUID"
+
+
 class Sex(StrEnum):
-    """Biological sex classification matching schema tokens."""
+    """Biological or recorded sex classification on historical records."""
 
     M = "M"
+    MALE = "M"
     F = "F"
+    FEMALE = "F"
+    X = "X"
+    NON_BINARY = "X"
     U = "U"
+    UNKNOWN = "U"
+
+    @classmethod
+    def from_input(cls, val: str) -> Sex:
+        """Map raw transcription tokens or full strings to canonical Sex codes."""
+        token = val.strip().upper()
+        mapping = {
+            "M": cls.M,
+            "MALE": cls.MALE,
+            "BOY": cls.MALE,
+            "F": cls.FEMALE,
+            "FEMALE": cls.FEMALE,
+            "GIRL": cls.FEMALE,
+            "X": cls.NON_BINARY,
+            "NON-BINARY": cls.NON_BINARY,
+            "U": cls.UNKNOWN,
+            "UNDETERMINED": cls.UNKNOWN,
+            "UNKNOWN": cls.UNKNOWN,
+        }
+        if token in mapping:
+            return mapping[token]
+        raise ValueError(f"Cannot map '{val}' to a valid Sex enum member.")
+
+
+class FactType(StrEnum):
+    """Authoritative event classification for life assertions."""
+
+    ASSOCIATION = "ASSOCIATION"
+    AWARD = "AWARD"
+    BAPTISM = "BAPTISM"
+    BIRTH = "BIRTH"
+    BURIAL = "BURIAL"
+    CENSUS = "CENSUS"
+    CIVIC = "CIVIC"
+    DEATH = "DEATH"
+    DIVORCE = "DIVORCE"
+    EDUCATION = "EDUCATION"
+    IMMIGRATION = "IMMIGRATION"
+    INCIDENT = "INCIDENT"
+    LAND_RECORD = "LAND_RECORD"
+    LEGAL = "LEGAL"
+    MARRIAGE = "MARRIAGE"
+    MILITARY = "MILITARY"
+    NATURALIZATION = "NATURALIZATION"
+    OCCUPATION = "OCCUPATION"
+    PARENTAGE = "PARENTAGE"
+    PROBATE = "PROBATE"
+    PROPERTY = "PROPERTY"
+    RELIGION = "RELIGION"
+    RESIDENCE = "RESIDENCE"
+    RETIREMENT = "RETIREMENT"
+    TAX = "TAX"
+    TRAVEL = "TRAVEL"
+    WILL = "WILL"
+    OTHER = "OTHER"
+    CUSTOM = "CUSTOM"
+    UNKNOWN = "UNKNOWN"
+
+
+class AssociatedRole(StrEnum):
+    """Standardized participant roles for associated individuals."""
+
+    # Primary Kinship
+    PRIMARY = "PRIMARY"
+    CHIL = "CHIL"
+    CHILD = "CHIL"
+    HUSB = "HUSB"
+    HUSBAND = "HUSB"
+    WIFE = "WIFE"
+    MOTH = "MOTH"
+    MOTHER = "MOTH"
+    FATH = "FATH"
+    FATHER = "FATH"
+    SPOU = "SPOU"
+    SPOUSE = "SPOU"
+    SIBL = "SIBL"
+    SIBLING = "SIBL"
+
+    # Attestation & Legal
+    ATND = "ATND"
+    ATTENDANT = "ATND"
+    ATTORNEY = "ATTORNEY"
+    BONDSMAN = "BONDSMAN"
+    CLERGY = "CLERGY"
+    DEC = "DEC"
+    DECEASED = "DEC"
+    EMPLOYER = "EMPLOYER"
+    FAMILY = "FAMILY"
+    GODP = "GODP"
+    GODPARENT = "GODP"
+    INFORMANT = "INFORMANT"
+    NEIGHBOR = "NEIGHBOR"
+    NEXT_OF_KIN = "NEXT_OF_KIN"
+    OFFICIAL = "OFFICIANT"
+    OFFICIANT = "OFFICIANT"
+    OTHER = "OTHR"
+    OTHR = "OTHR"
+    PHYSICIAN = "PHYSICIAN"
+    REGISTRAR = "REGISTRAR"
+    SPONSOR = "SPONSOR"
+    UNDERTAKER = "UNDR"
+    UNDR = "UNDR"
+    UNKNOWN = "UNKNOWN"
+    WITN = "WITN"
+    WITNESS = "WITN"
+
+
+class DateModifier(StrEnum):
+    """Temporal modifiers qualifying event date precision."""
+
+    EXACT = "EXACT"
+    BEFORE = "BEFORE"
+    AFTER = "AFTER"
+    ABOUT = "ABOUT"
+    BETWEEN = "BETWEEN"
+    FROM = "FROM"
+    TO = "TO"
+    ESTIMATED = "ESTIMATED"
+    CALCULATED = "CALCULATED"
+
+
+class SmartIDPrefix(StrEnum):
+    """Canonical 3-letter prefix classifications for smart entity identifiers."""
+
+    IND = "IND"  # Individual
+    FID = "FID"  # Fact
+    LOC = "LOC"  # Location
+    SID = "SID"  # Site
+    FAM = "FAM"  # Family
+    NOT = "NOT"  # Note
+    REP = "REP"  # Repository
+    DRF = "DRF"  # DraftRecord
+
+
+class VitalModifier(StrEnum):
+    """Vital condition modifiers for birth and infant death assertions."""
+
+    STILLBORN = "STILLBORN"
+    INFANT = "INFANT"
+    ILLEGITIMATE = "ILLEGITIMATE"
+    POSTHUMOUS = "POSTHUMOUS"
+    LEGITIMATED = "LEGITIMATED"
 
 
 class QuayScore(IntEnum):
@@ -35,6 +190,8 @@ class QuayScore(IntEnum):
     QUESTIONABLE = 1
     SECONDARY = 2
     DIRECT_PRIMARY = 3
+    DIRECT = 3
+    PRIMARY = 3
 
 
 class QualityAssessment(StrEnum):
@@ -43,79 +200,4 @@ class QualityAssessment(StrEnum):
     DIRECT_PRIMARY = "DIRECT_PRIMARY"
     INDIRECT_PRIMARY = "INDIRECT_PRIMARY"
     SECONDARY = "SECONDARY"
-    QUESTIONABLE = "QUESTIONABLE"
     UNRELIABLE = "UNRELIABLE"
-
-
-class FactType(StrEnum):
-    """Standardized historical fact assertion categories."""
-
-    ASSOCIATION = "Association"
-    AWARD = "Award"
-    BAPTISM = "Baptism"
-    BIRTH = "Birth"
-    BURIAL = "Burial"
-    CENSUS = "Census"
-    CIVIC = "Civic"
-    DEATH = "Death"
-    DIVORCE = "Divorce"
-    EDUCATION = "Education"
-    INCIDENT = "Incident"
-    LEGAL = "Legal"
-    MARRIAGE = "Marriage"
-    MILITARY = "Military"
-    OCCUPATION = "Occupation"
-    PARENTAGE = "Parentage"
-    PROBATE = "Probate"
-    PROPERTY = "Property"
-    RESIDENCE = "Residence"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
-
-
-class AssociatedRole(StrEnum):
-    """Standardized kinship, clerical, or legal participant roles."""
-
-    CHIL = "CHIL"
-    HUSB = "HUSB"
-    WIFE = "WIFE"
-    MOTH = "MOTH"
-    FATH = "FATH"
-    SPOU = "SPOU"
-    SIBL = "SIBL"
-    WITN = "WITN"
-    GODP = "GODP"
-    INFORMANT = "INFORMANT"
-    CLERGY = "CLERGY"
-    OFFICIANT = "OFFICIANT"
-    NEIGHBOR = "NEIGHBOR"
-    ATND = "ATND"
-    UNDR = "UNDR"
-    DEC = "DEC"
-    OTHR = "OTHR"
-    UNKNOWN = "UNKNOWN"
-
-
-class DateModifier(StrEnum):
-    """Precision and boundary modifiers for historical dates."""
-
-    EXACT = "EXACT"
-    ABT = "ABT"
-    BEF = "BEF"
-    AFT = "AFT"
-    BET = "BET"
-    FROM_TO = "FROM_TO"
-    UNKNOWN = "UNKNOWN"
-
-
-class VitalModifier(StrEnum):
-    """Vital status certainty and boundary modifiers."""
-
-    EXACT = "EXACT"
-    ABT = "ABT"
-    BEF = "BEF"
-    AFT = "AFT"
-    BET = "BET"
-    FROM_TO = "FROM_TO"
-    LIVING = "LIVING"
-    UNKNOWN = "UNKNOWN"

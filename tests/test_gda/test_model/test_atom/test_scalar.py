@@ -135,9 +135,7 @@ def test_confidence_score_out_of_bounds_raises_range_error(invalid_conf: float) 
 
 @pytest.mark.unit
 @pytest.mark.smoke
-@pytest.mark.parametrize(
-    "valid_pub", ["US_CENSUS", "NH_VITAL", "TOWN_RECORDS_01", "A-B"]
-)
+@pytest.mark.parametrize("valid_pub", ["US_CENSUS", "NH_VITAL", "TOWN_RECORDS_01", "A-B"])
 def test_pub_code_valid_patterns(valid_pub: str) -> None:
     """Verify PubCode validates alphanumeric uppercase tokens."""
     pub = PubCode(valid_pub)
@@ -171,9 +169,7 @@ def test_news_category_code_valid_patterns(valid_cat: str) -> None:
 
 @pytest.mark.unit
 @pytest.mark.regression
-@pytest.mark.parametrize(
-    "invalid_cat", ["", "NO", "lower", "WITH SPACE", "TOO_LONG_CATEGORY_NAME"]
-)
+@pytest.mark.parametrize("invalid_cat", ["", "NO", "lower", "WITH SPACE", "TOO_LONG_CATEGORY_NAME"])
 def test_news_category_code_invalid_syntax_raises_format_error(
     invalid_cat: str,
 ) -> None:

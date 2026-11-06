@@ -1,9 +1,8 @@
-# Name: __init__.py
-# Path: src/gda/models/vital/__init__.py
+"""Path: src/gda/model/vital/__init__.py
 
-"""Vital event models covering birth, marriage, divorce, death, and burial."""
+Vital event record definitions.
+"""
 
 from __future__ import annotations
 
-__version__ = "0.1.0+build.r1"
-__all__: list[str] = []
+__version__ = "1.0.0+build.1"

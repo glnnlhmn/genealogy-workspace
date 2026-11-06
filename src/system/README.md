@@ -1,18 +1,27 @@
-<!-- Path: src/system/README.md -->
+# System Administration & Automation (src/system)
 
-# System Administration & Developer Utilities (`src/system`)
+## Architectural Role
+Workstation administration, developer environment onboarding, Git hook deployment, dynamic documentation generation, and automated intake pipelines.
 
-## Operational Role & Purpose
-Workstation administration, script intake pipeline automation, Git hook lifecycle enforcement, and workspace directory structure auditing.
+## Quality Gate & Verification Status
+- **Quality Gate:** 100.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_system/`
+- **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
-## Operational Contracts & Quality Gates
-System utilities operate under `topic_system_tools.md` and `topic_test_harness.md`:
-- **100% Quality Gate**: All modules in `src/system/` must maintain 100.00% statement and branch test coverage.
-- **Ruff Compliance**: Strict adherence to Ruff formatting and linting rules pinned to Python 3.13 and a 100-character line length limit.
-- **GSI Intake Protection**: Code intake and file movements are automated via `src/system/gsi.py`, enforcing header validation and Safe Backup generation in `archive/backups_system/`.
+## Subpackages
+- **`generators/`**: System generation scripts, fixture builders, and synthetic test data synthesizers.
+- **`hooks/`**: Subpackage domain entities and enumerations.
 
-## Key Tool Inventory
-- `check_structure.py`: Directory tree traversal, cache filtering, and reporting utility.
-- `gsi.py`: Genealogy Script Importer. Manages validated script intake, header inspection, atomic pre-execution backups, and test runner dispatch (`gsi -r`).
-- `install_hooks.py`: Automated installer for Git pre-commit hook wrappers into `.git/hooks/pre-commit`.
-- `hooks/pre_commit.py`: Localized staged pre-commit quality engine running Ruff format/lint validation and targeted test execution.
+## Module Inventory & Descriptions
+| Module | Version | Canonical Description |
+| :--- | :--- | :--- |
+| `check_structure.py` | `0.0.1+build.r4` | Directory tree inspection utility for workspace auditing and reporting. |
+| `gen_readme.py` | `1.0.0+build.3` | Dynamic package documentation generator driven by external TOML configuration. |
+| `gsi.py` | `1.4.0+build.r3` | Genealogy Script Importer (GSI). |
+| `install_hooks.py` | `1.0.0+build.r2` | Genealogy Workspace Git Hooks Installer. |
+
+## Public Exports & Consumption Contract
+Modules export public interfaces explicitly declared in `__all__`.
+
+---
+Generated dynamically by `src/system/gen_readme.py`.

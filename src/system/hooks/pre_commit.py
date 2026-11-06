@@ -54,11 +54,7 @@ def get_staged_files(repo_root: Path) -> list[str]:
             text=True,
             check=True,
         )
-        return [
-            line.strip().replace("\\", "/")
-            for line in res.stdout.splitlines()
-            if line.strip()
-        ]
+        return [line.strip().replace("\\", "/") for line in res.stdout.splitlines() if line.strip()]
     except (subprocess.CalledProcessError, FileNotFoundError):
         return []
 
@@ -148,9 +144,7 @@ def run_ruff_checks(repo_root: Path, files_or_dirs: list[str]) -> int:
         cwd=str(repo_root),
     )
     if lint_res.returncode != 0:
-        print(
-            "Error: Ruff lint inspection failed. Run 'ruff check . --fix' to correct."
-        )
+        print("Error: Ruff lint inspection failed. Run 'ruff check . --fix' to correct.")
         return lint_res.returncode
 
     return 0
@@ -184,7 +178,7 @@ def run_targeted_tests(repo_root: Path, test_targets: list[str]) -> int:
         "-v",
         "-m",
         "smoke or unit",
-        "--basetemp=temp/pytest_tmp",
+        "--basetemp=C:/temp/pytest_tmp",
     ]
     res = subprocess.run(cmd, cwd=str(repo_root))
     return res.returncode

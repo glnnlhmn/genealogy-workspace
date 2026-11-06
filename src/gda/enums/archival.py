@@ -1,18 +1,25 @@
-# Name: archival.py
-# Path: src/gda/enums/archival.py
+"""Path: src/gda/enums/archival.py
 
-"""Archival notes, transcription clarity, physical media orientation, and formats."""
+Archival notes, transcription clarity, physical media orientation, and formats.
+
+Operational Role:
+    Defines controlled enumerations for archival asset management, document
+    orientation, transcription fidelity levels, and research note taxonomy.
+    Maintains zero internal framework dependencies.
+"""
 
 from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "0.1.0+build.r1"
+__version__ = "1.1.0+build.1"
 
 __all__ = [
     "DocumentSide",
-    "NoteCategory",
+    "EyeColor",
+    "HairColor",
     "NoteType",
+    "PhysicalBuild",
     "PublicationFrequency",
     "SelectiveServiceClass",
     "TestimonyMedium",
@@ -24,26 +31,10 @@ __all__ = [
 class NoteType(StrEnum):
     """Archival contextual note classification."""
 
-    RESEARCH = "RESEARCH"
-    HISTORICAL = "HISTORICAL"
-    TRANSCRIPTION = "TRANSCRIPTION"
-    DISCREPANCY = "DISCREPANCY"
-    PROVENANCE = "PROVENANCE"
     GENERAL = "GENERAL"
-
-
-class NoteCategory(StrEnum):
-    """Archival workflow and anomaly taxonomy for research notes."""
-
-    GENERAL = "GENERAL"
-    RESEARCH_TODO = "RESEARCH_TODO"
-    ANOMALY = "ANOMALY"
     RESEARCH = "RESEARCH"
     DISCREPANCY = "DISCREPANCY"
-    TRANSCRIPTION = "TRANSCRIPTION"
-    CORRECTION = "CORRECTION"
-    PROVENANCE = "PROVENANCE"
-    UNKNOWN = "UNKNOWN"
+    PROOF = "PROOF"
 
 
 class DocumentSide(StrEnum):
@@ -108,3 +99,32 @@ class WwiCardType(StrEnum):
     CARD_B = "Card B (1918)"
     CARD_C = "Card C (1918)"
     UNKNOWN = "Unknown"
+
+
+class PhysicalBuild(StrEnum):
+    """Standardized physical stature and build classifications."""
+
+    SLENDER = "SLENDER"
+    MEDIUM = "MEDIUM"
+    STOUT = "STOUT"
+
+
+class EyeColor(StrEnum):
+    """Standardized eye color classifications."""
+
+    BLUE = "BLUE"
+    BROWN = "BROWN"
+    GREY = "GREY"
+    HAZEL = "HAZEL"
+    BLACK = "BLACK"
+
+
+class HairColor(StrEnum):
+    """Standardized hair color classifications."""
+
+    BLONDE = "BLONDE"
+    BROWN = "BROWN"
+    BLACK = "BLACK"
+    RED = "RED"
+    GREY = "GREY"
+    BALD = "BALD"

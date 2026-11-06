@@ -1,0 +1,1109 @@
+{
+  "_path": "data/intake/sites_schools.json",
+  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "site_export",
+  "batch_id": "BATCH-SITE-SCHOOLS",
+  "total_count": 27,
+  "sites": [
+    {
+      "id": "SID-000013",
+      "name": {
+        "raw": "John Harris High School",
+        "canonical": "John Harris High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:john_harris_high_school",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "2451 Market St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17103",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2662,
+        "longitude": -76.8532
+      },
+      "period": {
+        "start_date": "1926",
+        "end_date": null
+      },
+      "alternate_names": [
+        "John Harris Campus",
+        "Harrisburg High School John Harris Campus"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000111",
+          "note_type": "RESEARCH",
+          "text": "Flagship comprehensive high school of the City of Harrisburg.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000014",
+      "name": {
+        "raw": "Edison Junior High School",
+        "canonical": "Edison Junior High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:edison_junior_high_school",
+      "location_id": "LOC-000118",
+      "is_active": false,
+      "address": {
+        "address_line_1": "19th & Chestnut Sts",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17104",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2625,
+        "longitude": -76.8621
+      },
+      "period": {
+        "start_date": "1916",
+        "end_date": "2009"
+      },
+      "alternate_names": [
+        "Edison Middle School",
+        "Thomas A. Edison Junior High School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000112",
+          "note_type": "GENERAL",
+          "text": "Historic junior high school on Chestnut Street attended by Lehman family members in the 1950s.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000015",
+      "name": {
+        "raw": "Marshall School",
+        "canonical": "Marshall School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:marshall_school",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "301 Hale St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17104",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2505,
+        "longitude": -76.8642
+      },
+      "period": {
+        "start_date": "1905",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Marshall Math Science Academy",
+        "John Marshall School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000113",
+          "note_type": "GENERAL",
+          "text": "Elementary and middle academy; home of the historic 1953 AAA safety patrol unit.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000016",
+      "name": {
+        "raw": "SciTech High School",
+        "canonical": "SciTech High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:scitech_high_school",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "215 Market St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17101",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2608,
+        "longitude": -76.8805
+      },
+      "period": {
+        "start_date": "2003",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Harrisburg High School SciTech Campus",
+        "Science and Technology High School"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000017",
+      "name": {
+        "raw": "William Penn High School",
+        "canonical": "William Penn High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:william_penn_high_school",
+      "location_id": "LOC-000118",
+      "is_active": false,
+      "address": {
+        "address_line_1": "2903 N 3rd St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17110",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2885,
+        "longitude": -76.8972
+      },
+      "period": {
+        "start_date": "1926",
+        "end_date": "1979"
+      },
+      "alternate_names": [
+        "William Penn Senior High School",
+        "Old William Penn"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000114",
+          "note_type": "GENERAL",
+          "text": "Historic collegiate-gothic high school overlooking Italian Lake; closed in 1979 upon district consolidation.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000018",
+      "name": {
+        "raw": "Camp Curtin School",
+        "canonical": "Camp Curtin School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:camp_curtin_school",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "2221 N 6th St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17110",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2818,
+        "longitude": -76.8864
+      },
+      "period": {
+        "start_date": "1916",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Camp Curtin Middle School",
+        "Camp Curtin Academy"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000115",
+          "note_type": "GENERAL",
+          "text": "Built on the grounds of historic Civil War training depot Camp Curtin.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000019",
+      "name": {
+        "raw": "Foose Elementary School",
+        "canonical": "Foose Elementary School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:foose_elementary",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1301 Sycamore St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17104",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2522,
+        "longitude": -76.8631
+      },
+      "period": {
+        "start_date": "1954",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Lemuel O. Foose School"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000020",
+      "name": {
+        "raw": "Downey Elementary School",
+        "canonical": "Downey Elementary School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:downey_elementary",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1313 Monroe St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17103",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2745,
+        "longitude": -76.8798
+      },
+      "period": {
+        "start_date": "1960",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Steele-Downey School"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000021",
+      "name": {
+        "raw": "Central Dauphin High School",
+        "canonical": "Central Dauphin High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:west_hanover:central_dauphin_high_school",
+      "location_id": "LOC-000115",
+      "is_active": true,
+      "address": {
+        "address_line_1": "437 Piketown Rd",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17112",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.3478,
+        "longitude": -76.7825
+      },
+      "period": {
+        "start_date": "1955",
+        "end_date": null
+      },
+      "alternate_names": [
+        "CD High School",
+        "CD Rams Campus"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000116",
+          "note_type": "GENERAL",
+          "text": "Flagship high school; relocated from 4600 Locust Lane to Piketown Rd campus in 2004.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000022",
+      "name": {
+        "raw": "Central Dauphin East High School",
+        "canonical": "Central Dauphin East High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_east_high_school",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "626 Rutherford Rd",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2847,
+        "longitude": -76.7991
+      },
+      "period": {
+        "start_date": "1961",
+        "end_date": null
+      },
+      "alternate_names": [
+        "CD East High School",
+        "CD East Panthers"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000117",
+          "note_type": "RESEARCH",
+          "text": "East Shore high school serving Lower Paxton, Swatara, and Penbrook communities.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000023",
+      "name": {
+        "raw": "Central Dauphin Middle School",
+        "canonical": "Central Dauphin Middle School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_middle_school",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "4600 Locust Ln",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2981,
+        "longitude": -76.8115
+      },
+      "period": {
+        "start_date": "1955",
+        "end_date": null
+      },
+      "alternate_names": [
+        "CD Middle School",
+        "Old Central Dauphin High School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000118",
+          "note_type": "GENERAL",
+          "text": "Occupies the original 1955 Central Dauphin High School building on Locust Lane.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000024",
+      "name": {
+        "raw": "Central Dauphin East Middle School",
+        "canonical": "Central Dauphin East Middle School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_east_middle_school",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "628 Rutherford Rd",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2858,
+        "longitude": -76.7984
+      },
+      "period": {
+        "start_date": "1965",
+        "end_date": null
+      },
+      "alternate_names": [
+        "CD East Middle School"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000025",
+      "name": {
+        "raw": "Linglestown Middle School",
+        "canonical": "Linglestown Middle School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:linglestown_middle_school",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1200 N Mountain Rd",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17112",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.3242,
+        "longitude": -76.7978
+      },
+      "period": {
+        "start_date": "1972",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Linglestown Junior High"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000026",
+      "name": {
+        "raw": "Swatara Middle School",
+        "canonical": "Swatara Middle School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:swatara:swatara_middle_school",
+      "location_id": "LOC-000111",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1101 Highland St",
+        "address_line_2": null,
+        "city": "Oberlin",
+        "state": "PA",
+        "postal_code": "17113",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2458,
+        "longitude": -76.8291
+      },
+      "period": {
+        "start_date": "1970",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Swatara Junior High"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000027",
+      "name": {
+        "raw": "Dauphin County Technical School",
+        "canonical": "Dauphin County Technical School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:dauphin_county_tech_school",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "6001 Locust Ln",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.3061,
+        "longitude": -76.7845
+      },
+      "period": {
+        "start_date": "1970",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Dauphin County Votech",
+        "DCTS"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000119",
+          "note_type": "RESEARCH",
+          "text": "County vocational-technical high school on Locust Lane.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000028",
+      "name": {
+        "raw": "Summit Street School",
+        "canonical": "Summit Street School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:east_pennsboro:summit_street_school",
+      "location_id": "LOC-000132",
+      "is_active": false,
+      "address": {
+        "address_line_1": "Summit St",
+        "address_line_2": null,
+        "city": "Enola",
+        "state": "PA",
+        "postal_code": "17025",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2915,
+        "longitude": -76.9298
+      },
+      "period": {
+        "start_date": "1920",
+        "end_date": "1975"
+      },
+      "alternate_names": [
+        "Summit St. School",
+        "Enola Elementary School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000120",
+          "note_type": "GENERAL",
+          "text": "Elementary school in East Pennsboro Township where Margaret L. Lehman taught prior to 1959.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000029",
+      "name": {
+        "raw": "McClure's Gap School",
+        "canonical": "McClure's Gap School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:lower_frankford:mcclures_gap_school",
+      "location_id": "LOC-000151",
+      "is_active": false,
+      "address": {
+        "address_line_1": "McClures Gap Rd",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17015",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2712,
+        "longitude": -77.2514
+      },
+      "period": {
+        "start_date": "1860",
+        "end_date": "1954"
+      },
+      "alternate_names": [
+        "McClures Gap Schoolhouse"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000121",
+          "note_type": "GENERAL",
+          "text": "Historic one-room schoolhouse in Lower Frankford Township.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000030",
+      "name": {
+        "raw": "Bloserville Schoolhouse",
+        "canonical": "Bloserville Schoolhouse"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:upper_frankford:bloserville_schoolhouse",
+      "location_id": "LOC-000150",
+      "is_active": false,
+      "address": {
+        "address_line_1": "Enola Rd",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2589,
+        "longitude": -77.3015
+      },
+      "period": {
+        "start_date": "1875",
+        "end_date": "1955"
+      },
+      "alternate_names": [
+        "Bloserville School",
+        "Upper Frankford School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000122",
+          "note_type": "GENERAL",
+          "text": "Village one-room schoolhouse serving Upper Frankford families.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000031",
+      "name": {
+        "raw": "Newville High School",
+        "canonical": "Newville High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:newville_high_school",
+      "location_id": "LOC-000156",
+      "is_active": false,
+      "address": {
+        "address_line_1": "Broad St",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.1764,
+        "longitude": -77.4018
+      },
+      "period": {
+        "start_date": "1895",
+        "end_date": "1952"
+      },
+      "alternate_names": [
+        "Newville Borough High School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000123",
+          "note_type": "GENERAL",
+          "text": "Historic borough secondary school; merged into Big Spring Joint School District in 1952.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000032",
+      "name": {
+        "raw": "Big Spring High School",
+        "canonical": "Big Spring High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:west_pennsboro:big_spring_high_school",
+      "location_id": "LOC-000144",
+      "is_active": true,
+      "address": {
+        "address_line_1": "100 Mount Rock Rd",
+        "address_line_2": null,
+        "city": "Newville",
+        "state": "PA",
+        "postal_code": "17241",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.1882,
+        "longitude": -77.3481
+      },
+      "period": {
+        "start_date": "1954",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Big Spring Senior High School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000124",
+          "note_type": "RESEARCH",
+          "text": "Consolidated public high school serving Newville, Frankford, and West Pennsboro townships.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000033",
+      "name": {
+        "raw": "Carlisle High School",
+        "canonical": "Carlisle High School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:carlisle_high_school",
+      "location_id": "LOC-000152",
+      "is_active": true,
+      "address": {
+        "address_line_1": "623 W Penn St",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2014,
+        "longitude": -77.2025
+      },
+      "period": {
+        "start_date": "1836",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Carlisle Area High School"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000034",
+      "name": {
+        "raw": "Carlisle Indian Industrial School",
+        "canonical": "Carlisle Indian Industrial School"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle_barracks:carlisle_indian_school",
+      "location_id": "LOC-000225",
+      "is_active": false,
+      "address": {
+        "address_line_1": "Carlisle Barracks Grounds",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2109,
+        "longitude": -77.1774
+      },
+      "period": {
+        "start_date": "1879",
+        "end_date": "1918"
+      },
+      "alternate_names": [
+        "Carlisle Indian School",
+        "United States Indian Industrial School"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000125",
+          "note_type": "GENERAL",
+          "text": "Federally funded boarding school operating on the military barracks grounds; National Historic Landmark.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000035",
+      "name": {
+        "raw": "Shippensburg University",
+        "canonical": "Shippensburg University"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:shippensburg:shippensburg_university",
+      "location_id": "LOC-000155",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1871 Old Main Dr",
+        "address_line_2": null,
+        "city": "Shippensburg",
+        "state": "PA",
+        "postal_code": "17257",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.0611,
+        "longitude": -77.5218
+      },
+      "period": {
+        "start_date": "1871",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Shippensburg State College",
+        "Ship"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Cumberland Valley State Normal School",
+          "canonical_name": "Cumberland Valley State Normal School",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "State Teachers College at Shippensburg",
+          "canonical_name": "State Teachers College at Shippensburg",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000126",
+          "note_type": "GENERAL",
+          "text": "Chartered in 1871 as Cumberland Valley State Normal School; later State Teachers College and University.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000036",
+      "name": {
+        "raw": "Dickinson College",
+        "canonical": "Dickinson College"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:dickinson_college",
+      "location_id": "LOC-000152",
+      "is_active": true,
+      "address": {
+        "address_line_1": "28 N College St",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2024,
+        "longitude": -77.1956
+      },
+      "period": {
+        "start_date": "1783-09-09",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Old West Campus"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000127",
+          "note_type": "GENERAL",
+          "text": "Chartered in 1783 by Benjamin Rush; named in honor of John Dickinson.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000037",
+      "name": {
+        "raw": "Pennsylvania State University (University Park)",
+        "canonical": "Pennsylvania State University (University Park)"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:centre:university_park:penn_state_university",
+      "location_id": "LOC-000024",
+      "is_active": true,
+      "address": {
+        "address_line_1": "Old Main",
+        "address_line_2": null,
+        "city": "University Park",
+        "state": "PA",
+        "postal_code": "16802",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.7982,
+        "longitude": -77.8599
+      },
+      "period": {
+        "start_date": "1855-02-22",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Penn State",
+        "PSU",
+        "University Park"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Farmers' High School of Pennsylvania",
+          "canonical_name": "Farmers' High School of Pennsylvania",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Agricultural College of Pennsylvania",
+          "canonical_name": "Agricultural College of Pennsylvania",
+          "status": "HISTORICAL"
+        },
+        {
+          "raw_name": "Pennsylvania State College",
+          "canonical_name": "Pennsylvania State College",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000128",
+          "note_type": "GENERAL",
+          "text": "Commonwealth's flagship land-grant university founded in 1855.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000038",
+      "name": {
+        "raw": "Penn State Harrisburg",
+        "canonical": "Penn State Harrisburg"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_swatara:penn_state_harrisburg",
+      "location_id": "LOC-000104",
+      "is_active": true,
+      "address": {
+        "address_line_1": "777 W Harrisburg Pike",
+        "address_line_2": null,
+        "city": "Middletown",
+        "state": "PA",
+        "postal_code": "17057",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2038,
+        "longitude": -76.7455
+      },
+      "period": {
+        "start_date": "1966",
+        "end_date": null
+      },
+      "alternate_names": [
+        "The Capital College",
+        "Capitol Campus"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000129",
+          "note_type": "RESEARCH",
+          "text": "Established in 1966 on the decommissioned Olmsted Air Force Base.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000039",
+      "name": {
+        "raw": "Southern New Hampshire University",
+        "canonical": "Southern New Hampshire University"
+      },
+      "category": "FACILITY",
+      "canonical_urn": "urn:gda:site:us:nh:hillsborough:manchester:snhu",
+      "location_id": "LOC-000192",
+      "is_active": true,
+      "address": {
+        "address_line_1": "2500 N River Rd",
+        "address_line_2": null,
+        "city": "Manchester",
+        "state": "PA",
+        "postal_code": "03106",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 43.0381,
+        "longitude": -71.4518
+      },
+      "period": {
+        "start_date": "1932",
+        "end_date": null
+      },
+      "alternate_names": [
+        "SNHU",
+        "New Hampshire College"
+      ],
+      "historical_names": [],
+      "notes": []
+    }
+  ]
+}

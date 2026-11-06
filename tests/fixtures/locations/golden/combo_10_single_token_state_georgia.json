@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "locations": [
+    {
+      "raw_text": "Georgia"
+    }
+  ],
+  "_path": "tests/fixtures/locations/golden/combo_10_single_token_state_georgia.json"
+}

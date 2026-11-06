@@ -34,12 +34,8 @@ class Latitude(IntrospectableMixin):
 
     def __post_init__(self) -> None:
         if not (-90.0 <= self.value <= 90.0):
-            err_msg = (
-                f"Latitude {self.value} out of range. Must be between -90.0 and 90.0."
-            )
-            _logger.debug(
-                "Latitude range boundary exceeded", details={"value": self.value}
-            )
+            err_msg = f"Latitude {self.value} out of range. Must be between -90.0 and 90.0."
+            _logger.debug("Latitude range boundary exceeded", details={"value": self.value})
             raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __float__(self) -> float:
@@ -61,9 +57,7 @@ class Longitude(IntrospectableMixin):
     def __post_init__(self) -> None:
         if not (-180.0 <= self.value <= 180.0):
             err_msg = f"Longitude {self.value} out of range. Must be between -180.0 and 180.0."
-            _logger.debug(
-                "Longitude range boundary exceeded", details={"value": self.value}
-            )
+            _logger.debug("Longitude range boundary exceeded", details={"value": self.value})
             raise ModelRangeError(err_msg, details={"value": self.value})
 
     def __float__(self) -> float:

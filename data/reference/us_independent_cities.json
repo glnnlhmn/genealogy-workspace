@@ -1,0 +1,60 @@
+{
+  "_path": "data/reference/us_independent_cities.json",
+  "description": "Authoritative list of primary US municipalities that are constitutionally independent of any county tier (Format 7).",
+  "source": "US Census Bureau FIPS Place / County-Equivalent Reference (38 Virginia independent cities + Baltimore City MD + St. Louis City MO + Carson City NV)",
+  "schema_version": "1.0.0",
+  "total_cities": 41,
+  "cities_by_state": {
+    "MD": [
+      "baltimore",
+      "baltimore city"
+    ],
+    "MO": [
+      "st. louis",
+      "st. louis city"
+    ],
+    "NV": [
+      "carson city"
+    ],
+    "VA": [
+      "alexandria",
+      "bristol",
+      "buena vista",
+      "charlottesville",
+      "chesapeake",
+      "colonial heights",
+      "covington",
+      "danville",
+      "emporia",
+      "fairfax",
+      "falls church",
+      "franklin",
+      "fredericksburg",
+      "galax",
+      "hampton",
+      "harrisonburg",
+      "hopewell",
+      "lexington",
+      "lynchburg",
+      "manassas",
+      "manassas park",
+      "martinsville",
+      "newport news",
+      "norfolk",
+      "norton",
+      "petersburg",
+      "poquoson",
+      "portsmouth",
+      "radford",
+      "richmond",
+      "roanoke",
+      "salem",
+      "staunton",
+      "suffolk",
+      "virginia beach",
+      "waynesboro",
+      "williamsburg",
+      "winchester"
+    ]
+  }
+}

@@ -63,9 +63,7 @@ class Media(IntrospectableMixin):
                 "Media mime_type validation failed",
                 details={"mime_type": self.mime_type},
             )
-            raise ModelFormatError(
-                err_msg, details={"field": "mime_type", "value": self.mime_type}
-            )
+            raise ModelFormatError(err_msg, details={"field": "mime_type", "value": self.mime_type})
 
     def __str__(self) -> str:
         return f"{self.file_name} [{self.side.value}]"

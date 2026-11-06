@@ -1,15 +1,11 @@
-# Name: hashes.py
-# Path: src/gda/util/hashes.py
+"""Path: src/gda/util/hashes.py
 
-"""Pure stateless hashing utilities and checksum validators.
+Pure stateless hashing utilities and checksum validators.
 
 Operational Role:
     Provides deterministic SHA-256 calculation for strings, raw bytes,
     and streaming disk files alongside hexadecimal validation matching
     schemas/defs/_shared_defs.schema.json.
-
-Note:
-    PRERELEASE: Module is under active development (version 0.0.1+build.1).
 """
 
 from __future__ import annotations
@@ -19,7 +15,7 @@ from pathlib import Path
 
 from gda.types.primitives import SHA256_PATTERN, SHA256_REGEX
 
-__version__ = "0.0.1+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "SHA256_PATTERN",
@@ -41,7 +37,7 @@ def sha256_bytes(data: bytes) -> str:
         64-character lowercase hexadecimal hash digest.
 
     Raises:
-        TypeError: If data is not an instance of bytes.
+        TypeError: If data is not an instance of bytes or bytearray.
     """
     if not isinstance(data, (bytes, bytearray)):
         raise TypeError(f"Expected bytes or bytearray, got {type(data).__name__}.")

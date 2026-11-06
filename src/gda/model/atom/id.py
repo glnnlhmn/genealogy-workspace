@@ -11,7 +11,7 @@ Operational Role:
 Architecture:
     - AtomID: Base Pydantic dataclass validating 'AAA-######' (min 6 digits) with total ordering.
     - Specialized Atom IDs: IndividualID (IND), FactID (FID), LocationID (LOC), SiteID (SID),
-      FamilyID (FAM), NoteID (NOT), and RepositoryID (REP).
+      FamilyID (FAM), NoteID (NOT), RepositoryID (REP), and DraftRecordID (DRF).
     - UUIDv4Str: Base Pydantic dataclass validating RFC 4122 lowercase UUIDv4.
     - Specialized UUID IDs: SourceID, MediaID, and TranscriptID.
 """
@@ -28,8 +28,16 @@ from pydantic.dataclasses import dataclass
 from gda.core.errors import ModelFormatError, ModelPrefixMismatchError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
+from gda.model.atom.urn import (
+    ArchivalURN,
+    CemeteryPlotUrn,
+    CensusUrn,
+    MilitaryDraftUrn,
+    SourceURN,
+    VitalCertificateUrn,
+)
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.10"
 
 _logger = GDALogger(__name__)
 
@@ -51,22 +59,19 @@ class AtomID(IntrospectableMixin):
     EXPECTED_PREFIX: ClassVar[str | None] = None
 
     def __post_init__(self) -> None:
+        """Enforce standard AAA-###### format and prefix constraints."""
         match = self._PATTERN.match(self.value)
         if not match:
             err_msg = (
                 f"Invalid AtomID format: '{self.value}'. "
                 "Must match 'AAA-######' (3 uppercase letters, hyphen, 6+ digits)."
             )
-            _logger.debug(
-                "Identifier syntax validation failed", details={"raw_value": self.value}
-            )
+            _logger.debug("Identifier syntax validation failed", details={"raw_value": self.value})
             raise ModelFormatError(err_msg, details={"value": self.value})
 
         parsed_prefix, _ = match.groups()
         target_prefix = (
-            self.expected_prefix
-            if self.expected_prefix is not None
-            else self.EXPECTED_PREFIX
+            self.expected_prefix if self.expected_prefix is not None else self.EXPECTED_PREFIX
         )
 
         if target_prefix is not None and parsed_prefix != target_prefix:
@@ -95,14 +100,17 @@ class AtomID(IntrospectableMixin):
 
     @property
     def prefix(self) -> str:
+        """Return the leading 3-letter prefix of the identifier."""
         return self.value.split("-", 1)[0]
 
     @property
     def suffix(self) -> str:
+        """Return the numerical suffix of the identifier."""
         return self.value.split("-", 1)[1]
 
     @property
     def number(self) -> str:
+        """Alias for suffix."""
         return self.suffix
 
     def __str__(self) -> str:
@@ -173,6 +181,13 @@ class RepositoryID(AtomID):
     EXPECTED_PREFIX: ClassVar[str | None] = "REP"
 
 
+@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+class DraftRecordID(AtomID):
+    """Canonical military draft registration record identifier (DRF-######)."""
+
+    EXPECTED_PREFIX: ClassVar[str | None] = "DRF"
+
+
 # ==============================================================================
 # SECTION 3: BASE UUIDV4 IDENTIFIER
 # ==============================================================================
@@ -190,14 +205,13 @@ class UUIDv4Str(IntrospectableMixin):
     )
 
     def __post_init__(self) -> None:
+        """Enforce standard RFC 4122 UUIDv4 format and canonical lowercase representation."""
         if not self._PATTERN.match(self.value):
             err_msg = (
                 f"Invalid UUIDv4 format for {self.__class__.__name__}: '{self.value}'. "
                 "Must match RFC 4122 lowercase UUIDv4 format."
             )
-            _logger.debug(
-                "UUIDv4 syntax validation failed", details={"raw_value": self.value}
-            )
+            _logger.debug("UUIDv4 syntax validation failed", details={"raw_value": self.value})
             raise ModelFormatError(
                 err_msg,
                 error_code="ERR_UUID_FORMAT",
@@ -234,5 +248,34 @@ class MediaID(UUIDv4Str):
 
 
 @dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+class ServiceRecordID(UUIDv4Str):
+    """Canonical military service record identifier based on UUIDv4."""
+
+
+@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
 class TranscriptID(UUIDv4Str):
     """Canonical identifier for full-text verbatim transcripts."""
+
+
+__all__ = [
+    "ArchivalURN",
+    "AtomID",
+    "CemeteryPlotUrn",
+    "CensusUrn",
+    "DraftRecordID",
+    "FactID",
+    "FamilyID",
+    "IndividualID",
+    "LocationID",
+    "MediaID",
+    "MilitaryDraftUrn",
+    "NoteID",
+    "RepositoryID",
+    "SiteID",
+    "ServiceRecordID",
+    "SourceID",
+    "SourceURN",
+    "TranscriptID",
+    "UUIDv4Str",
+    "VitalCertificateUrn",
+]

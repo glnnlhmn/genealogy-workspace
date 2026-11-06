@@ -1,13 +1,18 @@
-# Name: site.py
-# Path: src/gda/enums/site.py
+"""Path: src/gda/enums/site.py
 
-"""Spatial jurisdiction levels, facility venues, and cemetery marker enums."""
+Spatial jurisdiction levels, facility venues, and cemetery marker enums.
+
+Operational Role:
+    Defines controlled categorical enumerations for spatial jurisdictions,
+    physical site/venue classifications, facility operational lifecycles,
+    and cemetery monument typologies, materials, and conditions.
+"""
 
 from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "0.1.0+build.r1"
+__version__ = "1.1.0+build.1"
 
 __all__ = [
     "LocationType",
@@ -15,6 +20,7 @@ __all__ = [
     "MarkerMaterial",
     "MarkerType",
     "OperationalStatus",
+    "SiteCategory",
     "SiteType",
 ]
 
@@ -36,16 +42,23 @@ class LocationType(StrEnum):
 
 
 class SiteType(StrEnum):
-    """Classification of physical venues, facilities, landmarks, and cemeteries."""
+    """Classification of physical venues, structures, landmarks, and cemeteries."""
 
     CEMETERY = "CEMETERY"
     CHURCH = "CHURCH"
+    COMMERCIAL = "COMMERCIAL"
+    GOVERNMENT = "GOVERNMENT"
     HOSPITAL = "HOSPITAL"
-    FACILITY = "FACILITY"
-    RESIDENCE = "RESIDENCE"
     LANDMARK = "LANDMARK"
+    MILITARY = "MILITARY"
+    REPOSITORY = "REPOSITORY"
+    RESIDENCE = "RESIDENCE"
     OTHER = "OTHER"
     UNKNOWN = "UNKNOWN"
+
+
+# Backward compatibility alias for legacy SiteCategory imports
+SiteCategory = SiteType
 
 
 class OperationalStatus(StrEnum):

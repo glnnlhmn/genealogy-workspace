@@ -1,14 +1,16 @@
-# Name: __init__.py
-# Path: src/gda/enums/__init__.py
+"""Path: src/gda/enums/__init__.py
 
-"""Authoritative controlled enumerations across the digital archive framework."""
+Authoritative controlled enumerations across the digital archive framework.
+"""
 
 from __future__ import annotations
 
 from gda.enums.archival import (
     DocumentSide,
-    NoteCategory,
+    EyeColor,
+    HairColor,
     NoteType,
+    PhysicalBuild,
     PublicationFrequency,
     SelectiveServiceClass,
     TestimonyMedium,
@@ -19,9 +21,11 @@ from gda.enums.core import (
     AssociatedRole,
     DateModifier,
     FactType,
+    IDType,
     QualityAssessment,
     QuayScore,
     Sex,
+    SmartIDPrefix,
     VitalModifier,
 )
 from gda.enums.fiscal import (
@@ -43,6 +47,7 @@ from gda.enums.sources import (
     EducationLevel,
     MilitaryBranch,
     MilitaryConflict,
+    MilitaryDraftType,
     MilitaryWar,
     SourceRecordCategory,
     SourceRecordType,
@@ -51,32 +56,40 @@ from gda.enums.vital import (
     BirthPlurality,
     DispositionType,
     DivorceDecreeType,
+    HistoricNameType,
     LegalPlaintiff,
     MannerOfDeath,
     MaritalHistoryDissolution,
     MaritalStatus,
-    UnionStatus,
+    NameStatus,
+    PedigreeType,
+    UnionDissolutionType,
+    UnionType,
 )
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.1.0+build.r3"
 
 __all__ = [
     # Archival
     "DocumentSide",
-    "NoteCategory",
     "NoteType",
     "PublicationFrequency",
     "SelectiveServiceClass",
     "TestimonyMedium",
     "TranscriptLegibility",
     "WwiCardType",
+    "PhysicalBuild",
+    "EyeColor",
+    "HairColor",
     # Core
     "AssociatedRole",
     "DateModifier",
     "FactType",
+    "IDType",
     "QualityAssessment",
     "QuayScore",
     "Sex",
+    "SmartIDPrefix",
     "VitalModifier",
     # Fiscal
     "CitizenshipStatus",
@@ -95,6 +108,7 @@ __all__ = [
     "EducationLevel",
     "MilitaryBranch",
     "MilitaryConflict",
+    "MilitaryDraftType",
     "MilitaryWar",
     "SourceRecordCategory",
     "SourceRecordType",
@@ -102,9 +116,13 @@ __all__ = [
     "BirthPlurality",
     "DispositionType",
     "DivorceDecreeType",
+    "HistoricNameType",
     "LegalPlaintiff",
     "MannerOfDeath",
     "MaritalHistoryDissolution",
     "MaritalStatus",
-    "UnionStatus",
+    "PedigreeType",
+    "UnionDissolutionType",
+    "UnionType",
+    "NameStatus",
 ]

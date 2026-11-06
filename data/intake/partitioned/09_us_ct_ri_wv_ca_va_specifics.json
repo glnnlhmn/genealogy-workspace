@@ -1,0 +1,341 @@
+{
+  "_path": "data/intake/partitioned/09_us_ct_ri_wv_ca_va_specifics.json",
+  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-LOC-09-SPECIFICS",
+  "source_note": "Stage 09: Specific requested locations in CT, RI, WV, CA (VAFB), and VA.",
+  "locations": [
+    {
+      "id": "LOC-000088",
+      "name": "New London County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:connecticut:new_london",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "New London Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000089",
+      "name": "Windham County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:connecticut:windham",
+      "parent_id": "LOC-000005",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Windham Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000090",
+      "name": "Newport County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:rhode_island:newport",
+      "parent_id": "LOC-000006",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Newport Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000091",
+      "name": "Morgan County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:west_virginia:morgan",
+      "parent_id": "LOC-000007",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Morgan Co."
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000034",
+          "note_type": "GENERAL",
+          "text": "Created in 1820; seat at Berkeley Springs.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000092",
+      "name": "Santa Barbara County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:california:santa_barbara",
+      "parent_id": "LOC-000008",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Santa Barbara Co."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000093",
+      "name": "Norfolk",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:virginia:norfolk",
+      "parent_id": "LOC-000009",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "City of Norfolk",
+        "Norfolk Independent City"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000035",
+          "note_type": "RESEARCH",
+          "text": "Independent City in Virginia; functions as a county-equivalent.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000195",
+      "name": "New London",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:connecticut:new_london:new_london_city",
+      "parent_id": "LOC-000088",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [],
+      "historical_names": [
+        {
+          "raw_name": "Nameaug",
+          "canonical_name": "Nameaug",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000051",
+          "note_type": "GENERAL",
+          "text": "Settled in 1646 by John Winthrop Jr.; home of US Coast Guard Academy.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000196",
+      "name": "Groton",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:connecticut:new_london:groton_town",
+      "parent_id": "LOC-000088",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Groton"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000052",
+          "note_type": "GENERAL",
+          "text": "Separated from New London in 1705; site of Battle of Groton Heights (1781).",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000197",
+      "name": "City of Groton",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:connecticut:new_london:groton_town:groton_city",
+      "parent_id": "LOC-000196",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Groton City"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000053",
+          "note_type": "RESEARCH",
+          "text": "Incorporated city within the Town of Groton.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000198",
+      "name": "Plainfield",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:connecticut:windham:plainfield_town",
+      "parent_id": "LOC-000089",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Plainfield"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Quinebaug",
+          "canonical_name": "Quinebaug",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000199",
+      "name": "Newport",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:rhode_island:newport:newport_city",
+      "parent_id": "LOC-000090",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000054",
+          "note_type": "GENERAL",
+          "text": "Major 18th-century colonial port city founded in 1639.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000200",
+      "name": "Berkeley Springs",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:west_virginia:morgan:bath_town",
+      "parent_id": "LOC-000091",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Town of Bath",
+        "Bath"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Warm Springs",
+          "canonical_name": "Warm Springs",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000055",
+          "note_type": "RESEARCH",
+          "text": "Incorporated officially as Town of Bath in 1776, but known postally and colloquially as Berkeley Springs.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000201",
+      "name": "Lompoc",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:california:santa_barbara:lompoc_city",
+      "parent_id": "LOC-000092",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000202",
+      "name": "Santa Maria",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:california:santa_barbara:santa_maria_city",
+      "parent_id": "LOC-000092",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [],
+      "historical_names": [
+        {
+          "raw_name": "Central City",
+          "canonical_name": "Central City",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000203",
+      "name": "Vandenberg Space Force Base",
+      "category": "SPECIAL_DISTRICT",
+      "canonical_urn": "urn:gda:loc:united_states:california:santa_barbara:vandenberg_sfb",
+      "parent_id": "LOC-000092",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Vandenberg SFB",
+        "Vandenberg AFB",
+        "VAFB"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Camp Cooke",
+          "canonical_name": "Camp Cooke",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000056",
+          "note_type": "GENERAL",
+          "text": "Military installation established as Camp Cooke in 1941.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000204",
+      "name": "Vandenberg Village",
+      "category": "UNINCORPORATED_PLACE",
+      "canonical_urn": "urn:gda:loc:united_states:california:santa_barbara:vandenberg_village",
+      "parent_id": "LOC-000092",
+      "is_primary_local_authority": false,
+      "is_unincorporated": true,
+      "alternate_names": [
+        "Vandenberg Village CDP"
+      ],
+      "historical_names": [],
+      "notes": []
+    }
+  ]
+}

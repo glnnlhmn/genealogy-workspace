@@ -14,6 +14,7 @@ __all__ = [
     "EducationLevel",
     "MilitaryBranch",
     "MilitaryConflict",
+    "MilitaryDraftType",
     "MilitaryWar",
     "SourceRecordCategory",
     "SourceRecordType",
@@ -221,6 +222,13 @@ class MilitaryConflict(StrEnum):
     KOREA = "KOREA"
     VIETNAM = "VIETNAM"
     PEACETIME = "PEACETIME"
+
+
+class MilitaryDraftType(StrEnum):
+    DRAFT_REGISTRATION = "DRAFT_REGISTRATION"
+    ENROLLMENT_LIST = "ENROLLMENT_LIST"
+    CONSCRIPTION_CARD = "CONSCRIPTION_CARD"
+    MUSTERING_ROLL = "MUSTERING_ROLL"
 
 
 class MilitaryBranch(StrEnum):

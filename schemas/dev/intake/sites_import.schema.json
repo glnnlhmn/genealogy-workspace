@@ -1,0 +1,156 @@
+{
+  "_path": "schemas/dev/intake/sites_import.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gda.archive/schemas/dev/intake/sites_import.schema.json",
+  "title": "SitesInterchangeEnvelope",
+  "description": "Authoritative unified schema for bulk site ingestion and export interchange archives.",
+  "type": "object",
+  "required": ["schema_version", "sites"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "record_type": {
+      "type": "string",
+      "default": "site_export"
+    },
+    "batch_id": {
+      "type": "string"
+    },
+    "total_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sites": {
+      "type": "array",
+      "description": "Authoritative list of physical structures, churches, cemeteries, and landmarks.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "category", "canonical_urn", "location_id"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^SID-[0-9]{6}$",
+            "description": "Canonical Site identifier (e.g., SID-000001)."
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "object",
+                "required": ["raw", "canonical"],
+                "properties": {
+                  "raw": { "type": "string", "minLength": 1 },
+                  "canonical": { "type": "string", "minLength": 1 },
+                  "aliases": { "type": "array", "items": { "type": "string" }, "default": [] },
+                  "alt_spellings": { "type": "array", "items": { "type": "string" }, "default": [] },
+                  "comment": { "type": ["string", "null"], "default": null },
+                  "historic": { "type": "array", "items": { "type": "object" }, "default": [] }
+                }
+              }
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CEMETERY",
+              "CHURCH",
+              "FACILITY",
+              "LANDMARK",
+              "ORGANIZATION",
+              "RESIDENCE",
+              "HOSPITAL",
+              "GOVERNMENT",
+              "OTHER"
+            ]
+          },
+          "canonical_urn": {
+            "type": "string",
+            "pattern": "^urn:gda:site:[a-z0-9_:\\-]+$",
+            "description": "Deterministic canonical URN matching ^urn:gda:site:[a-z0-9_:\\-]+$."
+          },
+          "location_id": {
+            "type": "string",
+            "pattern": "^LOC-[0-9]{6}$",
+            "description": "Foreign key reference to a governing civil jurisdiction."
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          },
+          "address": {
+            "type": ["object", "null"],
+            "default": null,
+            "properties": {
+              "address_line_1": { "type": "string" },
+              "address_line_2": { "type": ["string", "null"], "default": null },
+              "city": { "type": ["string", "null"], "default": null },
+              "state": { "type": ["string", "null"], "default": null },
+              "postal_code": { "type": ["string", "null"], "default": null },
+              "country": { "type": ["string", "null"], "default": null }
+            }
+          },
+          "coordinates": {
+            "type": ["object", "null"],
+            "default": null,
+            "properties": {
+              "latitude": { "type": "number", "minimum": -90.0, "maximum": 90.0 },
+              "longitude": { "type": "number", "minimum": -180.0, "maximum": 180.0 }
+            },
+            "required": ["latitude", "longitude"]
+          },
+          "period": {
+            "type": ["object", "null"],
+            "default": null,
+            "properties": {
+              "start_date": { "type": ["string", "object", "null"], "default": null },
+              "end_date": { "type": ["string", "object", "null"], "default": null }
+            }
+          },
+          "alternate_names": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          },
+          "historical_names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "raw": { "type": "string" },
+                "canonical": { "type": "string" },
+                "historic_name_type": { "type": "string" },
+                "status": { "type": "string" }
+              }
+            },
+            "default": []
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                { "type": "string" },
+                {
+                  "type": "object",
+                  "required": ["text"],
+                  "properties": {
+                    "note_id": { "type": ["string", "null"], "pattern": "^NOT-[0-9]{6}$" },
+                    "note_type": { "type": "string", "default": "GENERAL" },
+                    "text": { "type": "string" }
+                  }
+                }
+              ]
+            },
+            "default": []
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "_path": "tests/fixtures/locations/golden/location_import_envelope_golden.json",
+  "schema_version": "1.0.0",
+  "locations": [
+    {
+      "id": "LOC-000001",
+      "name": "United States",
+      "category": "COUNTRY",
+      "canonical_urn": "urn:gda:loc:united_states",
+      "parent_id": null,
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["USA", "United States of America"],
+      "historical_names": [
+        {
+          "raw_name": "Thirteen Colonies",
+          "canonical_name": "Thirteen Colonies",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": ["NOT-000001"]
+    },
+    {
+      "id": "LOC-000002",
+      "name": "New Hampshire",
+      "category": "STATOID",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire",
+      "parent_id": "LOC-000001",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": ["NH"],
+      "historical_names": [
+        {
+          "raw_name": "Province of New Hampshire",
+          "canonical_name": "Province of New Hampshire",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000003",
+      "name": "Merrimack County",
+      "category": "COUNTY_EQUIVALENT",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack",
+      "parent_id": "LOC-000002",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000004",
+      "name": "Bow",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:new_hampshire:merrimack:bow",
+      "parent_id": "LOC-000003",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": ["Town of Bow"],
+      "historical_names": [],
+      "notes": ["NOT-000002"]
+    }
+  ]
+}

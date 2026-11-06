@@ -1,0 +1,178 @@
+{
+  "_path": "schemas/dev/intake/location_import.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
+  "title": "LocationImportEnvelope",
+  "description": "Authoritative unified schema for bulk location intake and interchange archives.",
+  "type": "object",
+  "required": ["schema_version", "locations"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "batch_id": {
+      "type": "string"
+    },
+    "record_type": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "source_note": {
+      "type": "string"
+    },
+    "total_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "locations": {
+      "type": "array",
+      "description": "Authoritative list of civil jurisdictions and administrative territorial units.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "category", "canonical_urn"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^LOC-[0-9]{6}$",
+            "description": "Canonical Location identifier (e.g., LOC-000001)."
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "object",
+                "required": ["raw", "canonical"],
+                "properties": {
+                  "raw": { "type": "string", "minLength": 1 },
+                  "canonical": { "type": "string", "minLength": 1 },
+                  "aliases": { "type": "array", "items": { "type": "string" }, "default": [] },
+                  "alt_spellings": { "type": "array", "items": { "type": "string" }, "default": [] },
+                  "comment": { "type": ["string", "null"], "default": null },
+                  "historic": { "type": "array", "items": { "type": "object" }, "default": [] }
+                }
+              }
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "COUNTRY",
+              "STATOID",
+              "COUNTY_EQUIVALENT",
+              "TOWNSHIP",
+              "CIVIL_TOWNSHIP",
+              "MUNICIPALITY",
+              "UNINCORPORATED_PLACE",
+              "SPECIAL_DISTRICT"
+            ],
+            "description": "Standardized jurisdictional classification tier matching JurisdictionCategory."
+          },
+          "canonical_urn": {
+            "type": "string",
+            "pattern": "^urn:gda:loc:[a-z0-9_:\\-]+$",
+            "description": "Deterministic canonical URN matching ^urn:gda:loc:[a-z0-9_:\\-]+$."
+          },
+          "parent_id": {
+            "type": ["string", "null"],
+            "pattern": "^LOC-[0-9]{6}$",
+            "default": null,
+            "description": "Foreign key reference to direct parent governing jurisdiction."
+          },
+          "predecessor_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^LOC-[0-9]{6}$" },
+            "default": []
+          },
+          "successor_ids": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^LOC-[0-9]{6}$" },
+            "default": []
+          },
+          "is_primary_local_authority": {
+            "type": "boolean",
+            "default": false
+          },
+          "is_unincorporated": {
+            "type": "boolean",
+            "default": false
+          },
+          "alternate_names": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": []
+          },
+          "historical_names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["raw_name", "canonical_name", "status"],
+              "properties": {
+                "raw_name": { "type": "string" },
+                "canonical_name": { "type": "string" },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "HISTORICAL",
+                    "LEGAL",
+                    "FORMER",
+                    "COLLOQUIAL",
+                    "ARCHIVAL",
+                    "VARIANT"
+                  ]
+                }
+              }
+            },
+            "default": []
+          },
+          "period": {
+            "type": ["object", "null"],
+            "default": null,
+            "properties": {
+              "start_date": { "type": ["string", "object", "null"], "default": null },
+              "end_date": { "type": ["string", "object", "null"], "default": null }
+            }
+          },
+          "coordinates": {
+            "type": ["object", "null"],
+            "default": null,
+            "properties": {
+              "latitude": { "type": "number", "minimum": -90.0, "maximum": 90.0 },
+              "longitude": { "type": "number", "minimum": -180.0, "maximum": 180.0 }
+            },
+            "required": ["latitude", "longitude"]
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^NOT-[0-9]{6}$"
+                },
+                {
+                  "type": "object",
+                  "required": ["text"],
+                  "properties": {
+                    "note_id": { "type": ["string", "null"], "pattern": "^NOT-[0-9]{6}$" },
+                    "note_type": { "type": "string", "default": "GENERAL" },
+                    "text": { "type": "string" },
+                    "tags": { "type": "array", "items": { "type": "string" }, "default": [] }
+                  }
+                }
+              ]
+            },
+            "default": []
+          }
+        }
+      }
+    }
+  }
+}

@@ -103,9 +103,7 @@ def test_get_workspace_root_shallow_fallback(tmp_path: Path) -> None:
 
 @pytest.mark.smoke
 @pytest.mark.unit
-def test_parse_metadata_header_golden_python(
-    isolated_workspace: Path, fixtures_dir: Path
-) -> None:
+def test_parse_metadata_header_golden_python(isolated_workspace: Path, fixtures_dir: Path) -> None:
     """Verify header extraction from physical Python golden fixture."""
     src = fixtures_dir / "golden" / "gemini_valid_code.py"
     dest = isolated_workspace / "download" / "candidate_code.py"
@@ -131,9 +129,7 @@ def test_parse_metadata_header_golden_markdown(
 
 
 @pytest.mark.unit
-def test_parse_metadata_header_golden_json(
-    isolated_workspace: Path, fixtures_dir: Path
-) -> None:
+def test_parse_metadata_header_golden_json(isolated_workspace: Path, fixtures_dir: Path) -> None:
     """Verify header extraction from physical JSON root attributes golden fixture."""
     src = fixtures_dir / "golden" / "gemini_valid_json.json"
     dest = isolated_workspace / "download" / "candidate_json.json"
@@ -433,9 +429,7 @@ def test_run_intake_creates_isolated_backup_for_code(isolated_workspace: Path) -
 
     assert len(list(dest.parent.glob("*.bk"))) == 0
 
-    backup_repo = (
-        isolated_workspace / "archive" / "backups_gda" / "src" / "gda" / "core"
-    )
+    backup_repo = isolated_workspace / "archive" / "backups_gda" / "src" / "gda" / "core"
     bk_files = list(backup_repo.glob("existing.py.*.bk"))
     assert len(bk_files) == 1
     assert bk_files[0].read_text(encoding="utf-8") == "ORIGINAL_CONTENT"
@@ -456,8 +450,7 @@ def test_run_intake_force_flag_bypasses_backup(isolated_workspace: Path) -> None
     code = gsi.run_intake(force=True)
     assert code == 0
     assert (
-        dest.read_text(encoding="utf-8")
-        == "# Name: forced.py\n# Path: src/gda/core/forced.py\nNEW"
+        dest.read_text(encoding="utf-8") == "# Name: forced.py\n# Path: src/gda/core/forced.py\nNEW"
     )
     backups = list((isolated_workspace / "archive").rglob("forced.py.*.bk"))
     assert len(backups) == 0
@@ -675,9 +668,7 @@ def test_execute_python_script(isolated_workspace: Path) -> None:
         mock_run.return_value = MagicMock(returncode=0)
         ret = gsi._execute_python(script, isolated_workspace)
         assert ret == 0
-        mock_run.assert_called_once_with(
-            [sys.executable, str(script)], cwd=str(isolated_workspace)
-        )
+        mock_run.assert_called_once_with([sys.executable, str(script)], cwd=str(isolated_workspace))
 
 
 @pytest.mark.unit
@@ -718,9 +709,7 @@ def test_execute_bash_script(isolated_workspace: Path) -> None:
         mock_run.return_value = MagicMock(returncode=0)
         ret = gsi._execute_bash(sh_file, isolated_workspace)
         assert ret == 0
-        mock_run.assert_called_once_with(
-            ["bash", str(sh_file)], cwd=str(isolated_workspace)
-        )
+        mock_run.assert_called_once_with(["bash", str(sh_file)], cwd=str(isolated_workspace))
 
 
 @pytest.mark.unit
@@ -777,9 +766,7 @@ def test_main_cli_dispatch(isolated_workspace: Path) -> None:
     ):
         gsi.main(["-f", "-c", "-r", "-p", "gemini"])
     assert exc.value.code == 0
-    mock_intake.assert_called_once_with(
-        force=True, run_target=True, clean=True, prefix="gemini"
-    )
+    mock_intake.assert_called_once_with(force=True, run_target=True, clean=True, prefix="gemini")
 
 
 @pytest.mark.smoke

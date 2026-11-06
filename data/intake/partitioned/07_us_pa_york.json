@@ -1,0 +1,146 @@
+{
+  "_path": "data/intake/partitioned/07_us_pa_york.json",
+  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "location_intake",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-LOC-07-PA-YORK",
+  "source_note": "Stage 07: York County PA key civil divisions.",
+  "locations": [
+    {
+      "id": "LOC-000176",
+      "name": "Penn Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:penn_township",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Penn Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000177",
+      "name": "Springettsbury Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:springettsbury_township",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Springettsbury Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000178",
+      "name": "Spring Garden Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:spring_garden_township",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Spring Garden Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000179",
+      "name": "Manchester Township",
+      "category": "CIVIL_TOWNSHIP",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:manchester_township",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": false,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Manchester Twp."
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000180",
+      "name": "York",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:york_city",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "York City",
+        "White Rose City"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Yorktown",
+          "canonical_name": "Yorktown",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000046",
+          "note_type": "GENERAL",
+          "text": "Temporary US capital (1777-1778) during Philadelphia occupation.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LOC-000181",
+      "name": "Hanover",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:hanover_borough",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Hanover"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "McAllister's Town",
+          "canonical_name": "McAllister's Town",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "id": "LOC-000182",
+      "name": "Dillsburg",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:dillsburg_borough",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Dillsburg"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "LOC-000183",
+      "name": "Red Lion",
+      "category": "MUNICIPALITY",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:york:red_lion_borough",
+      "parent_id": "LOC-000077",
+      "is_primary_local_authority": true,
+      "is_unincorporated": false,
+      "alternate_names": [
+        "Borough of Red Lion"
+      ],
+      "historical_names": [],
+      "notes": []
+    }
+  ]
+}

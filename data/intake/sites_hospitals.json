@@ -1,0 +1,511 @@
+{
+  "_path": "data/intake/sites_hospitals.json",
+  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "schema_version": "1.0.0",
+  "record_type": "site_export",
+  "batch_id": "BATCH-SITE-HOSPITALS",
+  "total_count": 12,
+  "sites": [
+    {
+      "id": "SID-000001",
+      "name": {
+        "raw": "Carlisle Hospital",
+        "canonical": "Carlisle Hospital"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:carlisle_hospital",
+      "location_id": "LOC-000152",
+      "is_active": false,
+      "address": {
+        "address_line_1": "402 W Louther St",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2035,
+        "longitude": -77.1952
+      },
+      "period": {
+        "start_date": "1914",
+        "end_date": "2006"
+      },
+      "alternate_names": [
+        "Carlisle Hospital (DOA)",
+        "Carlisle Hosp"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000101",
+          "note_type": "RESEARCH",
+          "text": "Original community hospital facility on W. Louther St; replaced in 2006.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000002",
+      "name": {
+        "raw": "Carlisle Regional Medical Center",
+        "canonical": "Carlisle Regional Medical Center"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:carlisle_regional_medical_center",
+      "location_id": "LOC-000152",
+      "is_active": true,
+      "address": {
+        "address_line_1": "361 Alexander Spring Rd",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17015",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.1802,
+        "longitude": -77.2185
+      },
+      "period": {
+        "start_date": "2006",
+        "end_date": null
+      },
+      "alternate_names": [
+        "UPMC Carlisle"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000102",
+          "note_type": "GENERAL",
+          "text": "Modern regional acute care facility replacing historic downtown Carlisle Hospital.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000003",
+      "name": {
+        "raw": "Holy Spirit Hospital",
+        "canonical": "Holy Spirit Hospital"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:camp_hill:holy_spirit_hospital",
+      "location_id": "LOC-000154",
+      "is_active": true,
+      "address": {
+        "address_line_1": "503 N 21st St",
+        "address_line_2": null,
+        "city": "Camp Hill",
+        "state": "PA",
+        "postal_code": "17011",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2524,
+        "longitude": -76.9215
+      },
+      "period": {
+        "start_date": "1963",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Penn State Health Holy Spirit Medical Center",
+        "Holy Spirit Medical Center"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000103",
+          "note_type": "GENERAL",
+          "text": "Founded in 1963 by the Sisters of Christian Charity; major West Shore hospital.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000004",
+      "name": {
+        "raw": "Seidle Memorial Hospital",
+        "canonical": "Seidle Memorial Hospital"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:mechanicsburg:seidle_memorial_hospital",
+      "location_id": "LOC-000153",
+      "is_active": true,
+      "address": {
+        "address_line_1": "120 E Simpson St",
+        "address_line_2": null,
+        "city": "Mechanicsburg",
+        "state": "PA",
+        "postal_code": "17055",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2108,
+        "longitude": -77.0039
+      },
+      "period": {
+        "start_date": "1936",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Penn State Health Seidle Memorial Hospital"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000104",
+          "note_type": "GENERAL",
+          "text": "Established in 1936 through the bequest of Dr. Herman Seidle.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000005",
+      "name": {
+        "raw": "UPMC West Shore",
+        "canonical": "UPMC West Shore"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:hampden:upmc_west_shore",
+      "location_id": "LOC-000133",
+      "is_active": true,
+      "address": {
+        "address_line_1": "1995 Technology Pkwy",
+        "address_line_2": null,
+        "city": "Mechanicsburg",
+        "state": "PA",
+        "postal_code": "17050",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2441,
+        "longitude": -76.9922
+      },
+      "period": {
+        "start_date": "2014",
+        "end_date": null
+      },
+      "alternate_names": [
+        "PinnacleHealth West Shore Hospital"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000006",
+      "name": {
+        "raw": "Penn State Health Hampden Medical Center",
+        "canonical": "Penn State Health Hampden Medical Center"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:hampden:hampden_medical_center",
+      "location_id": "LOC-000133",
+      "is_active": true,
+      "address": {
+        "address_line_1": "2200 Millennium Way",
+        "address_line_2": null,
+        "city": "Enola",
+        "state": "PA",
+        "postal_code": "17025",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2764,
+        "longitude": -76.9691
+      },
+      "period": {
+        "start_date": "2021",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Hampden Medical Center"
+      ],
+      "historical_names": [],
+      "notes": []
+    },
+    {
+      "id": "SID-000007",
+      "name": {
+        "raw": "Dunham U.S. Army Health Clinic",
+        "canonical": "Dunham U.S. Army Health Clinic"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:cumberland:carlisle_barracks:dunham_clinic",
+      "location_id": "LOC-000225",
+      "is_active": true,
+      "address": {
+        "address_line_1": "450 Dunlap Rd",
+        "address_line_2": null,
+        "city": "Carlisle",
+        "state": "PA",
+        "postal_code": "17013",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2115,
+        "longitude": -77.1782
+      },
+      "period": {
+        "start_date": "1860",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Dunham Army Clinic",
+        "Carlisle Barracks Hospital"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000105",
+          "note_type": "GENERAL",
+          "text": "Military clinic serving Carlisle Barracks and US Army War College personnel.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000008",
+      "name": {
+        "raw": "Harrisburg Hospital",
+        "canonical": "Harrisburg Hospital"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:harrisburg_hospital",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "111 S Front St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17101",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2567,
+        "longitude": -76.8812
+      },
+      "period": {
+        "start_date": "1873",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Hbg Hospital",
+        "UPMC Harrisburg",
+        "Harrisburg City Hospital"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000106",
+          "note_type": "RESEARCH",
+          "text": "Founded in 1873; primary acute downtown medical center on the Susquehanna.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000009",
+      "name": {
+        "raw": "Polyclinic Hospital",
+        "canonical": "Polyclinic Hospital"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:polyclinic_hospital",
+      "location_id": "LOC-000118",
+      "is_active": true,
+      "address": {
+        "address_line_1": "2601 N 3rd St",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17110",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2842,
+        "longitude": -76.8925
+      },
+      "period": {
+        "start_date": "1909",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Polyclinic Hos.",
+        "Harrisburg Polyclinic Medical Center",
+        "UPMC Polyclinic"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000107",
+          "note_type": "RESEARCH",
+          "text": "Established in 1909 on 3rd Street; birth site for multiple generations of area families.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000010",
+      "name": {
+        "raw": "Harrisburg State Hospital",
+        "canonical": "Harrisburg State Hospital"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:harrisburg_state_hospital",
+      "location_id": "LOC-000118",
+      "is_active": false,
+      "address": {
+        "address_line_1": "Cameron & Maclay Sts",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17105",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2861,
+        "longitude": -76.8736
+      },
+      "period": {
+        "start_date": "1851-04-14",
+        "end_date": "2006-01-27"
+      },
+      "alternate_names": [
+        "Hbg State Hospital",
+        "Hbg. State Hospital",
+        "State Hospital on the Hill"
+      ],
+      "historical_names": [
+        {
+          "raw_name": "Pennsylvania State Lunatic Hospital",
+          "canonical_name": "Pennsylvania State Lunatic Hospital",
+          "status": "HISTORICAL"
+        }
+      ],
+      "notes": [
+        {
+          "note_id": "NOT-000108",
+          "note_type": "GENERAL",
+          "text": "Established in 1845 via advocacy of Dorothea Dix; closed in 2006.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000011",
+      "name": {
+        "raw": "Penn State Milton S. Hershey Medical Center",
+        "canonical": "Penn State Milton S. Hershey Medical Center"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:derry:hershey_medical_center",
+      "location_id": "LOC-000129",
+      "is_active": true,
+      "address": {
+        "address_line_1": "500 University Dr",
+        "address_line_2": null,
+        "city": "Hershey",
+        "state": "PA",
+        "postal_code": "17033",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2678,
+        "longitude": -76.6749
+      },
+      "period": {
+        "start_date": "1967",
+        "end_date": null
+      },
+      "alternate_names": [
+        "Hershey Medical Center",
+        "Penn State Health Hershey"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000109",
+          "note_type": "RESEARCH",
+          "text": "Major tertiary referral university hospital and College of Medicine.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SID-000012",
+      "name": {
+        "raw": "Community General Osteopathic Hospital",
+        "canonical": "Community General Osteopathic Hospital"
+      },
+      "category": "HOSPITAL",
+      "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:community_general_osteopathic_hospital",
+      "location_id": "LOC-000103",
+      "is_active": true,
+      "address": {
+        "address_line_1": "4300 Londonderry Rd",
+        "address_line_2": null,
+        "city": "Harrisburg",
+        "state": "PA",
+        "postal_code": "17109",
+        "country": "USA"
+      },
+      "coordinates": {
+        "latitude": 40.2925,
+        "longitude": -76.8208
+      },
+      "period": {
+        "start_date": "1951",
+        "end_date": null
+      },
+      "alternate_names": [
+        "UPMC Community Osteopathic",
+        "Community General Hospital"
+      ],
+      "historical_names": [],
+      "notes": [
+        {
+          "note_id": "NOT-000110",
+          "note_type": "GENERAL",
+          "text": "Primary osteopathic medical center on the East Shore.",
+          "audit": {
+            "created_at": "2026-11-04T12:00:00Z",
+            "updated_at": "2026-11-04T12:00:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}

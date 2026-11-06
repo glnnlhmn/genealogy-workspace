@@ -47,16 +47,12 @@ class GDABackupManager(IntrospectableMixin):
         """
         target = Path(target_path).resolve()
         destination = (
-            Path(backup_dir).resolve()
-            if backup_dir is not None
-            else target.parent / "backups"
+            Path(backup_dir).resolve() if backup_dir is not None else target.parent / "backups"
         )
         return AtomicWriter.ensure_directory(destination)
 
     @classmethod
-    def create_backup(
-        cls, target_path: Path | str, backup_dir: Path | str | None = None
-    ) -> Path:
+    def create_backup(cls, target_path: Path | str, backup_dir: Path | str | None = None) -> Path:
         """Create an atomic timestamped snapshot of a target file.
 
         Generates snapshot filenames formatted as:
@@ -76,13 +72,9 @@ class GDABackupManager(IntrospectableMixin):
         """
         target = Path(target_path).resolve()
         if not target.exists():
-            raise BackupError(
-                f"Cannot create backup: target file '{target}' does not exist."
-            )
+            raise BackupError(f"Cannot create backup: target file '{target}' does not exist.")
         if target.is_dir():
-            raise BackupError(
-                f"Cannot create backup: target path '{target}' is a directory."
-            )
+            raise BackupError(f"Cannot create backup: target path '{target}' is a directory.")
 
         destination_dir = cls.resolve_backup_dir(target, backup_dir)
         timestamp = datetime.now(UTC).strftime(cls.TIMESTAMP_FORMAT)
@@ -123,9 +115,7 @@ class GDABackupManager(IntrospectableMixin):
         """
         target = Path(target_path).resolve()
         destination = (
-            Path(backup_dir).resolve()
-            if backup_dir is not None
-            else target.parent / "backups"
+            Path(backup_dir).resolve() if backup_dir is not None else target.parent / "backups"
         )
         if not destination.exists() or not destination.is_dir():
             return []
@@ -161,13 +151,9 @@ class GDABackupManager(IntrospectableMixin):
         target = Path(target_path).resolve()
 
         if not backup.exists():
-            raise BackupError(
-                f"Cannot restore backup: source '{backup}' does not exist."
-            )
+            raise BackupError(f"Cannot restore backup: source '{backup}' does not exist.")
         if backup.is_dir():
-            raise BackupError(
-                f"Cannot restore backup: source '{backup}' is a directory."
-            )
+            raise BackupError(f"Cannot restore backup: source '{backup}' is a directory.")
 
         try:
             data = backup.read_bytes()
