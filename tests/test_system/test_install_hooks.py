@@ -20,7 +20,7 @@ import pytest
 
 import system.install_hooks as ih
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.0.0+build.11"
 
 
 # ==============================================================================
@@ -68,6 +68,13 @@ def test_get_repo_root_fallback_to_cwd(tmp_path: Path) -> None:
     isolated = tmp_path / "plain_dir"
     isolated.mkdir()
 
+    original_is_dir = Path.is_dir
+
+    def mock_is_dir(self: Path) -> bool:
+        if self.name == ".git":
+            return False
+        return original_is_dir(self)
+
     with (
         patch.object(
             subprocess,
@@ -75,6 +82,7 @@ def test_get_repo_root_fallback_to_cwd(tmp_path: Path) -> None:
             side_effect=subprocess.CalledProcessError(1, ["git"]),
         ),
         patch.object(Path, "cwd", return_value=isolated),
+        patch.object(Path, "is_dir", mock_is_dir),
     ):
         assert ih.get_repo_root() == isolated
 
