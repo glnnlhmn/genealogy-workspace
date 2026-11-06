@@ -1,115 +1,134 @@
 """Path: src/system/hooks/pre_push.py
 
-Pre-push Git hook orchestrator enforcing branch protection and test passes.
+Git pre-push hook orchestrator enforcing branch protection and test gates.
 
 Operational Role:
-    Prevents direct pushes to protected branches (main, master, release) and executes
-    pytest test verification prior to transmitting changes to a remote repository.
+    Prevents direct pushes to protected branches ('main', 'master'),
+    verifies repository state, and dispatches the authoritative pre-push
+    test suite before remote transfer occurs.
 """
 
 from __future__ import annotations
 
 import argparse
-import logging
 import subprocess
 import sys
-from pathlib import Path
+from collections.abc import Sequence
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.8"
 
-ROOT_ANCHOR = Path("G:/My Drive/genealogy-workspace")
-LOGGER = logging.getLogger("system.hooks.pre_push")
-PROTECTED_BRANCHES: tuple[str, ...] = ("main", "master", "release")
+PROTECTED_BRANCHES: frozenset[str] = frozenset({"main", "master"})
 
 
-def get_current_branch(repo_root: Path | None = None) -> str:
-    """Retrieve the current active Git branch name.
-
-    Args:
-        repo_root: Optional workspace root directory.
+def get_current_branch() -> str:
+    """Retrieve the name of the currently checked out Git branch.
 
     Returns:
-        Clean branch name string, or empty string on error.
+        The branch name, or 'unknown' if resolution fails.
     """
-    root = repo_root or ROOT_ANCHOR
     try:
         res = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
             capture_output=True,
             text=True,
-            cwd=str(root),
             check=True,
         )
-        return res.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return ""
+        branch = res.stdout.strip()
+        return branch if branch else "unknown"
+    except (subprocess.CalledProcessError, OSError):
+        return "unknown"
 
 
-def run_pre_push(
-    repo_root: Path | None = None,
-    allow_protected: bool = False,
-    skip_tests: bool = False,
-) -> int:
-    """Execute pre-push validations.
+def validate_branch(branch: str) -> bool:
+    """Verify that the target push branch is not protected against direct push.
 
     Args:
-        repo_root: Optional workspace root.
-        allow_protected: Override flag allowing direct pushes to protected branches.
-        skip_tests: Skip full test suite execution.
+        branch: Active Git branch name.
 
     Returns:
-        0 on success; non-zero integer on validation failure.
+        True if push is permitted, False if branch is protected.
     """
-    root = repo_root or ROOT_ANCHOR
-    branch = get_current_branch(root)
-    LOGGER.info("Evaluating pre-push checks for branch: %s", branch)
-
-    if branch in PROTECTED_BRANCHES and not allow_protected:
+    if branch in PROTECTED_BRANCHES:
         print(f"PRE-PUSH REJECTED: Direct push to protected branch '{branch}' is prohibited.")
         print("Please push to an operational feature branch and open a pull request.")
-        return 1
+        return False
+    return True
 
-    if not skip_tests:
-        print(f"Running verification test sweep prior to pushing '{branch}'...")
-        cmd = [
-            sys.executable,
-            "-m",
-            "pytest",
-            "tests/",
-            "-q",
-            "--basetemp=C:/temp/pytest_tmp",
-        ]
-        result = subprocess.run(cmd, cwd=str(root), check=False)
-        if result.returncode != 0:
-            print("PRE-PUSH REJECTED: Test suite failure detected prior to remote push.")
-            return result.returncode
+
+def run_pre_push_suite(verbose: bool = False) -> bool:
+    """Execute pre-push verification commands including structure, formatting, and tests.
+
+    Args:
+        verbose: Whether to pass verbose flags to underlying test commands.
+
+    Returns:
+        True if all checks pass, False if any check fails or encounters an error.
+    """
+    commands: list[list[str]] = [
+        [sys.executable, "-m", "ruff", "check", "src", "tests"],
+        [sys.executable, "-m", "ruff", "format", "--check", "src", "tests"],
+    ]
+
+    pytest_cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "tests/test_system/",
+        "--basetemp=gtemp/pytest_tmp",
+    ]
+    if verbose:
+        pytest_cmd.append("-v")
+    commands.append(pytest_cmd)
+
+    for cmd in commands:
+        try:
+            res = subprocess.run(cmd, check=False)
+            if res.returncode != 0:
+                print(f"Pre-push check failed on command: {' '.join(cmd)}")
+                return False
+        except OSError as exc:
+            print(f"Pre-push command execution failed: {exc}")
+            return False
+
+    return True
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entrypoint for pre-push verification.
+
+    Args:
+        argv: Optional command-line arguments.
+
+    Returns:
+        0 on success, non-zero on failure.
+    """
+    parser = argparse.ArgumentParser(
+        description="GDA Git Pre-Push Hook Runner",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output during validation run.",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode and verbose tracebacks.",
+    )
+    args = parser.parse_args(argv)
+
+    branch = get_current_branch()
+    if not validate_branch(branch):
+        sys.exit(1)
+
+    if not run_pre_push_suite(verbose=args.verbose):
+        sys.exit(1)
 
     print("Pre-push checks passed successfully.")
     return 0
 
 
-def main(argv: list[str] | None = None) -> None:
-    """CLI entrypoint for the pre-push hook runner."""
-    parser = argparse.ArgumentParser(description="GDA Git Pre-Push Hook Runner")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
-    parser.add_argument("--debug", action="store_true", help="Enable diagnostic debug logging")
-    parser.add_argument(
-        "--allow-protected",
-        action="store_true",
-        help="Allow push directly to protected branches",
-    )
-    parser.add_argument("--skip-tests", action="store_true", help="Bypass test execution")
-    args = parser.parse_args(argv)
-
-    log_level = logging.DEBUG if args.debug else (logging.INFO if args.verbose else logging.WARNING)
-    logging.basicConfig(level=log_level, format="%(levelname)s: %(message)s")
-
-    code = run_pre_push(
-        allow_protected=args.allow_protected,
-        skip_tests=args.skip_tests,
-    )
-    sys.exit(code)
-
-
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
