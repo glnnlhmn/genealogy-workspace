@@ -112,16 +112,12 @@ logs/*
 reports/*
 !reports/.gitkeep
 
+# Exclude staged evaluation miplets while allowing core prompts
+prompts/core/miplets/
 
 # ==============================================================================
-# 8. Production Data Store, Database & Intake Isolation
+# 8. Production Data Store, Database & Baseline Setup Whitelist
 # ==============================================================================
-<<<<<<< HEAD
-data/
-# Exclude prompt engineering, miplets, and system instructions
-prompts/
-schemas/intake/
-=======
 # Universal database file ignores (sqlite3 / temporary journals / locks)
 *.sqlite
 *.sqlite3
@@ -129,8 +125,9 @@ schemas/intake/
 *.db-shm
 *.db-wal
 *.sqlite-journal
+data/db/
 
-# Ignore all dynamic data directory contents by default
+# Ignore dynamic runtime data by default
 data/*
 !data/.gitkeep
 
@@ -141,17 +138,22 @@ data/*
 !data/intake/**/
 !data/intake/**/.gitkeep
 
-# Whitelist canonical shared reference datasets and profiles
+# Whitelist canonical shared reference datasets and system profiles
 !data/profiles/
 !data/profiles/**
 !data/reference/
 !data/reference/**
 
+# Whitelist baseline setup datasets (locations and sites)
+!data/setup/
+!data/setup/**
+
+# Whitelist canonical intake schemas and system skills
+!schemas/
+!schemas/**
+!.skills/
+!.skills/**
+
 # Operator profile isolation (keep private)
 glenn_profile.json
-
-# Exclude staged evaluation miplets while allowing prompts
-prompts/core/miplets/
-# Local SQLite database binaries and WAL journals
-data/db/
-
+data/profiles/glenn_profile.json

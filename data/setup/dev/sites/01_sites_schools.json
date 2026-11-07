@@ -1,16 +1,22 @@
 {
-  "_path": "data/intake/sites_schools.json",
-  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "_path": "data/setup/dev/sites/01_sites_schools.json",
+  "$schema": "https://gda.archive/schemas/intake/dev/sites_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "site_export",
-  "batch_id": "BATCH-SITE-SCHOOLS",
+  "record_type": "SITE_IMPORT",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-SITE-01-SCHOOLS",
+  "source_note": "Stage 01: Primary, secondary, and post-secondary educational institutions.",
   "total_count": 27,
   "sites": [
     {
       "id": "SID-000013",
       "name": {
         "raw": "John Harris High School",
-        "canonical": "John Harris High School"
+        "canonical": "John Harris High School",
+        "aliases": [
+          "John Harris Campus",
+          "Harrisburg High School John Harris Campus"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:john_harris_high_school",
@@ -41,11 +47,7 @@
         {
           "note_id": "NOT-000111",
           "note_type": "RESEARCH",
-          "text": "Flagship comprehensive high school of the City of Harrisburg.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Flagship comprehensive high school of the City of Harrisburg."
         }
       ]
     },
@@ -53,7 +55,11 @@
       "id": "SID-000014",
       "name": {
         "raw": "Edison Junior High School",
-        "canonical": "Edison Junior High School"
+        "canonical": "Edison Junior High School",
+        "aliases": [
+          "Edison Middle School",
+          "Thomas A. Edison Junior High School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:edison_junior_high_school",
@@ -84,11 +90,7 @@
         {
           "note_id": "NOT-000112",
           "note_type": "GENERAL",
-          "text": "Historic junior high school on Chestnut Street attended by Lehman family members in the 1950s.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic junior high school on Chestnut Street attended by Lehman family members in the 1950s."
         }
       ]
     },
@@ -96,7 +98,11 @@
       "id": "SID-000015",
       "name": {
         "raw": "Marshall School",
-        "canonical": "Marshall School"
+        "canonical": "Marshall School",
+        "aliases": [
+          "Marshall Math Science Academy",
+          "John Marshall School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:marshall_school",
@@ -127,11 +133,7 @@
         {
           "note_id": "NOT-000113",
           "note_type": "GENERAL",
-          "text": "Elementary and middle academy; home of the historic 1953 AAA safety patrol unit.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Elementary and middle academy; home of the historic 1953 AAA safety patrol unit."
         }
       ]
     },
@@ -139,7 +141,11 @@
       "id": "SID-000016",
       "name": {
         "raw": "SciTech High School",
-        "canonical": "SciTech High School"
+        "canonical": "SciTech High School",
+        "aliases": [
+          "Harrisburg High School SciTech Campus",
+          "Science and Technology High School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:scitech_high_school",
@@ -172,7 +178,11 @@
       "id": "SID-000017",
       "name": {
         "raw": "William Penn High School",
-        "canonical": "William Penn High School"
+        "canonical": "William Penn High School",
+        "aliases": [
+          "William Penn Senior High School",
+          "Old William Penn"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:william_penn_high_school",
@@ -203,11 +213,7 @@
         {
           "note_id": "NOT-000114",
           "note_type": "GENERAL",
-          "text": "Historic collegiate-gothic high school overlooking Italian Lake; closed in 1979 upon district consolidation.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic collegiate-gothic high school overlooking Italian Lake; closed in 1979 upon district consolidation."
         }
       ]
     },
@@ -215,7 +221,11 @@
       "id": "SID-000018",
       "name": {
         "raw": "Camp Curtin School",
-        "canonical": "Camp Curtin School"
+        "canonical": "Camp Curtin School",
+        "aliases": [
+          "Camp Curtin Middle School",
+          "Camp Curtin Academy"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:camp_curtin_school",
@@ -246,11 +256,7 @@
         {
           "note_id": "NOT-000115",
           "note_type": "GENERAL",
-          "text": "Built on the grounds of historic Civil War training depot Camp Curtin.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Built on the grounds of historic Civil War training depot Camp Curtin."
         }
       ]
     },
@@ -258,7 +264,10 @@
       "id": "SID-000019",
       "name": {
         "raw": "Foose Elementary School",
-        "canonical": "Foose Elementary School"
+        "canonical": "Foose Elementary School",
+        "aliases": [
+          "Lemuel O. Foose School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:foose_elementary",
@@ -290,7 +299,10 @@
       "id": "SID-000020",
       "name": {
         "raw": "Downey Elementary School",
-        "canonical": "Downey Elementary School"
+        "canonical": "Downey Elementary School",
+        "aliases": [
+          "Steele-Downey School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:downey_elementary",
@@ -322,7 +334,11 @@
       "id": "SID-000021",
       "name": {
         "raw": "Central Dauphin High School",
-        "canonical": "Central Dauphin High School"
+        "canonical": "Central Dauphin High School",
+        "aliases": [
+          "CD High School",
+          "CD Rams Campus"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:west_hanover:central_dauphin_high_school",
@@ -353,11 +369,7 @@
         {
           "note_id": "NOT-000116",
           "note_type": "GENERAL",
-          "text": "Flagship high school; relocated from 4600 Locust Lane to Piketown Rd campus in 2004.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Flagship high school; relocated from 4600 Locust Lane to Piketown Rd campus in 2004."
         }
       ]
     },
@@ -365,7 +377,11 @@
       "id": "SID-000022",
       "name": {
         "raw": "Central Dauphin East High School",
-        "canonical": "Central Dauphin East High School"
+        "canonical": "Central Dauphin East High School",
+        "aliases": [
+          "CD East High School",
+          "CD East Panthers"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_east_high_school",
@@ -396,11 +412,7 @@
         {
           "note_id": "NOT-000117",
           "note_type": "RESEARCH",
-          "text": "East Shore high school serving Lower Paxton, Swatara, and Penbrook communities.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "East Shore high school serving Lower Paxton, Swatara, and Penbrook communities."
         }
       ]
     },
@@ -408,7 +420,11 @@
       "id": "SID-000023",
       "name": {
         "raw": "Central Dauphin Middle School",
-        "canonical": "Central Dauphin Middle School"
+        "canonical": "Central Dauphin Middle School",
+        "aliases": [
+          "CD Middle School",
+          "Old Central Dauphin High School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_middle_school",
@@ -439,11 +455,7 @@
         {
           "note_id": "NOT-000118",
           "note_type": "GENERAL",
-          "text": "Occupies the original 1955 Central Dauphin High School building on Locust Lane.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Occupies the original 1955 Central Dauphin High School building on Locust Lane."
         }
       ]
     },
@@ -451,7 +463,10 @@
       "id": "SID-000024",
       "name": {
         "raw": "Central Dauphin East Middle School",
-        "canonical": "Central Dauphin East Middle School"
+        "canonical": "Central Dauphin East Middle School",
+        "aliases": [
+          "CD East Middle School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_east_middle_school",
@@ -483,7 +498,10 @@
       "id": "SID-000025",
       "name": {
         "raw": "Linglestown Middle School",
-        "canonical": "Linglestown Middle School"
+        "canonical": "Linglestown Middle School",
+        "aliases": [
+          "Linglestown Junior High"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:linglestown_middle_school",
@@ -515,7 +533,10 @@
       "id": "SID-000026",
       "name": {
         "raw": "Swatara Middle School",
-        "canonical": "Swatara Middle School"
+        "canonical": "Swatara Middle School",
+        "aliases": [
+          "Swatara Junior High"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:swatara:swatara_middle_school",
@@ -547,7 +568,11 @@
       "id": "SID-000027",
       "name": {
         "raw": "Dauphin County Technical School",
-        "canonical": "Dauphin County Technical School"
+        "canonical": "Dauphin County Technical School",
+        "aliases": [
+          "Dauphin County Votech",
+          "DCTS"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:dauphin_county_tech_school",
@@ -578,11 +603,7 @@
         {
           "note_id": "NOT-000119",
           "note_type": "RESEARCH",
-          "text": "County vocational-technical high school on Locust Lane.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "County vocational-technical high school on Locust Lane."
         }
       ]
     },
@@ -590,7 +611,11 @@
       "id": "SID-000028",
       "name": {
         "raw": "Summit Street School",
-        "canonical": "Summit Street School"
+        "canonical": "Summit Street School",
+        "aliases": [
+          "Summit St. School",
+          "Enola Elementary School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:east_pennsboro:summit_street_school",
@@ -621,11 +646,7 @@
         {
           "note_id": "NOT-000120",
           "note_type": "GENERAL",
-          "text": "Elementary school in East Pennsboro Township where Margaret L. Lehman taught prior to 1959.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Elementary school in East Pennsboro Township where Margaret L. Lehman taught prior to 1959."
         }
       ]
     },
@@ -633,7 +654,10 @@
       "id": "SID-000029",
       "name": {
         "raw": "McClure's Gap School",
-        "canonical": "McClure's Gap School"
+        "canonical": "McClure's Gap School",
+        "aliases": [
+          "McClures Gap Schoolhouse"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:lower_frankford:mcclures_gap_school",
@@ -663,11 +687,7 @@
         {
           "note_id": "NOT-000121",
           "note_type": "GENERAL",
-          "text": "Historic one-room schoolhouse in Lower Frankford Township.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic one-room schoolhouse in Lower Frankford Township."
         }
       ]
     },
@@ -675,7 +695,11 @@
       "id": "SID-000030",
       "name": {
         "raw": "Bloserville Schoolhouse",
-        "canonical": "Bloserville Schoolhouse"
+        "canonical": "Bloserville Schoolhouse",
+        "aliases": [
+          "Bloserville School",
+          "Upper Frankford School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:upper_frankford:bloserville_schoolhouse",
@@ -706,11 +730,7 @@
         {
           "note_id": "NOT-000122",
           "note_type": "GENERAL",
-          "text": "Village one-room schoolhouse serving Upper Frankford families.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Village one-room schoolhouse serving Upper Frankford families."
         }
       ]
     },
@@ -718,7 +738,10 @@
       "id": "SID-000031",
       "name": {
         "raw": "Newville High School",
-        "canonical": "Newville High School"
+        "canonical": "Newville High School",
+        "aliases": [
+          "Newville Borough High School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:newville_high_school",
@@ -748,11 +771,7 @@
         {
           "note_id": "NOT-000123",
           "note_type": "GENERAL",
-          "text": "Historic borough secondary school; merged into Big Spring Joint School District in 1952.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic borough secondary school; merged into Big Spring Joint School District in 1952."
         }
       ]
     },
@@ -760,7 +779,10 @@
       "id": "SID-000032",
       "name": {
         "raw": "Big Spring High School",
-        "canonical": "Big Spring High School"
+        "canonical": "Big Spring High School",
+        "aliases": [
+          "Big Spring Senior High School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:west_pennsboro:big_spring_high_school",
@@ -790,11 +812,7 @@
         {
           "note_id": "NOT-000124",
           "note_type": "RESEARCH",
-          "text": "Consolidated public high school serving Newville, Frankford, and West Pennsboro townships.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Consolidated public high school serving Newville, Frankford, and West Pennsboro townships."
         }
       ]
     },
@@ -802,7 +820,10 @@
       "id": "SID-000033",
       "name": {
         "raw": "Carlisle High School",
-        "canonical": "Carlisle High School"
+        "canonical": "Carlisle High School",
+        "aliases": [
+          "Carlisle Area High School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:carlisle_high_school",
@@ -834,7 +855,11 @@
       "id": "SID-000034",
       "name": {
         "raw": "Carlisle Indian Industrial School",
-        "canonical": "Carlisle Indian Industrial School"
+        "canonical": "Carlisle Indian Industrial School",
+        "aliases": [
+          "Carlisle Indian School",
+          "United States Indian Industrial School"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle_barracks:carlisle_indian_school",
@@ -865,11 +890,7 @@
         {
           "note_id": "NOT-000125",
           "note_type": "GENERAL",
-          "text": "Federally funded boarding school operating on the military barracks grounds; National Historic Landmark.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Federally funded boarding school operating on the military barracks grounds; National Historic Landmark."
         }
       ]
     },
@@ -877,7 +898,11 @@
       "id": "SID-000035",
       "name": {
         "raw": "Shippensburg University",
-        "canonical": "Shippensburg University"
+        "canonical": "Shippensburg University",
+        "aliases": [
+          "Shippensburg State College",
+          "Ship"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:shippensburg:shippensburg_university",
@@ -905,13 +930,13 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Cumberland Valley State Normal School",
-          "canonical_name": "Cumberland Valley State Normal School",
+          "raw": "Cumberland Valley State Normal School",
+          "canonical": "Cumberland Valley State Normal School",
           "status": "HISTORICAL"
         },
         {
-          "raw_name": "State Teachers College at Shippensburg",
-          "canonical_name": "State Teachers College at Shippensburg",
+          "raw": "State Teachers College at Shippensburg",
+          "canonical": "State Teachers College at Shippensburg",
           "status": "HISTORICAL"
         }
       ],
@@ -919,11 +944,7 @@
         {
           "note_id": "NOT-000126",
           "note_type": "GENERAL",
-          "text": "Chartered in 1871 as Cumberland Valley State Normal School; later State Teachers College and University.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Chartered in 1871 as Cumberland Valley State Normal School; later State Teachers College and University."
         }
       ]
     },
@@ -931,7 +952,10 @@
       "id": "SID-000036",
       "name": {
         "raw": "Dickinson College",
-        "canonical": "Dickinson College"
+        "canonical": "Dickinson College",
+        "aliases": [
+          "Old West Campus"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:dickinson_college",
@@ -961,11 +985,7 @@
         {
           "note_id": "NOT-000127",
           "note_type": "GENERAL",
-          "text": "Chartered in 1783 by Benjamin Rush; named in honor of John Dickinson.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Chartered in 1783 by Benjamin Rush; named in honor of John Dickinson."
         }
       ]
     },
@@ -973,7 +993,12 @@
       "id": "SID-000037",
       "name": {
         "raw": "Pennsylvania State University (University Park)",
-        "canonical": "Pennsylvania State University (University Park)"
+        "canonical": "Pennsylvania State University (University Park)",
+        "aliases": [
+          "Penn State",
+          "PSU",
+          "University Park"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:centre:university_park:penn_state_university",
@@ -1002,18 +1027,18 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Farmers' High School of Pennsylvania",
-          "canonical_name": "Farmers' High School of Pennsylvania",
+          "raw": "Farmers' High School of Pennsylvania",
+          "canonical": "Farmers' High School of Pennsylvania",
           "status": "HISTORICAL"
         },
         {
-          "raw_name": "Agricultural College of Pennsylvania",
-          "canonical_name": "Agricultural College of Pennsylvania",
+          "raw": "Agricultural College of Pennsylvania",
+          "canonical": "Agricultural College of Pennsylvania",
           "status": "HISTORICAL"
         },
         {
-          "raw_name": "Pennsylvania State College",
-          "canonical_name": "Pennsylvania State College",
+          "raw": "Pennsylvania State College",
+          "canonical": "Pennsylvania State College",
           "status": "HISTORICAL"
         }
       ],
@@ -1021,11 +1046,7 @@
         {
           "note_id": "NOT-000128",
           "note_type": "GENERAL",
-          "text": "Commonwealth's flagship land-grant university founded in 1855.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Commonwealth's flagship land-grant university founded in 1855."
         }
       ]
     },
@@ -1033,7 +1054,11 @@
       "id": "SID-000038",
       "name": {
         "raw": "Penn State Harrisburg",
-        "canonical": "Penn State Harrisburg"
+        "canonical": "Penn State Harrisburg",
+        "aliases": [
+          "The Capital College",
+          "Capitol Campus"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_swatara:penn_state_harrisburg",
@@ -1064,11 +1089,7 @@
         {
           "note_id": "NOT-000129",
           "note_type": "RESEARCH",
-          "text": "Established in 1966 on the decommissioned Olmsted Air Force Base.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Established in 1966 on the decommissioned Olmsted Air Force Base."
         }
       ]
     },
@@ -1076,7 +1097,11 @@
       "id": "SID-000039",
       "name": {
         "raw": "Southern New Hampshire University",
-        "canonical": "Southern New Hampshire University"
+        "canonical": "Southern New Hampshire University",
+        "aliases": [
+          "SNHU",
+          "New Hampshire College"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:nh:hillsborough:manchester:snhu",
@@ -1086,7 +1111,7 @@
         "address_line_1": "2500 N River Rd",
         "address_line_2": null,
         "city": "Manchester",
-        "state": "PA",
+        "state": "NH",
         "postal_code": "03106",
         "country": "USA"
       },

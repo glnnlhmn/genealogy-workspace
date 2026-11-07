@@ -1,16 +1,23 @@
 {
-  "_path": "data/intake/sites_churches.json",
-  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "_path": "data/setup/dev/sites/02_sites_churches.json",
+  "$schema": "https://gda.archive/schemas/intake/dev/sites_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "site_export",
-  "batch_id": "BATCH-SITE-CHURCHES",
+  "record_type": "SITE_IMPORT",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-SITE-02-CHURCHES",
+  "source_note": "Stage 02: Historical Anabaptist, Reformed, Lutheran, and Presbyterian church congregations.",
   "total_count": 13,
   "sites": [
     {
       "id": "SID-000040",
       "name": {
         "raw": "Saint Peter's Lutheran Church (Brick Church)",
-        "canonical": "Saint Peter's Lutheran Church"
+        "canonical": "Saint Peter's Lutheran Church",
+        "aliases": [
+          "Brick Church",
+          "Upper Frankford Brick Church",
+          "St. Peter's Brick Church"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:upper_frankford:brick_church",
@@ -42,11 +49,7 @@
         {
           "note_id": "NOT-000130",
           "note_type": "GENERAL",
-          "text": "Known colloquially throughout northern Cumberland County as the Brick Church; 19th-century church and cemetery on Brick Church Road.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Known colloquially throughout northern Cumberland County as the Brick Church; 19th-century church and cemetery on Brick Church Road."
         }
       ]
     },
@@ -54,7 +57,10 @@
       "id": "SID-000041",
       "name": {
         "raw": "Big Spring Presbyterian Church",
-        "canonical": "Big Spring Presbyterian Church"
+        "canonical": "Big Spring Presbyterian Church",
+        "aliases": [
+          "Big Spring Church"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:big_spring_presbyterian",
@@ -84,11 +90,7 @@
         {
           "note_id": "NOT-000131",
           "note_type": "GENERAL",
-          "text": "Organized in 1737; historic 1789 limestone sanctuary anchor for Scots-Irish settlers.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Organized in 1737; historic 1789 limestone sanctuary anchor for Scots-Irish settlers."
         }
       ]
     },
@@ -96,7 +98,10 @@
       "id": "SID-000042",
       "name": {
         "raw": "Zion Lutheran Church (Newville)",
-        "canonical": "Zion Lutheran Church (Newville)"
+        "canonical": "Zion Lutheran Church (Newville)",
+        "aliases": [
+          "Zion Evangelical Lutheran Church of Newville"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:zion_lutheran",
@@ -128,7 +133,11 @@
       "id": "SID-000043",
       "name": {
         "raw": "Heberlig Church of God",
-        "canonical": "Heberlig Church of God"
+        "canonical": "Heberlig Church of God",
+        "aliases": [
+          "Heberlig Bethel",
+          "Doubling Gap Church of God"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:upper_frankford:heberlig_church",
@@ -161,7 +170,10 @@
       "id": "SID-000044",
       "name": {
         "raw": "Historic Peace Church",
-        "canonical": "Historic Peace Church"
+        "canonical": "Historic Peace Church",
+        "aliases": [
+          "Old Peace Church"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:hampden:peace_church",
@@ -191,11 +203,7 @@
         {
           "note_id": "NOT-000132",
           "note_type": "GENERAL",
-          "text": "Built in 1798 as a Reformed and Lutheran union church; site of Civil War artillery observation in 1863.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Built in 1798 as a Reformed and Lutheran union church; site of Civil War artillery observation in 1863."
         }
       ]
     },
@@ -203,7 +211,10 @@
       "id": "SID-000045",
       "name": {
         "raw": "First Presbyterian Church (Carlisle)",
-        "canonical": "First Presbyterian Church (Carlisle)"
+        "canonical": "First Presbyterian Church (Carlisle)",
+        "aliases": [
+          "Carlisle Presbyterian Church on the Square"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:first_presbyterian",
@@ -235,7 +246,11 @@
       "id": "SID-000046",
       "name": {
         "raw": "Zion Lutheran Church (Penbrook)",
-        "canonical": "Zion Lutheran Church (Penbrook)"
+        "canonical": "Zion Lutheran Church (Penbrook)",
+        "aliases": [
+          "Zion Evangelical Lutheran Church",
+          "Zion Lutheran of Penbrook"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:penbrook:zion_lutheran",
@@ -266,11 +281,7 @@
         {
           "note_id": "NOT-000133",
           "note_type": "RESEARCH",
-          "text": "Venue of the 1961 wedding between Daniel W. Lehman Jr. and Karen L. Witmer officiated by Rev. Kendig Bergstresser.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Venue of the 1961 wedding between Daniel W. Lehman Jr. and Karen L. Witmer officiated by Rev. Kendig Bergstresser."
         }
       ]
     },
@@ -278,7 +289,8 @@
       "id": "SID-000047",
       "name": {
         "raw": "Lighthouse Baptist Church",
-        "canonical": "Lighthouse Baptist Church"
+        "canonical": "Lighthouse Baptist Church",
+        "aliases": []
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:lighthouse_baptist",
@@ -306,11 +318,7 @@
         {
           "note_id": "NOT-000134",
           "note_type": "RESEARCH",
-          "text": "Venue of the 2018 funeral service for Daniel W. Lehman Jr.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Venue of the 2018 funeral service for Daniel W. Lehman Jr."
         }
       ]
     },
@@ -318,7 +326,11 @@
       "id": "SID-000048",
       "name": {
         "raw": "First Church of the Brethren (Harrisburg)",
-        "canonical": "First Church of the Brethren (Harrisburg)"
+        "canonical": "First Church of the Brethren (Harrisburg)",
+        "aliases": [
+          "Harrisburg First Church of the Brethren",
+          "Hummel Street Brethren"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:first_church_of_the_brethren",
@@ -349,11 +361,7 @@
         {
           "note_id": "NOT-000135",
           "note_type": "GENERAL",
-          "text": "Longstanding urban Anabaptist Brethren congregation active in South Harrisburg.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Longstanding urban Anabaptist Brethren congregation active in South Harrisburg."
         }
       ]
     },
@@ -361,7 +369,10 @@
       "id": "SID-000049",
       "name": {
         "raw": "Hanoverdale Church of the Brethren",
-        "canonical": "Hanoverdale Church of the Brethren"
+        "canonical": "Hanoverdale Church of the Brethren",
+        "aliases": [
+          "Hanoverdale Brethren"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:west_hanover:hanoverdale_brethren",
@@ -393,7 +404,11 @@
       "id": "SID-000050",
       "name": {
         "raw": "Grace United Methodist Church",
-        "canonical": "Grace United Methodist Church"
+        "canonical": "Grace United Methodist Church",
+        "aliases": [
+          "Locust Street Methodist Episcopal Church",
+          "Grace Methodist"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:grace_methodist",
@@ -421,8 +436,8 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Locust Street Methodist Episcopal Church",
-          "canonical_name": "Locust Street Methodist Episcopal Church",
+          "raw": "Locust Street Methodist Episcopal Church",
+          "canonical": "Locust Street Methodist Episcopal Church",
           "status": "HISTORICAL"
         }
       ],
@@ -430,11 +445,7 @@
         {
           "note_id": "NOT-000136",
           "note_type": "GENERAL",
-          "text": "Historic State Street Methodist sanctuary; hosted state legislative sessions following the 1897 Capitol fire.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic State Street Methodist sanctuary; hosted state legislative sessions following the 1897 Capitol fire."
         }
       ]
     },
@@ -442,7 +453,10 @@
       "id": "SID-000051",
       "name": {
         "raw": "Christ Evangelical Lutheran Church",
-        "canonical": "Christ Evangelical Lutheran Church"
+        "canonical": "Christ Evangelical Lutheran Church",
+        "aliases": [
+          "Christ Lutheran of Allison Hill"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:christ_lutheran",
@@ -474,7 +488,10 @@
       "id": "SID-000052",
       "name": {
         "raw": "Colonial Park United Methodist Church",
-        "canonical": "Colonial Park United Methodist Church"
+        "canonical": "Colonial Park United Methodist Church",
+        "aliases": [
+          "Colonial Park Methodist"
+        ]
       },
       "category": "CHURCH",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:colonial_park_methodist",

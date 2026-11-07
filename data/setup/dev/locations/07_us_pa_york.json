@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/07_us_pa_york.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/07_us_pa_york.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-07-PA-YORK",
   "source_note": "Stage 07: York County PA key civil divisions.",
+  "total_count": 8,
   "locations": [
     {
       "id": "LOC-000176",
@@ -86,11 +87,7 @@
         {
           "note_id": "NOT-000046",
           "note_type": "GENERAL",
-          "text": "Temporary US capital (1777-1778) during Philadelphia occupation.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Temporary US capital (1777-1778) during Philadelphia occupation."
         }
       ]
     },

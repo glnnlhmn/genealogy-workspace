@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/04_us_pa_cumberland.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/04_us_pa_cumberland.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-04-PA-CUMBERLAND",
   "source_note": "Stage 04: Cumberland County PA comprehensive civil divisions (22 Townships, 11 Boroughs, 8 CDPs).",
+  "total_count": 41,
   "locations": [
     {
       "id": "LOC-000132",
@@ -15,7 +16,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["East Pennsboro Twp."],
+      "alternate_names": [
+        "East Pennsboro Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -27,7 +30,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Hampden Twp."],
+      "alternate_names": [
+        "Hampden Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -39,7 +44,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Silver Spring Twp."],
+      "alternate_names": [
+        "Silver Spring Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -51,7 +58,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Lower Allen Twp."],
+      "alternate_names": [
+        "Lower Allen Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -63,7 +72,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Upper Allen Twp."],
+      "alternate_names": [
+        "Upper Allen Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -75,7 +86,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Monroe Twp."],
+      "alternate_names": [
+        "Monroe Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -87,7 +100,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Middlesex Twp."],
+      "alternate_names": [
+        "Middlesex Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -99,7 +114,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["North Middleton Twp."],
+      "alternate_names": [
+        "North Middleton Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -111,7 +128,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["South Middleton Twp."],
+      "alternate_names": [
+        "South Middleton Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -123,7 +142,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Dickinson Twp."],
+      "alternate_names": [
+        "Dickinson Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -135,7 +156,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Penn Twp."],
+      "alternate_names": [
+        "Penn Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -147,7 +170,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Cooke Twp."],
+      "alternate_names": [
+        "Cooke Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -159,7 +184,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["West Pennsboro Twp."],
+      "alternate_names": [
+        "West Pennsboro Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -171,7 +198,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["North Newton Twp."],
+      "alternate_names": [
+        "North Newton Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -183,7 +212,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["South Newton Twp."],
+      "alternate_names": [
+        "South Newton Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -195,7 +226,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Hopewell Twp."],
+      "alternate_names": [
+        "Hopewell Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -207,7 +240,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Upper Mifflin Twp."],
+      "alternate_names": [
+        "Upper Mifflin Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -219,7 +254,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Lower Mifflin Twp."],
+      "alternate_names": [
+        "Lower Mifflin Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -231,7 +268,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Upper Frankford Twp."],
+      "alternate_names": [
+        "Upper Frankford Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -243,7 +282,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Lower Frankford Twp."],
+      "alternate_names": [
+        "Lower Frankford Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -255,7 +296,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Shippensburg Twp."],
+      "alternate_names": [
+        "Shippensburg Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -267,7 +310,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
-      "alternate_names": ["Southampton Twp."],
+      "alternate_names": [
+        "Southampton Twp."
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -294,7 +339,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Mechanicsburg"],
+      "alternate_names": [
+        "Borough of Mechanicsburg"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -306,7 +353,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Camp Hill"],
+      "alternate_names": [
+        "Borough of Camp Hill"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -318,7 +367,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Shippensburg"],
+      "alternate_names": [
+        "Borough of Shippensburg"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -330,7 +381,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Newville"],
+      "alternate_names": [
+        "Borough of Newville"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -342,7 +395,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of New Cumberland"],
+      "alternate_names": [
+        "Borough of New Cumberland"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -354,7 +409,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Lemoyne"],
+      "alternate_names": [
+        "Borough of Lemoyne"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -366,7 +423,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Wormleysburg"],
+      "alternate_names": [
+        "Borough of Wormleysburg"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -378,7 +437,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Shiremanstown"],
+      "alternate_names": [
+        "Borough of Shiremanstown"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -405,7 +466,9 @@
       "parent_id": "LOC-000031",
       "is_primary_local_authority": true,
       "is_unincorporated": false,
-      "alternate_names": ["Borough of Newburg"],
+      "alternate_names": [
+        "Borough of Newburg"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -417,7 +480,9 @@
       "parent_id": "LOC-000140",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["Boiling Springs CDP"],
+      "alternate_names": [
+        "Boiling Springs CDP"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -429,7 +494,9 @@
       "parent_id": "LOC-000139",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["Carlisle Barracks CDP"],
+      "alternate_names": [
+        "Carlisle Barracks CDP"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -441,7 +508,9 @@
       "parent_id": "LOC-000132",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["Enola CDP"],
+      "alternate_names": [
+        "Enola CDP"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -453,7 +522,9 @@
       "parent_id": "LOC-000135",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["Lower Allen CDP CDP"],
+      "alternate_names": [
+        "Lower Allen CDP CDP"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -465,7 +536,9 @@
       "parent_id": "LOC-000136",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["Messiah University CDP"],
+      "alternate_names": [
+        "Messiah University CDP"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -477,7 +550,9 @@
       "parent_id": "LOC-000134",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["New Kingstown CDP"],
+      "alternate_names": [
+        "New Kingstown CDP"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -489,7 +564,9 @@
       "parent_id": "LOC-000144",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["Plainfield CDP"],
+      "alternate_names": [
+        "Plainfield CDP"
+      ],
       "historical_names": [],
       "notes": []
     },
@@ -501,7 +578,9 @@
       "parent_id": "LOC-000132",
       "is_primary_local_authority": false,
       "is_unincorporated": true,
-      "alternate_names": ["West Fairview CDP"],
+      "alternate_names": [
+        "West Fairview CDP"
+      ],
       "historical_names": [],
       "notes": []
     }

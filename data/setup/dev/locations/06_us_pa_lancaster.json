@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/06_us_pa_lancaster.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/06_us_pa_lancaster.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-06-PA-LANCASTER",
   "source_note": "Stage 06: Lancaster County PA representative and historical civil divisions.",
+  "total_count": 13,
   "locations": [
     {
       "id": "LOC-000163",
@@ -128,11 +129,7 @@
         {
           "note_id": "NOT-000043",
           "note_type": "GENERAL",
-          "text": "Capital of the American colonies for one day: September 27, 1777.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Capital of the American colonies for one day: September 27, 1777."
         }
       ]
     },
@@ -152,11 +149,7 @@
         {
           "note_id": "NOT-000044",
           "note_type": "RESEARCH",
-          "text": "Settled in 1756 by the Moravian Church.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Settled in 1756 by the Moravian Church."
         }
       ]
     },
@@ -230,11 +223,7 @@
         {
           "note_id": "NOT-000045",
           "note_type": "GENERAL",
-          "text": "Established in 1726 by John Wright; Susquehanna River crossing point.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Established in 1726 by John Wright; Susquehanna River crossing point."
         }
       ]
     }

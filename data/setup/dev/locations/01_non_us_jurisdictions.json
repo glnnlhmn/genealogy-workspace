@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/01_non_us_jurisdictions.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/01_non_us_jurisdictions.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-01-NON-US",
   "source_note": "Stage 01: Non-US hierarchies (Scotland, Germany, Ireland ancestral parishes and burghs).",
+  "total_count": 13,
   "locations": [
     {
       "id": "LOC-000010",
@@ -30,11 +31,7 @@
         {
           "note_id": "NOT-000007",
           "note_type": "RESEARCH",
-          "text": "Constituent country of the United Kingdom.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Constituent country of the United Kingdom."
         }
       ]
     },
@@ -77,18 +74,14 @@
       "is_unincorporated": false,
       "alternate_names": [
         "Burgh of Thurso",
-        "Inbhir Theòrsa"
+        "Inbhir The\u00f2rsa"
       ],
       "historical_names": [],
       "notes": [
         {
           "note_id": "NOT-000057",
           "note_type": "RESEARCH",
-          "text": "Northernmost town on the Scottish mainland.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Northernmost town on the Scottish mainland."
         }
       ]
     },
@@ -103,7 +96,7 @@
       "alternate_names": [
         "Argyll",
         "County of Argyll",
-        "Earra-Ghàidheal"
+        "Earra-Gh\u00e0idheal"
       ],
       "historical_names": [],
       "notes": []
@@ -132,24 +125,20 @@
       "is_unincorporated": false,
       "alternate_names": [
         "Burgh of Dunoon",
-        "Dùn Omhan"
+        "D\u00f9n Omhan"
       ],
       "historical_names": [],
       "notes": [
         {
           "note_id": "NOT-000058",
           "note_type": "RESEARCH",
-          "text": "Historic town on the Cowal peninsula.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic town on the Cowal peninsula."
         }
       ]
     },
     {
       "id": "LOC-000215",
-      "name": "Baden-Württemberg",
+      "name": "Baden-W\u00fcrttemberg",
       "category": "STATOID",
       "canonical_urn": "urn:gda:loc:germany:baden_wuerttemberg",
       "parent_id": "LOC-000003",
@@ -161,8 +150,8 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Kingdom of Württemberg",
-          "canonical_name": "Kingdom of Württemberg",
+          "raw_name": "Kingdom of W\u00fcrttemberg",
+          "canonical_name": "Kingdom of W\u00fcrttemberg",
           "status": "HISTORICAL"
         }
       ],
@@ -198,11 +187,7 @@
         {
           "note_id": "NOT-000060",
           "note_type": "RESEARCH",
-          "text": "Black Forest parish origin for Johan Adam Lehman 1745 baptism.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Black Forest parish origin for Johan Adam Lehman 1745 baptism."
         }
       ]
     },
@@ -263,11 +248,7 @@
         {
           "note_id": "NOT-000061",
           "note_type": "RESEARCH",
-          "text": "Scots-Irish ancestral parish.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Scots-Irish ancestral parish."
         }
       ]
     }

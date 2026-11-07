@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/02_us_states.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/02_us_states.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-02-US-STATES",
   "source_note": "Stage 02: United States primary Statoids.",
+  "total_count": 10,
   "locations": [
     {
       "id": "LOC-000003",
@@ -32,11 +33,7 @@
         {
           "note_id": "NOT-000003",
           "note_type": "RESEARCH",
-          "text": "Chartered March 4, 1681; 2nd state to ratify Constitution.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Chartered March 4, 1681; 2nd state to ratify Constitution."
         }
       ]
     },
@@ -64,11 +61,7 @@
         {
           "note_id": "NOT-000004",
           "note_type": "RESEARCH",
-          "text": "Royal Colony established 1679; 9th state to ratify Constitution.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Royal Colony established 1679; 9th state to ratify Constitution."
         }
       ]
     },

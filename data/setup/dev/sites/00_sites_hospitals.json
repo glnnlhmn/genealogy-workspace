@@ -1,16 +1,22 @@
 {
-  "_path": "data/intake/sites_hospitals.json",
-  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "_path": "data/setup/dev/sites/00_sites_hospitals.json",
+  "$schema": "https://gda.archive/schemas/intake/dev/sites_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "site_export",
-  "batch_id": "BATCH-SITE-HOSPITALS",
+  "record_type": "SITE_IMPORT",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-SITE-00-HOSPITALS",
+  "source_note": "Stage 00: Regional hospital facilities and medical centers.",
   "total_count": 12,
   "sites": [
     {
       "id": "SID-000001",
       "name": {
         "raw": "Carlisle Hospital",
-        "canonical": "Carlisle Hospital"
+        "canonical": "Carlisle Hospital",
+        "aliases": [
+          "Carlisle Hospital (DOA)",
+          "Carlisle Hosp"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:carlisle_hospital",
@@ -41,11 +47,7 @@
         {
           "note_id": "NOT-000101",
           "note_type": "RESEARCH",
-          "text": "Original community hospital facility on W. Louther St; replaced in 2006.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Original community hospital facility on W. Louther St; replaced in 2006."
         }
       ]
     },
@@ -53,7 +55,10 @@
       "id": "SID-000002",
       "name": {
         "raw": "Carlisle Regional Medical Center",
-        "canonical": "Carlisle Regional Medical Center"
+        "canonical": "Carlisle Regional Medical Center",
+        "aliases": [
+          "UPMC Carlisle"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:carlisle_regional_medical_center",
@@ -83,11 +88,7 @@
         {
           "note_id": "NOT-000102",
           "note_type": "GENERAL",
-          "text": "Modern regional acute care facility replacing historic downtown Carlisle Hospital.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Modern regional acute care facility replacing historic downtown Carlisle Hospital."
         }
       ]
     },
@@ -95,7 +96,11 @@
       "id": "SID-000003",
       "name": {
         "raw": "Holy Spirit Hospital",
-        "canonical": "Holy Spirit Hospital"
+        "canonical": "Holy Spirit Hospital",
+        "aliases": [
+          "Penn State Health Holy Spirit Medical Center",
+          "Holy Spirit Medical Center"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:camp_hill:holy_spirit_hospital",
@@ -126,11 +131,7 @@
         {
           "note_id": "NOT-000103",
           "note_type": "GENERAL",
-          "text": "Founded in 1963 by the Sisters of Christian Charity; major West Shore hospital.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Founded in 1963 by the Sisters of Christian Charity; major West Shore hospital."
         }
       ]
     },
@@ -138,7 +139,10 @@
       "id": "SID-000004",
       "name": {
         "raw": "Seidle Memorial Hospital",
-        "canonical": "Seidle Memorial Hospital"
+        "canonical": "Seidle Memorial Hospital",
+        "aliases": [
+          "Penn State Health Seidle Memorial Hospital"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:mechanicsburg:seidle_memorial_hospital",
@@ -168,11 +172,7 @@
         {
           "note_id": "NOT-000104",
           "note_type": "GENERAL",
-          "text": "Established in 1936 through the bequest of Dr. Herman Seidle.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Established in 1936 through the bequest of Dr. Herman Seidle."
         }
       ]
     },
@@ -180,7 +180,10 @@
       "id": "SID-000005",
       "name": {
         "raw": "UPMC West Shore",
-        "canonical": "UPMC West Shore"
+        "canonical": "UPMC West Shore",
+        "aliases": [
+          "PinnacleHealth West Shore Hospital"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:hampden:upmc_west_shore",
@@ -212,7 +215,10 @@
       "id": "SID-000006",
       "name": {
         "raw": "Penn State Health Hampden Medical Center",
-        "canonical": "Penn State Health Hampden Medical Center"
+        "canonical": "Penn State Health Hampden Medical Center",
+        "aliases": [
+          "Hampden Medical Center"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:hampden:hampden_medical_center",
@@ -244,10 +250,14 @@
       "id": "SID-000007",
       "name": {
         "raw": "Dunham U.S. Army Health Clinic",
-        "canonical": "Dunham U.S. Army Health Clinic"
+        "canonical": "Dunham U.S. Army Health Clinic",
+        "aliases": [
+          "Dunham Army Clinic",
+          "Carlisle Barracks Hospital"
+        ]
       },
       "category": "HOSPITAL",
-      "canonical_urn": "urn:gda:loc:united_states:pennsylvania:cumberland:carlisle_barracks:dunham_clinic",
+      "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle_barracks:dunham_clinic",
       "location_id": "LOC-000225",
       "is_active": true,
       "address": {
@@ -275,11 +285,7 @@
         {
           "note_id": "NOT-000105",
           "note_type": "GENERAL",
-          "text": "Military clinic serving Carlisle Barracks and US Army War College personnel.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Military clinic serving Carlisle Barracks and US Army War College personnel."
         }
       ]
     },
@@ -287,7 +293,12 @@
       "id": "SID-000008",
       "name": {
         "raw": "Harrisburg Hospital",
-        "canonical": "Harrisburg Hospital"
+        "canonical": "Harrisburg Hospital",
+        "aliases": [
+          "Hbg Hospital",
+          "UPMC Harrisburg",
+          "Harrisburg City Hospital"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:harrisburg_hospital",
@@ -319,11 +330,7 @@
         {
           "note_id": "NOT-000106",
           "note_type": "RESEARCH",
-          "text": "Founded in 1873; primary acute downtown medical center on the Susquehanna.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Founded in 1873; primary acute downtown medical center on the Susquehanna."
         }
       ]
     },
@@ -331,7 +338,12 @@
       "id": "SID-000009",
       "name": {
         "raw": "Polyclinic Hospital",
-        "canonical": "Polyclinic Hospital"
+        "canonical": "Polyclinic Hospital",
+        "aliases": [
+          "Polyclinic Hos.",
+          "Harrisburg Polyclinic Medical Center",
+          "UPMC Polyclinic"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:polyclinic_hospital",
@@ -363,11 +375,7 @@
         {
           "note_id": "NOT-000107",
           "note_type": "RESEARCH",
-          "text": "Established in 1909 on 3rd Street; birth site for multiple generations of area families.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Established in 1909 on 3rd Street; birth site for multiple generations of area families."
         }
       ]
     },
@@ -375,7 +383,12 @@
       "id": "SID-000010",
       "name": {
         "raw": "Harrisburg State Hospital",
-        "canonical": "Harrisburg State Hospital"
+        "canonical": "Harrisburg State Hospital",
+        "aliases": [
+          "Hbg State Hospital",
+          "Hbg. State Hospital",
+          "State Hospital on the Hill"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:harrisburg_state_hospital",
@@ -404,8 +417,8 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Pennsylvania State Lunatic Hospital",
-          "canonical_name": "Pennsylvania State Lunatic Hospital",
+          "raw": "Pennsylvania State Lunatic Hospital",
+          "canonical": "Pennsylvania State Lunatic Hospital",
           "status": "HISTORICAL"
         }
       ],
@@ -413,11 +426,7 @@
         {
           "note_id": "NOT-000108",
           "note_type": "GENERAL",
-          "text": "Established in 1845 via advocacy of Dorothea Dix; closed in 2006.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Established in 1845 via advocacy of Dorothea Dix; closed in 2006."
         }
       ]
     },
@@ -425,7 +434,11 @@
       "id": "SID-000011",
       "name": {
         "raw": "Penn State Milton S. Hershey Medical Center",
-        "canonical": "Penn State Milton S. Hershey Medical Center"
+        "canonical": "Penn State Milton S. Hershey Medical Center",
+        "aliases": [
+          "Hershey Medical Center",
+          "Penn State Health Hershey"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:derry:hershey_medical_center",
@@ -456,11 +469,7 @@
         {
           "note_id": "NOT-000109",
           "note_type": "RESEARCH",
-          "text": "Major tertiary referral university hospital and College of Medicine.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Major tertiary referral university hospital and College of Medicine."
         }
       ]
     },
@@ -468,7 +477,11 @@
       "id": "SID-000012",
       "name": {
         "raw": "Community General Osteopathic Hospital",
-        "canonical": "Community General Osteopathic Hospital"
+        "canonical": "Community General Osteopathic Hospital",
+        "aliases": [
+          "UPMC Community Osteopathic",
+          "Community General Hospital"
+        ]
       },
       "category": "HOSPITAL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:community_general_osteopathic_hospital",
@@ -499,11 +512,7 @@
         {
           "note_id": "NOT-000110",
           "note_type": "GENERAL",
-          "text": "Primary osteopathic medical center on the East Shore.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Primary osteopathic medical center on the East Shore."
         }
       ]
     }

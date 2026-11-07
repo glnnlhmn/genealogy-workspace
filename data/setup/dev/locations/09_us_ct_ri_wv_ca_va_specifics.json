@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/09_us_ct_ri_wv_ca_va_specifics.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/09_us_ct_ri_wv_ca_va_specifics.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-09-SPECIFICS",
   "source_note": "Stage 09: Specific requested locations in CT, RI, WV, CA (VAFB), and VA.",
+  "total_count": 16,
   "locations": [
     {
       "id": "LOC-000088",
@@ -65,11 +66,7 @@
         {
           "note_id": "NOT-000034",
           "note_type": "GENERAL",
-          "text": "Created in 1820; seat at Berkeley Springs.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Created in 1820; seat at Berkeley Springs."
         }
       ]
     },
@@ -104,11 +101,7 @@
         {
           "note_id": "NOT-000035",
           "note_type": "RESEARCH",
-          "text": "Independent City in Virginia; functions as a county-equivalent.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Independent City in Virginia; functions as a county-equivalent."
         }
       ]
     },
@@ -132,11 +125,7 @@
         {
           "note_id": "NOT-000051",
           "note_type": "GENERAL",
-          "text": "Settled in 1646 by John Winthrop Jr.; home of US Coast Guard Academy.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Settled in 1646 by John Winthrop Jr.; home of US Coast Guard Academy."
         }
       ]
     },
@@ -156,11 +145,7 @@
         {
           "note_id": "NOT-000052",
           "note_type": "GENERAL",
-          "text": "Separated from New London in 1705; site of Battle of Groton Heights (1781).",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Separated from New London in 1705; site of Battle of Groton Heights (1781)."
         }
       ]
     },
@@ -180,11 +165,7 @@
         {
           "note_id": "NOT-000053",
           "note_type": "RESEARCH",
-          "text": "Incorporated city within the Town of Groton.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Incorporated city within the Town of Groton."
         }
       ]
     },
@@ -222,11 +203,7 @@
         {
           "note_id": "NOT-000054",
           "note_type": "GENERAL",
-          "text": "Major 18th-century colonial port city founded in 1639.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Major 18th-century colonial port city founded in 1639."
         }
       ]
     },
@@ -253,11 +230,7 @@
         {
           "note_id": "NOT-000055",
           "note_type": "RESEARCH",
-          "text": "Incorporated officially as Town of Bath in 1776, but known postally and colloquially as Berkeley Springs.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Incorporated officially as Town of Bath in 1776, but known postally and colloquially as Berkeley Springs."
         }
       ]
     },
@@ -315,11 +288,7 @@
         {
           "note_id": "NOT-000056",
           "note_type": "GENERAL",
-          "text": "Military installation established as Camp Cooke in 1941.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Military installation established as Camp Cooke in 1941."
         }
       ]
     },

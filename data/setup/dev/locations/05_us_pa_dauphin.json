@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/05_us_pa_dauphin.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/05_us_pa_dauphin.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-05-PA-DAUPHIN",
   "source_note": "Stage 05: Dauphin County PA comprehensive civil divisions (23 Townships, 17 Cities/Boroughs, 15 CDPs).",
+  "total_count": 55,
   "locations": [
     {
       "id": "LOC-000096",

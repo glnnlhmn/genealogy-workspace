@@ -1,16 +1,23 @@
 {
-  "_path": "data/intake/sites_cemeteries_and_landmarks.json",
-  "$schema": "https://genealogy.archive/schemas/intake/sites_import.schema.json",
+  "_path": "data/setup/dev/sites/03_sites_cemeteries_and_landmarks.json",
+  "$schema": "https://gda.archive/schemas/intake/dev/sites_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "site_export",
-  "batch_id": "BATCH-SITE-CEMETERIES-LANDMARKS",
+  "record_type": "SITE_IMPORT",
+  "created_at": "2026-11-04T12:00:00Z",
+  "batch_id": "BATCH-SITE-03-CEMETERIES-LANDMARKS",
+  "source_note": "Stage 03: Historic burial grounds, cemeteries, municipal courthouses, and historic landmarks.",
   "total_count": 12,
   "sites": [
     {
       "id": "SID-000053",
       "name": {
         "raw": "Shope's Mennonite Cemetery",
-        "canonical": "Shope's Mennonite Cemetery"
+        "canonical": "Shope's Mennonite Cemetery",
+        "aliases": [
+          "Shope's Cemetery",
+          "Strickler's Sister Cemetery",
+          "Middletown Mennonite Cemetery"
+        ]
       },
       "category": "CEMETERY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_swatara:shopes_mennonite_cemetery",
@@ -39,8 +46,8 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Shope's Meeting House Burial Ground",
-          "canonical_name": "Shope's Meeting House Burial Ground",
+          "raw": "Shope's Meeting House Burial Ground",
+          "canonical": "Shope's Meeting House Burial Ground",
           "status": "HISTORICAL"
         }
       ],
@@ -48,11 +55,7 @@
         {
           "note_id": "NOT-000137",
           "note_type": "RESEARCH",
-          "text": "Historical 1.8-acre Mennonite burial ground on Lumber Street in Middletown.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historical 1.8-acre Mennonite burial ground on Lumber Street in Middletown."
         }
       ]
     },
@@ -60,7 +63,12 @@
       "id": "SID-000054",
       "name": {
         "raw": "Shoop's Cemetery & Garden of Rest",
-        "canonical": "Shoop's Cemetery & Garden of Rest"
+        "canonical": "Shoop's Cemetery & Garden of Rest",
+        "aliases": [
+          "Shoop's Cemetery",
+          "Shoops Cemetery on US 22",
+          "Shoops Garden of Rest"
+        ]
       },
       "category": "CEMETERY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:shoops_cemetery",
@@ -89,8 +97,8 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Shoop's Church Burial Ground",
-          "canonical_name": "Shoop's Church Burial Ground",
+          "raw": "Shoop's Church Burial Ground",
+          "canonical": "Shoop's Church Burial Ground",
           "status": "HISTORICAL"
         }
       ],
@@ -98,11 +106,7 @@
         {
           "note_id": "NOT-000138",
           "note_type": "GENERAL",
-          "text": "Large historic cemetery bordering Route 22 / Jonestown Road in Colonial Park.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Large historic cemetery bordering Route 22 / Jonestown Road in Colonial Park."
         }
       ]
     },
@@ -110,7 +114,10 @@
       "id": "SID-000055",
       "name": {
         "raw": "Rolling Green Cemetery",
-        "canonical": "Rolling Green Cemetery"
+        "canonical": "Rolling Green Cemetery",
+        "aliases": [
+          "Rolling Green Memorial Park"
+        ]
       },
       "category": "CEMETERY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:camp_hill:rolling_green_cemetery",
@@ -140,11 +147,7 @@
         {
           "note_id": "NOT-000139",
           "note_type": "RESEARCH",
-          "text": "Burial site of Daniel W. Lehman Jr. (1941\u20132018).",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Burial site of Daniel W. Lehman Jr. (1941–2018)."
         }
       ]
     },
@@ -152,7 +155,11 @@
       "id": "SID-000056",
       "name": {
         "raw": "Prospect Hill Cemetery (Newville)",
-        "canonical": "Prospect Hill Cemetery (Newville)"
+        "canonical": "Prospect Hill Cemetery (Newville)",
+        "aliases": [
+          "Newville Cemetery",
+          "Prospect Hill Cemetery"
+        ]
       },
       "category": "CEMETERY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:prospect_hill_cemetery",
@@ -183,11 +190,7 @@
         {
           "note_id": "NOT-000140",
           "note_type": "RESEARCH",
-          "text": "Primary community cemetery for Newville; interments for William L. Lehman and Annie E. (Failor) Lehman.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Primary community cemetery for Newville; interments for William L. Lehman and Annie E. (Failor) Lehman."
         }
       ]
     },
@@ -195,7 +198,10 @@
       "id": "SID-000057",
       "name": {
         "raw": "Old Public Graveyard (Carlisle)",
-        "canonical": "Old Public Graveyard (Carlisle)"
+        "canonical": "Old Public Graveyard (Carlisle)",
+        "aliases": [
+          "Carlisle Old Graveyard"
+        ]
       },
       "category": "CEMETERY",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:old_public_graveyard",
@@ -225,11 +231,7 @@
         {
           "note_id": "NOT-000141",
           "note_type": "GENERAL",
-          "text": "Colonial burial ground; final resting place of Revolutionary heroine Molly Pitcher.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Colonial burial ground; final resting place of Revolutionary heroine Molly Pitcher."
         }
       ]
     },
@@ -237,7 +239,8 @@
       "id": "SID-000058",
       "name": {
         "raw": "Dauphin County Courthouse",
-        "canonical": "Dauphin County Courthouse"
+        "canonical": "Dauphin County Courthouse",
+        "aliases": []
       },
       "category": "GOVERNMENT",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:dauphin_county_courthouse",
@@ -265,11 +268,7 @@
         {
           "note_id": "NOT-000142",
           "note_type": "RESEARCH",
-          "text": "Art Deco courthouse housing register of wills, probate, deed registries, and vital records.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Art Deco courthouse housing register of wills, probate, deed registries, and vital records."
         }
       ]
     },
@@ -277,7 +276,10 @@
       "id": "SID-000059",
       "name": {
         "raw": "Cumberland County Courthouse",
-        "canonical": "Cumberland County Courthouse"
+        "canonical": "Cumberland County Courthouse",
+        "aliases": [
+          "Old Cumberland County Courthouse"
+        ]
       },
       "category": "GOVERNMENT",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:cumberland_county_courthouse",
@@ -307,11 +309,7 @@
         {
           "note_id": "NOT-000143",
           "note_type": "GENERAL",
-          "text": "Classic revival courthouse on the square bearing Confederate shell strikes from the 1863 bombardment.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Classic revival courthouse on the square bearing Confederate shell strikes from the 1863 bombardment."
         }
       ]
     },
@@ -319,7 +317,10 @@
       "id": "SID-000060",
       "name": {
         "raw": "Silver Spring Township Municipal Building",
-        "canonical": "Silver Spring Township Municipal Building"
+        "canonical": "Silver Spring Township Municipal Building",
+        "aliases": [
+          "Silver Spring Township Municipal Hall"
+        ]
       },
       "category": "GOVERNMENT",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:silver_spring:silver_spring_municipal_hall",
@@ -351,7 +352,10 @@
       "id": "SID-000061",
       "name": {
         "raw": "Central Dauphin School District Garage",
-        "canonical": "Central Dauphin School District Garage"
+        "canonical": "Central Dauphin School District Garage",
+        "aliases": [
+          "Central Dauphin Transportation Facility"
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:progress:cd_transportation_garage",
@@ -381,11 +385,7 @@
         {
           "note_id": "NOT-000144",
           "note_type": "RESEARCH",
-          "text": "Bus garage facility in Progress managed during Daniel W. Lehman Jr.'s tenure as transportation coordinator.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Bus garage facility in Progress managed during Daniel W. Lehman Jr.'s tenure as transportation coordinator."
         }
       ]
     },
@@ -393,7 +393,10 @@
       "id": "SID-000062",
       "name": {
         "raw": "J.B. Martin Motors",
-        "canonical": "J.B. Martin Motors"
+        "canonical": "J.B. Martin Motors",
+        "aliases": [
+          "J. B. Martin Motors Inc."
+        ]
       },
       "category": "FACILITY",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:jb_martin_motors",
@@ -425,7 +428,10 @@
       "id": "SID-000063",
       "name": {
         "raw": "Carlisle Barracks",
-        "canonical": "Carlisle Barracks"
+        "canonical": "Carlisle Barracks",
+        "aliases": [
+          "U.S. Army War College"
+        ]
       },
       "category": "LANDMARK",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle_barracks:carlisle_barracks_post",
@@ -455,11 +461,7 @@
         {
           "note_id": "NOT-000145",
           "note_type": "GENERAL",
-          "text": "Second-oldest active military post in the United States; established 1757.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Second-oldest active military post in the United States; established 1757."
         }
       ]
     },
@@ -467,7 +469,10 @@
       "id": "SID-000064",
       "name": {
         "raw": "Pine Grove Iron Furnace",
-        "canonical": "Pine Grove Iron Furnace"
+        "canonical": "Pine Grove Iron Furnace",
+        "aliases": [
+          "Pine Grove Furnace State Park"
+        ]
       },
       "category": "LANDMARK",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:cooke:pine_grove_furnace",
@@ -497,11 +502,7 @@
         {
           "note_id": "NOT-000146",
           "note_type": "GENERAL",
-          "text": "Historic 18th-century South Mountain charcoal iron plantation operating from 1764 to 1895.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic 18th-century South Mountain charcoal iron plantation operating from 1764 to 1895."
         }
       ]
     }

@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/08_us_nh_counties_and_towns.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/08_us_nh_counties_and_towns.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-08-NH",
   "source_note": "Stage 08: All 10 New Hampshire Counties plus Merrimack, Hillsborough, and Rockingham localities.",
+  "total_count": 21,
   "locations": [
     {
       "id": "LOC-000078",
@@ -23,11 +24,7 @@
         {
           "note_id": "NOT-000024",
           "note_type": "RESEARCH",
-          "text": "Organized in 1840 from Strafford and Merrimack counties; seat at Laconia.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Organized in 1840 from Strafford and Merrimack counties; seat at Laconia."
         }
       ]
     },
@@ -117,11 +114,7 @@
         {
           "note_id": "NOT-000030",
           "note_type": "RESEARCH",
-          "text": "Formed in 1823; seat at Concord (NH State Capital).",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Formed in 1823; seat at Concord (NH State Capital)."
         }
       ]
     },
@@ -183,11 +176,7 @@
         {
           "note_id": "NOT-000047",
           "note_type": "RESEARCH",
-          "text": "Granted in 1727; birthplace of Mary Baker Eddy.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Granted in 1727; birthplace of Mary Baker Eddy."
         }
       ]
     },
@@ -218,11 +207,7 @@
         {
           "note_id": "NOT-000048",
           "note_type": "RESEARCH",
-          "text": "Settled 1725; renamed Rumford in 1734 and Concord in 1765.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Settled 1725; renamed Rumford in 1734 and Concord in 1765."
         }
       ]
     },
@@ -361,11 +346,7 @@
         {
           "note_id": "NOT-000049",
           "note_type": "RESEARCH",
-          "text": "Largest municipality in northern New England; center of the Amoskeag textile mills.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Largest municipality in northern New England; center of the Amoskeag textile mills."
         }
       ]
     },
@@ -409,11 +390,7 @@
         {
           "note_id": "NOT-000050",
           "note_type": "RESEARCH",
-          "text": "Historic Atlantic colonial port settled in 1630; original provincial seat.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Historic Atlantic colonial port settled in 1630; original provincial seat."
         }
       ]
     }

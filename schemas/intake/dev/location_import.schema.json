@@ -1,11 +1,17 @@
 {
-  "_path": "schemas/dev/intake/location_import.schema.json",
+  "_path": "schemas/intake/dev/location_import.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
+  "$id": "https://gda.archive/schemas/intake/dev/location_import.schema.json",
   "title": "LocationImportEnvelope",
   "description": "Authoritative unified schema for bulk location intake and interchange archives.",
   "type": "object",
-  "required": ["schema_version", "locations"],
+  "required": [
+    "schema_version",
+    "record_type",
+    "created_at",
+    "total_count",
+    "locations"
+  ],
   "additionalProperties": false,
   "properties": {
     "schema_version": {
@@ -16,10 +22,12 @@
       "type": "string"
     },
     "record_type": {
-      "type": "string"
+      "type": "string",
+      "const": "LOCATION_IMPORT"
     },
     "created_at": {
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     },
     "source_note": {
       "type": "string"
@@ -33,7 +41,15 @@
       "description": "Authoritative list of civil jurisdictions and administrative territorial units.",
       "items": {
         "type": "object",
-        "required": ["id", "name", "category", "canonical_urn"],
+        "required": [
+          "id",
+          "name",
+          "category",
+          "canonical_urn",
+          "parent_id",
+          "is_primary_local_authority",
+          "is_unincorporated"
+        ],
         "additionalProperties": false,
         "properties": {
           "id": {
@@ -50,6 +66,7 @@
               {
                 "type": "object",
                 "required": ["raw", "canonical"],
+                "additionalProperties": false,
                 "properties": {
                   "raw": { "type": "string", "minLength": 1 },
                   "canonical": { "type": "string", "minLength": 1 },
@@ -114,6 +131,7 @@
             "items": {
               "type": "object",
               "required": ["raw_name", "canonical_name", "status"],
+              "additionalProperties": false,
               "properties": {
                 "raw_name": { "type": "string" },
                 "canonical_name": { "type": "string" },
@@ -135,6 +153,8 @@
           "period": {
             "type": ["object", "null"],
             "default": null,
+            "required": ["start_date"],
+            "additionalProperties": false,
             "properties": {
               "start_date": { "type": ["string", "object", "null"], "default": null },
               "end_date": { "type": ["string", "object", "null"], "default": null }
@@ -143,6 +163,7 @@
           "coordinates": {
             "type": ["object", "null"],
             "default": null,
+            "additionalProperties": false,
             "properties": {
               "latitude": { "type": "number", "minimum": -90.0, "maximum": 90.0 },
               "longitude": { "type": "number", "minimum": -180.0, "maximum": 180.0 }
@@ -159,7 +180,8 @@
                 },
                 {
                   "type": "object",
-                  "required": ["text"],
+                  "required": ["note_type", "text"],
+                  "additionalProperties": false,
                   "properties": {
                     "note_id": { "type": ["string", "null"], "pattern": "^NOT-[0-9]{6}$" },
                     "note_type": { "type": "string", "default": "GENERAL" },

@@ -1,11 +1,12 @@
 {
-  "_path": "data/intake/partitioned/00_root_countries.json",
-  "$schema": "https://genealogy.archive/schemas/intake/location_intake.schema.json",
+  "_path": "data/setup/dev/locations/00_root_countries.json",
+  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
   "schema_version": "1.0.0",
-  "record_type": "location_intake",
+  "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
   "batch_id": "BATCH-LOC-00-ROOT",
   "source_note": "Stage 00: Root sovereign nations.",
+  "total_count": 4,
   "locations": [
     {
       "id": "LOC-000001",
@@ -31,11 +32,7 @@
         {
           "note_id": "NOT-000001",
           "note_type": "GENERAL",
-          "text": "Sovereign federal republic established July 4, 1776.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Sovereign federal republic established July 4, 1776."
         }
       ]
     },
@@ -63,11 +60,7 @@
         {
           "note_id": "NOT-000002",
           "note_type": "GENERAL",
-          "text": "Formed via Acts of Union 1707 uniting England and Scotland.",
-          "audit": {
-            "created_at": "2026-11-04T12:00:00Z",
-            "updated_at": "2026-11-04T12:00:00Z"
-          }
+          "text": "Formed via Acts of Union 1707 uniting England and Scotland."
         }
       ]
     },
@@ -101,7 +94,7 @@
       "is_primary_local_authority": false,
       "is_unincorporated": false,
       "alternate_names": [
-        "Éire",
+        "\u00c9ire",
         "Republic of Ireland"
       ],
       "historical_names": [
