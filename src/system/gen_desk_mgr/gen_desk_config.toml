@@ -1,0 +1,40 @@
+# Path: src/system/gen_desk_mgr/gen_desk_config.toml
+
+[workspace]
+root = "G:/My Drive/genealogy-workspace"
+archive_dir = "archive"
+logs_dir = "logs"
+gtemp_dir = "gtemp"
+
+[logging]
+log_file = "logs/gen_desk_backup.log"
+log_level = "INFO"
+
+[code_domains]
+# Directories treated as production assets subject to mandatory automated pre-write backups
+protected_domains = [
+    "src",
+    "tests",
+    "schemas",
+    "data/setup"
+]
+
+[backup_routing]
+"src/gda" = "backups_gda"
+"tests/test_gda" = "backups_gda"
+"src/ancestry_desk" = "backups_ancestry_desk"
+"tests/test_ancestry_desk" = "backups_ancestry_desk"
+"src/cli" = "backups_cli"
+"tests/test_cli" = "backups_cli"
+"src/system" = "backups_system"
+"tests/test_system" = "backups_system"
+"schemas" = "backups_schemas"
+"data/setup" = "backups_data_setup"
+default = "backups_system"
+
+[retention]
+# Retention policies governing pruning of old Safe Backup snapshots (.bk)
+# max_versions: Maximum historical backup versions to retain per target file (0 = disable)
+max_versions = 5
+# max_age_days: Maximum age in days before a historical snapshot is pruned (0 = disable)
+max_age_days = 90

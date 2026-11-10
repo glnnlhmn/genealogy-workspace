@@ -1,45 +1,146 @@
-"""Path: src/system/gsi.py
+"""Path: src/system/gsi/gsi.py
 
 Genealogy Script Importer (GSI).
 
-Provides hermetic, zero-dependency intake automation for staged candidate files
-residing exclusively within the download/ staging directory. GSI inspects candidate
-headers, enforces the Safe Backup Protocol into project-specific archive destinations,
-prompts interactively for non-code assets, and supports optional contextual execution.
+Provides hermetic intake automation for staged candidate files residing
+within the configured download directory. GSI inspects candidate headers,
+enforces Safe Backup protocols configured via TOML, documents operations to
+a persistent log, and supports contextual execution and verification.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import shutil
 import subprocess
 import sys
-from datetime import datetime
+import tomllib
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
-__version__ = "1.4.0+build.r3"
+__version__ = "1.5.0+build.3"
 
 
-def get_workspace_root() -> Path:
+def load_gsi_config(config_path: Path | None = None) -> dict[str, Any]:
+    """Load and parse the GSI TOML configuration file.
+
+    Args:
+        config_path: Optional path to the TOML configuration file.
+
+    Returns:
+        dict[str, Any]: Parsed configuration dictionary.
+    """
+    if config_path is None:
+        config_path = Path(__file__).resolve().parent / "gsi_conf.toml"
+
+    default_config: dict[str, Any] = {
+        "workspace": {
+            "root": ".",
+            "download_dir": "download",
+            "logs_dir": "logs",
+            "reports_dir": "reports",
+            "gtemp_dir": "gtemp",
+            "archive_dir": "archive",
+        },
+        "logging": {
+            "log_file": "logs/gsi.log",
+            "log_level": "INFO",
+        },
+        "backup_routing": {
+            "src/gda": "backups_gda",
+            "tests/test_gda": "backups_gda",
+            "src/ancestry_desk": "backups_ancestry_desk",
+            "tests/test_ancestry_desk": "backups_ancestry_desk",
+            "src/cli": "backups_cli",
+            "tests/test_cli": "backups_cli",
+            "src/system": "backups_system",
+            "tests/test_system": "backups_system",
+            "schemas": "backups_schemas",
+            "data/setup": "backups_data_setup",
+            "default": "backups_system",
+        },
+        "code_domains": {
+            "protected_domains": ["src", "tests", "schemas", "data/setup"],
+        },
+    }
+
+    if config_path.exists() and config_path.is_file():
+        try:
+            with open(config_path, "rb") as fh:
+                loaded = tomllib.load(fh)
+                for sec, vals in loaded.items():
+                    if sec in default_config and isinstance(vals, dict):
+                        default_config[sec].update(vals)
+                    else:
+                        default_config[sec] = vals
+        except Exception as err:
+            print(f"Warning: Failed to parse {config_path}: {err}. Using defaults.")
+
+    return default_config
+
+
+def get_workspace_root(config: dict[str, Any]) -> Path:
     """Resolve and return the canonical workspace root directory.
+
+    Args:
+        config: Parsed configuration dictionary.
 
     Returns:
         Path: Absolute path to the repository workspace root.
     """
+    cfg_root = config.get("workspace", {}).get("root")
+    if cfg_root and cfg_root != ".":
+        root_path = Path(cfg_root).resolve()
+        if root_path.is_dir():
+            return root_path
+
     script_path = Path(__file__).resolve()
-    if len(script_path.parents) >= 3 and (script_path.parents[2] / "src").is_dir():
-        return script_path.parents[2]
+    for parent in script_path.parents:
+        if (parent / "src").is_dir() and (parent / "archive").is_dir():
+            return parent
+        if (parent / "pyproject.toml").is_file():
+            return parent
+
     return Path.cwd().resolve()
+
+
+def setup_gsi_logger(root_dir: Path, config: dict[str, Any]) -> logging.Logger:
+    """Configure standard GSI appending logger.
+
+    Args:
+        root_dir: Canonical workspace root directory.
+        config: Parsed configuration dictionary.
+
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
+    rel_log = config.get("logging", {}).get("log_file", "logs/gsi.log")
+    log_path = root_dir / Path(rel_log)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    logger = logging.getLogger("gsi")
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
+    logger.propagate = False
+
+    formatter = logging.Formatter(
+        "[%(asctime)s] [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    return logger
 
 
 def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, Path | None]:
     """Extract destination filename and target path from candidate headers.
-
-    Supports the Single-Field Header & Docstring Architecture,
-    Jupyter Notebook metadata, JSON envelope properties, and legacy top-level comment
-    declarations (# Name:, # Path:).
 
     Args:
         file_path: Staged file candidate inside download/.
@@ -47,7 +148,6 @@ def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, 
 
     Returns:
         tuple[str | None, Path | None]: (target_filename, resolved_destination_path).
-        Returns (None, None) if metadata is absent, malformed, or targets outside root.
     """
     try:
         content = file_path.read_text(encoding="utf-8")
@@ -86,21 +186,20 @@ def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, 
         except Exception:
             return None, None
 
-    elif suffix == ".json":
+    elif suffix in (".json", ".toml"):
         try:
-            head_block = "\n".join(content.splitlines()[:20])
-            name_json = re.search(r'"_?name"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE)
-            path_json = re.search(r'"_?path"\s*:\s*"([^"]+)"', head_block, re.IGNORECASE)
-            if name_json:
-                target_name = name_json.group(1).strip()
-            if path_json:
-                target_path_str = path_json.group(1).strip()
+            head_block = "\n".join(content.splitlines()[:25])
+            name_m = re.search(r'["\']?_?name["\']?\s*[:=]\s*["\']([^"\']+)["\']', head_block)
+            path_m = re.search(r'["\']?_?path["\']?\s*[:=]\s*["\']([^"\']+)["\']', head_block)
+            if name_m:
+                target_name = name_m.group(1).strip()
+            if path_m:
+                target_path_str = path_m.group(1).strip()
         except Exception:
             return None, None
 
     if not target_path_str:
-        head_block = "\n".join(content.splitlines()[:20])
-
+        head_block = "\n".join(content.splitlines()[:25])
         docstring_path_m = re.search(
             r'^(?:"""|\'\'\')[ \t]*Path:[ \t]*["\']?([^\r\n"\']+)["\']?',
             head_block,
@@ -129,12 +228,17 @@ def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, 
     if not target_path_str:
         return None, None
 
+    # Strip only trailing comment delimiters (""", ''', -->, */, or trailing XML comment markers --)
     target_path_str = (
-        re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_path_str).strip().strip("\"'")
+        re.sub(r'(?:[\s\-]*-->|[\s\-]*\*/|\s*"""|\s*\'\'\'|--+)\s*$', "", target_path_str)
+        .strip()
+        .strip("\"'")
     )
     if target_name:
         target_name = (
-            re.sub(r'[\s\-]*("""|\'\'\'|-->|\*/|-+).*$', "", target_name).strip().strip("\"'")
+            re.sub(r'(?:[\s\-]*-->|[\s\-]*\*/|\s*"""|\s*\'\'\'|--+)\s*$', "", target_name)
+            .strip()
+            .strip("\"'")
         )
 
     path_obj = Path(target_path_str)
@@ -155,77 +259,84 @@ def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, 
     return target_name, dest_path
 
 
-def _determine_backup_directory(dest_path: Path, root_dir: Path) -> Path:
-    """Determine the isolated archive backup folder for a destination path.
+def _determine_backup_directory(dest_path: Path, root_dir: Path, config: dict[str, Any]) -> Path:
+    """Determine the archive backup folder for a destination path using TOML rules.
 
     Args:
         dest_path: Canonical destination file path.
         root_dir: Canonical repository root directory.
+        config: Parsed configuration dictionary.
 
     Returns:
         Path: Target directory under archive/ where the backup must be placed.
     """
-    rel_parts = dest_path.relative_to(root_dir).parts
-    top_seg = rel_parts[0] if rel_parts else ""
-    sub_seg = rel_parts[1] if len(rel_parts) > 1 else ""
+    rel_path_str = dest_path.relative_to(root_dir).as_posix()
+    routing = config.get("backup_routing", {})
+    archive_dir_name = config.get("workspace", {}).get("archive_dir", "archive")
 
-    if top_seg == "src":
-        if sub_seg == "gda":
-            project = "backups_gda"
-        elif sub_seg == "ancestry_desk":
-            project = "backups_ancestry_desk"
-        elif sub_seg == "cli":
-            project = "backups_cli"
-        elif sub_seg in ("system", "sys"):
-            project = "backups_system"
-        else:
-            project = f"backups_{sub_seg}"
-    elif top_seg == "tests":
-        if sub_seg == "test_gda":
-            project = "backups_gda"
-        elif sub_seg == "test_ancestry_desk":
-            project = "backups_ancestry_desk"
-        elif sub_seg == "test_cli":
-            project = "backups_cli"
-        else:
-            project = "backups_system"
-    else:
-        project = "backups_system"
+    chosen_project = None
+    for prefix, project in routing.items():
+        if prefix != "default" and (
+            rel_path_str == prefix or rel_path_str.startswith(f"{prefix}/")
+        ):
+            chosen_project = project
+            break
+
+    if not chosen_project:
+        chosen_project = routing.get("default", "backups_system")
 
     parent_rel = dest_path.parent.relative_to(root_dir)
-    return root_dir / "archive" / project / parent_rel
+    return root_dir / archive_dir_name / chosen_project / parent_rel
 
 
-def _backup_destination(dest_path: Path, root_dir: Path) -> Path:
+def _backup_destination(
+    dest_path: Path, root_dir: Path, config: dict[str, Any], logger: logging.Logger
+) -> Path:
     """Create a timestamped backup of the destination file in the archive repository.
 
     Args:
         dest_path: Existing file about to be overwritten.
         root_dir: Canonical repository root directory.
+        config: Parsed configuration dictionary.
+        logger: Configured GSI logging instance.
 
     Returns:
         Path: Destination path of the created backup file.
     """
-    backup_folder = _determine_backup_directory(dest_path, root_dir)
+    backup_folder = _determine_backup_directory(dest_path, root_dir, config)
     backup_folder.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_file = backup_folder / f"{dest_path.name}.{ts}.bk"
+
+    ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    candidate_name = f"{dest_path.name}.{ts}.bk"
+    backup_file = backup_folder / candidate_name
+
+    counter = 1
+    while backup_file.exists():
+        backup_file = backup_folder / f"{dest_path.name}.{ts}_{counter}.bk"
+        counter += 1
+
     shutil.copy2(dest_path, backup_file)
+    backup_rel_posix = backup_file.relative_to(root_dir).as_posix()
+    logger.info(f"BACKUP_CREATED: {backup_rel_posix}")
     return backup_file
 
 
-def _is_code_domain(dest_path: Path, root_dir: Path) -> bool:
-    """Check if destination resides within production code or test suites.
+def _is_protected_domain(dest_path: Path, root_dir: Path, config: dict[str, Any]) -> bool:
+    """Check if destination resides within configured protected domains.
 
     Args:
         dest_path: Destination path being evaluated.
         root_dir: Repository root directory.
+        config: Parsed configuration dictionary.
 
     Returns:
-        bool: True if destination is under src/ or tests/; False otherwise.
+        bool: True if destination requires automatic pre-write backup; False otherwise.
     """
-    rel = dest_path.relative_to(root_dir)
-    return rel.parts[0] in ("src", "tests")
+    rel_posix = dest_path.relative_to(root_dir).as_posix()
+    protected = config.get("code_domains", {}).get(
+        "protected_domains", ["src", "tests", "schemas", "data/setup"]
+    )
+    return any(rel_posix == p or rel_posix.startswith(f"{p}/") for p in protected)
 
 
 def _prompt_user_yes_no(question: str) -> bool:
@@ -235,7 +346,7 @@ def _prompt_user_yes_no(question: str) -> bool:
         question: Message string displayed to the user.
 
     Returns:
-        bool: True if user enters 'y' or 'yes' (case-insensitive); False otherwise.
+        bool: True if user enters 'y' or 'yes'; False otherwise.
     """
     print(f"{question} (y/n): ", end="", flush=True)
     response = sys.stdin.readline().strip().lower()
@@ -243,15 +354,7 @@ def _prompt_user_yes_no(question: str) -> bool:
 
 
 def _execute_python(path: Path, root_dir: Path) -> int:
-    """Execute a Python file or pytest target.
-
-    Args:
-        path: Absolute path to the Python target.
-        root_dir: Repository root directory.
-
-    Returns:
-        int: Subprocess exit code.
-    """
+    """Execute Python target or test."""
     name = path.name.lower()
     if name.startswith("test_") or name.endswith("_test.py"):
         cmd = [sys.executable, "-m", "pytest", str(path), "-v"]
@@ -261,53 +364,18 @@ def _execute_python(path: Path, root_dir: Path) -> int:
     return res.returncode
 
 
-def _execute_powershell(path: Path, root_dir: Path) -> int:
-    """Execute a PowerShell script.
-
-    Args:
-        path: Absolute path to the PowerShell target.
-        root_dir: Repository root directory.
-
-    Returns:
-        int: Subprocess exit code.
-    """
-    cmd = ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", str(path)]
-    res = subprocess.run(cmd, cwd=str(root_dir))
-    return res.returncode
-
-
-def _execute_bash(path: Path, root_dir: Path) -> int:
-    """Execute a Bash script.
-
-    Args:
-        path: Absolute path to the shell script target.
-        root_dir: Repository root directory.
-
-    Returns:
-        int: Subprocess exit code.
-    """
-    cmd = ["bash", str(path)]
-    res = subprocess.run(cmd, cwd=str(root_dir))
-    return res.returncode
-
-
 def _execute_target(path: Path, root_dir: Path) -> int:
-    """Dispatch file execution based on file extension.
-
-    Args:
-        path: Absolute path to the relocated target.
-        root_dir: Repository root directory.
-
-    Returns:
-        int: Subprocess exit code, or 0 if non-executable.
-    """
+    """Dispatch file execution based on file extension."""
     ext = path.suffix.lower()
     if ext == ".py":
         return _execute_python(path, root_dir)
     if ext == ".ps1":
-        return _execute_powershell(path, root_dir)
+        return subprocess.run(
+            ["powershell.exe", "-ExecutionPolicy", "Bypass", "-File", str(path)],
+            cwd=str(root_dir),
+        ).returncode
     if ext == ".sh":
-        return _execute_bash(path, root_dir)
+        return subprocess.run(["bash", str(path)], cwd=str(root_dir)).returncode
 
     print(f"Notice: Non-executable file type '{ext}' cannot be executed directly: {path.name}")
     return 0
@@ -318,20 +386,29 @@ def run_intake(
     run_target: bool = False,
     clean: bool = False,
     prefix: str | None = None,
+    config_path: Path | None = None,
 ) -> int:
-    """Execute the GSI intake workflow against download/ staged assets.
+    """Execute the GSI intake workflow against configured download staged assets.
 
     Args:
-        force: If True, bypass backups on code and bypass confirmation prompts.
+        force: If True, bypass backups and prompts, logging force mode execution.
         run_target: If True, invoke contextual execution on relocated targets.
-        clean: If True, prompt to purge unparseable candidate files.
-        prefix: Optional filename prefix filter (defaults to None, matching all files).
+        clean: If True, prompt to purge unparseable candidate files in download.
+        prefix: Optional filename prefix filter.
+        config_path: Optional path to custom gsi_conf.toml.
 
     Returns:
-        int: Exit status code (0 for success, non-zero for failures).
+        int: Exit status code (0 for success, non-zero for failure).
     """
-    root_dir = get_workspace_root()
-    download_dir = root_dir / "download"
+    config = load_gsi_config(config_path)
+    root_dir = get_workspace_root(config)
+    logger = setup_gsi_logger(root_dir, config)
+
+    if force:
+        logger.warning("EXECUTION_MODE: FORCE=TRUE (Backups bypassed for protected domains)")
+
+    download_dir_name = config.get("workspace", {}).get("download_dir", "download")
+    download_dir = root_dir / download_dir_name
 
     if not download_dir.is_dir():
         print(f"Error: Download directory not found at {download_dir}")
@@ -356,7 +433,7 @@ def run_intake(
         if not target_name or not dest_path:
             if clean:
                 confirmed = force or _prompt_user_yes_no(
-                    f"Delete unparseable file '{candidate.name}' from download/?"
+                    f"Delete unparseable file '{candidate.name}' from {download_dir_name}/?"
                 )
                 if confirmed:
                     candidate.unlink(missing_ok=True)
@@ -366,9 +443,9 @@ def run_intake(
             continue
 
         if dest_path.is_file():
-            if _is_code_domain(dest_path, root_dir):
+            if _is_protected_domain(dest_path, root_dir, config):
                 if not force:
-                    _backup_destination(dest_path, root_dir)
+                    _backup_destination(dest_path, root_dir, config, logger)
             else:
                 if not force:
                     confirmed = _prompt_user_yes_no(f"Overwrite destination '{dest_path.name}'?")
@@ -378,8 +455,9 @@ def run_intake(
 
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(candidate), str(dest_path))
-        rel_dest_display = str(dest_path.relative_to(root_dir))
-        moved_files.append(rel_dest_display)
+        rel_dest_posix = dest_path.relative_to(root_dir).as_posix()
+        moved_files.append(rel_dest_posix)
+        logger.info(f"FILE_CREATED: {rel_dest_posix}")
 
         if run_target:
             code = _execute_target(dest_path, root_dir)
@@ -398,11 +476,7 @@ def run_intake(
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Parse command-line arguments and run the GSI pipeline.
-
-    Args:
-        argv: Optional argument list override for testing. Defaults to sys.argv[1:].
-    """
+    """Parse command-line arguments and run the GSI pipeline."""
     parser = argparse.ArgumentParser(
         prog="gsi",
         description="Genealogy Script Importer (GSI) - Hermetic Intake Automation",
@@ -434,7 +508,13 @@ def main(argv: list[str] | None = None) -> None:
         "--prefix",
         type=str,
         default=None,
-        help="Optional prefix filter to only process files matching a specific prefix (e.g. 'gemini').",
+        help="Optional prefix filter to only process files matching a specific prefix.",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to custom gsi_conf.toml configuration file.",
     )
 
     args = parser.parse_args(argv)
@@ -443,6 +523,7 @@ def main(argv: list[str] | None = None) -> None:
         run_target=args.run,
         clean=args.clean,
         prefix=args.prefix,
+        config_path=args.config,
     )
     sys.exit(status)
 

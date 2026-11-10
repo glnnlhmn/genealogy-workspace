@@ -1,4 +1,4 @@
-"""Path: src/system/gen_readme.py
+"""Path: src/system/gen_readme/gen_readme.py
 
 Dynamic package documentation generator driven by external TOML configuration.
 
@@ -16,13 +16,31 @@ import ast
 import sys
 import tomllib
 from pathlib import Path
+from typing import Any
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "gen_readme.toml"
 
 
-def load_configuration(config_file: Path) -> tuple[Path, list[dict[str, str]]]:
+def resolve_workspace_root(cfg_root: str | None = None) -> Path:
+    """Resolve canonical repository root dynamically without hardcoded dependencies."""
+    if cfg_root and cfg_root != ".":
+        candidate = Path(cfg_root).resolve()
+        if candidate.is_dir():
+            return candidate
+
+    script_path = Path(__file__).resolve()
+    for parent in script_path.parents:
+        if (parent / "src").is_dir() and (parent / "archive").is_dir():
+            return parent
+        if (parent / "pyproject.toml").is_file():
+            return parent
+
+    return Path.cwd().resolve()
+
+
+def load_configuration(config_file: Path) -> tuple[Path, list[dict[str, Any]]]:
     """Load default root path and package definitions from TOML configuration."""
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_file}")
@@ -31,8 +49,8 @@ def load_configuration(config_file: Path) -> tuple[Path, list[dict[str, str]]]:
         data = tomllib.load(f)
 
     root_raw = data.get("default_root", ".")
-    root_path = Path(root_raw)
-    packages: list[dict[str, str]] = data.get("packages", [])
+    root_path = resolve_workspace_root(root_raw)
+    packages: list[dict[str, Any]] = data.get("packages", [])
     return root_path, packages
 
 
@@ -52,31 +70,37 @@ def extract_module_metadata(file_path: Path) -> dict[str, str]:
             clean_lines = [
                 line.strip()
                 for line in doc.splitlines()
-                if line.strip() and not line.strip().startswith("Path:")
+                if line.strip() and not line.strip().startswith(("Path:", "Name:", "<!--", "-->"))
             ]
             if clean_lines:
                 metadata["description"] = clean_lines[0]
 
         for node in parsed.body:
+            # Handle standard and annotated assignments (__version__, __all__)
+            targets: list[ast.expr] = []
+            value: ast.expr | None = None
+
             if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name):
-                        if target.id == "__version__" and isinstance(node.value, ast.Constant):
-                            metadata["version"] = str(node.value.value)
-                        elif target.id == "__all__" and isinstance(node.value, ast.List):
-                            names = [
-                                elt.value
-                                for elt in node.value.elts
-                                if isinstance(elt, ast.Constant)
-                            ]
-                            metadata["all_exports"] = ", ".join(f"`{n}`" for n in names)
+                targets = node.targets
+                value = node.value
+            elif isinstance(node, ast.AnnAssign):
+                targets = [node.target]
+                value = node.value
+
+            for target in targets:
+                if isinstance(target, ast.Name) and value is not None:
+                    if target.id == "__version__" and isinstance(value, ast.Constant):
+                        metadata["version"] = str(value.value)
+                    elif target.id == "__all__" and isinstance(value, ast.List):
+                        names = [elt.value for elt in value.elts if isinstance(elt, ast.Constant)]
+                        metadata["all_exports"] = ", ".join(f"`{n}`" for n in names)
     except Exception as exc:
         metadata["description"] = f"Extraction error: {exc}"
 
     return metadata
 
 
-def generate_package_readme(pkg_info: dict[str, str], root_path: Path) -> str:
+def generate_package_readme(pkg_info: dict[str, Any], root_path: Path) -> str:
     """Generate standardized Markdown documentation for a package directory."""
     pkg_dir = root_path / pkg_info["path"]
     py_files = sorted(
@@ -103,12 +127,20 @@ def generate_package_readme(pkg_info: dict[str, str], root_path: Path) -> str:
         lines.append("## Subpackages")
         for subdir in subdirs:
             init_file = subdir / "__init__.py"
+            sub_readme = subdir / "README.md"
             desc = "Subpackage domain entities and enumerations."
             if init_file.exists():
                 meta = extract_module_metadata(init_file)
                 if meta["description"] != "No description available.":
                     desc = meta["description"]
-            lines.append(f"- **`{subdir.name}/`**: {desc}")
+
+            # Provide clickable link if child README exists
+            link_label = (
+                f"[{subdir.name}/]({subdir.name}/README.md)"
+                if sub_readme.is_file()
+                else f"`{subdir.name}/`"
+            )
+            lines.append(f"- **{link_label}**: {desc}")
         lines.append("")
 
     lines.extend(
@@ -137,7 +169,7 @@ def generate_package_readme(pkg_info: dict[str, str], root_path: Path) -> str:
 
     lines.append("")
     lines.append("---")
-    lines.append("Generated dynamically by `src/system/gen_readme.py`.")
+    lines.append("Generated dynamically by `src/system/gen_readme/gen_readme.py`.")
     lines.append("")
 
     return "\n".join(lines)
@@ -171,6 +203,7 @@ def prompt_overwrite(target_file: Path) -> str:
 def run(
     target: str | None = None,
     force: bool = False,
+    verbose: bool = False,
     config_path: Path = DEFAULT_CONFIG_PATH,
 ) -> int:
     """Core execution engine for README generation."""
@@ -185,13 +218,11 @@ def run(
         target_norm = target.strip().replace("\\", "/").rstrip("/")
         packages = [p for p in all_packages if p["path"] == target_norm]
         if not packages:
-            # Check if target is a path to an existing directory
             resolved_dir = Path(target_norm)
             if not resolved_dir.is_absolute():
                 resolved_dir = root_path / target_norm
 
             if resolved_dir.is_dir():
-                # Synthesize on-the-fly entry for an unconfigured directory
                 rel_path = target_norm
                 packages = [
                     {
@@ -214,14 +245,16 @@ def run(
     for pkg in packages:
         target_dir = root_path / pkg["path"]
         if not target_dir.exists():
-            print(f"[SKIP] Directory not found: {target_dir}")
+            if verbose:
+                print(f"[SKIP] Directory not found: {target_dir}")
             continue
 
         readme_file = target_dir / "README.md"
         if readme_file.exists() and not overwrite_all:
             decision = prompt_overwrite(readme_file)
             if decision == "n":
-                print(f"[SKIP] User declined overwrite: {readme_file}")
+                if verbose:
+                    print(f"[SKIP] User declined overwrite: {readme_file}")
                 continue
             if decision == "a":
                 overwrite_all = True
@@ -237,10 +270,11 @@ def run(
     return 0
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     """CLI orchestrator entrypoint."""
     parser = argparse.ArgumentParser(
-        description="Dynamic package documentation generator driven by external TOML configuration."
+        prog="gen_readme",
+        description="Dynamic package documentation generator driven by external TOML configuration.",
     )
     parser.add_argument(
         "target_pos",
@@ -263,16 +297,27 @@ def main() -> None:
         help="Force overwrite of all existing README.md files without interactive prompting.",
     )
     parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Display detailed per-file skip and processing notices.",
+    )
+    parser.add_argument(
         "-c",
         "--config",
         type=Path,
         default=DEFAULT_CONFIG_PATH,
         help="Path to custom TOML configuration file.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     target_selected = args.target_opt or args.target_pos
-    exit_code = run(target=target_selected, force=args.force, config_path=args.config)
+    exit_code = run(
+        target=target_selected,
+        force=args.force,
+        verbose=args.verbose,
+        config_path=args.config,
+    )
     sys.exit(exit_code)
 
 

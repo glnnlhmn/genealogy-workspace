@@ -1,7 +1,7 @@
-# Path: src/system/gen_readme.toml
+# Path: src/system/gen_readme/gen_readme.toml
 # Authoritative package documentation registry for gen_readme.py
 
-default_root = "G:/My Drive/genealogy-workspace"
+default_root = "."
 
 # ==============================================================================
 # 1. System Administration & Workstation Automation
@@ -11,6 +11,20 @@ default_root = "G:/My Drive/genealogy-workspace"
 path = "src/system"
 title = "System Administration & Automation (src/system)"
 role = "Workstation administration, developer environment onboarding, Git hook deployment, dynamic documentation generation, and automated intake pipelines."
+test_path = "tests/test_system"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/system/gen_readme"
+title = "Dynamic Package Documentation Generator (src/system/gen_readme)"
+role = "Inspects Python package modules via AST parsing and generates standardized, authoritative README.md documentation suites."
+test_path = "tests/test_system"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/system/util"
+title = "System Developer Utilities (src/system/util)"
+role = "Workstation diagnostic utilities, test gap extractors, and environment configuration helpers."
 test_path = "tests/test_system"
 quality_gate = "100.0% Statement & Branch Coverage"
 
@@ -129,13 +143,6 @@ path = "src/gda/io"
 title = "I/O, Safe Backup & Persistence Infrastructure (src/gda/io)"
 role = "Governs physical filesystem interactions, line-ending preserving UTF-8 file access, atomic temporary staging, and automated pre-execution Safe Backups."
 test_path = "tests/test_gda/test_io"
-quality_gate = ">= 95.0% Statement & Branch Coverage"
-
-[[packages]]
-path = "src/gda/types"
-title = "Data Types & Primitives (src/gda/types)"
-role = "Foundational scalar primitives, string constraints, and custom Pydantic validators."
-test_path = "tests/test_gda/test_types"
 quality_gate = ">= 95.0% Statement & Branch Coverage"
 
 [[packages]]
