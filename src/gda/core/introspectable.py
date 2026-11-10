@@ -1,8 +1,6 @@
-# Name: introspectable.py
-# Path: src/gda/core/introspectable.py
-# Version: 1.0.0+build.r4
+"""Path: src/gda/core/introspectable.py
 
-"""Provide centralized runtime introspection mixin for self-documenting archive components.
+Runtime introspection mixin for self-documenting archive components.
 
 Operational Role:
     Provides class- and instance-level runtime discovery for domain classes.
@@ -22,7 +20,7 @@ from typing import Any
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.5"
 
 
 class _HybridHelpDescriptor:

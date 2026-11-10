@@ -1,18 +1,14 @@
-# Name: __init__.py
-# Path: src/gda/__init__.py
-# Version: 1.0.0+build.r1
-"""Module stub for __init__.py."""
+"""Path: src/gda/__init__.py
 
-import sys
+Genealogy Digital Archive (GDA) core domain framework package.
 
-__version__ = "1.0.0+build.r1"
+Operational Role:
+    Root package initializer for core framework subpackages including core,
+    enums, types, io, util, model, entity, manager, engine, and db.
+"""
 
+from __future__ import annotations
 
-def main() -> None:
-    """Entry point stub."""
-    print("Not implemented: __init__.py")
-    sys.exit(0)
+__version__ = "1.0.0+build.2"
 
-
-if __name__ == "__main__":
-    main()
+__all__: list[str] = []

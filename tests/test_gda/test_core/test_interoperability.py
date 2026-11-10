@@ -1,18 +1,16 @@
-# Name: test_interoperability.py
-# Path: tests/test_gda/test_core/test_interoperability.py
-# Version: 1.0.0+build.r4
+"""Path: tests/test_gda/test_core/test_interoperability.py
 
-"""Integration verification suite for GDA Core component interoperability.
+Integration verification suite for GDA Core component interoperability.
 
 Operational Role:
     Validates cross-module integration across gda.core primitives:
     configuration-driven logger initialization, exception payload capture
     in JSON logging pipelines, validation error mapping during config parsing,
-    and introspection mixin discovery across core classes.
+    temporal date validation, cryptographic hashing, and introspection mixin discovery.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 cross-subsystem workflow and contract mapping.
-    - Fully decorated: @pytest.mark.integration and @pytest.mark.smoke applied throughout.
+    - Fully decorated: Strictly unit and integration markers.
     - Dependencies: Isolated tmp_path sandboxes, zero production disk mutations.
 """
 
@@ -33,15 +31,13 @@ from gda.core import (
     LoggingConfig,
 )
 
-__version__ = "1.0.0+build.r4"
+__version__ = "1.0.0+build.7"
 
 # ==============================================================================
 # GROUP 1: PUBLIC EXPORT & IMPORT BOUNDARIES
-# Note: Validates clean package exports and absence of circular imports
 # ==============================================================================
 
 
-@pytest.mark.smoke
 @pytest.mark.unit
 def test_core_package_exports_expected_symbols() -> None:
     """Verify gda.core exports all canonical primitives via __all__."""
@@ -52,11 +48,37 @@ def test_core_package_exports_expected_symbols() -> None:
         "ConfigValidationError",
         "ConsoleFormatter",
         "DatabaseConfig",
+        "ENTITY_ID_PATTERNS",
         "GDALogger",
         "GenealogyDeskError",
+        "ISO_DATE_FMT",
+        "ISO_DATE_PATTERN",
+        "ISO_DATE_REGEX",
+        "ISO_MONTH_FMT",
+        "ISO_TIMESTAMP_FMT",
+        "ISO_TIMESTAMP_PATTERN",
+        "ISO_TIMESTAMP_REGEX",
+        "ISO_YEAR_FMT",
+        "ImmutableBaseModel",
         "IntrospectableMixin",
         "JsonFormatter",
         "LoggingConfig",
+        "ModelError",
+        "ModelFormatError",
+        "ModelPrefixMismatchError",
+        "ModelRangeError",
+        "SHA256_PATTERN",
+        "SHA256_REGEX",
+        "UUID_V4_PATTERN",
+        "UUID_V4_REGEX",
+        "format_utc_timestamp",
+        "is_valid_sha256",
+        "parse_iso_date_parts",
+        "sha256_bytes",
+        "sha256_file",
+        "sha256_text",
+        "validate_iso_date",
+        "validate_iso_timestamp",
     }
     assert set(gda.core.__all__) == expected_symbols
     for symbol in expected_symbols:
@@ -65,7 +87,6 @@ def test_core_package_exports_expected_symbols() -> None:
 
 # ==============================================================================
 # GROUP 2: CONFIGURATION & LOGGING INTEGRATION
-# Note: Validates GDALogger lifecycle governed by AppConfig and LoggingConfig
 # ==============================================================================
 
 
@@ -98,7 +119,6 @@ def test_logger_initializes_from_loaded_app_config(tmp_path: Path) -> None:
 
 # ==============================================================================
 # GROUP 3: ERROR HIERARCHY & LOGGING INTEGRATION
-# Note: Validates structured serialization of GenealogyDeskError via JSON logs
 # ==============================================================================
 
 
@@ -135,7 +155,6 @@ def test_logger_serializes_config_validation_error_structure(tmp_path: Path) -> 
 
 # ==============================================================================
 # GROUP 4: CONFIGURATION PARSER & ERROR INTEGRATION
-# Note: Validates translation of parse failures into canonical error instances
 # ==============================================================================
 
 
@@ -158,7 +177,6 @@ def test_app_config_load_maps_invalid_toml_to_config_parse_error(
 
 # ==============================================================================
 # GROUP 5: INTROSPECTION COMPOSITION
-# Note: Validates IntrospectableMixin composition on core services
 # ==============================================================================
 
 

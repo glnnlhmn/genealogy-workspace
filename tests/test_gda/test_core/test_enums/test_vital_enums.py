@@ -1,10 +1,11 @@
-"""Path: tests/test_gda/test_enums/test_vital_enums.py
+"""Path: tests/test_gda/test_core/test_enums/test_vital_enums.py
 
 Targeted behavioral test suite verifying demographic and vital event enums.
 
 Operational Role:
-    Verifies NameStatus onomastic categories, domestic union models,
-    pedigree relations, and mortal disposition classifications.
+    Verifies HistoricNameType onomastic categories, domestic union models,
+    pedigree relations, mortal disposition classifications, and vital condition
+    modifiers (VitalModifier).
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 verification per behavioral contract.
@@ -16,42 +17,43 @@ from __future__ import annotations
 
 import pytest
 
-from gda.enums.vital import (
+from gda.core.enums.vital import (
     BirthPlurality,
     DispositionType,
     DivorceDecreeType,
+    HistoricNameType,
     LegalPlaintiff,
     MannerOfDeath,
     MaritalHistoryDissolution,
     MaritalStatus,
-    NameStatus,
     PedigreeType,
     UnionDissolutionType,
     UnionType,
+    VitalModifier,
 )
 
-__version__ = "0.1.0+build.1"
+__version__ = "1.0.0+build.4"
+
 
 # ==============================================================================
-# GROUP 1: NameStatus Onomastic Classifications
-# Note: Verification of personal name categorization
+# GROUP 1: HistoricNameType Onomastic Classifications
 # ==============================================================================
 
 
 @pytest.mark.unit
 @pytest.mark.smoke
-def test_name_status_enum_members() -> None:
-    """Verify NameStatus includes all cultural and historical name classifications."""
-    assert NameStatus.PRIMARY == "PRIMARY"
-    assert NameStatus.HISTORICAL == "HISTORICAL"
-    assert NameStatus.COLLOQUIAL == "COLLOQUIAL"
-    assert NameStatus.COLONIAL == "COLONIAL"
-    assert NameStatus.INDIGENOUS == "INDIGENOUS"
+def test_historic_name_type_enum_members() -> None:
+    """Verify HistoricNameType includes all cultural and historical name classifications."""
+    assert HistoricNameType.PRIMARY == "PRIMARY"
+    assert HistoricNameType.HISTORICAL == "HISTORICAL"
+    assert HistoricNameType.COLLOQUIAL == "COLLOQUIAL"
+    assert HistoricNameType.COLONIAL == "COLONIAL"
+    assert HistoricNameType.INDIGENOUS == "INDIGENOUS"
+    assert len(HistoricNameType) == 5
 
 
 # ==============================================================================
 # GROUP 2: Domestic Relations & Lineage
-# Note: Verification of UnionType, Dissolution, and Pedigree models
 # ==============================================================================
 
 
@@ -75,7 +77,6 @@ def test_pedigree_type_values() -> None:
 
 # ==============================================================================
 # GROUP 3: Vital Events & Mortuary Assertions
-# Note: Verification of MannerOfDeath, BirthPlurality, and Dispositions
 # ==============================================================================
 
 
@@ -93,3 +94,19 @@ def test_vital_assertions() -> None:
     assert LegalPlaintiff.HUSBAND == "Husband"
     assert DivorceDecreeType.ABSOLUTE == "Absolute (A Vinculo Matrimonii)"
     assert MaritalHistoryDissolution.DIVORCE == "Divorce"
+
+
+# ==============================================================================
+# GROUP 4: VitalModifier Invariants
+# ==============================================================================
+
+
+@pytest.mark.unit
+def test_vital_modifier_values() -> None:
+    """Verify VitalModifier classifications and string values."""
+    assert VitalModifier.STILLBORN == "STILLBORN"
+    assert VitalModifier.INFANT == "INFANT"
+    assert VitalModifier.ILLEGITIMATE == "ILLEGITIMATE"
+    assert VitalModifier.POSTHUMOUS == "POSTHUMOUS"
+    assert VitalModifier.LEGITIMATED == "LEGITIMATED"
+    assert len(VitalModifier) == 5

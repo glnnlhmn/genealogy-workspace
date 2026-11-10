@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_enums/test_archival_enums.py
+"""Path: tests/test_gda/test_core/test_enums/test_archival_enums.py
 
 Regression test suite for archival domain enumerations.
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from gda.enums.archival import (
+from gda.core.enums.archival import (
     DocumentSide,
     EyeColor,
     HairColor,
@@ -26,7 +26,7 @@ from gda.enums.archival import (
     WwiCardType,
 )
 
-__version__ = "1.1.0+build.3"
+__version__ = "1.1.0+build.4"
 
 # Prevent pytest test collection on TestimonyMedium
 TestimonyMedium.__test__ = False
@@ -34,7 +34,6 @@ TestimonyMedium.__test__ = False
 
 # ==============================================================================
 # GROUP 1: ARCHIVAL DOCUMENT & EVIDENCE ENUMS
-# Note: Verification of DocumentSide, TestimonyMedium, and TranscriptLegibility
 # ==============================================================================
 
 
@@ -72,7 +71,6 @@ def test_transcript_legibility_values() -> None:
 
 # ==============================================================================
 # GROUP 2: NOTE TAXONOMY ENUMS & EDGE BOUNDARIES
-# Note: Verification of NoteType values, lookup parity, and defensive rejection
 # ==============================================================================
 
 
@@ -122,7 +120,6 @@ def test_note_type_key_lookup_error() -> None:
 
 # ==============================================================================
 # GROUP 3: PUBLICATION & SERVICE ENUMS
-# Note: Verification of PublicationFrequency, SelectiveServiceClass, and WwiCardType
 # ==============================================================================
 
 
@@ -160,7 +157,6 @@ def test_wwi_card_type_values() -> None:
 
 # ==============================================================================
 # GROUP 4: BIOGRAPHICAL PHYSICAL ATTRIBUTE ENUMS
-# Note: Verification of PhysicalBuild, EyeColor, and HairColor
 # ==============================================================================
 
 

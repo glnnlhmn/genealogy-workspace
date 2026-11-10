@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_enums/test_fiscal_enums.py
+"""Path: tests/test_gda/test_core/test_enums/test_fiscal_enums.py
 
 Targeted behavioral test suite verifying economic, tenure, and directory enums.
 
@@ -16,18 +16,18 @@ from __future__ import annotations
 
 import pytest
 
-from gda.enums.fiscal import (
+from gda.core.enums.fiscal import (
     CitizenshipStatus,
     HomeOwnership,
     ResidentialStatus,
     TaxpayerClassification,
 )
 
-__version__ = "0.1.0+build.1"
+__version__ = "1.0.0+build.2"
+
 
 # ==============================================================================
 # GROUP 1: Taxpayer & Property Tenure Classifications
-# Note: Verification of TaxpayerClassification and HomeOwnership
 # ==============================================================================
 
 
@@ -54,7 +54,6 @@ def test_home_ownership_tokens() -> None:
 
 # ==============================================================================
 # GROUP 2: Citizenship & Directory Residential Statuses
-# Note: Verification of CitizenshipStatus and ResidentialStatus
 # ==============================================================================
 
 

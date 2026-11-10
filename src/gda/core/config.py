@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from gda.core.errors import ConfigParseError, ConfigValidationError
 
-__version__ = "1.0.0+build.r12"
+__version__ = "1.0.0+build.r13"
 
 
 class ImmutableBaseModel(BaseModel):
@@ -202,14 +202,13 @@ class AppConfig(ImmutableBaseModel):
             try:
                 with open(file_to_load, "rb") as fh:
                     raw_toml = tomllib.load(fh)
-                    if is_pyproject:
-                        gda_section = raw_toml.get("tool", {}).get("gda", {})
-                        # Filter to known AppConfig fields to prevent extra forbidden errors
-                        valid_keys = cls.model_fields.keys()
-                        filtered = {k: v for k, v in gda_section.items() if k in valid_keys}
-                        payload.update(filtered)
-                    else:
-                        payload.update(raw_toml)
+                if is_pyproject:
+                    gda_section = raw_toml.get("tool", {}).get("gda", {})
+                    valid_keys = cls.model_fields.keys()
+                    filtered = {k: v for k, v in gda_section.items() if k in valid_keys}
+                    payload.update(filtered)
+                else:
+                    payload.update(raw_toml)
             except tomllib.TOMLDecodeError as err:
                 raise ConfigParseError(
                     f"Malformed TOML syntax in {file_to_load}: {err}",

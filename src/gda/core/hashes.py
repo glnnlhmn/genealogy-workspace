@@ -1,4 +1,4 @@
-"""Path: src/gda/util/hashes.py
+"""Path: src/gda/core/hashes.py
 
 Pure stateless hashing utilities and checksum validators.
 
@@ -13,13 +13,11 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from gda.types.primitives import SHA256_PATTERN, SHA256_REGEX
+from gda.core.types import SHA256_REGEX
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.1"
 
 __all__ = [
-    "SHA256_PATTERN",
-    "SHA256_REGEX",
     "is_valid_sha256",
     "sha256_bytes",
     "sha256_file",

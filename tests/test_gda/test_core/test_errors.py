@@ -9,11 +9,13 @@ Operational Role:
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract mapping.
-    - Fully decorated: Standard 7-marker taxonomy.
+    - Fully decorated: Strictly unit and regression markers.
     - Zero production disk I/O.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import pytest
 
@@ -28,7 +30,7 @@ from gda.core.errors import (
     ModelRangeError,
 )
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.6"
 
 
 # ==============================================================================
@@ -37,7 +39,6 @@ __version__ = "1.0.0+build.4"
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_genealogy_desk_error_default_attributes() -> None:
     """Verify GenealogyDeskError initializes with expected defaults."""
     err = GenealogyDeskError("Test failure")
@@ -49,7 +50,6 @@ def test_genealogy_desk_error_default_attributes() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_genealogy_desk_error_custom_payload() -> None:
     """Verify GenealogyDeskError retains custom code and diagnostic details."""
     payload = {"entity_id": "IND-000001"}
@@ -60,7 +60,6 @@ def test_genealogy_desk_error_custom_payload() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_genealogy_desk_error_to_dict_serialization() -> None:
     """Verify to_dict returns a well-formed JSON-compatible metadata dictionary."""
     details = {"field": "source_urn"}
@@ -73,13 +72,45 @@ def test_genealogy_desk_error_to_dict_serialization() -> None:
     assert serialized["timestamp"] == err.timestamp
 
 
+@pytest.mark.regression
+def test_genealogy_desk_error_non_serializable_details() -> None:
+    """Verify to_dict handles non-standard objects in details dictionary (ERR-001)."""
+    details = {"target_path": Path("data/sample.db"), "flags": {1, 2, 3}}
+    err = GenealogyDeskError("Path unreadable", error_code="ERR_IO", details=details)
+    serialized = err.to_dict()
+    assert serialized["details"]["target_path"] == Path("data/sample.db")
+    assert serialized["details"]["flags"] == {1, 2, 3}
+
+
+@pytest.mark.regression
+def test_genealogy_desk_error_cause_chaining() -> None:
+    """Verify __cause__ chaining retains nested exception context (ERR-002)."""
+    root_cause = ValueError("Invalid disk sector")
+    try:
+        raise GenealogyDeskError("Higher-level failure", error_code="ERR_SYS") from root_cause
+    except GenealogyDeskError as exc:
+        assert exc.__cause__ is root_cause
+        assert str(exc.__cause__) == "Invalid disk sector"
+
+
+@pytest.mark.regression
+def test_genealogy_desk_error_empty_or_none_diagnostics() -> None:
+    """Verify defensive handling of None and empty string diagnostics (ERR-004)."""
+    err = GenealogyDeskError("", error_code="", details=None)
+    assert err.message == ""
+    assert err.error_code == ""
+    assert err.details == {}
+    assert err.timestamp.endswith("Z")
+    serialized = err.to_dict()
+    assert serialized["details"] == {}
+
+
 # ==============================================================================
 # GROUP 2: CONFIGURATION SUBSYSTEM EXCEPTIONS
 # ==============================================================================
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_config_error_hierarchy() -> None:
     """Verify ConfigError inherits from GenealogyDeskError with ERR_CONFIG."""
     err = ConfigError("Configuration failed")
@@ -88,8 +119,7 @@ def test_config_error_hierarchy() -> None:
     assert err.message == "Configuration failed"
 
 
-@pytest.mark.unit
-@pytest.mark.smoke
+@pytest.mark.regression
 def test_config_validation_error_contract() -> None:
     """Verify ConfigValidationError sets ERR_CONFIG_VALIDATION."""
     err = ConfigValidationError("Invalid port number", details={"port": -1})
@@ -99,8 +129,7 @@ def test_config_validation_error_contract() -> None:
     assert err.details == {"port": -1}
 
 
-@pytest.mark.unit
-@pytest.mark.smoke
+@pytest.mark.regression
 def test_config_parse_error_contract() -> None:
     """Verify ConfigParseError sets ERR_CONFIG_PARSE."""
     err = ConfigParseError("Malformed TOML", details={"line": 12})
@@ -116,7 +145,6 @@ def test_config_parse_error_contract() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_model_error_hierarchy() -> None:
     """Verify ModelError inherits from GenealogyDeskError with ERR_MODEL_VALIDATION."""
     err = ModelError("Model failure")
@@ -125,8 +153,7 @@ def test_model_error_hierarchy() -> None:
     assert err.message == "Model failure"
 
 
-@pytest.mark.unit
-@pytest.mark.smoke
+@pytest.mark.regression
 def test_model_format_error_contract() -> None:
     """Verify ModelFormatError inherits from ModelError with ERR_MODEL_FORMAT."""
     err = ModelFormatError("Invalid syntax", details={"value": "bad_token"})
@@ -136,8 +163,7 @@ def test_model_format_error_contract() -> None:
     assert err.details == {"value": "bad_token"}
 
 
-@pytest.mark.unit
-@pytest.mark.smoke
+@pytest.mark.regression
 def test_model_range_error_contract() -> None:
     """Verify ModelRangeError inherits from ModelError with ERR_MODEL_RANGE."""
     err = ModelRangeError("Value out of bounds", details={"min": 0, "max": 3})
@@ -147,8 +173,7 @@ def test_model_range_error_contract() -> None:
     assert err.details == {"min": 0, "max": 3}
 
 
-@pytest.mark.unit
-@pytest.mark.smoke
+@pytest.mark.regression
 def test_model_prefix_mismatch_error_contract() -> None:
     """Verify ModelPrefixMismatchError inherits from ModelError with ERR_MODEL_PREFIX_MISMATCH."""
     details = {"expected": "IND", "actual": "FID"}

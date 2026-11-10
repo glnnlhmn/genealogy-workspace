@@ -19,7 +19,7 @@ from pydantic import ValidationError
 from gda.core.config import AppConfig, DatabaseConfig, LoggingConfig
 from gda.core.errors import ConfigParseError, ConfigValidationError
 
-__version__ = "1.0.0+build.r11"
+__version__ = "1.0.0+build.13"
 
 # ==============================================================================
 # GROUP 1: SCHEMA DEFAULTS, IMMUTABILITY & ISOLATED VALIDATION
@@ -28,7 +28,6 @@ __version__ = "1.0.0+build.r11"
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_database_config_defaults() -> None:
     """Verify default attributes and derived properties of DatabaseConfig."""
     cfg = DatabaseConfig()
@@ -64,7 +63,7 @@ def test_database_config_path_instance_passthrough(tmp_path: Path) -> None:
 
 @pytest.mark.regression
 def test_database_config_invalid_db_path_type_raises() -> None:
-    """Verify DatabaseConfig rejects non-string and non-Path types on line 57."""
+    """Verify DatabaseConfig rejects non-string and non-Path types."""
     with pytest.raises(ValidationError) as exc_info:
         DatabaseConfig(db_path=12345)  # type: ignore[arg-type]
     assert "Invalid db_path type" in str(exc_info.value)
@@ -198,15 +197,26 @@ def test_ensure_directories_creates_all_subdirectories(tmp_path: Path) -> None:
     assert (tmp_path / "backups").is_dir()
 
 
+@pytest.mark.regression
+def test_app_config_deep_relative_parent_traversal(tmp_path: Path) -> None:
+    """Verify relative parent traversal is validated and resolved cleanly (CFG-003)."""
+    sub_dir = tmp_path / "a" / "b"
+    sub_dir.mkdir(parents=True)
+    relative_target = sub_dir / ".." / ".."
+    cfg = AppConfig(root_path=relative_target)
+    assert cfg.root_path.resolve() == tmp_path.resolve()
+
+
 # ==============================================================================
 # GROUP 3: APPCONFIG MULTI-TIER PRECEDENCE
 # Note: Validates loading across defaults, files, environment, and overrides
 # ==============================================================================
 
 
+@pytest.mark.smoke
 @pytest.mark.unit
 def test_app_config_load_defaults() -> None:
-    """Verify AppConfig.load() initializes standard model defaults when unconfigured."""
+    """Verify AppConfig.load() initializes standard model defaults when unconfigured (CFG-004)."""
     cfg = AppConfig.load()
 
     assert cfg.app_name == "Genealogy Digital Archive"
@@ -277,6 +287,24 @@ def test_app_config_load_from_pyproject_tool_section(
 
 
 @pytest.mark.integration
+def test_app_config_load_filters_pyproject_unknown_tool_keys(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify extra keys under [tool.gda] are filtered to avoid extra forbidden errors (CFG-005)."""
+    monkeypatch.chdir(tmp_path)
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject_content = """
+    [tool.gda]
+    app_name = "Filtered GDA"
+    unrecognized_arbitrary_key = "should_be_ignored"
+    """
+    pyproject.write_text(pyproject_content, encoding="utf-8")
+
+    cfg = AppConfig.load(root_path=tmp_path)
+    assert cfg.app_name == "Filtered GDA"
+
+
+@pytest.mark.integration
 def test_app_config_load_from_gda_config_path_env_var(tmp_path: Path) -> None:
     """Verify GDA_CONFIG_PATH environment variable directs config file loading."""
     env_target = tmp_path / "env_directed.toml"
@@ -338,7 +366,7 @@ def test_app_config_env_vars_mapping_injection(tmp_path: Path) -> None:
     assert cfg.database.busy_timeout == 2500
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_app_config_env_vars_coercion_types(tmp_path: Path) -> None:
     """Verify env var coercion converts 'no', '0', and uncastable strings accurately."""
     env_map = {
@@ -350,7 +378,7 @@ def test_app_config_env_vars_coercion_types(tmp_path: Path) -> None:
     assert cfg.app_name == "Uncastable String"
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_app_config_env_vars_skips_nested_when_section_not_dict(tmp_path: Path) -> None:
     """Verify nested env vars skip assignment if parent key is a scalar value."""
     env_map = {
@@ -359,6 +387,17 @@ def test_app_config_env_vars_skips_nested_when_section_not_dict(tmp_path: Path) 
     }
     cfg = AppConfig.load(root_path=tmp_path, env_vars=env_map)
     assert cfg.app_name == "Archive"
+
+
+@pytest.mark.regression
+def test_app_config_invalid_integer_env_var_raises_validation_error(
+    tmp_path: Path,
+) -> None:
+    """Verify uncoercible non-integer string in integer field raises ConfigValidationError (CFG-001)."""
+    env_map = {"GDA_DATABASE__BUSY_TIMEOUT": "invalid_number"}
+    with pytest.raises(ConfigValidationError) as exc_info:
+        AppConfig.load(root_path=tmp_path, env_vars=env_map)
+    assert exc_info.value.error_code == "ERR_CONFIG_VALIDATION"
 
 
 @pytest.mark.unit

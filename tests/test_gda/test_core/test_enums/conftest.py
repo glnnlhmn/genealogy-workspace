@@ -1,35 +1,46 @@
-"""Path: tests/test_gda/test_enums/conftest.py
+"""Path: tests/test_gda/test_core/test_enums/conftest.py
 
-Shared pytest fixtures for the gda.enums verification suite.
+Shared pytest fixtures for the gda.core.enums verification suite.
 
 Operational Role:
     Supplies handcrafted in-memory fixtures including comprehensive enum class
-    registries, alias-aware helpers, and Pydantic validation harness models for
-    testing serialization, coercion, and rejection boundaries without disk I/O.
+    registries, exact public export contract bounds, and Pydantic validation
+    harness models for testing serialization, coercion, and rejection boundaries
+    without disk I/O.
 """
 
 from __future__ import annotations
 
+import inspect
 from enum import Enum
 from typing import Any
 
 import pytest
 from pydantic import BaseModel
 
-import gda.enums as ge
+import gda.core.enums as ge
 
-__version__ = "0.2.0+build.1"
+__version__ = "1.0.0+build.6"
 
 
 @pytest.fixture(scope="session")
 def all_enum_classes() -> tuple[type[Enum], ...]:
-    """Provide a tuple of every authoritative enumeration class exported by gda.enums."""
+    """Provide a tuple of every unique authoritative enumeration class exported by gda.core.enums."""
     classes: list[type[Enum]] = []
+    seen: set[type[Enum]] = set()
     for name in ge.__all__:
-        attr = getattr(ge, name)
-        if isinstance(attr, type) and issubclass(attr, Enum):
-            classes.append(attr)
+        attr = getattr(ge, name, None)
+        if inspect.isclass(attr) and issubclass(attr, Enum):
+            if attr not in seen:
+                seen.add(attr)
+                classes.append(attr)
     return tuple(classes)
+
+
+@pytest.fixture(scope="session")
+def all_exported_symbols_count() -> int:
+    """Return the exact count of items declared in gda.core.enums.__all__."""
+    return 53
 
 
 class SampleEnumModel(BaseModel):
@@ -40,21 +51,27 @@ class SampleEnumModel(BaseModel):
     quay: ge.QuayScore
     fact_type: ge.FactType
 
-    # Sources
+    # Sources & Date
     record_cat: ge.SourceRecordCategory
-    census_year: ge.CensusYear
+    census_year: ge.CensusYearUS
+    date_modifier: ge.DateModifier = ge.DateModifier.EXACT
 
     # Vital
     union_type: ge.UnionType = ge.UnionType.UNKNOWN
     manner_of_death: ge.MannerOfDeath
-    name_status: ge.NameStatus = ge.NameStatus.PRIMARY
+    historic_name_type: ge.HistoricNameType = ge.HistoricNameType.PRIMARY
+    vital_modifier: ge.VitalModifier = ge.VitalModifier.INFANT
 
-    # Site
+    # Location & Site
     location_type: ge.LocationType
+    jurisdiction_cat: ge.JurisdictionCategory = ge.JurisdictionCategory.COUNTY_EQUIVALENT
     site_type: ge.SiteType
 
     # Archival
     note_type: ge.NoteType
+    document_side: ge.DocumentSide = ge.DocumentSide.FRONT
+    text_quality: ge.TextQuality = ge.TextQuality.VERBATIM
+    legibility: ge.Legibility = ge.Legibility.CLEAR
 
     # Fiscal
     taxpayer_class: ge.TaxpayerClassification
@@ -74,17 +91,23 @@ def pydantic_enum_model_cls() -> type[BaseModel]:
 def valid_enum_payload() -> dict[str, Any]:
     """Provide a raw dictionary with valid strings and integers matching SampleEnumModel."""
     return {
-        "sex": "M",
+        "sex": "Male",
         "quay": 3,
         "fact_type": "BIRTH",
         "record_cat": "VITAL",
         "census_year": 1880,
+        "date_modifier": "ABT",
         "union_type": "MARRIED",
         "manner_of_death": "Natural",
-        "name_status": "PRIMARY",
+        "historic_name_type": "PRIMARY",
+        "vital_modifier": "STILLBORN",
         "location_type": "COUNTY",
+        "jurisdiction_cat": "COUNTY_EQUIVALENT",
         "site_type": "CEMETERY",
         "note_type": "RESEARCH",
+        "document_side": "FRONT",
+        "text_quality": "VERBATIM",
+        "legibility": "CLEAR",
         "taxpayer_class": "Freeholder",
         "optional_sex": None,
         "optional_quay": None,

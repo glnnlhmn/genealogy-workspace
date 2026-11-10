@@ -1,14 +1,14 @@
-"""Path: tests/test_gda/test_enums/test_sources_enums.py
+"""Path: tests/test_gda/test_core/test_enums/test_sources_enums.py
 
 Targeted behavioral test suite verifying bibliographic and source enums.
 
 Operational Role:
-    Validates documentary categories, granular source records, census schedules,
+    Validates documentary categories, granular source records,
     educational attainments, and military conflict taxonomies.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 verification per behavioral contract.
-    - Fully decorated: Explicitly decorated with registered pytest markers.
+    - Fully decorated: Strictly unit and regression markers.
     - Dependencies: In-memory only; zero physical disk I/O.
 """
 
@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from gda.enums.sources import (
-    CensusYear,
+from gda.core.enums.sources import (
     EducationLevel,
     MilitaryBranch,
     MilitaryConflict,
@@ -26,16 +25,14 @@ from gda.enums.sources import (
     SourceRecordType,
 )
 
-__version__ = "0.1.0+build.1"
+__version__ = "1.0.0+build.3"
 
 # ==============================================================================
-# GROUP 1: Document Classifications & Federal Schedules
-# Note: Verification of SourceRecordCategory, SourceRecordType, and CensusYear
+# GROUP 1: Document Classifications
 # ==============================================================================
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_source_record_category_tokens() -> None:
     """Verify high-level archival category classifications."""
     assert SourceRecordCategory.VITAL == "VITAL"
@@ -56,17 +53,8 @@ def test_source_record_type_vital_and_probate() -> None:
     assert SourceRecordType.POPULATION_SCHEDULE == "POPULATION_SCHEDULE"
 
 
-@pytest.mark.unit
-def test_census_year_integers() -> None:
-    """Verify decennial census schedule integer years."""
-    assert CensusYear.Y1790 == 1790
-    assert CensusYear.Y1880 == 1880
-    assert CensusYear.Y1950 == 1950
-
-
 # ==============================================================================
 # GROUP 2: Education & Military Taxonomies
-# Note: Verification of EducationLevel, MilitaryBranch, and Conflict classifications
 # ==============================================================================
 
 

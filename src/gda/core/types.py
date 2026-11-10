@@ -1,22 +1,18 @@
-# Name: primitives.py
-# Path: src/gda/types/primitives.py
+"""Path: src/gda/core/types.py
 
-"""Authoritative regex patterns, format tokens, and primitive scalar definitions.
+Authoritative regex patterns, format tokens, and primitive scalar definitions.
 
 Operational Role:
-    Code-first declarative repository for RFC 4122 UUIDv4 patterns, ISO 8601
-    date/timestamp format tokens, canonical entity identifier regex patterns,
-    and SHA-256 hexadecimal hash patterns derived from schemas/defs/_shared_defs.schema.json.
-
-Note:
-    PRERELEASE: Module is under active development (version 0.0.1+build.2).
+    Provides the code-first declarative repository for RFC 4122 UUIDv4 patterns,
+    ISO 8601 date and timestamp directives, canonical entity identifier regex patterns,
+    and SHA-256 hexadecimal hash patterns across the GDA core infrastructure.
 """
 
 from __future__ import annotations
 
 import re
 
-__version__ = "0.0.1+build.2"
+__version__ = "1.0.0+build.1"
 
 __all__ = [
     "ENTITY_ID_PATTERNS",

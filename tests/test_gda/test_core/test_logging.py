@@ -1,8 +1,6 @@
-# Name: test_logging.py
-# Path: tests/test_gda/test_core/test_logging.py
-# Version: 1.0.0+build.r5
+"""Path: tests/test_gda/test_core/test_logging.py
 
-"""Unit verification suite for GDA Core structured logging subsystem.
+Unit verification suite for GDA Core structured logging subsystem.
 
 Operational Role:
     Validates GDALogger, JsonFormatter, and ConsoleFormatter,
@@ -11,7 +9,7 @@ Operational Role:
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral assertion mapping across logging contracts.
-    - Fully decorated: @pytest.mark.unit and @pytest.mark.smoke applied throughout.
+    - Fully decorated: Strictly unit, regression, and integration markers.
     - Dependencies: Isolated tmp_path sandboxes, pytest standard library fixtures.
 """
 
@@ -28,7 +26,7 @@ from gda.core.config import LoggingConfig
 from gda.core.errors import ConfigValidationError, GenealogyDeskError
 from gda.core.logging import ConsoleFormatter, GDALogger, JsonFormatter
 
-__version__ = "1.0.0+build.r5"
+__version__ = "1.0.0+build.7"
 
 # ==============================================================================
 # GROUP 1: FORMATTER CONTRACTS
@@ -37,7 +35,6 @@ __version__ = "1.0.0+build.r5"
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_json_formatter_standard_record() -> None:
     """Verify JsonFormatter emits canonical single-line JSON with standard fields."""
     formatter = JsonFormatter()
@@ -81,7 +78,7 @@ def test_json_formatter_with_structured_details() -> None:
     assert payload["details"] == {"cache_key": "rec_123", "ttl": 300}
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_json_formatter_with_genealogy_desk_error() -> None:
     """Verify JsonFormatter serializes GenealogyDeskError via its .to_dict() contract."""
     formatter = JsonFormatter()
@@ -107,7 +104,7 @@ def test_json_formatter_with_genealogy_desk_error() -> None:
     assert payload["error"]["details"] == {"host": "10.0.0.1"}
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_json_formatter_with_standard_exception() -> None:
     """Verify JsonFormatter serializes generic standard library Exception objects."""
     formatter = JsonFormatter()
@@ -128,7 +125,7 @@ def test_json_formatter_with_standard_exception() -> None:
     assert payload["error"]["message"] == "Invalid token encountered"
 
 
-@pytest.mark.unit
+@pytest.mark.regression
 def test_json_formatter_with_exc_info_traceback() -> None:
     """Verify JsonFormatter extracts traceback details when exc_info is populated."""
     formatter = JsonFormatter()
@@ -154,6 +151,25 @@ def test_json_formatter_with_exc_info_traceback() -> None:
     assert payload["error"]["type"] == "ZeroDivisionError"
     assert payload["error"]["message"] == "division by zero"
     assert "ZeroDivisionError: division by zero" in payload["error"]["traceback"]
+
+
+@pytest.mark.regression
+def test_json_formatter_special_characters_and_newlines() -> None:
+    """Verify JsonFormatter serializes messages with newlines and unicode onto a single line (LOG-003)."""
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="gda.special",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="Line 1\nLine 2\tTabbed—Special Char: ñ",
+        args=(),
+        exc_info=None,
+    )
+    formatted = formatter.format(record)
+    assert "\n" not in formatted
+    payload = json.loads(formatted)
+    assert payload["message"] == "Line 1\nLine 2\tTabbed—Special Char: ñ"
 
 
 @pytest.mark.unit
@@ -216,7 +232,7 @@ def test_gda_logger_console_output(capsys: pytest.CaptureFixture[str]) -> None:
     )
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_gda_logger_file_output(tmp_path: Path) -> None:
     """Verify GDALogger writes structured JSON lines to the configured log file."""
     log_file = tmp_path / "runtime.log"
@@ -240,7 +256,7 @@ def test_gda_logger_file_output(tmp_path: Path) -> None:
     assert payload["details"] == {"item_count": 5}
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_gda_logger_relative_file_output_with_base_dir(tmp_path: Path) -> None:
     """Verify GDALogger anchors relative log paths to base_dir."""
     cfg = LoggingConfig(
@@ -257,7 +273,7 @@ def test_gda_logger_relative_file_output_with_base_dir(tmp_path: Path) -> None:
     assert expected_path.exists()
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_gda_logger_level_filtering(tmp_path: Path) -> None:
     """Verify GDALogger suppresses messages below the configured log level."""
     log_file = tmp_path / "filtered.log"
@@ -283,7 +299,7 @@ def test_gda_logger_level_filtering(tmp_path: Path) -> None:
     assert records[1]["level"] == "ERROR"
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_gda_logger_critical_and_error_methods(tmp_path: Path) -> None:
     """Verify error and critical methods properly attach exception context."""
     log_file = tmp_path / "errors.log"
@@ -309,3 +325,39 @@ def test_gda_logger_critical_and_error_methods(tmp_path: Path) -> None:
     crit_rec = json.loads(lines[1])
     assert crit_rec["level"] == "CRITICAL"
     assert crit_rec["details"] == {"exit_code": 1}
+
+
+@pytest.mark.regression
+def test_gda_logger_idempotent_handler_attachment() -> None:
+    """Verify multiple GDALogger initializations do not stack duplicate handlers (LOG-002)."""
+    cfg = LoggingConfig(log_to_console=True, log_to_file=False)
+    logger1 = GDALogger("gda.idempotent", config=cfg)
+    handler_count_1 = len(logger1.logger.handlers)
+
+    logger2 = GDALogger("gda.idempotent", config=cfg)
+    handler_count_2 = len(logger2.logger.handlers)
+
+    assert handler_count_1 == 1
+    assert handler_count_2 == 1
+
+
+@pytest.mark.integration
+def test_rotating_file_handler_rollover_bounds(tmp_path: Path) -> None:
+    """Verify RotatingFileHandler triggers rollover and retains backup_count files (LOG-001)."""
+    log_file = tmp_path / "rollover.log"
+    cfg = LoggingConfig(
+        level="INFO",
+        log_to_console=False,
+        log_to_file=True,
+        log_file_path=str(log_file),
+        max_bytes=1024,
+        backup_count=2,
+    )
+    logger = GDALogger("gda.rollover", config=cfg)
+
+    payload = "X" * 400
+    for idx in range(10):
+        logger.info(f"Entry {idx}: {payload}")
+
+    assert log_file.exists()
+    assert (tmp_path / "rollover.log.1").exists()

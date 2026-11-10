@@ -1,10 +1,10 @@
-"""Path: tests/test_gda/test_enums/test_core_enums.py
+"""Path: tests/test_gda/test_core/test_enums/test_core_enums.py
 
-Targeted behavioral test suite verifying foundational gda.enums.core models.
+Targeted behavioral test suite verifying foundational gda.core.enums.core models.
 
 Operational Role:
     Verifies Sex code resolution, token normalizers, FactType domain coverage,
-    QuayScore integer equivalence and aliases, and AssociatedRole mappings.
+    QuayScore integer equivalence, and AssociatedRole mappings.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 verification per behavioral contract.
@@ -16,70 +16,62 @@ from __future__ import annotations
 
 import pytest
 
-from gda.enums.core import (
+from gda.core.enums.core import (
     AssociatedRole,
-    DateModifier,
     FactType,
+    IDType,
     QualityAssessment,
     QuayScore,
     Sex,
-    VitalModifier,
+    SmartIDPrefix,
 )
 
-__version__ = "0.1.0+build.1"
+__version__ = "1.0.0+build.4"
+
 
 # ==============================================================================
 # GROUP 1: Sex Enumeration & Normalizer Mapping
-# Note: Verification of canonical codes, aliases, and from_input normalization
 # ==============================================================================
 
 
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_sex_enum_canonical_values() -> None:
-    """Verify canonical Sex values match standard single-character codes."""
-    assert Sex.M == "M"
-    assert Sex.F == "F"
-    assert Sex.X == "X"
-    assert Sex.U == "U"
-
-
-@pytest.mark.unit
-def test_sex_enum_semantic_aliases() -> None:
-    """Verify descriptive aliases resolve to canonical underlying single-character codes."""
-    assert Sex.MALE == Sex.M
-    assert Sex.FEMALE == Sex.F
-    assert Sex.NON_BINARY == Sex.X
-    assert Sex.UNKNOWN == Sex.U
+    """Verify canonical Sex values match descriptive title-case values."""
+    assert Sex.MALE == "Male"
+    assert Sex.FEMALE == "Female"
+    assert Sex.UNKNOWN == "Unknown"
+    assert len(Sex) == 3
 
 
 @pytest.mark.unit
 def test_sex_from_input_maps_standard_tokens() -> None:
     """Verify Sex.from_input maps typical transcription tokens into canonical instances."""
-    assert Sex.from_input("m") is Sex.M
-    assert Sex.from_input("Male") is Sex.M
-    assert Sex.from_input("boy") is Sex.M
-    assert Sex.from_input("f") is Sex.F
-    assert Sex.from_input("female") is Sex.F
-    assert Sex.from_input("GIRL") is Sex.F
-    assert Sex.from_input("X") is Sex.X
-    assert Sex.from_input("Non-Binary") is Sex.X
-    assert Sex.from_input("u") is Sex.U
-    assert Sex.from_input("unknown") is Sex.U
-    assert Sex.from_input("undetermined") is Sex.U
+    assert Sex.from_input("m") is Sex.MALE
+    assert Sex.from_input("M") is Sex.MALE
+    assert Sex.from_input("Male") is Sex.MALE
+    assert Sex.from_input("boy") is Sex.MALE
+    assert Sex.from_input("f") is Sex.FEMALE
+    assert Sex.from_input("F") is Sex.FEMALE
+    assert Sex.from_input("female") is Sex.FEMALE
+    assert Sex.from_input("GIRL") is Sex.FEMALE
+    assert Sex.from_input("u") is Sex.UNKNOWN
+    assert Sex.from_input("U") is Sex.UNKNOWN
+    assert Sex.from_input("unknown") is Sex.UNKNOWN
+    assert Sex.from_input("undetermined") is Sex.UNKNOWN
 
 
 @pytest.mark.unit
 @pytest.mark.regression
-def test_sex_from_input_rejects_invalid_tokens() -> None:
-    """Verify Sex.from_input raises ValueError on invalid or unrecognized strings."""
-    with pytest.raises(ValueError, match="Cannot map 'alien' to a valid Sex enum member."):
-        Sex.from_input("alien")
+@pytest.mark.parametrize("invalid_token", ["alien", "X", "Non-Binary", "non-binary", ""])
+def test_sex_from_input_rejects_invalid_tokens(invalid_token: str) -> None:
+    """Verify Sex.from_input raises ValueError on invalid or unsupported tokens."""
+    with pytest.raises(ValueError, match="Cannot map .* to a valid Sex enum member."):
+        Sex.from_input(invalid_token)
 
 
 # ==============================================================================
 # GROUP 2: FactType Life Assertion Domain Tokens
-# Note: Verification of uppercase assertion categories and extended life events
 # ==============================================================================
 
 
@@ -97,39 +89,37 @@ def test_fact_type_canonical_tokens() -> None:
 
 # ==============================================================================
 # GROUP 3: AssociatedRole Kinship & Participation Tokens
-# Note: Verification of participant roles, kinship abbreviations, and aliases
 # ==============================================================================
 
 
 @pytest.mark.unit
-def test_associated_role_aliases_and_values() -> None:
-    """Verify full-name and abbreviated roles resolve to canonical values."""
-    assert AssociatedRole.WITNESS == "WITN"
-    assert AssociatedRole.WITN == "WITN"
+def test_associated_role_canonical_values() -> None:
+    """Verify participant roles evaluate to canonical full-name strings."""
+    assert AssociatedRole.WITNESS == "WITNESS"
     assert AssociatedRole.CLERGY == "CLERGY"
     assert AssociatedRole.INFORMANT == "INFORMANT"
     assert AssociatedRole.PRIMARY == "PRIMARY"
-    assert AssociatedRole.CHILD == "CHIL"
-    assert AssociatedRole.FATHER == "FATH"
-    assert AssociatedRole.MOTHER == "MOTH"
+    assert AssociatedRole.CHILD == "CHILD"
+    assert AssociatedRole.FATHER == "FATHER"
+    assert AssociatedRole.MOTHER == "MOTHER"
+    assert AssociatedRole.SPOUSE == "SPOUSE"
+    assert AssociatedRole.SIBLING == "SIBLING"
 
 
 # ==============================================================================
 # GROUP 4: QuayScore Evidentiary Certainty Integers & Quality Assessment
-# Note: Verification of 0-3 scale and string certainty metrics
 # ==============================================================================
 
 
 @pytest.mark.unit
 @pytest.mark.smoke
-def test_quay_score_integer_mapping_and_aliases() -> None:
-    """Verify QuayScore provides sequential 0 to 3 integers and supports aliases."""
+def test_quay_score_integer_mapping() -> None:
+    """Verify QuayScore provides sequential 0 to 3 integers without aliases."""
     assert QuayScore.UNRELIABLE == 0
     assert QuayScore.QUESTIONABLE == 1
     assert QuayScore.SECONDARY == 2
     assert QuayScore.DIRECT_PRIMARY == 3
-    assert QuayScore.DIRECT == 3
-    assert QuayScore.PRIMARY == 3
+    assert len(QuayScore) == 4
 
 
 @pytest.mark.unit
@@ -142,16 +132,17 @@ def test_quality_assessment_values() -> None:
 
 
 # ==============================================================================
-# GROUP 5: Modifiers
-# Note: Verification of DateModifier and VitalModifier string values
+# GROUP 5: Identifier Categories & Prefixes
 # ==============================================================================
 
 
 @pytest.mark.unit
-def test_date_and_vital_modifiers() -> None:
-    """Verify date and vital status modifier strings."""
-    assert DateModifier.EXACT == "EXACT"
-    assert DateModifier.ABOUT == "ABOUT"
-    assert DateModifier.BETWEEN == "BETWEEN"
-    assert VitalModifier.STILLBORN == "STILLBORN"
-    assert VitalModifier.INFANT == "INFANT"
+def test_id_type_and_prefixes() -> None:
+    """Verify IDType and SmartIDPrefix enumerations."""
+    assert IDType.SMART_ID == "SMART_ID"
+    assert IDType.UUID == "UUID"
+    assert SmartIDPrefix.IND == "IND"
+    assert SmartIDPrefix.FID == "FID"
+    assert SmartIDPrefix.LOC == "LOC"
+    assert SmartIDPrefix.SID == "SID"
+    assert SmartIDPrefix.FAM == "FAM"
