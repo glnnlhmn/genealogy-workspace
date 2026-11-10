@@ -1,6 +1,6 @@
 {
   "_path": "data/setup/dev/locations/00_root_countries.json",
-  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
+  "$schema": "https://gda.archive/schemas/intake/dev/location_import.schema.json",
   "schema_version": "1.0.0",
   "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
@@ -65,7 +65,7 @@
       ]
     },
     {
-      "id": "LOC-000003",
+      "id": "LOC-000248",
       "name": "Germany",
       "category": "COUNTRY",
       "canonical_urn": "urn:gda:loc:germany",
@@ -86,7 +86,7 @@
       "notes": []
     },
     {
-      "id": "LOC-000004",
+      "id": "LOC-000249",
       "name": "Ireland",
       "category": "COUNTRY",
       "canonical_urn": "urn:gda:loc:ireland",
@@ -94,7 +94,7 @@
       "is_primary_local_authority": false,
       "is_unincorporated": false,
       "alternate_names": [
-        "\u00c9ire",
+        "Éire",
         "Republic of Ireland"
       ],
       "historical_names": [

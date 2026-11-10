@@ -1,6 +1,6 @@
 {
   "_path": "data/setup/dev/locations/01_non_us_jurisdictions.json",
-  "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
+  "$schema": "https://gda.archive/schemas/intake/dev/location_import.schema.json",
   "schema_version": "1.0.0",
   "record_type": "LOCATION_IMPORT",
   "created_at": "2026-11-04T12:00:00Z",
@@ -74,7 +74,7 @@
       "is_unincorporated": false,
       "alternate_names": [
         "Burgh of Thurso",
-        "Inbhir The\u00f2rsa"
+        "Inbhir Theòrsa"
       ],
       "historical_names": [],
       "notes": [
@@ -96,7 +96,7 @@
       "alternate_names": [
         "Argyll",
         "County of Argyll",
-        "Earra-Gh\u00e0idheal"
+        "Earra-Ghàidheal"
       ],
       "historical_names": [],
       "notes": []
@@ -125,7 +125,7 @@
       "is_unincorporated": false,
       "alternate_names": [
         "Burgh of Dunoon",
-        "D\u00f9n Omhan"
+        "Dùn Omhan"
       ],
       "historical_names": [],
       "notes": [
@@ -138,10 +138,10 @@
     },
     {
       "id": "LOC-000215",
-      "name": "Baden-W\u00fcrttemberg",
+      "name": "Baden-Württemberg",
       "category": "STATOID",
       "canonical_urn": "urn:gda:loc:germany:baden_wuerttemberg",
-      "parent_id": "LOC-000003",
+      "parent_id": "LOC-000248",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
       "alternate_names": [
@@ -150,8 +150,8 @@
       ],
       "historical_names": [
         {
-          "raw_name": "Kingdom of W\u00fcrttemberg",
-          "canonical_name": "Kingdom of W\u00fcrttemberg",
+          "raw_name": "Kingdom of Württemberg",
+          "canonical_name": "Kingdom of Württemberg",
           "status": "HISTORICAL"
         }
       ],
@@ -192,7 +192,7 @@
       ]
     },
     {
-      "id": "LOC-000025",
+      "id": "LOC-000250",
       "name": "Kirchheim unter Teck",
       "category": "MUNICIPALITY",
       "canonical_urn": "urn:gda:loc:germany:baden_wuerttemberg:kirchheim_unter_teck",
@@ -216,7 +216,7 @@
       "name": "County Antrim",
       "category": "COUNTY_EQUIVALENT",
       "canonical_urn": "urn:gda:loc:ireland:antrim",
-      "parent_id": "LOC-000004",
+      "parent_id": "LOC-000249",
       "is_primary_local_authority": false,
       "is_unincorporated": false,
       "alternate_names": [
@@ -227,7 +227,7 @@
       "notes": []
     },
     {
-      "id": "LOC-000024",
+      "id": "LOC-000251",
       "name": "Ahoghill",
       "category": "CIVIL_TOWNSHIP",
       "canonical_urn": "urn:gda:loc:ireland:antrim:ahoghill",

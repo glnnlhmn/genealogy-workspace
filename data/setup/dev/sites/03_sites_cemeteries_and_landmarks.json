@@ -46,8 +46,8 @@
       ],
       "historical_names": [
         {
-          "raw": "Shope's Meeting House Burial Ground",
-          "canonical": "Shope's Meeting House Burial Ground",
+          "raw_name": "Shope's Meeting House Burial Ground",
+          "canonical_name": "Shope's Meeting House Burial Ground",
           "status": "HISTORICAL"
         }
       ],
@@ -97,8 +97,8 @@
       ],
       "historical_names": [
         {
-          "raw": "Shoop's Church Burial Ground",
-          "canonical": "Shoop's Church Burial Ground",
+          "raw_name": "Shoop's Church Burial Ground",
+          "canonical_name": "Shoop's Church Burial Ground",
           "status": "HISTORICAL"
         }
       ],
@@ -357,7 +357,7 @@
           "Central Dauphin Transportation Facility"
         ]
       },
-      "category": "FACILITY",
+      "category": "BUSINESS",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:progress:cd_transportation_garage",
       "location_id": "LOC-000211",
       "is_active": true,
@@ -398,7 +398,7 @@
           "J. B. Martin Motors Inc."
         ]
       },
-      "category": "FACILITY",
+      "category": "BUSINESS",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:jb_martin_motors",
       "location_id": "LOC-000118",
       "is_active": false,

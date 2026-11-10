@@ -18,7 +18,7 @@
           "Harrisburg High School John Harris Campus"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:john_harris_high_school",
       "location_id": "LOC-000118",
       "is_active": true,
@@ -61,7 +61,7 @@
           "Thomas A. Edison Junior High School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:edison_junior_high_school",
       "location_id": "LOC-000118",
       "is_active": false,
@@ -104,7 +104,7 @@
           "John Marshall School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:marshall_school",
       "location_id": "LOC-000118",
       "is_active": true,
@@ -147,7 +147,7 @@
           "Science and Technology High School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:scitech_high_school",
       "location_id": "LOC-000118",
       "is_active": true,
@@ -184,7 +184,7 @@
           "Old William Penn"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:william_penn_high_school",
       "location_id": "LOC-000118",
       "is_active": false,
@@ -227,7 +227,7 @@
           "Camp Curtin Academy"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:camp_curtin_school",
       "location_id": "LOC-000118",
       "is_active": true,
@@ -269,7 +269,7 @@
           "Lemuel O. Foose School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:foose_elementary",
       "location_id": "LOC-000118",
       "is_active": true,
@@ -304,7 +304,7 @@
           "Steele-Downey School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:harrisburg:downey_elementary",
       "location_id": "LOC-000118",
       "is_active": true,
@@ -340,7 +340,7 @@
           "CD Rams Campus"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:west_hanover:central_dauphin_high_school",
       "location_id": "LOC-000115",
       "is_active": true,
@@ -383,7 +383,7 @@
           "CD East Panthers"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_east_high_school",
       "location_id": "LOC-000103",
       "is_active": true,
@@ -426,7 +426,7 @@
           "Old Central Dauphin High School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_middle_school",
       "location_id": "LOC-000103",
       "is_active": true,
@@ -468,7 +468,7 @@
           "CD East Middle School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:central_dauphin_east_middle_school",
       "location_id": "LOC-000103",
       "is_active": true,
@@ -503,7 +503,7 @@
           "Linglestown Junior High"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:linglestown_middle_school",
       "location_id": "LOC-000103",
       "is_active": true,
@@ -538,7 +538,7 @@
           "Swatara Junior High"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:swatara:swatara_middle_school",
       "location_id": "LOC-000111",
       "is_active": true,
@@ -574,7 +574,7 @@
           "DCTS"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_paxton:dauphin_county_tech_school",
       "location_id": "LOC-000103",
       "is_active": true,
@@ -617,7 +617,7 @@
           "Enola Elementary School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:east_pennsboro:summit_street_school",
       "location_id": "LOC-000132",
       "is_active": false,
@@ -659,7 +659,7 @@
           "McClures Gap Schoolhouse"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:lower_frankford:mcclures_gap_school",
       "location_id": "LOC-000151",
       "is_active": false,
@@ -701,7 +701,7 @@
           "Upper Frankford School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:upper_frankford:bloserville_schoolhouse",
       "location_id": "LOC-000150",
       "is_active": false,
@@ -743,7 +743,7 @@
           "Newville Borough High School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:newville:newville_high_school",
       "location_id": "LOC-000156",
       "is_active": false,
@@ -784,7 +784,7 @@
           "Big Spring Senior High School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:west_pennsboro:big_spring_high_school",
       "location_id": "LOC-000144",
       "is_active": true,
@@ -825,7 +825,7 @@
           "Carlisle Area High School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:carlisle_high_school",
       "location_id": "LOC-000152",
       "is_active": true,
@@ -861,7 +861,7 @@
           "United States Indian Industrial School"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle_barracks:carlisle_indian_school",
       "location_id": "LOC-000225",
       "is_active": false,
@@ -904,7 +904,7 @@
           "Ship"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:shippensburg:shippensburg_university",
       "location_id": "LOC-000155",
       "is_active": true,
@@ -957,7 +957,7 @@
           "Old West Campus"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:cumberland:carlisle:dickinson_college",
       "location_id": "LOC-000152",
       "is_active": true,
@@ -1000,7 +1000,7 @@
           "University Park"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:centre:university_park:penn_state_university",
       "location_id": "LOC-000024",
       "is_active": true,
@@ -1060,7 +1060,7 @@
           "Capitol Campus"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:pa:dauphin:lower_swatara:penn_state_harrisburg",
       "location_id": "LOC-000104",
       "is_active": true,
@@ -1103,7 +1103,7 @@
           "New Hampshire College"
         ]
       },
-      "category": "FACILITY",
+      "category": "SCHOOL",
       "canonical_urn": "urn:gda:site:us:nh:hillsborough:manchester:snhu",
       "location_id": "LOC-000192",
       "is_active": true,
