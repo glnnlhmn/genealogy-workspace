@@ -1,16 +1,19 @@
-# Name: sources.py
-# Path: src/gda/enums/sources.py
+"""Path: src/gda/enums/sources.py
 
-"""Source record categories, document classifications, and historical schedules."""
+Source record categories, document classifications, and historical schedules.
+
+Operational Role:
+    Defines authoritative archival source categories, granular document types,
+    educational attainments, and military conflict taxonomies.
+"""
 
 from __future__ import annotations
 
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 
-__version__ = "0.1.0+build.r1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
-    "CensusYear",
     "EducationLevel",
     "MilitaryBranch",
     "MilitaryConflict",
@@ -191,27 +194,6 @@ class EducationLevel(StrEnum):
     OTHER = "OTHER"
 
 
-class CensusYear(IntEnum):
-    """U.S. Federal Decennial Census schedule years."""
-
-    Y1790 = 1790
-    Y1800 = 1800
-    Y1810 = 1810
-    Y1820 = 1820
-    Y1830 = 1830
-    Y1840 = 1840
-    Y1850 = 1850
-    Y1860 = 1860
-    Y1870 = 1870
-    Y1880 = 1880
-    Y1900 = 1900
-    Y1910 = 1910
-    Y1920 = 1920
-    Y1930 = 1930
-    Y1940 = 1940
-    Y1950 = 1950
-
-
 class MilitaryConflict(StrEnum):
     """Conflict codes used on draft and military service schedules."""
 
@@ -225,6 +207,8 @@ class MilitaryConflict(StrEnum):
 
 
 class MilitaryDraftType(StrEnum):
+    """Military draft registration list classifications."""
+
     DRAFT_REGISTRATION = "DRAFT_REGISTRATION"
     ENROLLMENT_LIST = "ENROLLMENT_LIST"
     CONSCRIPTION_CARD = "CONSCRIPTION_CARD"

@@ -1,35 +1,80 @@
 """Path: src/gda/enums/archival.py
 
-Archival notes, transcription clarity, physical media orientation, and formats.
+Controlled enumerations for physical documents, transcripts, and archival artifacts.
 
 Operational Role:
-    Defines controlled enumerations for archival asset management, document
-    orientation, transcription fidelity levels, and research note taxonomy.
-    Maintains zero internal framework dependencies.
+    Defines controlled vocabularies for physical media orientations, transcript
+    accuracy metrics, legibility ratings, draft registration artifacts, and
+    extracted physical trait classifications.
 """
 
 from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = [
     "DocumentSide",
     "EyeColor",
     "HairColor",
+    "Legibility",
     "NoteType",
     "PhysicalBuild",
     "PublicationFrequency",
     "SelectiveServiceClass",
     "TestimonyMedium",
+    "TextQuality",
     "TranscriptLegibility",
     "WwiCardType",
 ]
 
 
+class DocumentSide(StrEnum):
+    """Controlled orientation or face of physical document media."""
+
+    FRONT = "FRONT"
+    BACK = "BACK"
+    INSIDE = "INSIDE"
+    OUTSIDE = "OUTSIDE"
+    ENVELOPE = "ENVELOPE"
+    ATTACHMENT = "ATTACHMENT"
+    FULL_SPREAD = "FULL_SPREAD"
+    ENCLOSURE = "ENCLOSURE"
+    UNKNOWN = "UNKNOWN"
+
+
+class TextQuality(StrEnum):
+    """Controlled classification of transcription accuracy."""
+
+    VERBATIM = "VERBATIM"
+    PARTIAL = "PARTIAL"
+    ABSTRACT = "ABSTRACT"
+    DAMAGED = "DAMAGED"
+    ILLEGIBLE = "ILLEGIBLE"
+
+
+class TranscriptLegibility(StrEnum):
+    """Controlled classification of primary document legibility."""
+
+    CLEAR = "CLEAR"
+    FAINT = "FAINT"
+    DAMAGED = "DAMAGED"
+    PARTIAL = "PARTIAL"
+    FADED = "FADED"
+    TORN = "TORN"
+    STAINED = "STAINED"
+    POOR_HANDWRITING = "POOR_HANDWRITING"
+    PARTIALLY_ILLEGIBLE = "PARTIALLY_ILLEGIBLE"
+    ILLEGIBLE = "ILLEGIBLE"
+
+
+# Canonical alias aligning model/base/transcript with archival enums
+Legibility = TranscriptLegibility
+
+
 class NoteType(StrEnum):
-    """Archival contextual note classification."""
+    """Taxonomic classification of archival research and analysis notes."""
 
     GENERAL = "GENERAL"
     RESEARCH = "RESEARCH"
@@ -37,38 +82,8 @@ class NoteType(StrEnum):
     PROOF = "PROOF"
 
 
-class DocumentSide(StrEnum):
-    """Physical archival document side or orientation."""
-
-    FRONT = "FRONT"
-    BACK = "BACK"
-    INSIDE = "INSIDE"
-    OUTSIDE = "OUTSIDE"
-    ENCLOSURE = "ENCLOSURE"
-    UNKNOWN = "UNKNOWN"
-
-
-class TranscriptLegibility(StrEnum):
-    """Visual legibility ratings for source record text."""
-
-    CLEAR = "CLEAR"
-    FAINT = "FAINT"
-    DAMAGED = "DAMAGED"
-    PARTIAL = "PARTIAL"
-    ILLEGIBLE = "ILLEGIBLE"
-
-
-class PublicationFrequency(StrEnum):
-    """Periodicity of serial publications and newspapers."""
-
-    DAILY = "Daily"
-    WEEKLY = "Weekly"
-    SEMI_WEEKLY = "Semi-Weekly"
-    MONTHLY = "Monthly"
-
-
 class TestimonyMedium(StrEnum):
-    """Physical format of personal testimony, memoirs, and narratives."""
+    """Authoritative physical or recorded medium for oral/written testimony."""
 
     MANUSCRIPT = "Manuscript (Handwritten)"
     TYPESCRIPT = "Typescript"
@@ -78,8 +93,17 @@ class TestimonyMedium(StrEnum):
     OTHER = "Other"
 
 
+class PublicationFrequency(StrEnum):
+    """Serial publication schedule classifications for periodicals."""
+
+    DAILY = "Daily"
+    WEEKLY = "Weekly"
+    SEMI_WEEKLY = "Semi-Weekly"
+    MONTHLY = "Monthly"
+
+
 class SelectiveServiceClass(StrEnum):
-    """Selective service military classification codes."""
+    """Selective Service military draft classification codes."""
 
     CLASS_1_A = "1-A"
     CLASS_1_C = "1-C"
@@ -93,7 +117,7 @@ class SelectiveServiceClass(StrEnum):
 
 
 class WwiCardType(StrEnum):
-    """WWI draft registration schedule card classification."""
+    """World War I draft registration card types based on registration dates."""
 
     CARD_A = "Card A (1917)"
     CARD_B = "Card B (1918)"
@@ -102,7 +126,7 @@ class WwiCardType(StrEnum):
 
 
 class PhysicalBuild(StrEnum):
-    """Standardized physical stature and build classifications."""
+    """Physical build classifications extracted from historical draft records."""
 
     SLENDER = "SLENDER"
     MEDIUM = "MEDIUM"
@@ -110,7 +134,7 @@ class PhysicalBuild(StrEnum):
 
 
 class EyeColor(StrEnum):
-    """Standardized eye color classifications."""
+    """Eye color categories extracted from historical draft or identification cards."""
 
     BLUE = "BLUE"
     BROWN = "BROWN"
@@ -120,7 +144,7 @@ class EyeColor(StrEnum):
 
 
 class HairColor(StrEnum):
-    """Standardized hair color classifications."""
+    """Hair color categories extracted from historical draft or identification cards."""
 
     BLONDE = "BLONDE"
     BROWN = "BROWN"

@@ -5,32 +5,20 @@ Stateless identifier minting, parsing, formatting, and validation helpers.
 Operational Role:
     Provides deterministic RFC 4122 UUIDv4 minting alongside canonical
     sequential smartID minting, validation, decomposition, and high-water
-    mark sequence extraction anchored to gda.enums.core and gda.model.atom.id
-    without regular expressions.
+    mark sequence extraction decoupled from high-level domain models.
 """
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections.abc import Iterable
 from typing import Any
 
-from gda.core.errors import ModelFormatError, ModelPrefixMismatchError
+from gda.core.types import UUID_V4_REGEX
 from gda.enums.core import IDType, SmartIDPrefix
-from gda.model.atom.id import (
-    AtomID,
-    DraftRecordID,
-    FactID,
-    FamilyID,
-    IndividualID,
-    LocationID,
-    NoteID,
-    RepositoryID,
-    SiteID,
-    UUIDv4Str,
-)
 
-__version__ = "0.0.2+build.9"
+__version__ = "0.0.2+build.11"
 
 __all__ = [
     "extract_max_smart_id",
@@ -40,21 +28,7 @@ __all__ = [
     "verify_id",
 ]
 
-_PREFIX_TO_ATOM_CLASS: dict[SmartIDPrefix, type[AtomID]] = {
-    SmartIDPrefix.IND: IndividualID,
-    SmartIDPrefix.FID: FactID,
-    SmartIDPrefix.LOC: LocationID,
-    SmartIDPrefix.SID: SiteID,
-    SmartIDPrefix.FAM: FamilyID,
-    SmartIDPrefix.NOT: NoteID,
-    SmartIDPrefix.REP: RepositoryID,
-    SmartIDPrefix.DRF: DraftRecordID,
-}
-
-
-# ==============================================================================
-# SECTION 1: PUBLIC VALIDATION GATEWAY & PRIVATE DISPATCH
-# ==============================================================================
+_SMART_ID_PATTERN = re.compile(r"^[A-Z]{3}-\d{6}$")
 
 
 def verify_id(
@@ -64,13 +38,10 @@ def verify_id(
 ) -> bool:
     """Verify whether a candidate identifier conforms to the specified IDType.
 
-    When id_type is IDType.SMART_ID, optionally validates against a specific
-    SmartIDPrefix by inspecting its authoritative AtomID model definition.
-
     Args:
         val: Required candidate identifier string.
         id_type: Identifier format category (IDType.SMART_ID or IDType.UUID).
-        smart_id_prefix: Required or optional prefix constraint when validating smartIDs.
+        smart_id_prefix: Optional prefix constraint when validating smartIDs.
 
     Returns:
         True if the candidate string strictly satisfies the format; False otherwise.
@@ -89,11 +60,7 @@ def verify_id(
     if id_type == IDType.UUID:
         if smart_id_prefix is not None:
             raise ValueError("smart_id_prefix cannot be specified for IDType.UUID.")
-        try:
-            UUIDv4Str(clean_val)
-            return True
-        except (ModelFormatError, ValueError):
-            return False
+        return UUID_V4_REGEX.match(clean_val) is not None
 
     if id_type == IDType.SMART_ID:
         return _validate_smart_id(clean_val, smart_id_prefix)
@@ -102,37 +69,20 @@ def verify_id(
 
 
 def _validate_smart_id(clean_val: str, prefix: SmartIDPrefix | None) -> bool:
-    """Validate smartID format against authoritative AtomID model classes."""
-    if "-" not in clean_val:
+    """Validate smartID format purely against regex and registered SmartIDPrefix members."""
+    if not _SMART_ID_PATTERN.match(clean_val):
         return False
 
-    parts = clean_val.split("-")
-    if len(parts) != 2:
-        return False
-
-    parsed_prefix_str, _ = parts
+    prefix_str, _ = clean_val.split("-", 1)
     try:
-        parsed_prefix = SmartIDPrefix(parsed_prefix_str)
+        parsed_prefix = SmartIDPrefix(prefix_str)
     except ValueError:
         return False
 
     if prefix is not None and parsed_prefix != prefix:
         return False
 
-    atom_cls = _PREFIX_TO_ATOM_CLASS.get(parsed_prefix)
-    if atom_cls is None:
-        return False
-
-    try:
-        atom_cls(clean_val)
-        return True
-    except (ModelFormatError, ModelPrefixMismatchError, ValueError):
-        return False
-
-
-# ==============================================================================
-# SECTION 2: IDENTIFIER GENERATION & COMPOSITION
-# ==============================================================================
+    return True
 
 
 def mint_uuid() -> str:
@@ -178,7 +128,7 @@ def parse_smart_id(val: str | Any) -> tuple[SmartIDPrefix, int]:
         Tuple of (SmartIDPrefix, sequence_number).
 
     Raises:
-        ValueError: If val is None, empty, compound, or fails AtomID validation.
+        ValueError: If val is None, empty, compound, or fails format validation.
     """
     raw = getattr(val, "value", val)
     if not isinstance(raw, str) or not raw.strip():
@@ -200,7 +150,7 @@ def extract_max_smart_id(
     *,
     ignore_errors: bool = True,
 ) -> int:
-    """Extract the highest numeric sequence integer from an iterable of smartIDs.
+    """Extract highest sequence integer from an iterable of smartIDs.
 
     Args:
         id_items: Iterable of smartID strings or domain value objects.

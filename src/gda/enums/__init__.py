@@ -6,6 +6,7 @@ Backward-compatible re-export facade routing to gda.core.enums.
 from __future__ import annotations
 
 from gda.core.enums import (
+    MODIFIER_ALIASES,
     AssociatedRole,
     BirthPlurality,
     CensusYearUS,
@@ -57,7 +58,6 @@ from gda.core.enums import (
     UnionType,
     VitalModifier,
     WwiCardType,
-    MODIFIER_ALIASES,
     normalize_modifier,
 )
 

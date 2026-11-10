@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "0.1.0+build.r1"
+__version__ = "1.0.0+build.1"
 
 __all__ = [
     "CitizenshipStatus",

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "0.1.0+build.5"
+__version__ = "1.0.0+build.7"
 
 __all__ = [
     "BirthPlurality",
@@ -18,10 +18,10 @@ __all__ = [
     "MannerOfDeath",
     "MaritalHistoryDissolution",
     "MaritalStatus",
-    "NameStatus",
     "PedigreeType",
     "UnionDissolutionType",
     "UnionType",
+    "VitalModifier",
 ]
 
 
@@ -134,5 +134,11 @@ class HistoricNameType(StrEnum):
     INDIGENOUS = "INDIGENOUS"
 
 
-# Backward-compatibility alias during refactoring
-NameStatus = HistoricNameType
+class VitalModifier(StrEnum):
+    """Vital condition modifiers for birth and infant death assertions."""
+
+    STILLBORN = "STILLBORN"
+    INFANT = "INFANT"
+    ILLEGITIMATE = "ILLEGITIMATE"
+    POSTHUMOUS = "POSTHUMOUS"
+    LEGITIMATED = "LEGITIMATED"

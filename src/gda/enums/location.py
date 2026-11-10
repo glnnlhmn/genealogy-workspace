@@ -11,9 +11,28 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
-__all__ = ["JurisdictionCategory"]
+__all__ = [
+    "JurisdictionCategory",
+    "LocationType",
+]
+
+
+class LocationType(StrEnum):
+    """Administrative and jurisdictional level of a geographic place."""
+
+    CIVIL_JURISDICTION = "CIVIL_JURISDICTION"
+    COUNTRY = "COUNTRY"
+    STATE = "STATE"
+    COUNTY = "COUNTY"
+    CITY = "CITY"
+    TOWNSHIP = "TOWNSHIP"
+    PARISH = "PARISH"
+    WARD = "WARD"
+    PRECINCT = "PRECINCT"
+    OTHER = "OTHER"
+    UNKNOWN = "UNKNOWN"
 
 
 class JurisdictionCategory(StrEnum):

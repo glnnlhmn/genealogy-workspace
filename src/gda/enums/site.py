@@ -3,62 +3,43 @@
 Spatial jurisdiction levels, facility venues, and cemetery marker enums.
 
 Operational Role:
-    Defines controlled categorical enumerations for spatial jurisdictions,
-    physical site/venue classifications, facility operational lifecycles,
-    and cemetery monument typologies, materials, and conditions.
+    Defines controlled categorical enumerations for physical site/venue
+    classifications, facility operational lifecycles, and cemetery monument
+    typologies, materials, and conditions.
 """
 
 from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
-    "LocationType",
     "MarkerCondition",
     "MarkerMaterial",
     "MarkerType",
     "OperationalStatus",
-    "SiteCategory",
     "SiteType",
 ]
-
-
-class LocationType(StrEnum):
-    """Administrative and jurisdictional level of a geographic place."""
-
-    CIVIL_JURISDICTION = "CIVIL_JURISDICTION"
-    COUNTRY = "COUNTRY"
-    STATE = "STATE"
-    COUNTY = "COUNTY"
-    CITY = "CITY"
-    TOWNSHIP = "TOWNSHIP"
-    PARISH = "PARISH"
-    WARD = "WARD"
-    PRECINCT = "PRECINCT"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
 
 
 class SiteType(StrEnum):
     """Classification of physical venues, structures, landmarks, and cemeteries."""
 
+    BUSINESS = "BUSINESS"
     CEMETERY = "CEMETERY"
     CHURCH = "CHURCH"
     COMMERCIAL = "COMMERCIAL"
+    FACILITY = "FACILITY"
     GOVERNMENT = "GOVERNMENT"
     HOSPITAL = "HOSPITAL"
     LANDMARK = "LANDMARK"
     MILITARY = "MILITARY"
     REPOSITORY = "REPOSITORY"
     RESIDENCE = "RESIDENCE"
+    SCHOOL = "SCHOOL"
     OTHER = "OTHER"
     UNKNOWN = "UNKNOWN"
-
-
-# Backward compatibility alias for legacy SiteCategory imports
-SiteCategory = SiteType
 
 
 class OperationalStatus(StrEnum):
