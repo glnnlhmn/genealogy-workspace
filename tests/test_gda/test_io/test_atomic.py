@@ -1,7 +1,6 @@
-# Name: test_atomic.py
-# Path: tests/test_gda/test_io/test_atomic.py
+"""Path: tests/test_gda/test_io/test_atomic.py
 
-"""Unit and integration test suite for gda.io.atomic.
+Unit and integration test suite for gda.io.atomic.
 
 Operational Role:
     Verifies same-directory atomic staging, parent directory auto-creation,
@@ -30,9 +29,9 @@ from gda.io.atomic import (
     atomic_write_stream,
     atomic_write_text,
 )
-from gda.io.errors import AtomicWriteError, DirectoryCreationError
+from gda.io.errors import AtomicWriteError, DirectoryCreationError, FileLockError
 
-__version__ = "0.1.0+build.r9"
+__version__ = "0.2.0+build.r1"
 
 # ==============================================================================
 # GROUP 1: Parent Directory Auto-Creation
@@ -162,7 +161,7 @@ def test_replace_with_retry_single_retry_success(
 def test_replace_with_retry_exhausts_and_raises(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Verify AtomicWriteError is raised when replacement attempts are exhausted."""
+    """Verify FileLockError is raised when replacement attempts are exhausted."""
     src = tmp_path / "temp_file.tmp"
     dst = tmp_path / "final_dest.txt"
     src.write_text("payload", encoding="utf-8")
@@ -173,7 +172,7 @@ def test_replace_with_retry_exhausts_and_raises(
     monkeypatch.setattr("os.replace", mock_replace)
     monkeypatch.setattr("time.sleep", lambda _: None)
 
-    with pytest.raises(AtomicWriteError, match="Atomic replacement failed .* after 3 attempts"):
+    with pytest.raises(FileLockError, match="Atomic replacement failed .* after 3 attempts"):
         AtomicWriter.replace_with_retry(src, dst, max_retries=3, backoff_factor=0.001)
 
 
@@ -181,7 +180,7 @@ def test_replace_with_retry_exhausts_and_raises(
 def test_replace_with_retry_exhausts_on_first_attempt(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Verify replace_with_retry raises on max_retries=1 without invoking sleep."""
+    """Verify replace_with_retry raises FileLockError on max_retries=1 without invoking sleep."""
     src = tmp_path / "temp_file_single_fail.tmp"
     dst = tmp_path / "final_dest_single_fail.txt"
     src.write_text("payload", encoding="utf-8")
@@ -193,7 +192,7 @@ def test_replace_with_retry_exhausts_on_first_attempt(
     sleep_mock = MagicMock()
     monkeypatch.setattr("time.sleep", sleep_mock)
 
-    with pytest.raises(AtomicWriteError, match="Atomic replacement failed .* after 1 attempts"):
+    with pytest.raises(FileLockError, match="Atomic replacement failed .* after 1 attempts"):
         AtomicWriter.replace_with_retry(src, dst, max_retries=1, backoff_factor=0.01)
 
     assert sleep_mock.call_count == 0

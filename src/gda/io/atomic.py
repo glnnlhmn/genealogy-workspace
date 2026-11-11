@@ -1,7 +1,6 @@
-# Name: atomic.py
-# Path: src/gda/io/atomic.py
+"""Path: src/gda/io/atomic.py
 
-"""Same-directory atomic file staging and replacement engine.
+Same-directory atomic file staging and replacement engine.
 
 Operational Role:
     Provides context-managed atomic staging to prevent corrupt writes, partial
@@ -23,9 +22,9 @@ from pathlib import Path
 from typing import IO, Any
 
 from gda.core.introspectable import IntrospectableMixin
-from gda.io.errors import AtomicWriteError, DirectoryCreationError
+from gda.io.errors import AtomicWriteError, DirectoryCreationError, FileLockError
 
-__version__ = "0.1.0+build.r6"
+__version__ = "0.2.0+build.r1"
 
 
 class AtomicWriter(IntrospectableMixin):
@@ -74,7 +73,8 @@ class AtomicWriter(IntrospectableMixin):
             backoff_factor: Exponential base delay applied between retries.
 
         Raises:
-            AtomicWriteError: If replacement fails after exhausting all retry attempts.
+            AtomicWriteError: If the source staging file does not exist.
+            FileLockError: If replacement fails after exhausting all retry attempts.
         """
         src = Path(source).resolve()
         dst = Path(destination).resolve()
@@ -97,7 +97,7 @@ class AtomicWriter(IntrospectableMixin):
                     time.sleep(delay)
                     delay *= 2.0
 
-        raise AtomicWriteError(
+        raise FileLockError(
             f"Atomic replacement failed for '{dst}' after {max_retries} attempts: {last_error}"
         ) from last_error
 
@@ -127,6 +127,7 @@ def atomic_write(
 
     Raises:
         AtomicWriteError: If staging file allocation, syncing, or replacement fails.
+        FileLockError: If replacement retries are exhausted.
         DirectoryCreationError: If parent directory creation fails.
     """
     target = Path(file_path).resolve()
@@ -200,6 +201,7 @@ def atomic_write_text(
 
     Raises:
         AtomicWriteError: If file writing or replacement fails.
+        FileLockError: If replacement retries are exhausted.
     """
     target = Path(target_path).resolve()
     with atomic_write(
@@ -232,6 +234,7 @@ def atomic_write_bytes(
 
     Raises:
         AtomicWriteError: If binary file writing or replacement fails.
+        FileLockError: If replacement retries are exhausted.
     """
     target = Path(target_path).resolve()
     with atomic_write(
@@ -264,6 +267,7 @@ def atomic_write_stream(
 
     Raises:
         AtomicWriteError: If streaming write or replacement fails.
+        FileLockError: If replacement retries are exhausted.
     """
     target = Path(target_path).resolve()
     with atomic_write(

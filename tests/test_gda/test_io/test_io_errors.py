@@ -1,7 +1,6 @@
-# Name: test_io_errors.py
-# Path: tests/test_gda/test_io/test_io_errors.py
+"""Path: tests/test_gda/test_io/test_io_errors.py
 
-"""Unit test suite for the gda.io exception hierarchy.
+Unit test suite for the gda.io exception hierarchy.
 
 Operational Role:
     Verifies class inheritance contracts, exception instantiation, message
@@ -28,11 +27,11 @@ from gda.io.errors import (
     SerializationError,
 )
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r1"
 
 # ==============================================================================
 # GROUP 1: Exception Hierarchy & Inheritance Contracts
-# Note: Verify inheritance boundaries from GenealogyDeskError and GDAIOError
+# Note: Verify inheritance boundaries from GenealogyDeskError, GDAIOError & AtomicWriteError
 # ==============================================================================
 
 
@@ -51,6 +50,16 @@ def test_atomic_write_error_inherits_from_gda_io_error() -> None:
     assert isinstance(err, GDAIOError)
     assert isinstance(err, GenealogyDeskError)
     assert str(err) == "Failed staging atomic file"
+
+
+@pytest.mark.unit
+def test_file_lock_error_inherits_from_atomic_write_error() -> None:
+    """Verify FileLockError subclasses AtomicWriteError and GDAIOError."""
+    err = FileLockError("Lock acquisition timeout")
+    assert isinstance(err, AtomicWriteError)
+    assert isinstance(err, GDAIOError)
+    assert isinstance(err, GenealogyDeskError)
+    assert str(err) == "Lock acquisition timeout"
 
 
 @pytest.mark.unit
@@ -78,15 +87,6 @@ def test_serialization_error_inherits_from_gda_io_error() -> None:
     assert isinstance(err, GDAIOError)
     assert isinstance(err, GenealogyDeskError)
     assert str(err) == "Syntax serialization failure"
-
-
-@pytest.mark.unit
-def test_file_lock_error_inherits_from_gda_io_error() -> None:
-    """Verify FileLockError subclasses GDAIOError and preserves message."""
-    err = FileLockError("Lock acquisition timeout")
-    assert isinstance(err, GDAIOError)
-    assert isinstance(err, GenealogyDeskError)
-    assert str(err) == "Lock acquisition timeout"
 
 
 @pytest.mark.unit

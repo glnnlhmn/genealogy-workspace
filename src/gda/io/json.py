@@ -1,7 +1,6 @@
-# Name: json.py
-# Path: src/gda/io/json.py
+"""Path: src/gda/io/json.py
 
-"""Deterministic JSON serialization and atomic persistence engine.
+Deterministic JSON serialization and atomic persistence engine.
 
 Operational Role:
     Provides canonical JSON encoding, decoding, and filesystem persistence for
@@ -21,7 +20,7 @@ from gda.io.atomic import atomic_write
 from gda.io.backup import GDABackupManager
 from gda.io.errors import FileReadError, SerializationError
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r1"
 
 
 class GDAJsonIO(IntrospectableMixin):

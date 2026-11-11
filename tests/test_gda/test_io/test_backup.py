@@ -1,12 +1,12 @@
-# Name: test_backup.py
-# Path: tests/test_gda/test_io/test_backup.py
+"""Path: tests/test_gda/test_io/test_backup.py
 
-"""Unit and integration test suite for gda.io.backup.
+Unit and integration test suite for gda.io.backup.
 
 Operational Role:
     Verifies Safe Backup snapshot generation, default and explicit destination
-    resolution, sub-second collision resolution, chronological discovery,
-    atomic restoration, and error contracts with 100% statement and branch coverage.
+    resolution, sub-second collision resolution, natural chronological discovery,
+    streamed chunked atomic restoration, and error contracts with 100% statement
+    and branch coverage.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 verification of snapshot creation, discovery, and restoration.
@@ -24,7 +24,7 @@ import pytest
 from gda.io.backup import GDABackupManager
 from gda.io.errors import BackupError
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r2"
 
 # ==============================================================================
 # GROUP 1: Directory Resolution & Default Sibling Provisioning
@@ -133,10 +133,10 @@ def test_create_backup_raises_on_read_or_write_failure(
     target = tmp_path / "corrupt.txt"
     target.write_text("payload", encoding="utf-8")
 
-    def mock_write_bytes(*args: object, **kwargs: object) -> Path:
+    def mock_write_stream(*args: object, **kwargs: object) -> Path:
         raise OSError("Disk write failed")
 
-    monkeypatch.setattr("gda.io.backup.atomic_write_bytes", mock_write_bytes)
+    monkeypatch.setattr("gda.io.backup.atomic_write_stream", mock_write_stream)
 
     with pytest.raises(BackupError, match="Failed to create backup"):
         GDABackupManager.create_backup(target)
@@ -144,7 +144,7 @@ def test_create_backup_raises_on_read_or_write_failure(
 
 # ==============================================================================
 # GROUP 3: Chronological Backup Discovery (list_backups)
-# Note: Verification of sorting, regex filtering, and missing directory handling
+# Note: Verification of natural numeric counter sorting, regex filtering, and missing dirs
 # ==============================================================================
 
 
@@ -158,26 +158,34 @@ def test_list_backups_returns_empty_when_directory_missing(
 
 
 @pytest.mark.integration
-def test_list_backups_filters_and_sorts_chronologically(
+def test_list_backups_filters_and_sorts_chronologically_with_natural_numeric_order(
     tmp_path: Path,
 ) -> None:
-    """Verify list_backups ignores non-matching files and sorts newest first."""
+    """Verify list_backups sorts newest first, skips subdirectories, and orders counters."""
     target = tmp_path / "notes.txt"
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()
 
-    b1 = backup_dir / "notes.txt.20260101_100000.bk"
-    b2 = backup_dir / "notes.txt.20260102_120000.bk"
-    b3 = backup_dir / "notes.txt.20260102_120000_1.bk"
+    # Provision files
+    b_early = backup_dir / "notes.txt.20260101_100000.bk"
+    b_day2_base = backup_dir / "notes.txt.20260102_120000.bk"
+    b_day2_c1 = backup_dir / "notes.txt.20260102_120000_1.bk"
+    b_day2_c2 = backup_dir / "notes.txt.20260102_120000_2.bk"
+    b_day2_c10 = backup_dir / "notes.txt.20260102_120000_10.bk"
     other_file = backup_dir / "notes.txt.bak"
     unrelated_bk = backup_dir / "other.txt.20260101_100000.bk"
 
-    for p in (b1, b2, b3, other_file, unrelated_bk):
+    for p in (b_early, b_day2_base, b_day2_c1, b_day2_c2, b_day2_c10, other_file, unrelated_bk):
         p.write_text("dummy", encoding="utf-8")
+
+    # Provision a subdirectory inside the backup folder to exercise the child.is_file() False branch
+    ignored_subdir = backup_dir / "nested_backup_dir"
+    ignored_subdir.mkdir()
 
     discovered = GDABackupManager.list_backups(target, backup_dir=backup_dir)
 
-    assert discovered == [b3, b2, b1]
+    # In natural order: counter 10 > counter 2 > counter 1 > base (counter 0) > earlier timestamp
+    assert discovered == [b_day2_c10, b_day2_c2, b_day2_c1, b_day2_base, b_early]
 
 
 # ==============================================================================
@@ -187,8 +195,8 @@ def test_list_backups_filters_and_sorts_chronologically(
 
 
 @pytest.mark.integration
-def test_restore_backup_replaces_target_atomically(tmp_path: Path) -> None:
-    """Verify restore_backup overwrites target with snapshot payload."""
+def test_restore_backup_replaces_target_atomically_via_stream(tmp_path: Path) -> None:
+    """Verify restore_backup overwrites target with snapshot payload via streaming chunks."""
     target = tmp_path / "live_data.json"
     target.write_text('{"state": "mutated"}', encoding="utf-8")
 
@@ -226,15 +234,15 @@ def test_restore_backup_raises_when_source_is_directory(
 def test_restore_backup_raises_on_atomic_write_error(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Verify restore_backup raises BackupError when atomic_write_bytes fails."""
+    """Verify restore_backup raises BackupError when atomic_write_stream fails."""
     backup_file = tmp_path / "snap.bk"
     backup_file.write_text("content", encoding="utf-8")
     target = tmp_path / "live.txt"
 
-    def mock_write_bytes(*args: object, **kwargs: object) -> Path:
+    def mock_write_stream(*args: object, **kwargs: object) -> Path:
         raise OSError("Permission denied")
 
-    monkeypatch.setattr("gda.io.backup.atomic_write_bytes", mock_write_bytes)
+    monkeypatch.setattr("gda.io.backup.atomic_write_stream", mock_write_stream)
 
     with pytest.raises(BackupError, match="Failed to restore backup"):
         GDABackupManager.restore_backup(backup_file, target)

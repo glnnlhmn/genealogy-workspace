@@ -1,7 +1,6 @@
-# Name: test_text.py
-# Path: tests/test_gda/test_io/test_text.py
+"""Path: tests/test_gda/test_io/test_text.py
 
-"""Unit and integration test suite for gda.io.text.
+Unit and integration test suite for gda.io.text.
 
 Operational Role:
     Verifies UTF-8 text/markdown reading, atomic persistence, Safe Backup integration,
@@ -23,7 +22,7 @@ from gda.io.backup import GDABackupManager
 from gda.io.errors import FileReadError
 from gda.io.text import GDATextIO
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r1"
 
 # ==============================================================================
 # GROUP 1: Text Reading & Decoding

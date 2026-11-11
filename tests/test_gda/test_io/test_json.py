@@ -1,7 +1,6 @@
-# Name: test_json.py
-# Path: tests/test_gda/test_io/test_json.py
+"""Path: tests/test_gda/test_io/test_json.py
 
-"""Unit and integration test suite for gda.io.json.
+Unit and integration test suite for gda.io.json.
 
 Operational Role:
     Verifies deterministic JSON decoding, encoding, Safe Backup triggering,
@@ -23,7 +22,7 @@ from gda.io.backup import GDABackupManager
 from gda.io.errors import FileReadError, SerializationError
 from gda.io.json import GDAJsonIO
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r1"
 
 # ==============================================================================
 # GROUP 1: JSON Reading & Deserialization

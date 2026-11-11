@@ -1,7 +1,6 @@
-# Name: text.py
-# Path: src/gda/io/text.py
+"""Path: src/gda/io/text.py
 
-"""Normalized UTF-8 text and markdown atomic persistence engine.
+Normalized UTF-8 text and markdown atomic persistence engine.
 
 Operational Role:
     Provides canonical UTF-8 reading and writing for textual documents,
@@ -19,7 +18,7 @@ from gda.io.atomic import atomic_write
 from gda.io.backup import GDABackupManager
 from gda.io.errors import FileReadError
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r1"
 
 
 class GDATextIO(IntrospectableMixin):

@@ -1,7 +1,6 @@
-# Name: __init__.py
-# Path: src/gda/io/__init__.py
+"""Path: src/gda/io/__init__.py
 
-"""Genealogy Digital Archive I/O and persistence infrastructure.
+Genealogy Digital Archive I/O and persistence infrastructure.
 
 Operational Role:
     Defines the public application programming interface for physical disk
@@ -31,7 +30,7 @@ from gda.io.errors import (
 from gda.io.json import GDAJsonIO
 from gda.io.text import GDATextIO
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r1"
 
 __all__ = [
     "AtomicWriteError",

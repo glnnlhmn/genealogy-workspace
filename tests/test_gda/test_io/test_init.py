@@ -1,7 +1,6 @@
-# Name: test_init.py
-# Path: tests/test_gda/test_io/test_init.py
+"""Path: tests/test_gda/test_io/test_init.py
 
-"""Unit test suite for the gda.io package root and public exports.
+Unit test suite for the gda.io package root and public exports.
 
 Operational Role:
     Verifies package surface exports, __all__ definitions, and version availability
@@ -19,7 +18,7 @@ import pytest
 
 import gda.io
 
-__version__ = "0.1.0+build.r1"
+__version__ = "0.2.0+build.r1"
 
 # ==============================================================================
 # GROUP 1: Package Export Surface
