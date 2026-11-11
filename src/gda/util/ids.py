@@ -15,8 +15,8 @@ import uuid
 from collections.abc import Iterable
 from typing import Any
 
+from gda.core.enums import IDType, SmartIDPrefix
 from gda.core.types import UUID_V4_REGEX
-from gda.enums.core import IDType, SmartIDPrefix
 
 __version__ = "0.0.2+build.11"
 

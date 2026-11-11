@@ -1,61 +1,24 @@
 """Path: src/gda/enums/location.py
 
-Categorical enumerations for jurisdictional boundaries and administrative tiers.
-
-Operational Role:
-    Defines controlled categorical tiers for civil and geographical entities,
-    enforcing a strict linear administrative hierarchy rank.
+Backward-compatible re-export facade routing location and jurisdiction enums to gda.core.enums.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
-
-__version__ = "1.0.0+build.5"
+from gda.core.enums import (
+    CitizenshipStatus,
+    HomeOwnership,
+    JurisdictionCategory,
+    LocationType,
+    ResidentialStatus,
+    TaxpayerClassification,
+)
 
 __all__ = [
+    "CitizenshipStatus",
+    "HomeOwnership",
     "JurisdictionCategory",
     "LocationType",
+    "ResidentialStatus",
+    "TaxpayerClassification",
 ]
-
-
-class LocationType(StrEnum):
-    """Administrative and jurisdictional level of a geographic place."""
-
-    CIVIL_JURISDICTION = "CIVIL_JURISDICTION"
-    COUNTRY = "COUNTRY"
-    STATE = "STATE"
-    COUNTY = "COUNTY"
-    CITY = "CITY"
-    TOWNSHIP = "TOWNSHIP"
-    PARISH = "PARISH"
-    WARD = "WARD"
-    PRECINCT = "PRECINCT"
-    OTHER = "OTHER"
-    UNKNOWN = "UNKNOWN"
-
-
-class JurisdictionCategory(StrEnum):
-    """Hierarchical administrative categorization for civil jurisdictions."""
-
-    COUNTRY = "COUNTRY"
-    STATOID = "STATOID"
-    COUNTY_EQUIVALENT = "COUNTY_EQUIVALENT"
-    CIVIL_TOWNSHIP = "CIVIL_TOWNSHIP"
-    MUNICIPALITY = "MUNICIPALITY"
-    UNINCORPORATED_PLACE = "UNINCORPORATED_PLACE"
-    SPECIAL_DISTRICT = "SPECIAL_DISTRICT"
-
-    @property
-    def administrative_rank(self) -> int:
-        """Return numerical hierarchy ranking (lower number = higher administrative tier)."""
-        ranks = {
-            self.COUNTRY: 10,
-            self.STATOID: 20,
-            self.COUNTY_EQUIVALENT: 30,
-            self.CIVIL_TOWNSHIP: 40,
-            self.MUNICIPALITY: 50,
-            self.UNINCORPORATED_PLACE: 60,
-            self.SPECIAL_DISTRICT: 70,
-        }
-        return ranks[self]

@@ -5,20 +5,19 @@ Comprehensive unit test suite for gda.util.ids.
 Operational Role:
     Verifies IDType and SmartIDPrefix validation, stateless UUID minting,
     smartID minting, decomposition, and prefix-scoped high-water mark extraction
-    with 100% statement and branch coverage.
+    with 100% statement and branch coverage, fully decoupled from domain models.
 """
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from types import SimpleNamespace
 
 import pytest
 
 import gda.util.ids as uids
-from gda.enums.core import IDType, SmartIDPrefix
-from gda.model.atom.id import LocationID
+from gda.core.enums import IDType, SmartIDPrefix
 
-__version__ = "0.0.2+build.9"
+__version__ = "1.0.0+build.1"
 
 
 # ==============================================================================
@@ -92,10 +91,9 @@ def test_validate_smart_id_rejects_missing_or_multiple_hyphens() -> None:
 
 
 @pytest.mark.regression
-def test_validate_smart_id_handles_missing_atom_class_mapping() -> None:
-    """Verify smartID validation returns False if a prefix has no mapped AtomID class."""
-    with patch.dict(uids._PREFIX_TO_ATOM_CLASS, {SmartIDPrefix.LOC: None}, clear=False):
-        assert uids.verify_id("LOC-000104", smart_id_prefix=SmartIDPrefix.LOC) is False
+def test_validate_smart_id_rejects_unregistered_prefix() -> None:
+    """Verify smartID validation returns False if prefix is not a valid SmartIDPrefix."""
+    assert uids.verify_id("ZZZ-000104") is False
 
 
 # ==============================================================================
@@ -142,7 +140,8 @@ def test_parse_smart_id_extracts_enum_prefix_and_integer() -> None:
 @pytest.mark.unit
 def test_parse_smart_id_supports_value_objects() -> None:
     """Verify parse_smart_id supports objects exposing a .value attribute."""
-    prefix, seq = uids.parse_smart_id(LocationID("LOC-000104"))
+    mock_val = SimpleNamespace(value="LOC-000104")
+    prefix, seq = uids.parse_smart_id(mock_val)
     assert prefix == SmartIDPrefix.LOC
     assert seq == 104
 
@@ -184,9 +183,9 @@ def test_extract_max_smart_id_extracts_highest_integer_from_valid_smart_ids() ->
 
 
 @pytest.mark.unit
-def test_extract_max_smart_id_supports_atom_value_objects() -> None:
-    """Verify extraction handles AtomID domain objects exposing a .value attribute."""
-    identifiers = [LocationID("LOC-000005"), LocationID("LOC-000250")]
+def test_extract_max_smart_id_supports_value_objects() -> None:
+    """Verify extraction handles domain objects exposing a .value attribute."""
+    identifiers = [SimpleNamespace(value="LOC-000005"), SimpleNamespace(value="LOC-000250")]
     assert uids.extract_max_smart_id(identifiers) == 250
 
 
