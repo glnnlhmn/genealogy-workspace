@@ -12,15 +12,15 @@ Operational Role:
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 
 import pytest
 from pydantic import ValidationError
 
+from gda.core.enums.archival import NoteType
+from gda.core.enums.core import AssociatedRole, FactType
 from gda.core.errors import ModelFormatError
-from gda.enums.archival import NoteType
-from gda.enums.core import AssociatedRole, FactType
-from gda.model.atom.date import DateString, EventDate, IsoTimestamp
+from gda.model.atom.date import DateString, IsoTimestamp
 from gda.model.atom.id import (
     FactID,
     FamilyID,
@@ -30,24 +30,18 @@ from gda.model.atom.id import (
     SourceID,
 )
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate, TimePeriod
+from gda.model.base.note import Note
 from gda.model.base.source import SourceReference
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.fact import Fact, FactParticipant
 
-__version__ = "1.0.0+build.17"
+__version__ = "2.0.0+build.2"
 
 
 # ==============================================================================
 # FIXTURES
 # ==============================================================================
-
-
-@pytest.fixture
-def valid_audit() -> AuditStamp:
-    """Provide a valid synthetic AuditStamp fixture."""
-    ts = IsoTimestamp(value="2026-10-19T12:00:00Z")
-    return AuditStamp(created_at=ts, updated_at=ts)
 
 
 @pytest.fixture
@@ -60,7 +54,7 @@ def valid_citation() -> SourceReference:
 
 
 @pytest.fixture
-def valid_fact(valid_audit: AuditStamp, valid_citation: SourceReference) -> Fact:
+def valid_fact(golden_audit: AuditStamp, valid_citation: SourceReference) -> Fact:
     """Provide a fully populated Fact fixture."""
     p1 = FactParticipant.create(
         individual_id="IND-000002",
@@ -69,7 +63,7 @@ def valid_fact(valid_audit: AuditStamp, valid_citation: SourceReference) -> Fact
     )
     return Fact(
         id=FactID("FID-000001"),
-        audit=valid_audit,
+        audit=golden_audit,
         canonical_urn="urn:gda:fact:smith_birth_1842",
         fact_type=FactType.BIRTH,
         title="Birth of John Smith",
@@ -102,6 +96,7 @@ def test_fact_participant_factory_and_mutators() -> None:
     assert p.role == AssociatedRole.CLERGY
     assert p.notes == "Officiating minister"
     assert str(p) == f"IND-000001 [{AssociatedRole.CLERGY.value}] (Officiating minister)"
+    assert "FactParticipant(" in repr(p)
 
     # update_role
     up_role = p.update_role(AssociatedRole.WITNESS)
@@ -132,12 +127,15 @@ def test_fact_participant_factory_and_mutators() -> None:
 
 @pytest.mark.regression
 def test_fact_participant_role_normalization_variants() -> None:
-    """Verify _normalize_role handles aliases and enum value tokens."""
-    p_by_val = FactParticipant.create("IND-000001", role="WITN")
+    """Verify _normalize_role handles canonical uppercase/lowercase tokens including OFFICIAL."""
+    p_by_val = FactParticipant.create("IND-000001", role="witness")
     assert p_by_val.role == AssociatedRole.WITNESS
 
-    p_by_alias = FactParticipant.create("IND-000001", role="OFFICIAL")
-    assert p_by_alias.role == AssociatedRole.OFFICIANT
+    p_official = FactParticipant.create("IND-000001", role="OFFICIAL")
+    assert p_official.role == AssociatedRole.OFFICIAL
+
+    p_officiant = FactParticipant.create("IND-000001", role="OFFICIANT")
+    assert p_officiant.role == AssociatedRole.OFFICIANT
 
 
 @pytest.mark.integration
@@ -171,7 +169,7 @@ def test_fact_participant_defensive_errors() -> None:
         FactParticipant.from_dict("not-a-dict")  # type: ignore[arg-type]
 
     with pytest.raises(ModelFormatError, match="Missing required field 'individual_id'"):
-        FactParticipant.from_dict({"role": "Witness"})
+        FactParticipant.from_dict({"role": "WITNESS"})
 
     with pytest.raises(ModelFormatError, match="Failed to parse FactParticipant JSON"):
         FactParticipant.from_json("{broken-json")
@@ -186,11 +184,11 @@ def test_fact_participant_defensive_errors() -> None:
 
 
 @pytest.mark.regression
-def test_fact_minimal_instantiation(valid_audit: AuditStamp) -> None:
+def test_fact_minimal_instantiation(golden_audit: AuditStamp) -> None:
     """Verify Fact minimal instantiation defaults and collection initializers."""
     fact = Fact(
         id=FactID(value="FID-000001"),
-        audit=valid_audit,
+        audit=golden_audit,
         canonical_urn="urn:gda:fact:smith_birth_1842",
         fact_type=FactType.BIRTH,
         title="Birth of John Smith",
@@ -217,6 +215,7 @@ def test_fact_minimal_instantiation(valid_audit: AuditStamp) -> None:
     assert fact.is_family_fact is False
     assert fact.year_lower_bound is None
     assert fact.sort_key == ("IND-000001", 9999, "BIRTH", "FID-000001")
+    assert "Fact(" in repr(fact)
 
 
 @pytest.mark.regression
@@ -237,7 +236,7 @@ def test_fact_year_lower_bound_variants(valid_fact: Fact) -> None:
 
 
 @pytest.mark.regression
-def test_fact_with_time_period_and_family_subject(valid_audit: AuditStamp) -> None:
+def test_fact_with_time_period_and_family_subject(golden_audit: AuditStamp) -> None:
     """Verify Fact supports TimePeriod spans, FamilyID primary subjects, and year extraction."""
     start = EventDate(date=DateString(value="1910-07-01"))
     end = EventDate(date=DateString(value="1910-07-20"))
@@ -245,7 +244,7 @@ def test_fact_with_time_period_and_family_subject(valid_audit: AuditStamp) -> No
 
     fact = Fact(
         id=FactID(value="FID-000003"),
-        audit=valid_audit,
+        audit=golden_audit,
         canonical_urn="urn:gda:fact:smith_vacation_1910",
         fact_type=FactType.TRAVEL,
         title="Summer Vacation in White Mountains",
@@ -260,9 +259,8 @@ def test_fact_with_time_period_and_family_subject(valid_audit: AuditStamp) -> No
 
 
 @pytest.mark.regression
-def test_fact_factory_create_resolutions(valid_audit: AuditStamp) -> None:
-    """Verify Fact.create resolves string IDs, string dates (line 377), objects, and auto-defaults audit."""
-    # Test string date resolution (closing line 377)
+def test_fact_factory_create_resolutions(golden_audit: AuditStamp) -> None:
+    """Verify Fact.create resolves string IDs, string dates, objects, and auto-defaults audit."""
     fact_str_date = Fact.create(
         fact_id="FID-000010",
         canonical_urn="urn:gda:fact:factory_test",
@@ -274,7 +272,7 @@ def test_fact_factory_create_resolutions(valid_audit: AuditStamp) -> None:
         site_id="SID-000002",
         participants=[{"individual_id": "IND-000099", "role": "CLERGY"}],
         citations=[{"citation_text": "Parish Register 1865"}],
-        audit=valid_audit,
+        audit=golden_audit,
     )
     assert fact_str_date.id == FactID("FID-000010")
     assert fact_str_date.fact_type == FactType.MARRIAGE
@@ -285,7 +283,6 @@ def test_fact_factory_create_resolutions(valid_audit: AuditStamp) -> None:
     assert fact_str_date.participant_count == 1
     assert fact_str_date.citation_count == 1
 
-    # Fact.create passing TimePeriod instance directly
     span = TimePeriod(start_date=EventDate.create("1880-01-01"))
     fact_with_span = Fact.create(
         fact_id="FID-000012",
@@ -294,10 +291,33 @@ def test_fact_factory_create_resolutions(valid_audit: AuditStamp) -> None:
         title="Residence Period",
         primary_subject_id="IND-000001",
         date=span,
+        participants=None,
+        citations=None,
     )
     assert fact_with_span.date == span
+    assert fact_with_span.participants == []
+    assert fact_with_span.citations == []
 
-    # Minimal create auto-defaults audit
+    fact_dict_date = Fact.create(
+        fact_id="FID-000013",
+        canonical_urn="urn:gda:fact:dict_point_date",
+        fact_type=FactType.BIRTH,
+        title="Point Date Birth",
+        primary_subject_id="IND-000001",
+        date={"date": "1842-05-12", "modifier": "EXACT"},
+    )
+    assert isinstance(fact_dict_date.date, EventDate)
+
+    with pytest.raises(TypeError, match="Unsupported date payload type"):
+        Fact.create(
+            fact_id="FID-000014",
+            canonical_urn="urn:gda:fact:bad_date",
+            fact_type=FactType.BIRTH,
+            title="Bad Date",
+            primary_subject_id="IND-000001",
+            date=18420512,  # type: ignore[arg-type]
+        )
+
     min_fact = Fact.create(
         fact_id="FID-000011",
         canonical_urn="urn:gda:fact:minimal_test",
@@ -333,10 +353,9 @@ def test_fact_dirty_flag_transitions(valid_fact: Fact) -> None:
 
 @pytest.mark.regression
 def test_fact_attribute_mutators(valid_fact: Fact) -> None:
-    """Verify all field mutators produce new immutable copies and toggle dirty flag (closing line 570)."""
+    """Verify all field mutators produce new immutable copies and toggle dirty flag."""
     fact = valid_fact
 
-    # update_title
     up_title = fact.update_title("Birth of Jonathan Smith")
     assert up_title is not fact
     assert up_title.title == "Birth of Jonathan Smith"
@@ -346,7 +365,6 @@ def test_fact_attribute_mutators(valid_fact: Fact) -> None:
     with pytest.raises(ModelFormatError, match="cannot be empty or whitespace"):
         fact.update_title("   ")
 
-    # update_fact_type
     up_type = fact.update_fact_type("BAPTISM")
     assert up_type is not fact
     assert up_type.fact_type == FactType.BAPTISM
@@ -355,49 +373,41 @@ def test_fact_attribute_mutators(valid_fact: Fact) -> None:
     with pytest.raises(ModelFormatError, match="Cannot normalize"):
         fact.update_fact_type("NONEXISTENT_FACT_TYPE")
 
-    # update_date
     up_date = fact.update_date("1842-05-13")
     assert up_date is not fact
     assert str(up_date.date) == "1842-05-13"
     assert up_date.update_date(up_date.date) is up_date
 
-    # update_location
     up_loc = fact.update_location("LOC-000099")
     assert up_loc is not fact
     assert up_loc.location_id == LocationID("LOC-000099")
     assert up_loc.update_location(LocationID("LOC-000099")) is up_loc
 
-    # update_site
     up_site = fact.update_site("SID-000099")
     assert up_site is not fact
     assert up_site.site_id == SiteID("SID-000099")
     assert up_site.update_site(SiteID("SID-000099")) is up_site
 
-    # update_value
     up_val = fact.update_value("Blacksmith")
     assert up_val is not fact
     assert up_val.value == "Blacksmith"
     assert up_val.update_value("Blacksmith") is up_val
 
-    # update_description
     up_desc = fact.update_description("Extract from census")
     assert up_desc is not fact
     assert up_desc.description == "Extract from census"
     assert up_desc.update_description("Extract from census") is up_desc
 
-    # update_narrative
     up_narr = fact.update_narrative("Full biography prose")
     assert up_narr is not fact
     assert up_narr.narrative == "Full biography prose"
     assert up_narr.update_narrative("Full biography prose") is up_narr
 
-    # update_urn
     up_urn = fact.update_urn("urn:gda:fact:updated_slug")
     assert up_urn is not fact
     assert up_urn.canonical_urn == "urn:gda:fact:updated_slug"
     assert up_urn.update_urn("urn:gda:fact:updated_slug") is up_urn
 
-    # Invalid URN format raises ModelFormatError (closing line 570)
     with pytest.raises(ModelFormatError, match="Invalid canonical_urn format"):
         fact.update_urn("invalid_urn_slug")
 
@@ -407,24 +417,20 @@ def test_fact_participant_and_citation_mutators(valid_fact: Fact) -> None:
     """Verify add/remove/update mutators across participants and citations."""
     fact = valid_fact
 
-    # add_participant
     with_p2 = fact.add_participant("IND-000003", AssociatedRole.CLERGY, "Officiant")
     assert with_p2 is not fact
     assert with_p2.participant_count == 2
     assert with_p2.add_participant("IND-000003", AssociatedRole.CLERGY, "Officiant") is with_p2
 
-    # Duplicate individual ID with different role raises error
     with pytest.raises(ModelFormatError, match="already recorded"):
         with_p2.add_participant("IND-000003", AssociatedRole.WITNESS)
 
-    # update_participant_role with notes
     up_part = with_p2.update_participant_role("IND-000003", AssociatedRole.WITNESS, "Updated note")
     assert up_part is not with_p2
     target_p = [p for p in up_part.participants if p.individual_id.value == "IND-000003"][0]
     assert target_p.role == AssociatedRole.WITNESS
     assert target_p.notes == "Updated note"
 
-    # update_participant_role with notes=None
     up_part_no_notes = with_p2.update_participant_role("IND-000003", AssociatedRole.ATTENDANT)
     target_p2 = [p for p in up_part_no_notes.participants if p.individual_id.value == "IND-000003"][
         0
@@ -432,7 +438,6 @@ def test_fact_participant_and_citation_mutators(valid_fact: Fact) -> None:
     assert target_p2.role == AssociatedRole.ATTENDANT
     assert target_p2.notes == "Officiant"
 
-    # update_participant_role no-op
     assert (
         with_p2.update_participant_role("IND-000003", AssociatedRole.CLERGY, "Officiant") is with_p2
     )
@@ -440,13 +445,11 @@ def test_fact_participant_and_citation_mutators(valid_fact: Fact) -> None:
     with pytest.raises(ModelFormatError, match="not found in fact participants"):
         with_p2.update_participant_role("IND-999999", AssociatedRole.WITNESS)
 
-    # remove_participant
     rem_p = with_p2.remove_participant("IND-000003")
     assert rem_p is not with_p2
     assert rem_p.participant_count == 1
     assert rem_p.remove_participant("IND-999999") is rem_p
 
-    # add_citation and remove_citation
     new_cite = SourceReference.create("1880 Census Merrimack")
     with_cite = fact.add_citation(new_cite)
     assert with_cite is not fact
@@ -461,46 +464,36 @@ def test_fact_participant_and_citation_mutators(valid_fact: Fact) -> None:
 
 @pytest.mark.regression
 def test_fact_update_embedded_note(valid_fact: Fact) -> None:
-    """Verify Fact update_note mutator modifies embedded research notes."""
-    fact = valid_fact.add_note(
+    """Verify Fact update_note mutator delegates to EntityLifecycleMixin and sets dirty flag."""
+    note1 = Note.create(
+        note_id="NOT-000001",
         text="Initial note.",
         title="Note 1",
         note_type=NoteType.GENERAL,
         tags=["tag1"],
-    ).add_note(
+    )
+    note2 = Note.create(
+        note_id="NOT-000002",
         text="Second note.",
         title="Note 2",
         note_type=NoteType.RESEARCH,
         tags=["tag2"],
     )
-    note1_id = fact.notes[0].note_id
-    note2_id = fact.notes[1].note_id
+    fact = replace(valid_fact, notes=[note1, note2])
+    assert fact.note_count == 2
 
-    # Update note 2 only; note 1 preserved
     updated = fact.update_note(
-        note_id=note2_id,
+        note_id="NOT-000002",
         text="Updated second text",
         title="Updated Note 2",
         note_type=NoteType.PROOF,
         tags=["verified"],
     )
     assert updated is not fact
+    assert updated.is_dirty is True
     assert updated.notes[0].text == "Initial note."
     assert updated.notes[1].text == "Updated second text"
     assert updated.notes[1].title == "Updated Note 2"
-
-    # Partial updates
-    up_text = fact.update_note(note_id=note1_id, text="Only text")
-    assert up_text.get_note(note1_id).text == "Only text"
-
-    up_title = fact.update_note(note_id=note1_id, title="Only title")
-    assert up_title.get_note(note1_id).title == "Only title"
-
-    up_type = fact.update_note(note_id=note1_id, note_type=NoteType.DISCREPANCY)
-    assert up_type.get_note(note1_id).note_type == NoteType.DISCREPANCY
-
-    up_tags = fact.update_note(note_id=note1_id, tags=["new"])
-    assert up_tags.get_note(note1_id).tags == ["new"]
 
     assert fact.update_note("NOT-999999", text="No-op") is fact
 
@@ -519,7 +512,7 @@ def test_fact_serialization_round_trip(valid_fact: Fact) -> None:
     assert data["canonical_urn"] == "urn:gda:fact:smith_birth_1842"
     assert data["fact_type"] == "BIRTH"
     assert data["primary_subject_id"] == "IND-000001"
-    assert data["date"] == {"date": "1842-05-12"}
+    assert data["date"] == {"date": "1842-05-12", "modifier": "EXACT"}
     assert data["location_id"] == "LOC-000010"
     assert data["site_id"] == "SID-000020"
     assert len(data["participants"]) == 1
@@ -552,10 +545,9 @@ def test_fact_serialization_with_time_period_and_minimal_to_dict() -> None:
         date={"start_date": "1850-01-01", "end_date": "1860-12-31"},
     )
     data_period = fact_period.to_dict()
-    assert data_period["date"]["start_date"] == "1850-01-01"
-    assert data_period["date"]["end_date"] == "1860-12-31"
+    assert data_period["date"]["start_date"] == {"date": "1850-01-01", "modifier": "EXACT"}
+    assert data_period["date"]["end_date"] == {"date": "1860-12-31", "modifier": "EXACT"}
 
-    # Minimal fact without date, location, site, value, description, narrative
     fact_min = Fact.create(
         fact_id="FID-000021",
         canonical_urn="urn:gda:fact:min_dict_test",
@@ -590,8 +582,43 @@ def test_fact_from_dict_minimal_and_tombstone() -> None:
     restored = Fact.from_dict(data_tomb)
     assert restored.is_deprecated is True
     assert restored.superseded_by == FactID("FID-000031")
+    assert restored.to_dict()["tombstone"]["superseded_by"] == "FID-000031"
 
-    # Minimal without tombstone or audit
+    data_tomb_no_sup = {
+        "id": "FID-000033",
+        "canonical_urn": "urn:gda:fact:tomb_no_sup",
+        "fact_type": "DEATH",
+        "title": "Death Assertion",
+        "primary_subject_id": "IND-000001",
+        "tombstone": {
+            "is_deprecated": True,
+            "deprecated_at": "2026-10-20T12:00:00Z",
+        },
+    }
+    restored_no_sup = Fact.from_dict(data_tomb_no_sup)
+    assert restored_no_sup.is_deprecated is True
+    assert restored_no_sup.superseded_by is None
+
+    data_start_only = {
+        "id": "FID-000034",
+        "canonical_urn": "urn:gda:fact:start_only",
+        "fact_type": "RESIDENCE",
+        "title": "Start Only",
+        "primary_subject_id": "IND-000001",
+        "date": {"start_date": "1850-01-01"},
+    }
+    assert Fact.from_dict(data_start_only).date.start_date is not None
+
+    data_end_only = {
+        "id": "FID-000035",
+        "canonical_urn": "urn:gda:fact:end_only",
+        "fact_type": "RESIDENCE",
+        "title": "End Only",
+        "primary_subject_id": "IND-000001",
+        "date": {"end_date": "1860-01-01"},
+    }
+    assert Fact.from_dict(data_end_only).date.end_date is not None
+
     data_min = {
         "id": "FID-000032",
         "canonical_urn": "urn:gda:fact:min_test",
@@ -646,12 +673,12 @@ def test_fact_deserialization_defensive_errors() -> None:
 
 
 @pytest.mark.regression
-def test_fact_invalid_id_type(valid_audit: AuditStamp) -> None:
+def test_fact_invalid_id_type(golden_audit: AuditStamp) -> None:
     """Verify ValidationError when id is not an instance of FactID."""
     with pytest.raises((ValidationError, TypeError)):
         Fact(
             id="FID-000001",  # type: ignore[arg-type]
-            audit=valid_audit,
+            audit=golden_audit,
             canonical_urn="urn:gda:fact:bad_id",
             fact_type=FactType.BIRTH,
             title="Bad ID Type",
@@ -660,8 +687,14 @@ def test_fact_invalid_id_type(valid_audit: AuditStamp) -> None:
 
 
 @pytest.mark.regression
-def test_fact_post_init_id_type_defensive(valid_fact: Fact) -> None:
-    """Verify __post_init__ raises TypeError when self.id is mutated to non-FactID."""
+def test_fact_post_init_defensive_branches(valid_fact: Fact) -> None:
+    """Verify __post_init__ defensive checks for id type, pattern, untrimmed URN, and title."""
+    object.__setattr__(valid_fact, "canonical_urn", "  urn:gda:fact:smith_birth_1842  ")
+    object.__setattr__(valid_fact, "title", "  Birth of John Smith  ")
+    valid_fact.__post_init__()
+    assert valid_fact.canonical_urn == "urn:gda:fact:smith_birth_1842"
+    assert valid_fact.title == "Birth of John Smith"
+
     object.__setattr__(valid_fact, "id", "NOT_A_FACT_ID")
     with pytest.raises(TypeError, match="must be an instance of FactID"):
         valid_fact.__post_init__()
@@ -682,12 +715,12 @@ def test_fact_post_init_id_pattern_defensive(valid_fact: Fact) -> None:
 
 
 @pytest.mark.regression
-def test_fact_empty_title_raises_error(valid_audit: AuditStamp) -> None:
+def test_fact_empty_title_raises_error(golden_audit: AuditStamp) -> None:
     """Verify Fact raises ModelFormatError when title is empty or whitespace."""
     with pytest.raises(ModelFormatError, match="Fact 'title' cannot be empty or whitespace"):
         Fact(
             id=FactID("FID-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             canonical_urn="urn:gda:fact:empty_title",
             fact_type=FactType.BIRTH,
             title="   ",
@@ -705,7 +738,7 @@ def test_fact_empty_title_raises_error(valid_audit: AuditStamp) -> None:
 
 
 @pytest.mark.regression
-def test_fact_invalid_subject_type_raises_error(valid_audit: AuditStamp) -> None:
+def test_fact_invalid_subject_type_raises_error(golden_audit: AuditStamp) -> None:
     """Verify Fact raises TypeError when primary_subject_id is neither IndividualID nor FamilyID."""
     fact = Fact.create(
         fact_id="FID-000001",
@@ -713,7 +746,7 @@ def test_fact_invalid_subject_type_raises_error(valid_audit: AuditStamp) -> None
         fact_type="BIRTH",
         title="Test Subj",
         primary_subject_id="IND-000001",
-        audit=valid_audit,
+        audit=golden_audit,
     )
     object.__setattr__(fact, "primary_subject_id", SourceID("a0000000-0000-4000-8000-000000000001"))
     with pytest.raises(TypeError, match="must be IndividualID or FamilyID"):
@@ -721,12 +754,12 @@ def test_fact_invalid_subject_type_raises_error(valid_audit: AuditStamp) -> None
 
 
 @pytest.mark.regression
-def test_fact_invalid_urn_format(valid_audit: AuditStamp) -> None:
+def test_fact_invalid_urn_format(golden_audit: AuditStamp) -> None:
     """Verify ModelFormatError when canonical_urn syntax is malformed."""
     with pytest.raises(ModelFormatError, match="Invalid canonical_urn format"):
         Fact(
             id=FactID(value="FID-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             canonical_urn="urn:gda:invalid:fact:slug!",
             fact_type=FactType.BIRTH,
             title="Invalid URN",
@@ -735,18 +768,18 @@ def test_fact_invalid_urn_format(valid_audit: AuditStamp) -> None:
 
 
 @pytest.mark.regression
-def test_fact_self_supersession_forbidden(valid_audit: AuditStamp) -> None:
+def test_fact_self_supersession_forbidden(golden_audit: AuditStamp) -> None:
     """Verify ModelFormatError when tombstone supersedes self."""
     fid = FactID(value="FID-000001")
     tombstone = Tombstone[FactID](
         is_deprecated=True,
-        deprecated_at=IsoTimestamp.now_utc(),
+        deprecated_at=IsoTimestamp(value="2026-10-19T12:00:00Z"),
         superseded_by=fid,
     )
     with pytest.raises(ModelFormatError, match="Fact cannot be superseded by itself"):
         Fact(
             id=fid,
-            audit=valid_audit,
+            audit=golden_audit,
             canonical_urn="urn:gda:fact:smith_birth_1842",
             fact_type=FactType.BIRTH,
             title="Self Superseded",
@@ -756,18 +789,18 @@ def test_fact_self_supersession_forbidden(valid_audit: AuditStamp) -> None:
 
 
 @pytest.mark.regression
-def test_fact_superseded_by_other_allowed(valid_audit: AuditStamp) -> None:
+def test_fact_superseded_by_other_allowed(golden_audit: AuditStamp) -> None:
     """Verify tombstone with valid superseded_by does not raise error."""
     fid = FactID(value="FID-000001")
     other_fid = FactID(value="FID-000002")
     tombstone = Tombstone[FactID](
         is_deprecated=True,
-        deprecated_at=IsoTimestamp.now_utc(),
+        deprecated_at=IsoTimestamp(value="2026-10-19T12:00:00Z"),
         superseded_by=other_fid,
     )
     fact = Fact(
         id=fid,
-        audit=valid_audit,
+        audit=golden_audit,
         canonical_urn="urn:gda:fact:smith_birth_1842",
         fact_type=FactType.BIRTH,
         title="Superseded",
@@ -779,7 +812,7 @@ def test_fact_superseded_by_other_allowed(valid_audit: AuditStamp) -> None:
 
 
 @pytest.mark.regression
-def test_fact_duplicate_participants_forbidden(valid_audit: AuditStamp) -> None:
+def test_fact_duplicate_participants_forbidden(golden_audit: AuditStamp) -> None:
     """Verify ModelFormatError when the same individual appears multiple times in participants."""
     ind = IndividualID(value="IND-000002")
     p1 = FactParticipant(individual_id=ind, role=AssociatedRole.WITNESS)
@@ -790,7 +823,7 @@ def test_fact_duplicate_participants_forbidden(valid_audit: AuditStamp) -> None:
     ):
         Fact(
             id=FactID(value="FID-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             canonical_urn="urn:gda:fact:smith_marriage_1870",
             fact_type=FactType.MARRIAGE,
             title="Marriage Ceremony",
@@ -800,7 +833,7 @@ def test_fact_duplicate_participants_forbidden(valid_audit: AuditStamp) -> None:
 
 
 @pytest.mark.regression
-def test_fact_primary_subject_cannot_be_participant(valid_audit: AuditStamp) -> None:
+def test_fact_primary_subject_cannot_be_participant(golden_audit: AuditStamp) -> None:
     """Verify ModelFormatError when primary subject is also listed in participants."""
     subject = IndividualID(value="IND-000001")
     p1 = FactParticipant(individual_id=subject, role=AssociatedRole.WITNESS)
@@ -808,7 +841,7 @@ def test_fact_primary_subject_cannot_be_participant(valid_audit: AuditStamp) -> 
     with pytest.raises(ModelFormatError, match="Primary subject cannot also be listed"):
         Fact(
             id=FactID(value="FID-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             canonical_urn="urn:gda:fact:smith_will_1890",
             fact_type=FactType.WILL,
             title="Will Signing",
@@ -816,14 +849,13 @@ def test_fact_primary_subject_cannot_be_participant(valid_audit: AuditStamp) -> 
             participants=[p1],
         )
 
-    # Mutator guard
     fact = Fact.create(
         fact_id="FID-000001",
         canonical_urn="urn:gda:fact:smith_will_1890",
         fact_type=FactType.WILL,
         title="Will Signing",
         primary_subject_id=subject,
-        audit=valid_audit,
+        audit=golden_audit,
     )
     with pytest.raises(ModelFormatError, match="Primary subject cannot also be listed"):
         fact.add_participant(subject)

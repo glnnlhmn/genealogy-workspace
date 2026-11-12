@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from enum import IntEnum, StrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "AssociatedRole",
@@ -118,6 +118,7 @@ class AssociatedRole(StrEnum):
     INFORMANT = "INFORMANT"
     NEIGHBOR = "NEIGHBOR"
     NEXT_OF_KIN = "NEXT_OF_KIN"
+    OFFICIAL = "OFFICIAL"
     OFFICIANT = "OFFICIANT"
     OTHER = "OTHER"
     PHYSICIAN = "PHYSICIAN"

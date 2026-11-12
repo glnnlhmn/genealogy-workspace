@@ -6,8 +6,8 @@ Operational Role:
     Verifies Site behavioral contracts, BaseEntity inheritance, foreign key
     LocationID validation, URN formatting, optional address/coordinate composition,
     NameThing integration, copy-on-write naming and field mutators, embedded note
-    management, dirty tracking (_dirty, is_dirty, mark_clean, mark_dirty), and
-    immutability invariants with 100% statement and branch coverage.
+    management, serialization round trips, dirty tracking (_dirty, is_dirty, mark_clean, mark_dirty),
+    and immutability invariants with 100% statement and branch coverage.
 """
 
 from __future__ import annotations
@@ -17,40 +17,29 @@ from dataclasses import FrozenInstanceError
 import pytest
 from pydantic import ValidationError
 
+from gda.core.enums.archival import NoteType
+from gda.core.enums.date import DateModifier
+from gda.core.enums.site import SiteType
+from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
-from gda.enums.archival import NoteType
-from gda.enums.site import SiteCategory, SiteType
-from gda.enums.vital import HistoricNameType
-from gda.model.atom.date import DateModifier, DateString, EventDate, IsoTimestamp
-from gda.model.atom.geo import Coordinates, Latitude, Longitude
+from gda.model.atom.date import DateString, IsoTimestamp
+from gda.model.atom.geo import Latitude, Longitude
 from gda.model.atom.id import FactID, LocationID, NoteID, SiteID
 from gda.model.base.address import Address
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate, TimePeriod
+from gda.model.base.geo import Coordinates
 from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.note import Note
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.site import Site, SiteEntityModel
 
-__version__ = "1.0.0+build.7"
+__version__ = "2.0.0+build.3"
 
 
 # ==============================================================================
 # FIXTURES: GOLDEN PAYLOADS & BASE INSTANCES
-# Note: Verification of instantiation, property delegation, and embedded notes
 # ==============================================================================
-
-
-@pytest.fixture
-def golden_timestamp() -> IsoTimestamp:
-    """Fixture providing a standard test timestamp."""
-    return IsoTimestamp("2026-10-16T12:00:00Z")
-
-
-@pytest.fixture
-def golden_audit(golden_timestamp: IsoTimestamp) -> AuditStamp:
-    """Fixture providing a standard audit stamp."""
-    return AuditStamp(created_at=golden_timestamp, updated_at=golden_timestamp)
 
 
 @pytest.fixture
@@ -109,7 +98,6 @@ def golden_site(
 
 # ==============================================================================
 # GROUP 1: SITE CREATION & ATTRIBUTES
-# Note: Verification of minimal, complete, and factory creation contracts
 # ==============================================================================
 
 
@@ -130,7 +118,6 @@ def test_site_valid_creation_and_alias_equivalence(
     assert site.name.canonical == "Old Bow Center Cemetery"
     assert site.canonical_name == "Old Bow Center Cemetery"
     assert site.category == SiteType.CEMETERY
-    assert site.category == SiteCategory.CEMETERY
     assert site.canonical_urn == "urn:gda:site:us:nh:merrimack:bow:old-bow-center-cemetery"
     assert site.location_id == LocationID("LOC-000004")
     assert site.address == golden_address
@@ -146,6 +133,7 @@ def test_site_valid_creation_and_alias_equivalence(
     assert site.is_deprecated is False
     assert site.is_dirty is False
     assert str(site) == "Old Bow Center Cemetery [CEMETERY] (SID-000001)"
+    assert "Site(" in repr(site)
 
 
 @pytest.mark.regression
@@ -226,7 +214,6 @@ def test_site_factory_create_defaults_audit() -> None:
 
 # ==============================================================================
 # GROUP 2: COPY-ON-WRITE NAMING & ATTRIBUTE MUTATORS
-# Note: Verification of alias, historic variants, and full field mutations
 # ==============================================================================
 
 
@@ -238,21 +225,19 @@ def test_site_naming_mutators(golden_site: Site, golden_period: TimePeriod) -> N
     assert len(original.historical_names) == 1
     assert original.is_dirty is False
 
-    # add_alias
     with_alias = original.add_alias("Old Bow Burying Ground")
     assert with_alias is not original
     assert "Old Bow Burying Ground" in with_alias.aliases
     assert "Town Hall Graveyard" in with_alias.aliases
     assert with_alias.is_dirty is True
+    assert with_alias.add_alias("Old Bow Burying Ground") is with_alias
 
-    # remove_alias (and no-op removal)
     with_removed_alias = with_alias.remove_alias("Town Hall Graveyard")
     assert with_removed_alias is not with_alias
     assert "Town Hall Graveyard" not in with_removed_alias.aliases
     assert "Old Bow Burying Ground" in with_removed_alias.aliases
     assert with_removed_alias.remove_alias("NONEXISTENT") is with_removed_alias
 
-    # add_historic_variant
     with_variant = with_removed_alias.add_historic_variant(
         raw="Meetinghouse Hill Cemetery",
         name="Meetinghouse Hill Cemetery",
@@ -265,7 +250,6 @@ def test_site_naming_mutators(golden_site: Site, golden_period: TimePeriod) -> N
     assert with_variant.historical_names[1].raw == "Meetinghouse Hill Cemetery"
     assert with_variant.is_dirty is True
 
-    # remove_historic_variant (and no-op removal)
     with_removed_variant = with_variant.remove_historic_variant("Center Burying Ground")
     assert with_removed_variant is not with_variant
     assert len(with_removed_variant.historical_names) == 1
@@ -275,77 +259,77 @@ def test_site_naming_mutators(golden_site: Site, golden_period: TimePeriod) -> N
 
 @pytest.mark.regression
 def test_site_full_field_mutators_and_dirty_flag(
-    golden_site: Site, golden_period: TimePeriod, golden_address: Address
+    golden_site: Site, golden_address: Address
 ) -> None:
     """Verify all domain field mutators update state, touch audit, and toggle dirty flag."""
     site = golden_site
     assert site.is_dirty is False
 
-    # mark_dirty and mark_clean
     marked_dirty = site.mark_dirty()
     assert marked_dirty.is_dirty is True
-    assert marked_dirty.mark_dirty() is marked_dirty  # idempotent
+    assert marked_dirty.mark_dirty() is marked_dirty
     marked_clean = marked_dirty.mark_clean()
     assert marked_clean.is_dirty is False
-    assert marked_clean.mark_clean() is marked_clean  # idempotent
+    assert marked_clean.mark_clean() is marked_clean
 
-    # update_name with NameThing and str
     up_name_thing = site.update_name(NameThing.create(raw="Bow Center Cemetery Modern"))
     assert up_name_thing is not site
     assert up_name_thing.canonical_name == "Bow Center Cemetery Modern"
     assert up_name_thing.is_dirty is True
+    assert up_name_thing.update_name(up_name_thing.name) is up_name_thing
 
     up_name_str = site.update_name("Bow Center Memorial Park")
     assert up_name_str is not site
     assert up_name_str.canonical_name == "Bow Center Memorial Park"
     assert up_name_str.is_dirty is True
 
-    # update_category
     up_cat = site.update_category(SiteType.LANDMARK)
     assert up_cat is not site
     assert up_cat.category == SiteType.LANDMARK
     assert up_cat.is_dirty is True
+    assert up_cat.update_category(SiteType.LANDMARK) is up_cat
 
     up_cat_str = site.update_category("CHURCH")
     assert up_cat_str.category == SiteType.CHURCH
 
-    # update_location
     up_loc = site.update_location("LOC-000005")
     assert up_loc is not site
     assert up_loc.location_id == LocationID("LOC-000005")
     assert up_loc.is_dirty is True
+    assert up_loc.update_location("LOC-000005") is up_loc
 
-    # update_address
     new_addr = golden_address.update_line_1("50 Woodhill Road")
     up_addr = site.update_address(new_addr)
     assert up_addr is not site
     assert up_addr.address == new_addr
     assert up_addr.is_dirty is True
+    assert up_addr.update_address(new_addr) is up_addr
 
-    # update_coordinates
     new_coords = Coordinates(latitude=Latitude(43.2081), longitude=Longitude(-71.5376))
     up_coords = site.update_coordinates(new_coords)
     assert up_coords is not site
     assert up_coords.coordinates == new_coords
     assert up_coords.is_dirty is True
+    assert up_coords.update_coordinates(new_coords) is up_coords
 
-    # update_period
-    up_period = site.update_period(golden_period)
+    new_period = TimePeriod(start_date=EventDate.create("1750"))
+    up_period = site.update_period(new_period)
     assert up_period is not site
-    assert up_period.period == golden_period
+    assert up_period.period == new_period
     assert up_period.is_dirty is True
+    assert up_period.update_period(new_period) is up_period
 
-    # update_active
     up_active = site.update_active(True)
     assert up_active is not site
     assert up_active.is_active is True
     assert up_active.is_dirty is True
+    assert up_active.update_active(True) is up_active
 
-    # update_urn
     up_urn = site.update_urn("urn:gda:site:us:nh:bow:cemetery-updated")
     assert up_urn is not site
     assert up_urn.canonical_urn == "urn:gda:site:us:nh:bow:cemetery-updated"
     assert up_urn.is_dirty is True
+    assert up_urn.update_urn("urn:gda:site:us:nh:bow:cemetery-updated") is up_urn
 
 
 @pytest.mark.regression
@@ -365,7 +349,6 @@ def test_site_attribute_mutators_defensive_errors(golden_site: Site) -> None:
 
 # ==============================================================================
 # GROUP 3: EMBEDDED NOTE CONTAINER & UPDATE OPERATIONS
-# Note: Verification of inherited EntityLifecycleMixin and update_note mutators
 # ==============================================================================
 
 
@@ -399,7 +382,7 @@ def test_site_add_and_delete_embedded_note(golden_site: Site) -> None:
 
 @pytest.mark.regression
 def test_site_update_embedded_note(golden_site: Site) -> None:
-    """Verify Site update_note mutator modifies note text, title, type, and tags individually."""
+    """Verify Site update_note mutator modifies embedded notes and toggles dirty flag."""
     site = golden_site.add_note(
         text="Initial cemetery observation.",
         note_type=NoteType.GENERAL,
@@ -408,7 +391,6 @@ def test_site_update_embedded_note(golden_site: Site) -> None:
     )
     note_id = site.notes[0].note_id
 
-    # Update all fields simultaneously
     updated_all = site.update_note(
         note_id=note_id,
         text="Corrected survey observation.",
@@ -425,24 +407,6 @@ def test_site_update_embedded_note(golden_site: Site) -> None:
     assert target.note_type == NoteType.RESEARCH
     assert target.tags == ["verified", "headstone"]
 
-    # Partial updates: text only
-    up_text = site.update_note(note_id=note_id, text="Only text updated")
-    assert up_text.get_note(note_id).text == "Only text updated"
-    assert up_text.get_note(note_id).title == "Initial"
-
-    # Partial updates: title only
-    up_title = site.update_note(note_id=note_id, title="Only title updated")
-    assert up_title.get_note(note_id).title == "Only title updated"
-
-    # Partial updates: type only
-    up_type = site.update_note(note_id=note_id, note_type=NoteType.PROOF)
-    assert up_type.get_note(note_id).note_type == NoteType.PROOF
-
-    # Partial updates: tags only
-    up_tags = site.update_note(note_id=note_id, tags=["new_tag"])
-    assert up_tags.get_note(note_id).tags == ["new_tag"]
-
-    # No-op when note_id is absent
     assert site.update_note(note_id="NOT-999999", text="No-op") is site
 
 
@@ -468,12 +432,139 @@ def test_site_find_notes_filtering_and_sorting(
 
     sorted_by_title = site.find_notes(sort_by="title")
     assert sorted_by_title[0].title == "Birth Year Conflict"
-    assert sorted_by_title[-1].title == "Surname Spelling Variance"
+    assert sorted_by_title[-1].title == "Tax Assessment"
 
 
 # ==============================================================================
-# GROUP 4: DEFENSIVE BOUNDARIES & VALIDATIONS
-# Note: Verification of validation rules, ID regex, and type safety
+# GROUP 4: SERIALIZATION & ROUND TRIPS
+# ==============================================================================
+
+
+@pytest.mark.integration
+def test_site_serialization_round_trip(golden_site: Site) -> None:
+    """Verify Site dictionary and JSON serialization round trips."""
+    site = golden_site.add_note(
+        text="Monument inscription verified.",
+        title="Inscription",
+        note_type=NoteType.RESEARCH,
+    )
+    data = site.to_dict()
+
+    assert data["id"] == "SID-000001"
+    assert data["category"] == "CEMETERY"
+    assert data["canonical_urn"] == "urn:gda:site:us:nh:merrimack:bow:old-bow-center-cemetery"
+    assert data["location_id"] == "LOC-000004"
+    assert data["is_active"] is False
+    assert "address" in data
+    assert "coordinates" in data
+    assert "period" in data
+    assert len(data["notes"]) == 1
+
+    restored = Site.from_dict(data)
+    assert restored.id == site.id
+    assert restored.canonical_name == site.canonical_name
+    assert restored.category == site.category
+    assert restored.location_id == site.location_id
+    assert restored.address == site.address
+    assert restored.coordinates == site.coordinates
+    assert restored.period == site.period
+    assert restored.note_count == 1
+
+    json_str = site.to_json()
+    assert "SID-000001" in json_str
+    assert "CEMETERY" in json_str
+
+    restored_json = Site.from_json(json_str)
+    assert restored_json.id == site.id
+    assert restored_json.canonical_name == site.canonical_name
+
+
+@pytest.mark.integration
+def test_site_from_dict_minimal_and_string_name(
+    golden_audit: AuditStamp, golden_period: TimePeriod, golden_address: Address
+) -> None:
+    """Verify Site.from_dict parses minimal dictionary payload, tombstones, and instances."""
+    data = {
+        "id": "SID-000050",
+        "name": "Meetinghouse Marker",
+        "category": "LANDMARK",
+        "canonical_urn": "urn:gda:site:us:nh:bow:marker",
+        "location_id": "LOC-000004",
+    }
+    restored = Site.from_dict(data)
+    assert restored.id == SiteID("SID-000050")
+    assert restored.canonical_name == "Meetinghouse Marker"
+    assert restored.category == SiteType.LANDMARK
+    assert restored.location_id == LocationID("LOC-000004")
+    assert restored.address is None
+    assert restored.coordinates is None
+    assert restored.period is None
+    assert restored.is_active is True
+    assert restored.is_deprecated is False
+
+    data_min = restored.to_dict()
+    assert "address" not in data_min
+    assert "coordinates" not in data_min
+    assert "period" not in data_min
+
+    coords = Coordinates(latitude=Latitude(43.0), longitude=Longitude(-71.0))
+    data_with_instances = {
+        **data,
+        "address": golden_address,
+        "period": golden_period,
+        "coordinates": coords,
+        "tombstone": {
+            "is_deprecated": True,
+            "deprecated_at": str(golden_audit.updated_at),
+            "superseded_by": "SID-000051",
+        },
+    }
+    restored_inst = Site.from_dict(data_with_instances)
+    assert restored_inst.address == golden_address
+    assert restored_inst.coordinates == coords
+    assert restored_inst.period == golden_period
+    assert restored_inst.is_deprecated is True
+    assert restored_inst.superseded_by == SiteID("SID-000051")
+    assert restored_inst.to_dict()["tombstone"]["superseded_by"] == "SID-000051"
+
+    restored_empty_period = Site.from_dict(
+        {
+            **data,
+            "period": {},
+            "tombstone": {
+                "is_deprecated": True,
+                "deprecated_at": str(golden_audit.updated_at),
+            },
+        }
+    )
+    assert restored_empty_period.period is None
+    assert restored_empty_period.superseded_by is None
+
+
+@pytest.mark.regression
+def test_site_deserialization_defensive_errors() -> None:
+    """Verify Site.from_dict and from_json reject malformed payloads."""
+    with pytest.raises(ModelFormatError, match="must be a dictionary"):
+        Site.from_dict("not-a-dict")  # type: ignore[arg-type]
+
+    with pytest.raises(ModelFormatError, match="Missing required field 'id'"):
+        Site.from_dict({"name": "Site", "category": "CEMETERY", "location_id": "LOC-000001"})
+
+    with pytest.raises(ModelFormatError, match="Missing required field 'name'"):
+        Site.from_dict({"id": "SID-000001", "category": "CEMETERY", "location_id": "LOC-000001"})
+
+    with pytest.raises(ModelFormatError, match="Missing required field 'category'"):
+        Site.from_dict({"id": "SID-000001", "name": "Site", "location_id": "LOC-000001"})
+
+    with pytest.raises(ModelFormatError, match="Missing required field 'location_id'"):
+        Site.from_dict({"id": "SID-000001", "name": "Site", "category": "CEMETERY"})
+
+    with pytest.raises(ModelFormatError, match="Failed to parse Site JSON string"):
+        Site.from_json("{broken json")
+
+
+# ==============================================================================
+# GROUP 5: DEFENSIVE BOUNDARIES & VALIDATIONS
 # ==============================================================================
 
 
@@ -482,7 +573,6 @@ def test_site_find_notes_filtering_and_sorting(
     "bad_id_str",
     [
         "SID-12345",
-        "SID-1234567",
         "SID-ABCDEF",
         "000001",
         "",
@@ -535,6 +625,29 @@ def test_site_foreign_location_id_type_raises_error(golden_audit: AuditStamp) ->
             canonical_urn="urn:gda:site:us:nh:bow:site",
             location_id=wrong_loc,  # type: ignore[arg-type]
         )
+
+
+@pytest.mark.regression
+def test_site_post_init_defensive_branches(golden_site: Site) -> None:
+    """Verify Site.__post_init__ defensive checks for id type, pattern, and untrimmed URN."""
+    object.__setattr__(golden_site, "canonical_urn", "  urn:gda:site:us:nh:bow:cemetery  ")
+    golden_site.__post_init__()
+    assert golden_site.canonical_urn == "urn:gda:site:us:nh:bow:cemetery"
+
+    class MalformedSiteID(SiteID):
+        """Subclass bypassing AtomID.__post_init__ regex enforcement."""
+
+        def __init__(self, value: str) -> None:
+            object.__setattr__(self, "value", value)
+            object.__setattr__(self, "expected_prefix", "SID")
+
+    object.__setattr__(golden_site, "id", MalformedSiteID("SID-12"))
+    with pytest.raises(ModelFormatError, match="Invalid SiteID format"):
+        golden_site.__post_init__()
+
+    object.__setattr__(golden_site, "id", "NOT_A_SITE_ID")
+    with pytest.raises(TypeError, match="must be an instance of SiteID"):
+        golden_site.__post_init__()
 
 
 @pytest.mark.regression
@@ -640,8 +753,7 @@ def test_site_lifecycle_deprecate_and_restore(golden_site: Site) -> None:
 
 
 # ==============================================================================
-# GROUP 5: IMMUTABILITY & INTROSPECTION
-# Note: Verification of frozen immutability and introspection directory
+# GROUP 6: IMMUTABILITY & INTROSPECTION
 # ==============================================================================
 
 
@@ -677,6 +789,10 @@ def test_site_introspection(golden_site: Site) -> None:
     assert "update_period" in help_text
     assert "update_active" in help_text
     assert "update_urn" in help_text
+    assert "to_dict" in help_text
+    assert "from_dict" in help_text
+    assert "to_json" in help_text
+    assert "from_json" in help_text
     assert "mark_dirty" in help_text
     assert "mark_clean" in help_text
     assert "is_dirty" in help_text

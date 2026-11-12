@@ -36,7 +36,7 @@ from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 from gda.util.ids import extract_max_smart_id, mint_smart_id
 
-__version__ = "1.2.0+build.1"
+__version__ = "1.3.0+build.1"
 
 __all__ = ["BaseEntity", "BaseEntityGUID", "EntityLifecycleMixin"]
 
@@ -166,6 +166,52 @@ class EntityLifecycleMixin(IntrospectableMixin):
             self,
             audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             notes=[*self.notes, new_note],
+        )
+
+    def update_note(
+        self,
+        note_id: NoteID | str,
+        text: str | None = None,
+        title: str | None = None,
+        note_type: NoteType | str | None = None,
+        tags: list[str] | None = None,
+    ) -> Self:
+        """Return a copy with the targeted embedded note updated in place."""
+        target_str = str(note_id)
+        found = False
+        new_notes: list[Note] = []
+
+        for n in self.notes:
+            if str(n.note_id) == target_str:
+                found = True
+                updated_n = n
+                if text is not None:
+                    updated_n = updated_n.update_text(text)
+                if title is not None:
+                    updated_n = updated_n.update_title(title)
+                if note_type is not None:
+                    updated_n = updated_n.update_type(note_type)
+                if tags is not None:
+                    updated_n = updated_n.update_tags(tags)
+                new_notes.append(updated_n)
+            else:
+                new_notes.append(n)
+
+        if not found:
+            _logger.debug(
+                "Update note no-op: note not found",
+                details={"entity_id": str(self.id), "target_note_id": target_str},
+            )
+            return self
+
+        _logger.debug(
+            "Updating embedded note on entity",
+            details={"entity_id": str(self.id), "updated_note_id": target_str},
+        )
+        return replace(
+            self,
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
+            notes=new_notes,
         )
 
     def delete_note(self, note_id: NoteID | str) -> Self:

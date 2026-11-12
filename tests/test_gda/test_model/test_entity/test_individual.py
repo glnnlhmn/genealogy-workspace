@@ -17,36 +17,26 @@ from dataclasses import FrozenInstanceError
 import pytest
 from pydantic import ValidationError
 
+from gda.core.enums.archival import NoteType
+from gda.core.enums.core import Sex
+from gda.core.enums.date import DateModifier
 from gda.core.errors import ModelFormatError, ModelRangeError
-from gda.enums.archival import NoteType
-from gda.model.atom.date import (
-    DateModifier,
-    EventDate,
-    EventDateRange,
-    IsoTimestamp,
-)
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.gender import GenderAtom
 from gda.model.atom.id import FactID, IndividualID, LocationID, NoteID, SiteID
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate
 from gda.model.base.name import NamePerson
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.individual import Individual
 
-__version__ = "1.0.0+build.12"
+__version__ = "2.0.0+build.4"
 
 
 # ==============================================================================
 # FIXTURES
-# Note: Verification of instantiation, property delegation, and embedded notes
 # ==============================================================================
-
-
-@pytest.fixture
-def valid_audit() -> AuditStamp:
-    """Fixture providing a standard test audit stamp."""
-    ts = IsoTimestamp(value="2026-10-18T12:00:00Z")
-    return AuditStamp(created_at=ts, updated_at=ts)
 
 
 @pytest.fixture
@@ -75,22 +65,22 @@ def point_death_date() -> EventDate:
 
 
 @pytest.fixture
-def range_death_date() -> EventDateRange:
-    """Fixture providing a bounded death date range."""
-    return EventDateRange.create("1910-01-01", "1912-12-31", DateModifier.BETWEEN)
+def range_death_date() -> EventDate:
+    """Fixture providing a bounded BETWEEN death date."""
+    return EventDate.create("1910-01-01", DateModifier.BETWEEN, "1912-12-31")
 
 
 @pytest.fixture
 def valid_individual(
-    valid_audit: AuditStamp,
+    golden_audit: AuditStamp,
     valid_name: NamePerson,
     point_birth_date: EventDate,
-    range_death_date: EventDateRange,
+    range_death_date: EventDate,
 ) -> Individual:
     """Fixture providing a complete standard Individual instance with NamePerson."""
     return Individual(
         id=IndividualID(value="IND-000101"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_johnathan_1842",
         gender=GenderAtom("M"),
@@ -103,16 +93,15 @@ def valid_individual(
 
 # ==============================================================================
 # GROUP 1: INITIALIZATION & BASELINE BEHAVIOR
-# Note: Verification of minimal, complete, and factory creation contracts
 # ==============================================================================
 
 
 @pytest.mark.regression
-def test_individual_init_minimal_defaults(valid_audit: AuditStamp, valid_name: NamePerson) -> None:
+def test_individual_init_minimal_defaults(golden_audit: AuditStamp, valid_name: NamePerson) -> None:
     """Verify minimal instantiation defaults and unpopulated fields."""
     ind = Individual(
         id=IndividualID(value="IND-000001"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_johnathan_000001",
     )
@@ -133,17 +122,18 @@ def test_individual_init_minimal_defaults(valid_audit: AuditStamp, valid_name: N
     assert ind.birth_year is None
     assert ind.death_year is None
     assert ind.approximate_age is None
+    assert "Individual(" in repr(ind)
 
 
 @pytest.mark.regression
-def test_individual_flexible_place_ids(valid_audit: AuditStamp, valid_name: NamePerson) -> None:
+def test_individual_flexible_place_ids(golden_audit: AuditStamp, valid_name: NamePerson) -> None:
     """Verify birth_place_id and death_place_id accept both LocationID and SiteID."""
     loc_id = LocationID(value="LOC-000001")
     sid_id = SiteID(value="SID-000002")
 
     ind = Individual(
         id=IndividualID(value="IND-000001"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_000001",
         birth_place_id=sid_id,
@@ -155,12 +145,12 @@ def test_individual_flexible_place_ids(valid_audit: AuditStamp, valid_name: Name
 
 @pytest.mark.regression
 def test_individual_factory_create_string_conversions(golden_audit: AuditStamp) -> None:
-    """Verify Individual.create resolves string name, gender tokens, and string place IDs."""
+    """Verify Individual.create resolves string name, Sex enum, gender tokens, and string place IDs."""
     ind = Individual.create(
         individual_id="IND-000050",
         name="Mary Ann Evans",
         canonical_urn="urn:gda:ind:evans_mary_1819",
-        gender="Female",
+        gender=Sex.FEMALE,
         birth_date="1819-11-22",
         death_date="1880-12-22",
         birth_place_id="LOC-000004",
@@ -180,17 +170,61 @@ def test_individual_factory_create_string_conversions(golden_audit: AuditStamp) 
     assert ind.is_deceased is True
     assert ind.is_dirty is False
 
-    # Test living individual with SiteID for birth_place and NO death_place_id
     ind_living = Individual.create(
         individual_id="IND-000052",
         name="Living Individual",
         canonical_urn="urn:gda:ind:living_individual",
+        gender="Male",
         birth_place_id="SID-000005",
         is_deceased=False,
     )
+    assert ind_living.gender.value == "M"
     assert ind_living.birth_place_id == SiteID("SID-000005")
     assert ind_living.death_place_id is None
     assert ind_living.is_deceased is False
+
+    # Invalid gender string falls through Sex.from_input ValueError to GenderAtom validation
+    with pytest.raises(ModelFormatError, match="Invalid GenderAtom code"):
+        Individual.create(
+            individual_id="IND-000053",
+            name="Invalid Gender Individual",
+            canonical_urn="urn:gda:ind:invalid_gender",
+            gender="X",
+        )
+
+
+@pytest.mark.regression
+def test_individual_factory_create_with_date_dictionaries() -> None:
+    """Verify Individual.create resolves dictionary date payloads and rejects invalid date types."""
+    ind_range = Individual.create(
+        individual_id="IND-000060",
+        name="Range Persona",
+        canonical_urn="urn:gda:ind:range_persona",
+        birth_date={"start_date": "1840-01-01", "end_date": "1842-01-01"},
+        death_date={"start_date": "1910-01-01", "end_date": "1912-01-01"},
+    )
+    assert isinstance(ind_range.birth_date, EventDate)
+    assert ind_range.birth_date.modifier == DateModifier.BETWEEN
+    assert isinstance(ind_range.death_date, EventDate)
+    assert ind_range.death_date.modifier == DateModifier.BETWEEN
+
+    ind_point = Individual.create(
+        individual_id="IND-000061",
+        name="Point Persona",
+        canonical_urn="urn:gda:ind:point_persona",
+        birth_date={"date": "1840-05-01"},
+        death_date={"date": "1910-05-01"},
+    )
+    assert isinstance(ind_point.birth_date, EventDate)
+    assert isinstance(ind_point.death_date, EventDate)
+
+    with pytest.raises(TypeError, match="Unsupported vital date payload type"):
+        Individual.create(
+            individual_id="IND-000062",
+            name="Bad Date Persona",
+            canonical_urn="urn:gda:ind:bad_date_persona",
+            birth_date=18400501,  # type: ignore[arg-type]
+        )
 
 
 @pytest.mark.regression
@@ -221,7 +255,7 @@ def test_individual_factory_create_name_person_and_defaults() -> None:
 def test_individual_str_representation_range_death(
     valid_individual: Individual,
 ) -> None:
-    """Verify string formatting renders vitals with an EventDateRange death date."""
+    """Verify string formatting renders vitals with a BETWEEN EventDate death date."""
     expected = (
         "Johnathan Edward Smith [M] (b. 1842-05-12, d. BET 1910-01-01 AND 1912-12-31) (IND-000101)"
     )
@@ -230,7 +264,7 @@ def test_individual_str_representation_range_death(
 
 @pytest.mark.regression
 def test_individual_str_representation_point_death(
-    valid_audit: AuditStamp,
+    golden_audit: AuditStamp,
     valid_name: NamePerson,
     point_birth_date: EventDate,
     point_death_date: EventDate,
@@ -238,7 +272,7 @@ def test_individual_str_representation_point_death(
     """Verify string formatting renders vitals with a point EventDate death date."""
     ind = Individual(
         id=IndividualID(value="IND-000102"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_johnathan_1842",
         gender=GenderAtom("M"),
@@ -250,12 +284,12 @@ def test_individual_str_representation_point_death(
 
 @pytest.mark.regression
 def test_individual_str_living(
-    valid_audit: AuditStamp, valid_name: NamePerson, point_birth_date: EventDate
+    golden_audit: AuditStamp, valid_name: NamePerson, point_birth_date: EventDate
 ) -> None:
     """Verify string formatting renders living status when is_deceased is False."""
     ind = Individual(
         id=IndividualID(value="IND-000002"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_living_000002",
         gender=GenderAtom("F"),
@@ -267,12 +301,12 @@ def test_individual_str_living(
 
 @pytest.mark.regression
 def test_individual_str_deceased_unknown_death(
-    valid_audit: AuditStamp, valid_name: NamePerson, point_birth_date: EventDate
+    golden_audit: AuditStamp, valid_name: NamePerson, point_birth_date: EventDate
 ) -> None:
     """Verify string formatting renders 'd. unk' when deceased but death_date is None."""
     ind = Individual(
         id=IndividualID(value="IND-000003"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_000003",
         gender=GenderAtom("U"),
@@ -284,12 +318,12 @@ def test_individual_str_deceased_unknown_death(
 
 @pytest.mark.regression
 def test_individual_str_death_only(
-    valid_audit: AuditStamp, valid_name: NamePerson, point_death_date: EventDate
+    golden_audit: AuditStamp, valid_name: NamePerson, point_death_date: EventDate
 ) -> None:
     """Verify string formatting when only death_date is present."""
     ind = Individual(
         id=IndividualID(value="IND-000006"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_000006",
         gender=GenderAtom("U"),
@@ -300,11 +334,11 @@ def test_individual_str_death_only(
 
 
 @pytest.mark.regression
-def test_individual_str_no_dates(valid_audit: AuditStamp, valid_name: NamePerson) -> None:
+def test_individual_str_no_dates(golden_audit: AuditStamp, valid_name: NamePerson) -> None:
     """Verify string formatting when no dates are present."""
     ind = Individual(
         id=IndividualID(value="IND-000004"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_000004",
     )
@@ -313,7 +347,6 @@ def test_individual_str_no_dates(valid_audit: AuditStamp, valid_name: NamePerson
 
 # ==============================================================================
 # GROUP 2: YEARS, AGE CALCULATION & REGISTER SORTING
-# Note: Verification of lower-bound year extraction, age, and sorting keys
 # ==============================================================================
 
 
@@ -330,12 +363,12 @@ def test_individual_year_extraction_and_age(valid_individual: Individual) -> Non
 
 @pytest.mark.regression
 def test_individual_approximate_age_missing_one_bound(
-    valid_audit: AuditStamp, valid_name: NamePerson, point_birth_date: EventDate
+    golden_audit: AuditStamp, valid_name: NamePerson, point_birth_date: EventDate
 ) -> None:
     """Verify approximate_age evaluates to None if only birth_date is present."""
     ind = Individual(
         id=IndividualID(value="IND-000005"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_000005",
         birth_date=point_birth_date,
@@ -347,7 +380,7 @@ def test_individual_approximate_age_missing_one_bound(
 
 @pytest.mark.regression
 def test_individual_register_sort_key(
-    valid_audit: AuditStamp,
+    golden_audit: AuditStamp,
     valid_individual: Individual,
 ) -> None:
     """Verify deterministic register sort key uses lower-bound year and tiebreakers."""
@@ -355,14 +388,14 @@ def test_individual_register_sort_key(
 
     older_smith = Individual(
         id=IndividualID(value="IND-000090"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=NamePerson.create(raw="Aaron Smith", given="Aaron", surname="Smith"),
         canonical_urn="urn:gda:ind:smith_aaron_000090",
         birth_date=EventDate.create("1820-01-01"),
     )
     undated_smith = Individual(
         id=IndividualID(value="IND-000095"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=NamePerson.create(raw="Zachary Smith", given="Zachary", surname="Smith"),
         canonical_urn="urn:gda:ind:smith_zachary_000095",
     )
@@ -375,11 +408,11 @@ def test_individual_register_sort_key(
 
 
 @pytest.mark.regression
-def test_individual_sort_key_missing_name_components(valid_audit: AuditStamp) -> None:
+def test_individual_sort_key_missing_name_components(golden_audit: AuditStamp) -> None:
     """Verify sort_key handles None surname or given gracefully."""
     ind = Individual(
         id=IndividualID(value="IND-000099"),
-        audit=valid_audit,
+        audit=golden_audit,
         name=NamePerson.create(raw="Anonymous"),
         canonical_urn="urn:gda:ind:anonymous_000099",
     )
@@ -388,7 +421,6 @@ def test_individual_sort_key_missing_name_components(valid_audit: AuditStamp) ->
 
 # ==============================================================================
 # GROUP 3: COPY-ON-WRITE NAMING & ATTRIBUTE MUTATORS
-# Note: Verification of alias, married names, vitals, and dirty state
 # ==============================================================================
 
 
@@ -400,7 +432,6 @@ def test_individual_naming_mutators(valid_individual: Individual) -> None:
     assert ind.married_names == ["Jones"]
     assert ind.is_dirty is False
 
-    # add_alias & remove_alias
     with_alias = ind.add_alias("Jack")
     assert with_alias is not ind
     assert "Jack" in with_alias.aliases
@@ -412,7 +443,6 @@ def test_individual_naming_mutators(valid_individual: Individual) -> None:
     assert "Johnny" not in rem_alias.aliases
     assert rem_alias.remove_alias("NONEXISTENT") is rem_alias
 
-    # add_married & remove_married
     with_married = ind.add_married("Miller")
     assert with_married is not ind
     assert "Miller" in with_married.married_names
@@ -435,7 +465,6 @@ def test_individual_full_field_mutators_and_dirty_flag(
     ind = valid_individual
     assert ind.is_dirty is False
 
-    # mark_dirty and mark_clean
     marked_dirty = ind.mark_dirty()
     assert marked_dirty.is_dirty is True
     assert marked_dirty.mark_dirty() is marked_dirty
@@ -443,29 +472,45 @@ def test_individual_full_field_mutators_and_dirty_flag(
     assert marked_clean.is_dirty is False
     assert marked_clean.mark_clean() is marked_clean
 
-    # update_name with NamePerson and str
     up_name_obj = ind.update_name(NamePerson.create(raw="Jonathan Smith"))
     assert up_name_obj is not ind
     assert up_name_obj.full_name == "Jonathan Smith"
     assert up_name_obj.is_dirty is True
+    assert up_name_obj.update_name(up_name_obj.name) is up_name_obj
 
     up_name_str = ind.update_name("J. E. Smith")
     assert up_name_str is not ind
     assert up_name_str.full_name == "J. E. Smith"
     assert up_name_str.is_dirty is True
 
-    # update_gender
     up_gender = ind.update_gender(GenderAtom("U"))
     assert up_gender is not ind
     assert up_gender.gender.value == "U"
     assert up_gender.is_dirty is True
+    assert up_gender.update_gender(GenderAtom("U")) is up_gender
 
     up_gender_str = ind.update_gender("Female")
     assert up_gender_str.gender.value == "F"
 
-    # update_birth with string date, string place, SiteID, and defaults
-    new_birth_str = "1843-01-01"
-    up_birth = ind.update_birth(birth_date=new_birth_str, birth_place_id="LOC-000005")
+    # update_birth with EventDate object, BETWEEN range, and dictionary payloads
+    up_birth_obj = ind.update_birth(birth_date=point_birth_date)
+    assert up_birth_obj is ind  # idempotent no-op when already equal
+
+    up_birth_range = ind.update_birth(
+        birth_date=EventDate.create("1842-01-01", DateModifier.BETWEEN, "1843-01-01")
+    )
+    assert isinstance(up_birth_range.birth_date, EventDate)
+    assert up_birth_range.birth_date.modifier == DateModifier.BETWEEN
+
+    up_birth_dict_range = ind.update_birth(
+        birth_date={"start_date": "1840-01-01", "end_date": "1841-01-01"}
+    )
+    assert isinstance(up_birth_dict_range.birth_date, EventDate)
+
+    up_birth_dict_point = ind.update_birth(birth_date={"date": "1840-05-01"})
+    assert isinstance(up_birth_dict_point.birth_date, EventDate)
+
+    up_birth = ind.update_birth(birth_date="1843-01-01", birth_place_id="LOC-000005")
     assert up_birth is not ind
     assert up_birth.birth_date == EventDate.create("1843-01-01")
     assert up_birth.birth_place_id == LocationID("LOC-000005")
@@ -480,9 +525,25 @@ def test_individual_full_field_mutators_and_dirty_flag(
     up_birth_keep_place = ind.update_birth(birth_date="1844-01-01", birth_place_id=None)
     assert up_birth_keep_place.birth_place_id == ind.birth_place_id
 
-    # update_death with string date, string place, SiteID, and defaults
-    new_death_str = "1911-05-05"
-    up_death = ind.update_death(death_date=new_death_str, death_place_id="LOC-000006")
+    # update_death with EventDate object, BETWEEN range, and dictionary payloads
+    up_death_obj = ind.update_death(death_date=point_death_date)
+    assert up_death_obj.death_date == point_death_date
+    assert up_death_obj.update_death(death_date=point_death_date) is up_death_obj
+
+    up_death_range = ind.update_death(
+        death_date=EventDate.create("1910-01-01", DateModifier.BETWEEN, "1912-01-01")
+    )
+    assert isinstance(up_death_range.death_date, EventDate)
+
+    up_death_dict_range = ind.update_death(
+        death_date={"start_date": "1910-01-01", "end_date": "1911-01-01"}
+    )
+    assert isinstance(up_death_dict_range.death_date, EventDate)
+
+    up_death_dict_point = ind.update_death(death_date={"date": "1910-05-01"})
+    assert isinstance(up_death_dict_point.death_date, EventDate)
+
+    up_death = ind.update_death(death_date="1911-05-05", death_place_id="LOC-000006")
     assert up_death is not ind
     assert up_death.death_date == EventDate.create("1911-05-05")
     assert up_death.death_place_id == LocationID("LOC-000006")
@@ -503,6 +564,7 @@ def test_individual_full_field_mutators_and_dirty_flag(
     assert up_urn is not ind
     assert up_urn.canonical_urn == "urn:gda:ind:smith_johnathan_updated"
     assert up_urn.is_dirty is True
+    assert up_urn.update_urn("urn:gda:ind:smith_johnathan_updated") is up_urn
 
 
 @pytest.mark.regression
@@ -524,7 +586,6 @@ def test_individual_attribute_mutators_defensive_errors(
 
 # ==============================================================================
 # GROUP 4: EMBEDDED NOTE CONTAINER & UPDATE OPERATIONS
-# Note: Verification of inherited EntityLifecycleMixin and update_note mutators
 # ==============================================================================
 
 
@@ -558,7 +619,7 @@ def test_individual_add_and_delete_embedded_note(valid_individual: Individual) -
 
 @pytest.mark.regression
 def test_individual_update_embedded_note(valid_individual: Individual) -> None:
-    """Verify Individual update_note mutator modifies note text, title, type, and tags individually."""
+    """Verify Individual update_note mutator delegates to EntityLifecycleMixin and sets dirty flag."""
     ind = valid_individual.add_note(
         text="Initial baptism observation.",
         note_type=NoteType.GENERAL,
@@ -567,7 +628,6 @@ def test_individual_update_embedded_note(valid_individual: Individual) -> None:
     )
     note_id = ind.notes[0].note_id
 
-    # Update all fields simultaneously
     updated_all = ind.update_note(
         note_id=note_id,
         text="Corrected church record observation.",
@@ -584,24 +644,6 @@ def test_individual_update_embedded_note(valid_individual: Individual) -> None:
     assert target.note_type == NoteType.RESEARCH
     assert target.tags == ["verified", "parish"]
 
-    # Partial updates: text only
-    up_text = ind.update_note(note_id=note_id, text="Only text updated")
-    assert up_text.get_note(note_id).text == "Only text updated"
-    assert up_text.get_note(note_id).title == "Initial"
-
-    # Partial updates: title only
-    up_title = ind.update_note(note_id=note_id, title="Only title updated")
-    assert up_title.get_note(note_id).title == "Only title updated"
-
-    # Partial updates: type only
-    up_type = ind.update_note(note_id=note_id, note_type=NoteType.PROOF)
-    assert up_type.get_note(note_id).note_type == NoteType.PROOF
-
-    # Partial updates: tags only
-    up_tags = ind.update_note(note_id=note_id, tags=["new_tag"])
-    assert up_tags.get_note(note_id).tags == ["new_tag"]
-
-    # No-op when note_id is absent
     assert ind.update_note(note_id="NOT-999999", text="No-op") is ind
 
 
@@ -625,12 +667,11 @@ def test_individual_find_notes_filtering_and_sorting(
 
     sorted_by_title = ind.find_notes(sort_by="title")
     assert sorted_by_title[0].title == "Birth Year Conflict"
-    assert sorted_by_title[-1].title == "Surname Spelling Variance"
+    assert sorted_by_title[-1].title == "Tax Assessment"
 
 
 # ==============================================================================
 # GROUP 5: SERIALIZATION & ROUND TRIPS
-# Note: Verification of dictionary and JSON string payload conversions
 # ==============================================================================
 
 
@@ -650,8 +691,8 @@ def test_individual_to_dict_and_from_dict_round_trip(
     assert data["is_deceased"] is True
     assert data["birth_place_id"] == "LOC-000010"
     assert data["death_place_id"] == "SID-000020"
-    assert data["birth_date"] == {"date": "1842-05-12"}
-    assert "start_date" in data["death_date"]
+    assert data["birth_date"] == {"date": "1842-05-12", "modifier": "EXACT"}
+    assert data["death_date"]["modifier"] == "BET"
     assert len(data["notes"]) == 1
 
     restored = Individual.from_dict(data)
@@ -687,8 +728,8 @@ def test_individual_to_dict_minimal_omits_none_fields() -> None:
 
 
 @pytest.mark.integration
-def test_individual_from_dict_minimal_and_string_name() -> None:
-    """Verify Individual.from_dict parses dictionary without audit or tombstone."""
+def test_individual_from_dict_minimal_and_tombstone() -> None:
+    """Verify Individual.from_dict parses dictionary without audit or with tombstone."""
     data = {
         "id": "IND-000200",
         "name": "Jane Eyre",
@@ -702,6 +743,32 @@ def test_individual_from_dict_minimal_and_string_name() -> None:
     assert restored.death_date is None
     assert restored.audit is not None
     assert restored.is_deprecated is False
+
+    data_tomb = {
+        **data,
+        "id": "IND-000201",
+        "tombstone": {
+            "is_deprecated": True,
+            "deprecated_at": "2026-10-20T12:00:00Z",
+            "superseded_by": "IND-000202",
+        },
+    }
+    restored_tomb = Individual.from_dict(data_tomb)
+    assert restored_tomb.is_deprecated is True
+    assert restored_tomb.superseded_by == IndividualID("IND-000202")
+    assert restored_tomb.to_dict()["tombstone"]["superseded_by"] == "IND-000202"
+
+    data_tomb_no_sup = {
+        **data,
+        "id": "IND-000203",
+        "tombstone": {
+            "is_deprecated": True,
+            "deprecated_at": "2026-10-20T12:00:00Z",
+        },
+    }
+    restored_no_sup = Individual.from_dict(data_tomb_no_sup)
+    assert restored_no_sup.is_deprecated is True
+    assert restored_no_sup.superseded_by is None
 
 
 @pytest.mark.integration
@@ -735,7 +802,6 @@ def test_individual_deserialization_defensive_errors() -> None:
 
 # ==============================================================================
 # GROUP 6: DEFENSIVE BOUNDARIES & VALIDATIONS
-# Note: Verification of validation rules, ID regex, and type safety
 # ==============================================================================
 
 
@@ -750,7 +816,7 @@ def test_individual_deserialization_defensive_errors() -> None:
     ],
 )
 def test_individual_invalid_id_format(
-    bad_id_str: str, valid_audit: AuditStamp, valid_name: NamePerson
+    bad_id_str: str, golden_audit: AuditStamp, valid_name: NamePerson
 ) -> None:
     """Verify malformed IndividualID values raise ModelFormatError when constructed."""
     try:
@@ -758,7 +824,7 @@ def test_individual_invalid_id_format(
         with pytest.raises(ModelFormatError, match="Invalid IndividualID format"):
             Individual(
                 id=bad_id,
-                audit=valid_audit,
+                audit=golden_audit,
                 name=valid_name,
                 canonical_urn="urn:gda:ind:smith_invalid",
             )
@@ -768,24 +834,27 @@ def test_individual_invalid_id_format(
 
 @pytest.mark.regression
 def test_individual_conflicting_atom_id_type_raises_error(
-    valid_audit: AuditStamp, valid_name: NamePerson
+    golden_audit: AuditStamp, valid_name: NamePerson
 ) -> None:
     """Verify Individual rejects foreign AtomID subclasses assigned to id."""
     wrong_id = FactID("FID-000001")
     with pytest.raises((TypeError, ValidationError)):
         Individual(
             id=wrong_id,  # type: ignore[arg-type]
-            audit=valid_audit,
+            audit=golden_audit,
             name=valid_name,
             canonical_urn="urn:gda:ind:smith_wrong_id",
         )
 
 
 @pytest.mark.regression
-def test_individual_post_init_id_pattern_defensive(
+def test_individual_post_init_defensive_branches(
     valid_individual: Individual,
 ) -> None:
-    """Verify Individual.__post_init__ raises ModelFormatError if id pattern fails (line 101)."""
+    """Verify Individual.__post_init__ defensive checks for id type, pattern, and untrimmed URN."""
+    object.__setattr__(valid_individual, "canonical_urn", "  urn:gda:ind:smith_johnathan_1842  ")
+    valid_individual.__post_init__()
+    assert valid_individual.canonical_urn == "urn:gda:ind:smith_johnathan_1842"
 
     class MalformedIndividualID(IndividualID):
         """Subclass bypassing AtomID.__post_init__ format enforcement."""
@@ -798,14 +867,18 @@ def test_individual_post_init_id_pattern_defensive(
     with pytest.raises(ModelFormatError, match="Invalid IndividualID format"):
         valid_individual.__post_init__()
 
+    object.__setattr__(valid_individual, "id", "NOT_AN_INDIVIDUAL_ID")
+    with pytest.raises(TypeError, match="must be an instance of IndividualID"):
+        valid_individual.__post_init__()
+
 
 @pytest.mark.regression
-def test_individual_invalid_name_type_raises_error(valid_audit: AuditStamp) -> None:
+def test_individual_invalid_name_type_raises_error(golden_audit: AuditStamp) -> None:
     """Verify Individual constructor rejects non-NamePerson instances assigned to name."""
     with pytest.raises((TypeError, ValidationError)):
         Individual(
             id=IndividualID("IND-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             name="Raw String Not Allowed In Direct Constructor",  # type: ignore[arg-type]
             canonical_urn="urn:gda:ind:smith_000001",
         )
@@ -813,7 +886,7 @@ def test_individual_invalid_name_type_raises_error(valid_audit: AuditStamp) -> N
     with pytest.raises(TypeError, match="must be an instance of NamePerson or str"):
         Individual.create(
             individual_id=IndividualID("IND-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             name=12345,  # type: ignore[arg-type]
             canonical_urn="urn:gda:ind:smith_000001",
         )
@@ -822,13 +895,13 @@ def test_individual_invalid_name_type_raises_error(valid_audit: AuditStamp) -> N
 @pytest.mark.regression
 @pytest.mark.parametrize("blank_name", ["", "   ", "\t\n"])
 def test_individual_blank_name_raises_format_error(
-    blank_name: str, valid_audit: AuditStamp
+    blank_name: str, golden_audit: AuditStamp
 ) -> None:
     """Verify Individual.create raises ModelFormatError if name is blank."""
     with pytest.raises(ModelFormatError, match="Individual 'name' cannot be empty or whitespace"):
         Individual.create(
             individual_id=IndividualID("IND-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             name=blank_name,
             canonical_urn="urn:gda:ind:smith_000001",
         )
@@ -847,13 +920,13 @@ def test_individual_blank_name_raises_format_error(
     ],
 )
 def test_individual_invalid_urn_format(
-    invalid_urn: str, valid_audit: AuditStamp, valid_name: NamePerson
+    invalid_urn: str, golden_audit: AuditStamp, valid_name: NamePerson
 ) -> None:
     """Verify Individual raises ModelFormatError when canonical_urn is malformed."""
     with pytest.raises(ModelFormatError, match="Invalid canonical_urn format"):
         Individual(
             id=IndividualID(value="IND-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             name=valid_name,
             canonical_urn=invalid_urn,
         )
@@ -861,19 +934,19 @@ def test_individual_invalid_urn_format(
 
 @pytest.mark.regression
 def test_individual_self_supersession_forbidden(
-    valid_audit: AuditStamp, valid_name: NamePerson
+    golden_audit: AuditStamp, valid_name: NamePerson
 ) -> None:
     """Verify ModelFormatError when tombstone supersedes self."""
     ind_id = IndividualID(value="IND-000001")
     tombstone = Tombstone[IndividualID](
         is_deprecated=True,
-        deprecated_at=IsoTimestamp.now_utc(),
+        deprecated_at=IsoTimestamp(value="2026-10-18T12:00:00Z"),
         superseded_by=ind_id,
     )
     with pytest.raises(ModelFormatError, match="Individual cannot be superseded by itself"):
         Individual(
             id=ind_id,
-            audit=valid_audit,
+            audit=golden_audit,
             name=valid_name,
             canonical_urn="urn:gda:ind:smith_000001",
             tombstone=tombstone,
@@ -882,19 +955,19 @@ def test_individual_self_supersession_forbidden(
 
 @pytest.mark.regression
 def test_individual_superseded_by_other_allowed(
-    valid_audit: AuditStamp, valid_name: NamePerson
+    golden_audit: AuditStamp, valid_name: NamePerson
 ) -> None:
     """Verify tombstone with valid superseded_by does not raise error."""
     ind_id = IndividualID(value="IND-000001")
     other_id = IndividualID(value="IND-000002")
     tombstone = Tombstone[IndividualID](
         is_deprecated=True,
-        deprecated_at=IsoTimestamp.now_utc(),
+        deprecated_at=IsoTimestamp(value="2026-10-18T12:00:00Z"),
         superseded_by=other_id,
     )
     ind = Individual(
         id=ind_id,
-        audit=valid_audit,
+        audit=golden_audit,
         name=valid_name,
         canonical_urn="urn:gda:ind:smith_000001",
         tombstone=tombstone,
@@ -905,15 +978,15 @@ def test_individual_superseded_by_other_allowed(
 
 @pytest.mark.regression
 def test_individual_living_cannot_possess_death_data(
-    valid_audit: AuditStamp,
+    golden_audit: AuditStamp,
     valid_name: NamePerson,
-    range_death_date: EventDateRange,
+    range_death_date: EventDate,
 ) -> None:
     """Verify ModelFormatError when living individual possesses death date or place."""
     with pytest.raises(ModelFormatError, match="death_date while is_deceased is False"):
         Individual(
             id=IndividualID(value="IND-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             name=valid_name,
             canonical_urn="urn:gda:ind:smith_000001",
             death_date=range_death_date,
@@ -923,7 +996,7 @@ def test_individual_living_cannot_possess_death_data(
     with pytest.raises(ModelFormatError, match="death_place_id while is_deceased is False"):
         Individual(
             id=IndividualID(value="IND-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             name=valid_name,
             canonical_urn="urn:gda:ind:smith_000001",
             death_place_id=SiteID(value="SID-000001"),
@@ -933,7 +1006,7 @@ def test_individual_living_cannot_possess_death_data(
 
 @pytest.mark.regression
 def test_individual_death_year_preceding_birth_year(
-    valid_audit: AuditStamp, valid_name: NamePerson
+    golden_audit: AuditStamp, valid_name: NamePerson
 ) -> None:
     """Verify ModelRangeError when death year precedes birth year."""
     b_date = EventDate.create("1920-05-10")
@@ -942,7 +1015,7 @@ def test_individual_death_year_preceding_birth_year(
     with pytest.raises(ModelRangeError, match="Death year.*cannot precede birth year"):
         Individual(
             id=IndividualID(value="IND-000001"),
-            audit=valid_audit,
+            audit=golden_audit,
             name=valid_name,
             canonical_urn="urn:gda:ind:smith_000001",
             birth_date=b_date,
@@ -969,7 +1042,6 @@ def test_individual_lifecycle_deprecate_and_restore(
 
 # ==============================================================================
 # GROUP 7: IMMUTABILITY & INTROSPECTION
-# Note: Verification of frozen immutability and introspection directory
 # ==============================================================================
 
 

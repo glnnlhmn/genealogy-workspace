@@ -22,36 +22,26 @@ from typing import Any, ClassVar, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.dates import parse_iso_date_parts, utc_now_iso
+from gda.core.enums.archival import NoteType
+from gda.core.enums.core import AssociatedRole, FactType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.enums.archival import NoteType
-from gda.enums.core import AssociatedRole, FactType
-from gda.model.atom.date import EventDate, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FactID, FamilyID, IndividualID, LocationID, NoteID, SiteID
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate, TimePeriod
 from gda.model.base.entity import BaseEntity
 from gda.model.base.note import Note
 from gda.model.base.source import SourceReference
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.6"
+__version__ = "2.0.0+build.3"
 
 __all__ = ["Fact", "FactParticipant"]
 
 _FACT_ID_PATTERN: re.Pattern[str] = re.compile(r"^FID-\d{6,}$")
 _FACT_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:fact:[a-z0-9_:\-]+$")
-
-# Authoritative normalization maps
-_ROLE_MAP: dict[str, AssociatedRole] = {}
-for _member in AssociatedRole:
-    _ROLE_MAP[_member.name.upper()] = _member
-    _ROLE_MAP[_member.value.upper()] = _member
-
-_FACT_TYPE_MAP: dict[str, FactType] = {}
-for _member in FactType:
-    _FACT_TYPE_MAP[_member.name.upper()] = _member
-    _FACT_TYPE_MAP[_member.value.upper()] = _member
 
 
 def _normalize_role(role: AssociatedRole | str) -> AssociatedRole:
@@ -59,9 +49,10 @@ def _normalize_role(role: AssociatedRole | str) -> AssociatedRole:
     if isinstance(role, AssociatedRole):
         return role
     token = str(role).strip().upper()
-    if token in _ROLE_MAP:
-        return _ROLE_MAP[token]
-    raise ModelFormatError(f"Cannot normalize '{role}' to a valid AssociatedRole.")
+    try:
+        return AssociatedRole(token)
+    except ValueError as exc:
+        raise ModelFormatError(f"Cannot normalize '{role}' to a valid AssociatedRole.") from exc
 
 
 def _normalize_fact_type(fact_type: FactType | str) -> FactType:
@@ -69,13 +60,32 @@ def _normalize_fact_type(fact_type: FactType | str) -> FactType:
     if isinstance(fact_type, FactType):
         return fact_type
     token = str(fact_type).strip().upper()
-    if token in _FACT_TYPE_MAP:
-        return _FACT_TYPE_MAP[token]
-    raise ModelFormatError(f"Cannot normalize '{fact_type}' to a valid FactType.")
+    try:
+        return FactType(token)
+    except ValueError as exc:
+        raise ModelFormatError(f"Cannot normalize '{fact_type}' to a valid FactType.") from exc
+
+
+def _resolve_fact_date(
+    date: EventDate | TimePeriod | str | dict[str, Any] | None,
+) -> EventDate | TimePeriod | None:
+    """Resolve raw date payload into canonical EventDate or TimePeriod."""
+    if date is None or isinstance(date, (EventDate, TimePeriod)):
+        return date
+    if isinstance(date, str):
+        return EventDate.create(date)
+    if isinstance(date, dict):
+        if "start_date" in date or "end_date" in date:
+            return TimePeriod.from_dict(date)
+        return EventDate.from_dict(date)
+    raise TypeError(f"Unsupported date payload type: {type(date).__name__}.")
 
 
 @total_ordering
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+)
 class FactParticipant(IntrospectableMixin):
     """Associative linkage connecting an individual to a fact in a secondary role."""
 
@@ -85,7 +95,7 @@ class FactParticipant(IntrospectableMixin):
     )
     role: AssociatedRole = Field(
         default=AssociatedRole.WITNESS,
-        description="Role in event: WITNESS, CLERGY, INFORMANT, COMPANION, etc.",
+        description="Role in event: WITNESS, CLERGY, INFORMANT, OFFICIAL, OFFICIANT, etc.",
     )
     notes: str | None = Field(
         default=None,
@@ -165,6 +175,12 @@ class FactParticipant(IntrospectableMixin):
         suffix = f" ({self.notes})" if self.notes else ""
         return f"{self.individual_id.value} [{self.role.value}]{suffix}"
 
+    def __repr__(self) -> str:
+        return (
+            f"FactParticipant(individual_id={self.individual_id!r}, "
+            f"role={self.role!r}, notes={self.notes!r})"
+        )
+
     def __lt__(self, other: Any) -> bool:
         """Support deterministic sorting by individual_id and role."""
         if isinstance(other, FactParticipant):
@@ -175,7 +191,8 @@ class FactParticipant(IntrospectableMixin):
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class Fact(BaseEntity[FactID]):
@@ -250,16 +267,20 @@ class Fact(BaseEntity[FactID]):
         if not self._ID_PATTERN.match(raw_id):
             raise ModelFormatError(f"Invalid FactID format: '{raw_id}'. Must match 'FID-######'.")
 
-        if not self.canonical_urn or not self._URN_PATTERN.match(self.canonical_urn):
+        clean_urn = self.canonical_urn.strip() if self.canonical_urn else ""
+        if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
                 f"Invalid canonical_urn format: '{self.canonical_urn}'. "
                 "Must match 'urn:gda:fact:<slug>'."
             )
+        if clean_urn != self.canonical_urn:
+            object.__setattr__(self, "canonical_urn", clean_urn)
 
         clean_title = self.title.strip() if self.title else ""
         if not clean_title:
             raise ModelFormatError("Fact 'title' cannot be empty or whitespace.")
-        object.__setattr__(self, "title", clean_title)
+        if clean_title != self.title:
+            object.__setattr__(self, "title", clean_title)
 
         if not isinstance(self.primary_subject_id, (IndividualID, FamilyID)):
             raise TypeError(
@@ -322,9 +343,9 @@ class Fact(BaseEntity[FactID]):
         if self.date is None:
             return None
         if isinstance(self.date, EventDate):
-            return self.date.year_lower_bound
+            return parse_iso_date_parts(self.date.date.value)[0]
         if isinstance(self.date, TimePeriod) and self.date.start_date is not None:
-            return self.date.start_date.year_lower_bound
+            return parse_iso_date_parts(self.date.start_date.date.value)[0]
         return None
 
     @property
@@ -358,7 +379,7 @@ class Fact(BaseEntity[FactID]):
         resolved_type = _normalize_fact_type(fact_type)
 
         if isinstance(primary_subject_id, (IndividualID, FamilyID)):
-            resolved_subject = primary_subject_id
+            resolved_subject: IndividualID | FamilyID = primary_subject_id
         else:
             subj_str = str(primary_subject_id).strip()
             if subj_str.startswith("FAM-"):
@@ -366,18 +387,7 @@ class Fact(BaseEntity[FactID]):
             else:
                 resolved_subject = IndividualID(subj_str)
 
-        resolved_date: EventDate | TimePeriod | None = None
-        if isinstance(date, (EventDate, TimePeriod)):
-            resolved_date = date
-        elif isinstance(date, str):
-            resolved_date = EventDate.create(date)
-        elif isinstance(date, dict):
-            if "start_date" in date or "end_date" in date:
-                s_date = EventDate.create(date["start_date"]) if date.get("start_date") else None
-                e_date = EventDate.create(date["end_date"]) if date.get("end_date") else None
-                resolved_date = TimePeriod(start_date=s_date, end_date=e_date)
-            else:
-                resolved_date = EventDate.from_dict(date)
+        resolved_date = _resolve_fact_date(date)
 
         resolved_loc = (
             location_id
@@ -408,34 +418,32 @@ class Fact(BaseEntity[FactID]):
                 else:
                     raise TypeError(f"Cannot resolve citation from payload: {c!r}")
 
-        now_ts = IsoTimestamp.now_utc()
+        now_ts = IsoTimestamp(utc_now_iso())
         resolved_audit = (
             audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[FactID]()
         resolved_notes = list(notes) if notes is not None else []
 
-        kwargs: dict[str, Any] = {
-            "id": resolved_id,
-            "canonical_urn": canonical_urn.strip() if canonical_urn else "",
-            "fact_type": resolved_type,
-            "title": title.strip() if title else "",
-            "primary_subject_id": resolved_subject,
-            "date": resolved_date,
-            "location_id": resolved_loc,
-            "site_id": resolved_site,
-            "value": value.strip() if value is not None else None,
-            "description": description.strip() if description is not None else None,
-            "narrative": narrative.strip() if narrative is not None else None,
-            "participants": resolved_participants,
-            "citations": resolved_citations,
-            "audit": resolved_audit,
-            "tombstone": resolved_tombstone,
-            "notes": resolved_notes,
-            "_dirty": False,
-        }
-
-        return cls(**kwargs)
+        return cls(
+            id=resolved_id,
+            canonical_urn=canonical_urn.strip() if canonical_urn else "",
+            fact_type=resolved_type,
+            title=title.strip() if title else "",
+            primary_subject_id=resolved_subject,
+            date=resolved_date,
+            location_id=resolved_loc,
+            site_id=resolved_site,
+            value=value.strip() if value is not None else None,
+            description=description.strip() if description is not None else None,
+            narrative=narrative.strip() if narrative is not None else None,
+            participants=resolved_participants,
+            citations=resolved_citations,
+            audit=resolved_audit,
+            tombstone=resolved_tombstone,
+            notes=resolved_notes,
+            _dirty=False,
+        )
 
     def mark_clean(self) -> Self:
         """Return a new immutable copy marking entity as clean (persisted to storage)."""
@@ -459,7 +467,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             title=clean,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -471,21 +479,19 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             fact_type=resolved,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
-    def update_date(self, date: EventDate | TimePeriod | str | None) -> Self:
+    def update_date(self, date: EventDate | TimePeriod | str | dict[str, Any] | None) -> Self:
         """Return a new immutable copy with updated temporal bound."""
-        resolved: EventDate | TimePeriod | None = (
-            EventDate.create(date) if isinstance(date, str) else date
-        )
+        resolved = _resolve_fact_date(date)
         if resolved == self.date:
             return self
         return replace(
             self,
             date=resolved,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -501,7 +507,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             location_id=resolved,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -513,7 +519,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             site_id=resolved,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -525,7 +531,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             value=clean,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -537,7 +543,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             description=clean,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -549,7 +555,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             narrative=clean,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -565,7 +571,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             canonical_urn=clean_urn,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -598,7 +604,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             participants=[*self.participants, new_part],
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -611,7 +617,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             participants=filtered,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -646,7 +652,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             participants=new_participants,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -662,7 +668,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             citations=[*self.citations, resolved],
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -675,7 +681,7 @@ class Fact(BaseEntity[FactID]):
         return replace(
             self,
             citations=filtered,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -688,33 +694,16 @@ class Fact(BaseEntity[FactID]):
         tags: list[str] | None = None,
     ) -> Self:
         """Return a new immutable copy with targeted research note updated."""
-        target_str = str(note_id)
-        found = False
-        new_notes: list[Note] = []
-        for n in self.notes:
-            if str(n.note_id) == target_str:
-                found = True
-                updated_n = n
-                if text is not None:
-                    updated_n = updated_n.update_text(text)
-                if title is not None:
-                    updated_n = updated_n.update_title(title)
-                if note_type is not None:
-                    updated_n = updated_n.update_type(note_type)
-                if tags is not None:
-                    updated_n = updated_n.update_tags(tags)
-                new_notes.append(updated_n)
-            else:
-                new_notes.append(n)
-
-        if not found:
-            return self
-        return replace(
-            self,
-            notes=new_notes,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
-            _dirty=True,
+        updated = super().update_note(
+            note_id=note_id,
+            text=text,
+            title=title,
+            note_type=note_type,
+            tags=tags,
         )
+        if updated is self:
+            return self
+        return replace(updated, _dirty=True)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize Fact entity to a dictionary payload."""
@@ -732,6 +721,11 @@ class Fact(BaseEntity[FactID]):
             },
             "tombstone": {
                 "is_deprecated": self.tombstone.is_deprecated,
+                "deprecated_at": (
+                    str(self.tombstone.deprecated_at)
+                    if self.tombstone.deprecated_at is not None
+                    else None
+                ),
                 "superseded_by": (
                     str(self.tombstone.superseded_by)
                     if self.tombstone.superseded_by is not None
@@ -742,14 +736,7 @@ class Fact(BaseEntity[FactID]):
         }
 
         if self.date is not None:
-            if isinstance(self.date, EventDate):
-                data["date"] = self.date.to_dict()
-            else:
-                data["date"] = {
-                    "start_date": str(self.date.start_date) if self.date.start_date else None,
-                    "end_date": str(self.date.end_date) if self.date.end_date else None,
-                }
-
+            data["date"] = self.date.to_dict()
         if self.location_id is not None:
             data["location_id"] = self.location_id.value
         if self.site_id is not None:
@@ -859,4 +846,10 @@ class Fact(BaseEntity[FactID]):
         return (
             f"Fact [{self.fact_type.value}] '{self.title}' for "
             f"{self.primary_subject_id.value}{date_str} ({self.id.value})"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"Fact(id={self.id!r}, fact_type={self.fact_type!r}, "
+            f"title={self.title!r}, primary_subject_id={self.primary_subject_id!r})"
         )

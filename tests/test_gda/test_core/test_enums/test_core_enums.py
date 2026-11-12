@@ -26,7 +26,7 @@ from gda.core.enums.core import (
     SmartIDPrefix,
 )
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 
 # ==============================================================================
@@ -98,6 +98,8 @@ def test_associated_role_canonical_values() -> None:
     assert AssociatedRole.WITNESS == "WITNESS"
     assert AssociatedRole.CLERGY == "CLERGY"
     assert AssociatedRole.INFORMANT == "INFORMANT"
+    assert AssociatedRole.OFFICIAL == "OFFICIAL"
+    assert AssociatedRole.OFFICIANT == "OFFICIANT"
     assert AssociatedRole.PRIMARY == "PRIMARY"
     assert AssociatedRole.CHILD == "CHILD"
     assert AssociatedRole.FATHER == "FATHER"

@@ -8,7 +8,7 @@ Operational Role:
     embedded Note container operations (add_note, update_note, delete_note, get_note, find_notes),
     NameThing integration, copy-on-write naming mutators, full field mutators,
     dirty tracking (_dirty, is_dirty, mark_clean, mark_dirty), sorting properties,
-    and immutability invariants with 100% statement and branch coverage.
+    serialization round trips, and immutability invariants with 100% statement and branch coverage.
 """
 
 from __future__ import annotations
@@ -18,30 +18,27 @@ from dataclasses import FrozenInstanceError
 import pytest
 from pydantic import ValidationError
 
+from gda.core.enums.archival import NoteType
+from gda.core.enums.date import DateModifier
+from gda.core.enums.location import JurisdictionCategory
+from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
-from gda.enums.archival import NoteType
-from gda.enums.location import JurisdictionCategory
-from gda.enums.vital import HistoricNameType
-from gda.model.atom.date import (
-    DateModifier,
-    DateString,
-    EventDate,
-)
-from gda.model.atom.geo import Coordinates, Latitude, Longitude
+from gda.model.atom.date import DateString
+from gda.model.atom.geo import Latitude, Longitude
 from gda.model.atom.id import FactID, LocationID, NoteID, SiteID
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate, TimePeriod
+from gda.model.base.geo import Coordinates
 from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.note import Note
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
 
-__version__ = "1.0.0+build.35"
+__version__ = "2.0.0+build.3"
 
 
 # ==============================================================================
 # GROUP 1: FIXTURES & BASE INSTANCES
-# Note: Verification of instantiation, property delegation, and embedded notes
 # ==============================================================================
 
 
@@ -93,7 +90,6 @@ def sample_location(
 
 # ==============================================================================
 # GROUP 2: ENUMERATIONS & JURISDICTION RANKINGS
-# Note: Verification of administrative rank ordering
 # ==============================================================================
 
 
@@ -111,7 +107,6 @@ def test_jurisdiction_category_members_and_ranks() -> None:
 
 # ==============================================================================
 # GROUP 3: LOCATION CREATION & ATTRIBUTES
-# Note: Verification of minimal and complete instantiation contracts
 # ==============================================================================
 
 
@@ -143,6 +138,7 @@ def test_location_valid_creation(
     assert loc.is_dirty is False
     assert loc.category_rank == 40
     assert loc.sort_key == (40, "bow")
+    assert "Location(" in repr(loc)
 
 
 @pytest.mark.unit
@@ -218,7 +214,6 @@ def test_location_string_representation(sample_location: Location) -> None:
 
 # ==============================================================================
 # GROUP 4: COPY-ON-WRITE NAMING & ATTRIBUTE MUTATORS
-# Note: Verification of alias, historic variants, and full field mutations
 # ==============================================================================
 
 
@@ -232,21 +227,19 @@ def test_location_naming_mutators(
     assert len(original.historical_names) == 1
     assert original.is_dirty is False
 
-    # add_alias
     with_alias = original.add_alias("Bow Mills Village")
     assert with_alias is not original
     assert "Bow Mills Village" in with_alias.aliases
     assert "Bow Town" in with_alias.aliases
     assert with_alias.is_dirty is True
+    assert with_alias.add_alias("Bow Mills Village") is with_alias
 
-    # remove_alias (and no-op removal)
     with_removed_alias = with_alias.remove_alias("Bow Town")
     assert with_removed_alias is not with_alias
     assert "Bow Town" not in with_removed_alias.aliases
     assert "Bow Mills Village" in with_removed_alias.aliases
     assert with_removed_alias.remove_alias("NONEXISTENT") is with_removed_alias
 
-    # add_historic_variant
     with_variant = with_removed_alias.add_historic_variant(
         raw="Suncook",
         name="Suncook Plantation",
@@ -259,7 +252,6 @@ def test_location_naming_mutators(
     assert with_variant.historical_names[1].raw == "Suncook"
     assert with_variant.is_dirty is True
 
-    # remove_historic_variant (and no-op removal)
     with_removed_variant = with_variant.remove_historic_variant("Bow Mills")
     assert with_removed_variant is not with_variant
     assert len(with_removed_variant.historical_names) == 1
@@ -275,56 +267,55 @@ def test_location_full_field_mutators_and_dirty_flag(
     loc = sample_location
     assert loc.is_dirty is False
 
-    # mark_dirty and mark_clean
     marked_dirty = loc.mark_dirty()
     assert marked_dirty.is_dirty is True
-    assert marked_dirty.mark_dirty() is marked_dirty  # idempotent
+    assert marked_dirty.mark_dirty() is marked_dirty
     marked_clean = marked_dirty.mark_clean()
     assert marked_clean.is_dirty is False
-    assert marked_clean.mark_clean() is marked_clean  # idempotent
+    assert marked_clean.mark_clean() is marked_clean
 
     new_coords = Coordinates(latitude=Latitude(43.2081), longitude=Longitude(-71.5376))
 
-    # update_coordinates
     loc_coords = loc.update_coordinates(new_coords)
     assert loc_coords is not loc
     assert loc_coords.coordinates == new_coords
     assert loc_coords.is_dirty is True
+    assert loc_coords.update_coordinates(new_coords) is loc_coords
 
-    # update_period
     loc_period = loc.update_period(golden_time_period)
     assert loc_period is not loc
     assert loc_period.period == golden_time_period
     assert loc_period.is_dirty is True
+    assert loc_period.update_period(golden_time_period) is loc_period
 
-    # update_category
     loc_cat = loc.update_category(JurisdictionCategory.MUNICIPALITY)
     assert loc_cat is not loc
     assert loc_cat.category == JurisdictionCategory.MUNICIPALITY
     assert loc_cat.is_dirty is True
+    assert loc_cat.update_category(JurisdictionCategory.MUNICIPALITY) is loc_cat
 
-    # update_parent
     loc_parent = loc.update_parent("LOC-000099")
     assert loc_parent is not loc
     assert loc_parent.parent_id == LocationID("LOC-000099")
     assert loc_parent.is_dirty is True
+    assert loc_parent.update_parent("LOC-000099") is loc_parent
 
-    # update_urn
     loc_urn = loc.update_urn("urn:gda:loc:us:nh:bow:updated")
     assert loc_urn is not loc
     assert loc_urn.canonical_urn == "urn:gda:loc:us:nh:bow:updated"
     assert loc_urn.is_dirty is True
+    assert loc_urn.update_urn("urn:gda:loc:us:nh:bow:updated") is loc_urn
 
-    # update_authority & update_unincorporated
     loc_auth = loc.update_authority(False)
     assert loc_auth.is_primary_local_authority is False
     assert loc_auth.is_dirty is True
+    assert loc_auth.update_authority(False) is loc_auth
 
     loc_uninc = loc.update_unincorporated(True)
     assert loc_uninc.is_unincorporated is True
     assert loc_uninc.is_dirty is True
+    assert loc_uninc.update_unincorporated(True) is loc_uninc
 
-    # add_predecessor & remove_predecessor (with idempotency and no-op)
     with_pred = loc.add_predecessor("LOC-000001")
     assert with_pred is not loc
     assert LocationID("LOC-000001") in with_pred.predecessor_ids
@@ -336,7 +327,6 @@ def test_location_full_field_mutators_and_dirty_flag(
     assert LocationID("LOC-000001") not in with_rem_pred.predecessor_ids
     assert with_rem_pred.remove_predecessor("LOC-000001") is with_rem_pred
 
-    # add_successor & remove_successor (with idempotency and no-op)
     with_succ = loc.add_successor("LOC-000002")
     assert with_succ is not loc
     assert LocationID("LOC-000002") in with_succ.successor_ids
@@ -348,11 +338,11 @@ def test_location_full_field_mutators_and_dirty_flag(
     assert LocationID("LOC-000002") not in with_rem_succ.successor_ids
     assert with_rem_succ.remove_successor("LOC-000002") is with_rem_succ
 
-    # update_name with NameThing and str
     loc_new_name_thing = loc.update_name(NameThing.create(raw="Greater Bow"))
     assert loc_new_name_thing is not loc
     assert loc_new_name_thing.canonical_name == "Greater Bow"
     assert loc_new_name_thing.is_dirty is True
+    assert loc_new_name_thing.update_name(loc_new_name_thing.name) is loc_new_name_thing
 
     loc_new_name_str = loc.update_name("Bow Municipality")
     assert loc_new_name_str is not loc
@@ -388,7 +378,6 @@ def test_location_attribute_mutators_defensive_errors(
 
 # ==============================================================================
 # GROUP 5: EMBEDDED NOTE CONTAINER & UPDATE OPERATIONS
-# Note: Verification of inherited EntityLifecycleMixin and update_note mutators
 # ==============================================================================
 
 
@@ -434,7 +423,6 @@ def test_location_update_embedded_note(sample_location: Location) -> None:
     )
     note_id = loc.notes[0].note_id
 
-    # Update all fields simultaneously
     updated_all = loc.update_note(
         note_id=note_id,
         text="Corrected archival observation.",
@@ -451,24 +439,6 @@ def test_location_update_embedded_note(sample_location: Location) -> None:
     assert target.note_type == NoteType.RESEARCH
     assert target.tags == ["verified", "charter"]
 
-    # Partial updates: text only
-    up_text = loc.update_note(note_id=note_id, text="Only text updated")
-    assert up_text.get_note(note_id).text == "Only text updated"
-    assert up_text.get_note(note_id).title == "Initial"
-
-    # Partial updates: title only
-    up_title = loc.update_note(note_id=note_id, title="Only title updated")
-    assert up_title.get_note(note_id).title == "Only title updated"
-
-    # Partial updates: type only
-    up_type = loc.update_note(note_id=note_id, note_type=NoteType.PROOF)
-    assert up_type.get_note(note_id).note_type == NoteType.PROOF
-
-    # Partial updates: tags only
-    up_tags = loc.update_note(note_id=note_id, tags=["new_tag"])
-    assert up_tags.get_note(note_id).tags == ["new_tag"]
-
-    # No-op when note_id is absent
     assert loc.update_note(note_id="NOT-999999", text="No-op") is loc
 
 
@@ -493,12 +463,130 @@ def test_location_find_notes_filtering_and_sorting(
 
     sorted_by_title = loc.find_notes(sort_by="title")
     assert sorted_by_title[0].title == "Birth Year Conflict"
-    assert sorted_by_title[-1].title == "Surname Spelling Variance"
+    assert sorted_by_title[-1].title == "Tax Assessment"
 
 
 # ==============================================================================
-# GROUP 6: DEFENSIVE BOUNDARIES & VALIDATIONS
-# Note: Verification of validation rules, ID regex, acyclicity, and type safety
+# GROUP 6: SERIALIZATION & ROUND TRIPS
+# ==============================================================================
+
+
+@pytest.mark.integration
+def test_location_serialization_round_trip(sample_location: Location) -> None:
+    """Verify Location dictionary and JSON serialization round trips."""
+    loc = sample_location.add_note(
+        text="County register details.",
+        title="Register",
+        note_type=NoteType.RESEARCH,
+    )
+    data = loc.to_dict()
+
+    assert data["id"] == "LOC-000004"
+    assert data["category"] == "CIVIL_TOWNSHIP"
+    assert data["canonical_urn"] == "urn:gda:loc:us:nh:merrimack:bow"
+    assert data["parent_id"] == "LOC-000003"
+    assert data["is_primary_local_authority"] is True
+    assert "period" in data
+    assert "coordinates" in data
+    assert len(data["notes"]) == 1
+
+    restored = Location.from_dict(data)
+    assert restored.id == loc.id
+    assert restored.canonical_name == loc.canonical_name
+    assert restored.category == loc.category
+    assert restored.canonical_urn == loc.canonical_urn
+    assert restored.parent_id == loc.parent_id
+    assert restored.coordinates == loc.coordinates
+    assert restored.period == loc.period
+    assert restored.note_count == 1
+
+    json_str = loc.to_json()
+    assert "LOC-000004" in json_str
+    assert "CIVIL_TOWNSHIP" in json_str
+
+    restored_json = Location.from_json(json_str)
+    assert restored_json.id == loc.id
+    assert restored_json.canonical_name == loc.canonical_name
+
+
+@pytest.mark.integration
+def test_location_from_dict_minimal_and_string_name(
+    golden_audit: AuditStamp, sample_period: TimePeriod
+) -> None:
+    """Verify Location.from_dict parses minimal dictionary payload, tombstones, and instances."""
+    data = {
+        "id": "LOC-000050",
+        "name": "Concord",
+        "category": "MUNICIPALITY",
+        "canonical_urn": "urn:gda:loc:us:nh:concord",
+    }
+    restored = Location.from_dict(data)
+    assert restored.id == LocationID("LOC-000050")
+    assert restored.canonical_name == "Concord"
+    assert restored.category == JurisdictionCategory.MUNICIPALITY
+    assert restored.parent_id is None
+    assert restored.period is None
+    assert restored.coordinates is None
+    assert restored.is_deprecated is False
+
+    data_min = restored.to_dict()
+    assert "parent_id" not in data_min
+    assert "period" not in data_min
+    assert "coordinates" not in data_min
+
+    coords = Coordinates(latitude=Latitude(43.0), longitude=Longitude(-71.0))
+    data_with_instances = {
+        **data,
+        "period": sample_period,
+        "coordinates": coords,
+        "tombstone": {
+            "is_deprecated": True,
+            "deprecated_at": str(golden_audit.updated_at),
+            "superseded_by": "LOC-000051",
+        },
+    }
+    restored_inst = Location.from_dict(data_with_instances)
+    assert restored_inst.coordinates == coords
+    assert restored_inst.period == sample_period
+    assert restored_inst.is_deprecated is True
+    assert restored_inst.superseded_by == LocationID("LOC-000051")
+    assert restored_inst.to_dict()["tombstone"]["superseded_by"] == "LOC-000051"
+
+    restored_empty_period = Location.from_dict(
+        {
+            **data,
+            "period": {},
+            "tombstone": {
+                "is_deprecated": True,
+                "deprecated_at": str(golden_audit.updated_at),
+            },
+        }
+    )
+    assert restored_empty_period.period is None
+    assert restored_empty_period.superseded_by is None
+
+
+@pytest.mark.regression
+def test_location_deserialization_defensive_errors() -> None:
+    """Verify Location.from_dict and from_json reject malformed payloads."""
+    with pytest.raises(ModelFormatError, match="must be a dictionary"):
+        Location.from_dict("not-a-dict")  # type: ignore[arg-type]
+
+    with pytest.raises(ModelFormatError, match="Missing required field 'id'"):
+        Location.from_dict({"name": "Bow", "category": "CIVIL_TOWNSHIP"})
+
+    with pytest.raises(ModelFormatError, match="Missing required field 'name'"):
+        Location.from_dict({"id": "LOC-000001", "category": "CIVIL_TOWNSHIP"})
+
+    with pytest.raises(ModelFormatError, match="Missing required field 'category'"):
+        Location.from_dict({"id": "LOC-000001", "name": "Bow"})
+
+    with pytest.raises(ModelFormatError, match="Failed to parse Location JSON string"):
+        Location.from_json("{broken json")
+
+
+# ==============================================================================
+# GROUP 7: DEFENSIVE BOUNDARIES & VALIDATIONS
 # ==============================================================================
 
 
@@ -507,7 +595,6 @@ def test_location_find_notes_filtering_and_sorting(
     "bad_id_str",
     [
         "LOC-12345",
-        "LOC-1234567",
         "LOC-ABCDEF",
         "000001",
         "",
@@ -545,6 +632,29 @@ def test_location_conflicting_atom_id_type_raises_error(
             category=JurisdictionCategory.CIVIL_TOWNSHIP,
             canonical_urn="urn:gda:loc:us:nh:wrong_id",
         )
+
+
+@pytest.mark.regression
+def test_location_post_init_defensive_branches(sample_location: Location) -> None:
+    """Verify Location.__post_init__ defensive checks for id type, pattern, and untrimmed URN."""
+    object.__setattr__(sample_location, "canonical_urn", "  urn:gda:loc:us:nh:bow  ")
+    sample_location.__post_init__()
+    assert sample_location.canonical_urn == "urn:gda:loc:us:nh:bow"
+
+    class MalformedLocationID(LocationID):
+        """Subclass bypassing AtomID.__post_init__ regex enforcement."""
+
+        def __init__(self, value: str) -> None:
+            object.__setattr__(self, "value", value)
+            object.__setattr__(self, "expected_prefix", "LOC")
+
+    object.__setattr__(sample_location, "id", MalformedLocationID("LOC-12"))
+    with pytest.raises(ModelFormatError, match="Invalid LocationID format"):
+        sample_location.__post_init__()
+
+    object.__setattr__(sample_location, "id", "NOT_A_LOCATION_ID")
+    with pytest.raises(TypeError, match="must be an instance of LocationID"):
+        sample_location.__post_init__()
 
 
 @pytest.mark.regression
@@ -738,8 +848,7 @@ def test_location_lifecycle_deprecate_and_restore(sample_location: Location) -> 
 
 
 # ==============================================================================
-# GROUP 7: IMMUTABILITY & INTROSPECTION
-# Note: Verification of frozen immutability and introspection directory
+# GROUP 8: IMMUTABILITY & INTROSPECTION
 # ==============================================================================
 
 
@@ -774,6 +883,10 @@ def test_location_introspection(sample_location: Location) -> None:
     assert "remove_predecessor" in help_text
     assert "add_successor" in help_text
     assert "remove_successor" in help_text
+    assert "to_dict" in help_text
+    assert "from_dict" in help_text
+    assert "to_json" in help_text
+    assert "from_json" in help_text
     assert "mark_dirty" in help_text
     assert "mark_clean" in help_text
     assert "is_dirty" in help_text

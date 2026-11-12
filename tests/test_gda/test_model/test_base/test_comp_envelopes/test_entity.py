@@ -5,9 +5,9 @@ Unit, regression, and integration test suite verifying BaseEntity contracts.
 Operational Role:
     Verifies that EntityLifecycleMixin, BaseEntity, and BaseEntityGUID enforce
     AtomID and UUID identity typing, delegate audit and tombstone lifecycle states,
-    manage embedded Note collections (add_note, delete_note, get_note, find_notes
-    with filtering and sorting across all fields), execute copy-on-write mutators,
-    and guarantee immutability with 100% statement and branch coverage.
+    manage embedded Note collections (add_note, update_note, delete_note, get_note,
+    find_notes with filtering and sorting across all fields), execute copy-on-write
+    mutators, and guarantee immutability with 100% statement and branch coverage.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from gda.model.base.entity import BaseEntity, BaseEntityGUID
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.1.0+build.2"
+__version__ = "1.2.0+build.1"
 
 
 # ==============================================================================
@@ -157,6 +157,50 @@ def test_base_entity_add_note_monotonic_id(golden_audit: AuditStamp) -> None:
     with_note_2 = with_note_1.add_note("Second note memo.", note_type=NoteType.PROOF)
     assert with_note_2.note_count == 2
     assert with_note_2.notes[1].note_id == NoteID("NOT-000002")
+
+
+@pytest.mark.unit
+def test_base_entity_update_note_operations(golden_audit: AuditStamp) -> None:
+    """Verify update_note modifies text, title, type, and tags individually and handles no-ops."""
+    eid = IndividualID("IND-000001")
+    entity = BaseEntity(id=eid, audit=golden_audit).add_note(
+        text="Initial note.",
+        note_type=NoteType.GENERAL,
+        title="Initial Title",
+        tags=["draft"],
+    )
+    note_id = entity.notes[0].note_id
+
+    updated_all = entity.update_note(
+        note_id=note_id,
+        text="Updated note text.",
+        title="Updated Title",
+        note_type=NoteType.RESEARCH,
+        tags=["verified", "census"],
+    )
+    assert updated_all is not entity
+    target = updated_all.get_note(note_id)
+    assert target is not None
+    assert target.text == "Updated note text."
+    assert target.title == "Updated Title"
+    assert target.note_type == NoteType.RESEARCH
+    assert target.tags == ["verified", "census"]
+
+    up_text = entity.update_note(note_id=note_id, text="Only text")
+    assert up_text.get_note(note_id).text == "Only text"
+    assert up_text.get_note(note_id).title == "Initial Title"
+
+    up_title = entity.update_note(note_id=note_id, title="Only title")
+    assert up_title.get_note(note_id).title == "Only title"
+    assert up_title.get_note(note_id).text == "Initial note."
+
+    up_type = entity.update_note(note_id=note_id, note_type=NoteType.PROOF)
+    assert up_type.get_note(note_id).note_type == NoteType.PROOF
+
+    up_tags = entity.update_note(note_id=note_id, tags=["sole-tag"])
+    assert up_tags.get_note(note_id).tags == ["sole-tag"]
+
+    assert entity.update_note(note_id="NOT-999999", text="No-op") is entity
 
 
 @pytest.mark.unit

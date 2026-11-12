@@ -9,9 +9,9 @@ from gda.model.entity.fact import Fact, FactParticipant
 from gda.model.entity.family import Family
 from gda.model.entity.individual import Individual
 from gda.model.entity.location import Location
-from gda.model.entity.site import Site
+from gda.model.entity.site import Site, SiteEntityModel
 
-__version__ = "1.0.0+build.2"
+__version__ = "2.0.0+build.1"
 
 __all__ = [
     "Fact",
@@ -20,4 +20,5 @@ __all__ = [
     "Individual",
     "Location",
     "Site",
+    "SiteEntityModel",
 ]

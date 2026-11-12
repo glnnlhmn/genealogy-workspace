@@ -21,19 +21,20 @@ from typing import Any, ClassVar, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.dates import parse_iso_date_parts, utc_now_iso
+from gda.core.enums.archival import NoteType
+from gda.core.enums.vital import PedigreeType, UnionDissolutionType, UnionType
 from gda.core.errors import ModelFormatError
-from gda.enums.archival import NoteType
-from gda.enums.vital import PedigreeType, UnionDissolutionType, UnionType
-from gda.model.atom.date import EventDate, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FamilyID, IndividualID, NoteID
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate, TimePeriod
 from gda.model.base.entity import BaseEntity
 from gda.model.base.family import ChildLink, FamilyUnion
 from gda.model.base.note import Note
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.2"
+__version__ = "2.0.0+build.2"
 
 __all__ = ["Family"]
 
@@ -42,7 +43,8 @@ _FAMILY_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:fam:[a-z0-9_:\-]+$"
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class Family(BaseEntity[FamilyID]):
@@ -85,11 +87,14 @@ class Family(BaseEntity[FamilyID]):
         if not self._ID_PATTERN.match(raw_id):
             raise ModelFormatError(f"Invalid FamilyID format: '{raw_id}'. Must match 'FAM-######'.")
 
-        if not self.canonical_urn or not self._URN_PATTERN.match(self.canonical_urn):
+        clean_urn = self.canonical_urn.strip() if self.canonical_urn else ""
+        if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
                 f"Invalid canonical_urn format: '{self.canonical_urn}'. "
                 "Must match 'urn:gda:fam:<slug>'."
             )
+        if clean_urn != self.canonical_urn:
+            object.__setattr__(self, "canonical_urn", clean_urn)
 
         if (
             self.tombstone.is_deprecated
@@ -165,7 +170,7 @@ class Family(BaseEntity[FamilyID]):
     def marriage_year(self) -> int | None:
         """Extract lower-bound marriage calendar year."""
         m_date = self.marriage_date
-        return m_date.year_lower_bound if m_date is not None else None
+        return parse_iso_date_parts(m_date.date.value)[0] if m_date is not None else None
 
     @property
     def sort_key(self) -> tuple[str, str, int, str]:
@@ -216,26 +221,24 @@ class Family(BaseEntity[FamilyID]):
         else:
             resolved_union = FamilyUnion.create()
 
-        now_ts = IsoTimestamp.now_utc()
+        now_ts = IsoTimestamp(utc_now_iso())
         resolved_audit = (
             audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[FamilyID]()
         resolved_notes = list(notes) if notes is not None else []
 
-        kwargs: dict[str, Any] = {
-            "id": resolved_id,
-            "canonical_urn": canonical_urn.strip() if canonical_urn else "",
-            "partner_ids": resolved_partners,
-            "children": resolved_children,
-            "union": resolved_union,
-            "audit": resolved_audit,
-            "tombstone": resolved_tombstone,
-            "notes": resolved_notes,
-            "_dirty": False,
-        }
-
-        return cls(**kwargs)
+        return cls(
+            id=resolved_id,
+            canonical_urn=canonical_urn.strip() if canonical_urn else "",
+            partner_ids=resolved_partners,
+            children=resolved_children,
+            union=resolved_union,
+            audit=resolved_audit,
+            tombstone=resolved_tombstone,
+            notes=resolved_notes,
+            _dirty=False,
+        )
 
     def mark_clean(self) -> Self:
         """Return a new immutable copy marking entity as clean (persisted to storage)."""
@@ -268,7 +271,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             partner_ids=[*self.partner_ids, resolved_pid],
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -282,7 +285,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             partner_ids=filtered,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -311,7 +314,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             children=[*self.children, new_link],
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -325,7 +328,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             children=filtered,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -356,7 +359,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             children=updated_links,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -367,7 +370,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             union=union,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -379,7 +382,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             union=new_union,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -391,7 +394,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             union=new_union,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -403,7 +406,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             union=new_union,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -415,7 +418,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             union=new_union,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -427,7 +430,7 @@ class Family(BaseEntity[FamilyID]):
         return replace(
             self,
             union=new_union,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -438,10 +441,12 @@ class Family(BaseEntity[FamilyID]):
             raise ModelFormatError(
                 f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:fam:<slug>'."
             )
+        if clean_urn == self.canonical_urn:
+            return self
         return replace(
             self,
             canonical_urn=clean_urn,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -454,33 +459,16 @@ class Family(BaseEntity[FamilyID]):
         tags: list[str] | None = None,
     ) -> Self:
         """Return a new immutable copy with the targeted embedded note updated."""
-        target_str = str(note_id)
-        found = False
-        new_notes: list[Note] = []
-        for n in self.notes:
-            if str(n.note_id) == target_str:
-                found = True
-                updated_n = n
-                if text is not None:
-                    updated_n = updated_n.update_text(text)
-                if title is not None:
-                    updated_n = updated_n.update_title(title)
-                if note_type is not None:
-                    updated_n = updated_n.update_type(note_type)
-                if tags is not None:
-                    updated_n = updated_n.update_tags(tags)
-                new_notes.append(updated_n)
-            else:
-                new_notes.append(n)
-
-        if not found:
-            return self
-        return replace(
-            self,
-            notes=new_notes,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
-            _dirty=True,
+        updated = super().update_note(
+            note_id=note_id,
+            text=text,
+            title=title,
+            note_type=note_type,
+            tags=tags,
         )
+        if updated is self:
+            return self
+        return replace(updated, _dirty=True)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize Family entity, union state, links, and embedded notes to a dictionary."""
@@ -496,6 +484,11 @@ class Family(BaseEntity[FamilyID]):
             },
             "tombstone": {
                 "is_deprecated": self.tombstone.is_deprecated,
+                "deprecated_at": (
+                    str(self.tombstone.deprecated_at)
+                    if self.tombstone.deprecated_at is not None
+                    else None
+                ),
                 "superseded_by": (
                     str(self.tombstone.superseded_by)
                     if self.tombstone.superseded_by is not None
@@ -560,7 +553,7 @@ class Family(BaseEntity[FamilyID]):
 
         return cls.create(
             family_id=str(raw_id),
-            canonical_urn=data.get("canonical_urn", ""),
+            canonical_urn=str(data.get("canonical_urn", "")),
             partner_ids=partner_ids,
             children=children_objs,
             union=union_obj,
@@ -594,4 +587,10 @@ class Family(BaseEntity[FamilyID]):
         return (
             f"Family {union_summary}{period_str}: "
             f"Partners({partner_str}), Children({self.child_count}) ({self.id.value})"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"Family(id={self.id!r}, canonical_urn={self.canonical_urn!r}, "
+            f"partner_ids={self.partner_ids!r}, child_count={self.child_count})"
         )
