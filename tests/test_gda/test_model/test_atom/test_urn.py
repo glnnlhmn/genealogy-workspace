@@ -3,21 +3,24 @@
 Atomized behavioral test suite for ArchivalURN hierarchy and domain URN value objects.
 
 Operational Role:
-    Verifies canonical URN syntax validation, regex patterns, case normalization,
-    structural property decomposition, immutability, and exception handling across
-    all specialized archival URN classes.
+    Verifies canonical URN syntax validation, regex patterns, strict rejection of
+    unnormalized whitespace, structural property decomposition, string equality,
+    homogeneous ordering, immutability, and exception handling across all specialized
+    archival URN classes.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
+    - Fully decorated: Pytest marker taxonomy (1 @pytest.mark.smoke).
     - Synthetic baselines: Pure in-memory fixtures with zero disk I/O.
 """
 
 from __future__ import annotations
 
-from typing import ClassVar
+from dataclasses import FrozenInstanceError
+from typing import Any, ClassVar
 
 import pytest
+from tests.test_gda.test_model.test_atom.conftest import INVALID_NON_STRING_VALUES
 
 from gda.core.errors import ModelFormatError
 from gda.model.atom.urn import (
@@ -29,7 +32,7 @@ from gda.model.atom.urn import (
     VitalCertificateUrn,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 
 # ==============================================================================
@@ -43,7 +46,7 @@ def test_archival_urn_smoke_valid_initialization() -> None:
     """Verify minimal valid instantiation and representation of ArchivalURN."""
     urn = ArchivalURN("URN:GENERIC:SEGMENT_1:SEGMENT_2")
     assert str(urn) == "URN:GENERIC:SEGMENT_1:SEGMENT_2"
-    assert repr(urn) == "ArchivalURN('URN:GENERIC:SEGMENT_1:SEGMENT_2')"
+    assert repr(urn) == "ArchivalURN(value='URN:GENERIC:SEGMENT_1:SEGMENT_2')"
     assert urn.parts == ["URN", "GENERIC", "SEGMENT_1", "SEGMENT_2"]
     assert urn.nid == "GENERIC"
 
@@ -71,74 +74,86 @@ def test_archival_urn_nid_mismatch_fails() -> None:
 
 
 @pytest.mark.unit
-def test_archival_urn_empty_or_whitespace_fails() -> None:
-    """Verify ModelFormatError raised for empty or whitespace-only URN strings."""
-    with pytest.raises(ModelFormatError, match="Invalid ArchivalURN syntax"):
-        ArchivalURN("")
-
-    with pytest.raises(ModelFormatError, match="Invalid ArchivalURN syntax"):
-        ArchivalURN("   ")
-
-
-@pytest.mark.unit
-def test_archival_urn_regex_malformed_fails() -> None:
-    """Verify ModelFormatError raised when URN pattern fails regex contract."""
-    with pytest.raises(ModelFormatError, match="Invalid ArchivalURN syntax"):
-        ArchivalURN("NOT_A_URN")
-
-    with pytest.raises(ModelFormatError, match="Invalid ArchivalURN syntax"):
-        ArchivalURN("URN:")
-
-    with pytest.raises(ModelFormatError, match="Invalid ArchivalURN syntax"):
-        ArchivalURN("urn:lowercase:not:allowed")
-
-
-# ==============================================================================
-# GROUP 2: SOURCE URN GOLDEN PATH & PROPERTIES
-# ==============================================================================
+@pytest.mark.regression
+@pytest.mark.parametrize(
+    "bad_urn",
+    [
+        "",
+        "   ",
+        " URN:GENERIC:SEGMENT_1:SEGMENT_2",
+        "URN:GENERIC:SEGMENT_1:SEGMENT_2 ",
+        "NOT_A_URN",
+        "URN:",
+        "urn:lowercase:not:allowed",
+    ],
+)
+def test_archival_urn_malformed_or_padded_fails(bad_urn: str) -> None:
+    """Verify ModelFormatError raised for empty, padded whitespace, or malformed URN strings."""
+    with pytest.raises(ModelFormatError, match=r"Invalid (ArchivalURN syntax|URN scheme)"):
+        ArchivalURN(bad_urn)
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
-def test_source_urn_golden_path_and_properties() -> None:
+@pytest.mark.regression
+@pytest.mark.parametrize("bad_type", INVALID_NON_STRING_VALUES)
+def test_archival_urn_non_string_raises_error(bad_type: Any) -> None:
+    """Verify ArchivalURN rejects non-string inputs without coercion."""
+    with pytest.raises((ModelFormatError, TypeError, ValueError)):
+        ArchivalURN(bad_type)
+
+
+# ==============================================================================
+# GROUP 2: SOURCE URN GOLDEN PATH, ORDERING & PROPERTIES
+# ==============================================================================
+
+
+@pytest.mark.unit
+def test_source_urn_golden_path_and_properties(sample_source_urn: SourceURN) -> None:
     """Verify valid instantiation, string format, and property accessors of SourceURN."""
-    urn = SourceURN("URN:SRC:1917:NH_MERRIMACK:DOC_000101")
-    assert str(urn) == "URN:SRC:1917:NH_MERRIMACK:DOC_000101"
-    assert urn.year == 1917
-    assert urn.jurisdiction == "NH_MERRIMACK"
-    assert urn.locator == "DOC_000101"
-    assert urn.nid == "SRC"
+    assert str(sample_source_urn) == "URN:SRC:1917:NH_MERRIMACK:DOC_000101"
+    assert sample_source_urn.year == 1917
+    assert sample_source_urn.jurisdiction == "NH_MERRIMACK"
+    assert sample_source_urn.locator == "DOC_000101"
+    assert sample_source_urn.nid == "SRC"
 
 
 @pytest.mark.unit
-def test_source_urn_equality_and_hashing() -> None:
-    """Verify SourceURN implements value equality and set hashability."""
+def test_source_urn_equality_hashing_and_ordering() -> None:
+    """Verify SourceURN implements value equality, string equality, hashing, and homogeneous ordering."""
     urn1 = SourceURN("URN:SRC:1863:CIVIL_WAR:DRAFT_001")
     urn2 = SourceURN("URN:SRC:1863:CIVIL_WAR:DRAFT_001")
     urn3 = SourceURN("URN:SRC:1863:CIVIL_WAR:DRAFT_002")
 
     assert urn1 == urn2
+    assert urn1 == "URN:SRC:1863:CIVIL_WAR:DRAFT_001"
     assert urn1 != urn3
-    assert hash(urn1) == hash(urn2)
+    assert (urn1 == 123) is False  # type: ignore[comparison-overlap]
+    assert hash(urn1) == hash(urn2) == hash("URN:SRC:1863:CIVIL_WAR:DRAFT_001")
     assert len({urn1, urn2, urn3}) == 2
+    assert urn1 < urn3
+    assert urn3 > urn1
 
-
-@pytest.mark.unit
-def test_source_urn_whitespace_stripping() -> None:
-    """Verify SourceURN trims surrounding whitespace upon instantiation."""
-    urn = SourceURN("   URN:SRC:1850:FEDERAL_CENSUS:P312   ")
-    assert urn.value == "URN:SRC:1850:FEDERAL_CENSUS:P312"
+    # Cross-type ordering must raise TypeError
+    with pytest.raises(TypeError):
+        _ = urn1 < CensusUrn("URN:CENSUS:1920:NH_MERRIMACK:ED1")  # type: ignore[operator]
+    with pytest.raises(TypeError):
+        _ = urn1 < "URN:SRC:1863:CIVIL_WAR:DRAFT_002"  # type: ignore[operator]
 
 
 @pytest.mark.unit
 @pytest.mark.regression
-def test_source_urn_syntax_violations_fail() -> None:
-    """Verify ModelFormatError raised when SourceURN violates regex pattern."""
+@pytest.mark.parametrize(
+    "invalid_src",
+    [
+        "   URN:SRC:1850:FEDERAL_CENSUS:P312   ",
+        "URN:SRC:191:TOO_SHORT_YEAR:LOC",
+        "URN:SRC:1917:lowercase_jurisdiction:LOC",
+    ],
+)
+def test_source_urn_syntax_violations_fail(invalid_src: str) -> None:
+    """Verify ModelFormatError raised when SourceURN is padded or violates regex pattern."""
     with pytest.raises(ModelFormatError, match="Invalid SourceURN syntax"):
-        SourceURN("URN:SRC:191:TOO_SHORT_YEAR:LOC")
-
-    with pytest.raises(ModelFormatError, match="Invalid SourceURN syntax"):
-        SourceURN("URN:SRC:1917:lowercase_jurisdiction:LOC")
+        SourceURN(invalid_src)
 
 
 # ==============================================================================
@@ -147,7 +162,6 @@ def test_source_urn_syntax_violations_fail() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_military_draft_urn_golden_path_and_properties() -> None:
     """Verify valid instantiation and property accessors of MilitaryDraftUrn."""
     urn = MilitaryDraftUrn("URN:DRAFT:1917:NH_MERRIMACK:CARD_001")
@@ -170,11 +184,11 @@ def test_military_draft_urn_subclasses_archival_urn() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_military_draft_urn_syntax_mismatch_fails() -> None:
-    """Verify ModelFormatError raised when MilitaryDraftUrn syntax is invalid."""
-    with pytest.raises(ModelFormatError, match="Invalid MilitaryDraftUrn syntax"):
+    """Verify ModelFormatError raised when MilitaryDraftUrn namespace or syntax is invalid."""
+    with pytest.raises(ModelFormatError, match="Invalid URN namespace 'SRC'"):
         MilitaryDraftUrn("URN:SRC:1917:SELECTIVE_SERVICE:0001")
 
-    with pytest.raises(ModelFormatError, match="Invalid MilitaryDraftUrn syntax"):
+    with pytest.raises(ModelFormatError, match="Invalid URN scheme 'urn'"):
         MilitaryDraftUrn("urn:draft:1917:nh_merrimack:card_001")
 
 
@@ -184,7 +198,6 @@ def test_military_draft_urn_syntax_mismatch_fails() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_census_urn_golden_path_and_properties() -> None:
     """Verify valid instantiation and property accessors of CensusUrn."""
     urn = CensusUrn("URN:CENSUS:1920:NH_MERRIMACK:ED12_S04B_L02")
@@ -198,11 +211,11 @@ def test_census_urn_golden_path_and_properties() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_census_urn_syntax_mismatch_fails() -> None:
-    """Verify ModelFormatError raised when CensusUrn syntax is invalid."""
+    """Verify ModelFormatError raised when CensusUrn namespace or syntax is invalid."""
     with pytest.raises(ModelFormatError, match="Invalid CensusUrn syntax"):
         CensusUrn("URN:CENSUS:YEAR_NOT_NUM:JURIS:LOC")
 
-    with pytest.raises(ModelFormatError, match="Invalid CensusUrn syntax"):
+    with pytest.raises(ModelFormatError, match="Invalid URN namespace 'POPULATION'"):
         CensusUrn("URN:POPULATION:1920:NH_MERRIMACK:ED12")
 
 
@@ -212,10 +225,8 @@ def test_census_urn_syntax_mismatch_fails() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_vital_certificate_urn_golden_path_and_properties() -> None:
     """Verify valid instantiation and property accessors across vital event types."""
-    # BIRTH
     urn_birth = VitalCertificateUrn("URN:VITAL:BIRTH:1905:NH_CONCORD:CERT_00451")
     assert urn_birth.event_type == "BIRTH"
     assert urn_birth.certificate_year == 1905
@@ -223,12 +234,10 @@ def test_vital_certificate_urn_golden_path_and_properties() -> None:
     assert urn_birth.certificate_number == "CERT_00451"
     assert urn_birth.nid == "VITAL"
 
-    # MARRIAGE
     urn_marr = VitalCertificateUrn("URN:VITAL:MARRIAGE:1925:NH_BOW:M_1102")
     assert urn_marr.event_type == "MARRIAGE"
     assert urn_marr.certificate_year == 1925
 
-    # DEATH
     urn_death = VitalCertificateUrn("URN:VITAL:DEATH:1960:NH_CONCORD:D_9981")
     assert urn_death.event_type == "DEATH"
     assert urn_death.certificate_year == 1960
@@ -246,12 +255,11 @@ def test_vital_certificate_urn_invalid_event_type_fails() -> None:
 
 
 # ==============================================================================
-# GROUP 6: CEMETERY PLOT URN
+# GROUP 6: CEMETERY PLOT URN & IMMUTABILITY
 # ==============================================================================
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_cemetery_plot_urn_golden_path_and_properties() -> None:
     """Verify valid instantiation and property accessors of CemeteryPlotUrn."""
     urn = CemeteryPlotUrn("URN:CEM:NH_BLOSSOM_HILL:SEC_A_LOT_12_G1")
@@ -264,9 +272,16 @@ def test_cemetery_plot_urn_golden_path_and_properties() -> None:
 @pytest.mark.unit
 @pytest.mark.regression
 def test_cemetery_plot_urn_syntax_violations_fail() -> None:
-    """Verify ModelFormatError raised when CemeteryPlotUrn syntax is invalid."""
+    """Verify ModelFormatError raised when CemeteryPlotUrn namespace or syntax is invalid."""
     with pytest.raises(ModelFormatError, match="Invalid CemeteryPlotUrn syntax"):
         CemeteryPlotUrn("URN:CEM:lowercase_facility:plot_01")
 
-    with pytest.raises(ModelFormatError, match="Invalid CemeteryPlotUrn syntax"):
+    with pytest.raises(ModelFormatError, match="Invalid URN namespace 'BURIAL'"):
         CemeteryPlotUrn("URN:BURIAL:NH_BLOSSOM_HILL:SEC_A")
+
+
+@pytest.mark.unit
+def test_urn_immutability(sample_source_urn: SourceURN) -> None:
+    """Verify URN instances are frozen and immutable."""
+    with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
+        sample_source_urn.value = "URN:SRC:1918:NH_MERRIMACK:DOC_000102"  # type: ignore[misc]

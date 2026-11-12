@@ -10,19 +10,13 @@ Operational Role:
 from __future__ import annotations
 
 from gda.model.atom.date import (
-    BirthYear,
-    CensusYear,
-    CensusYearEnum,
-    DateModifier,
     DateString,
-    DeathYear,
-    EventDate,
-    EventDateRange,
-    HistoricalYear,
     IsoTimestamp,
 )
+from gda.model.atom.gender import (
+    GenderAtom,
+)
 from gda.model.atom.geo import (
-    Coordinates,
     Latitude,
     Longitude,
 )
@@ -57,46 +51,46 @@ from gda.model.atom.urn import (
     SourceURN,
     VitalCertificateUrn,
 )
+from gda.model.atom.year import (
+    BirthYear,
+    DeathYear,
+    HistoricalYear,
+)
 
-__version__ = "1.0.0+build.12"
+__version__ = "1.0.2+build.2"
 
 __all__ = [
-    "AhnentafelNumber",
-    "ArchivalURN",
-    "AtomID",
-    "BirthYear",
-    "CemeteryPlotUrn",
-    "CensusUrn",
-    "CensusYear",
-    "CensusYearEnum",
-    "ConfidenceScore",
-    "Coordinates",
-    "DateModifier",
-    "DateString",
-    "DeathYear",
-    "DraftRecordID",
-    "EventDate",
-    "EventDateRange",
-    "FactID",
-    "FamilyID",
-    "HistoricalYear",
-    "IndividualID",
-    "IsoTimestamp",
-    "Latitude",
-    "LocationID",
-    "Longitude",
-    "MediaID",
-    "MilitaryDraftUrn",
-    "NewsCategoryCode",
-    "NoteID",
-    "PubCode",
-    "QuayScore",
-    "RepositoryID",
-    "SiteID",
-    "ServiceRecordID",
-    "SourceID",
-    "SourceURN",
-    "TranscriptID",
-    "UUIDv4Str",
-    "VitalCertificateUrn",
+    "AhnentafelNumber",  # gda.model.atom.scalar
+    "ArchivalURN",  # gda.model.atom.urn
+    "AtomID",  # gda.model.atom.id
+    "BirthYear",  # gda.model.atom.year
+    "CemeteryPlotUrn",  # gda.model.atom.urn
+    "CensusUrn",  # gda.model.atom.urn
+    "ConfidenceScore",  # gda.model.atom.scalar
+    "DateString",  # gda.model.atom.date
+    "DeathYear",  # gda.model.atom.year
+    "DraftRecordID",  # gda.model.atom.id
+    "FactID",  # gda.model.atom.id
+    "FamilyID",  # gda.model.atom.id
+    "GenderAtom",  # gda.model.atom.gender
+    "HistoricalYear",  # gda.model.atom.year
+    "IndividualID",  # gda.model.atom.id
+    "IsoTimestamp",  # gda.model.atom.date
+    "Latitude",  # gda.model.atom.geo
+    "LocationID",  # gda.model.atom.id
+    "Longitude",  # gda.model.atom.geo
+    "MediaID",  # gda.model.atom.id
+    "MilitaryDraftUrn",  # gda.model.atom.urn
+    "NewsCategoryCode",  # gda.model.atom.scalar
+    "NoteID",  # gda.model.atom.id
+    "PubCode",  # gda.model.atom.scalar
+    "QuayScore",  # gda.model.atom.scalar
+    "RepositoryID",  # gda.model.atom.id
+    "ServiceRecordID",  # gda.model.atom.id
+    "SiteID",  # gda.model.atom.id
+    "SourceID",  # gda.model.atom.id
+    "SourceURN",  # gda.model.atom.urn
+    "TranscriptID",  # gda.model.atom.id
+    "UUIDv4Str",  # gda.model.atom.id
+    "VitalCertificateUrn",  # gda.model.atom.urn
 ]

@@ -1,174 +1,142 @@
 """Path: tests/test_gda/test_model/test_atom/test_gender.py
 
-Comprehensive test suite verifying GenderAtom primitives and boundaries.
+Targeted behavioral test suite verifying the GenderAtom value object.
 
 Operational Role:
-    Verifies GenderAtom instantiation, raw token normalization, defensive
-    value rejections, enum conversions, total ordering, and frozen immutability
-    with 100% statement and branch coverage.
+    Verifies canonical gender classification codes (M, F, U), strict non-mutation
+    rejection of whitespace and non-canonical strings, raw string equality,
+    homogeneous total ordering, immutability, and introspection discovery.
+
+Test Structure & Protocol:
+    - Atomized tests: 1:1 verification per behavioral contract.
+    - Fully decorated: Pytest marker taxonomy (1 @pytest.mark.smoke).
+    - Dependencies: In-memory only; zero physical disk I/O.
 """
 
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
+from typing import Any
 
 import pytest
+from tests.test_gda.test_model.test_atom.conftest import (
+    INVALID_NON_STRING_VALUES,
+    PADDED_WHITESPACE_SAMPLES,
+)
 
 from gda.core.errors import ModelFormatError
-from gda.enums.core import Sex
 from gda.model.atom.gender import GenderAtom
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.9"
 
 
 # ==============================================================================
-# GROUP 1: CANONICAL CODES & NORMALIZATION
-# Note: Verification of valid codes and from_input mapping heuristics
+# GROUP 1: Canonical Code Construction & Predicates
 # ==============================================================================
 
 
-@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.smoke
 @pytest.mark.parametrize("code", ["M", "F", "U"])
 def test_gender_atom_valid_canonical_codes(code: str) -> None:
-    """Verify GenderAtom instantiates with canonical codes M, F, and U."""
-    atom = GenderAtom(value=code)
+    """Verify GenderAtom instantiates with exact canonical codes M, F, and U."""
+    atom = GenderAtom(code)
     assert atom.value == code
     assert str(atom) == code
     assert repr(atom) == f"GenderAtom(value='{code}')"
-    if code == "M":
-        assert atom.is_male is True
-        assert atom.is_female is False
-        assert atom.is_undetermined is False
-    elif code == "F":
-        assert atom.is_male is False
-        assert atom.is_female is True
-        assert atom.is_undetermined is False
-    else:
-        assert atom.is_male is False
-        assert atom.is_female is False
-        assert atom.is_undetermined is True
+    assert atom.is_male is (code == "M")
+    assert atom.is_female is (code == "F")
+    assert atom.is_undetermined is (code == "U")
 
 
+# ==============================================================================
+# GROUP 2: Defensive Validation & Rejection Boundaries
+# ==============================================================================
+
+
+@pytest.mark.unit
 @pytest.mark.regression
 @pytest.mark.parametrize(
-    ("raw_input", "expected_code"),
+    "invalid_code",
     [
-        ("m", "M"),
-        ("Male", "M"),
-        ("boy", "M"),
-        ("MAN", "M"),
-        ("f", "F"),
-        ("FEMALE", "F"),
-        ("girl", "F"),
-        ("Woman", "F"),
-        ("u", "U"),
-        ("unknown", "U"),
-        ("UNDETERMINED", "U"),
-        ("unrecorded", "U"),
-        ("?", "U"),
-        (None, "U"),
+        "",
+        " ",
+        "m",
+        "f",
+        "u",
+        "Male",
+        "Female",
+        "Unknown",
+        "X",
+        "NON-BINARY",
+        "OTHER",
+        "123",
+        *PADDED_WHITESPACE_SAMPLES,
     ],
 )
-def test_gender_atom_from_input_normalization(raw_input: str | None, expected_code: str) -> None:
-    """Verify GenderAtom.from_input maps various tokens to canonical representations."""
-    atom = GenderAtom.from_input(raw_input)
-    assert atom.value == expected_code
-
-
-@pytest.mark.regression
-def test_gender_atom_from_input_passthrough() -> None:
-    """Verify GenderAtom.from_input returns identical instance if already a GenderAtom."""
-    original = GenderAtom("M")
-    assert GenderAtom.from_input(original) is original
-
-
-# ==============================================================================
-# GROUP 2: ENUM BRIDGING & CONVERSION
-# Note: Verification of Sex enum round-tripping and unmapped fallbacks
-# ==============================================================================
-
-
-@pytest.mark.integration
-def test_gender_atom_enum_conversions() -> None:
-    """Verify conversion to and from authoritative Sex enum members."""
-    atom_m = GenderAtom.from_input(Sex.M)
-    assert atom_m.value == "M"
-    assert atom_m.to_enum() is Sex.M
-
-    atom_f = GenderAtom.from_input(Sex.F)
-    assert atom_f.value == "F"
-    assert atom_f.to_enum() is Sex.F
-
-    atom_u = GenderAtom.from_input(Sex.U)
-    assert atom_u.value == "U"
-    assert atom_u.to_enum() is Sex.U
-
-    # Non-binary Sex.X safely defaults to 'U' in gender-at-birth domain
-    atom_x = GenderAtom.from_input(Sex.X)
-    assert atom_x.value == "U"
-
-
-# ==============================================================================
-# GROUP 3: DEFENSIVE BOUNDARIES & VALIDATIONS
-# Note: Verification of invalid input rejections and format errors
-# ==============================================================================
-
-
-@pytest.mark.regression
-@pytest.mark.parametrize("invalid_code", ["", " ", "X", "NON-BINARY", "OTHER", "123", "INVALID"])
 def test_gender_atom_invalid_code_raises_format_error(invalid_code: str) -> None:
-    """Verify GenderAtom rejects non-canonical values in direct instantiation."""
+    """Verify GenderAtom rejects lowercase, unnormalized whitespace, and non-canonical tokens."""
     with pytest.raises(ModelFormatError, match="Invalid GenderAtom code"):
-        GenderAtom(value=invalid_code)
+        GenderAtom(invalid_code)
 
 
+@pytest.mark.unit
 @pytest.mark.regression
-@pytest.mark.parametrize("alien_input", ["alien", "other", "42", "N/A"])
-def test_gender_atom_from_input_rejects_unmapped_strings(alien_input: str) -> None:
-    """Verify GenderAtom.from_input raises ModelFormatError on unmappable tokens."""
-    with pytest.raises(ModelFormatError, match="Cannot normalize"):
-        GenderAtom.from_input(alien_input)
+@pytest.mark.parametrize("bad_type", INVALID_NON_STRING_VALUES)
+def test_gender_atom_non_string_raises_error(bad_type: Any) -> None:
+    """Verify GenderAtom rejects non-string inputs without coercion."""
+    with pytest.raises((ModelFormatError, TypeError, ValueError)):
+        GenderAtom(bad_type)
 
 
 # ==============================================================================
-# GROUP 4: TOTAL ORDERING, IMMUTABILITY & INTROSPECTION
-# Note: Verification of ordering operators, frozen state, and .help()
+# GROUP 3: Equality, Homogeneous Ordering, Immutability & Introspection
 # ==============================================================================
 
 
-@pytest.mark.regression
-def test_gender_atom_ordering_and_comparison() -> None:
-    """Verify total ordering comparisons against other instances and raw strings."""
-    atom_f = GenderAtom("F")
-    atom_m = GenderAtom("M")
-    atom_u = GenderAtom("U")
+@pytest.mark.unit
+def test_gender_atom_equality_and_hashing(sample_gender: GenderAtom) -> None:
+    """Verify GenderAtom supports raw string equality, atom equality, and set hashing."""
+    m2 = GenderAtom("M")
+    f = GenderAtom("F")
 
-    assert atom_f < atom_m < atom_u
-    assert atom_f < "M"
-    assert atom_m == GenderAtom("M")
-    assert atom_f != atom_m
-    assert hash(atom_m) == hash(GenderAtom("M"))
+    assert sample_gender == m2
+    assert sample_gender == "M"
+    assert sample_gender != f
+    assert sample_gender != "F"
+    assert (sample_gender == 123) is False  # type: ignore[comparison-overlap]
+    assert hash(sample_gender) == hash(m2) == hash("M")
+    assert len({sample_gender, m2, f}) == 2
+
+
+@pytest.mark.unit
+def test_gender_atom_homogeneous_ordering(sample_gender: GenderAtom) -> None:
+    """Verify total ordering works across GenderAtom instances and rejects cross-type <."""
+    f = GenderAtom("F")
+    u = GenderAtom("U")
+
+    assert f < sample_gender < u
+    assert f <= sample_gender <= u
+    assert u > sample_gender > f
+    assert sorted([u, sample_gender, f]) == [f, sample_gender, u]
 
     with pytest.raises(TypeError):
-        _ = atom_f < 123  # type: ignore[operator]
+        _ = sample_gender < "Z"  # type: ignore[operator]
+    with pytest.raises(TypeError):
+        _ = sample_gender < 123  # type: ignore[operator]
 
 
-@pytest.mark.regression
-def test_gender_atom_immutability() -> None:
-    """Verify GenderAtom is frozen and immutable."""
-    atom = GenderAtom("M")
-    with pytest.raises((FrozenInstanceError, TypeError)):
-        atom.value = "F"  # type: ignore[misc]
+@pytest.mark.unit
+def test_gender_atom_immutability(sample_gender: GenderAtom) -> None:
+    """Verify GenderAtom instances are frozen and immutable."""
+    with pytest.raises((FrozenInstanceError, AttributeError)):
+        sample_gender.value = "F"  # type: ignore[misc]
 
 
-@pytest.mark.regression
-def test_gender_atom_introspection() -> None:
-    """Verify .help() renders public member directory on GenderAtom."""
-    atom = GenderAtom("M")
-    help_text = atom.help(as_str=True)
+@pytest.mark.unit
+def test_gender_atom_introspection(sample_gender: GenderAtom) -> None:
+    """Verify GenderAtom inherits IntrospectableMixin with working .help()."""
+    help_text = sample_gender.help(as_str=True)
     assert help_text is not None
-    assert "=== GenderAtom Public Directory ===" in help_text
+    assert "GenderAtom" in help_text
     assert "is_male" in help_text
-    assert "is_female" in help_text
-    assert "is_undetermined" in help_text
-    assert "to_enum" in help_text

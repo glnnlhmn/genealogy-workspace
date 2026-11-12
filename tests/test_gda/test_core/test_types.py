@@ -3,8 +3,9 @@
 Comprehensive unit test suite for gda.core.types.
 
 Operational Role:
-    Verifies declarative regex patterns, compiled regular expressions, and ISO
-    format directives against canonical examples and invalid boundary strings.
+    Verifies declarative regex patterns, compiled regular expressions, ISO
+    format directives, and domain scalar invariants against canonical examples
+    and invalid boundary strings.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract mapping.
@@ -20,7 +21,7 @@ import pytest
 
 import gda.core.types as prim
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 # ==============================================================================
@@ -109,21 +110,21 @@ def test_iso_timestamp_regex_rejects_malformed_time_strings() -> None:
 
 @pytest.mark.unit
 def test_entity_id_patterns_cover_all_canonical_prefixes() -> None:
-    """Verify ENTITY_ID_PATTERNS contains exact regex mappings for IND, LOC, SID, NOT, and REP."""
-    expected_prefixes = {"IND", "LOC", "SID", "NOT", "REP"}
+    """Verify ENTITY_ID_PATTERNS contains exact regex mappings for all 8 canonical prefixes."""
+    expected_prefixes = {"IND", "FID", "LOC", "SID", "FAM", "NOT", "REP", "DRF"}
     assert set(prim.ENTITY_ID_PATTERNS.keys()) == expected_prefixes
 
 
 @pytest.mark.regression
-def test_entity_id_patterns_validate_five_digit_padded_identifiers() -> None:
-    """Verify each entity prefix regex matches valid 5-digit padded IDs and rejects malformed ones."""
+def test_entity_id_patterns_validate_six_plus_digit_identifiers() -> None:
+    """Verify each entity prefix regex matches valid 6+ digit IDs and rejects shorter/malformed ones."""
     for prefix, pattern in prim.ENTITY_ID_PATTERNS.items():
         regex = re.compile(pattern)
-        assert regex.match(f"{prefix}-00042") is not None
-        assert regex.match(f"{prefix}-12345") is not None
+        assert regex.match(f"{prefix}-000042") is not None
+        assert regex.match(f"{prefix}-12345678") is not None
         assert regex.match(f"{prefix}-42") is None
-        assert regex.match(f"{prefix}-000042") is None
-        assert regex.match(f"{prefix.lower()}-00042") is None
+        assert regex.match(f"{prefix}-12345") is None
+        assert regex.match(f"{prefix.lower()}-000042") is None
 
 
 # ==============================================================================
@@ -139,10 +140,37 @@ def test_sha256_regex_accepts_valid_lowercase_digest() -> None:
 
 
 @pytest.mark.regression
-def test_sha256_regex_accepts_uppercase_and_non_hex() -> None:
+def test_sha256_regex_rejects_uppercase_and_non_hex() -> None:
     """Verify SHA256_REGEX rejects uppercase letters and non-hex characters."""
     upper_hash = "B94D27B9934D3E08A52E52D7DA7DABFAC484EFE37A5380EE9088F7ACE2EFCDE9"
     assert prim.SHA256_REGEX.match(upper_hash) is None
     assert prim.SHA256_REGEX.match("z" * 64) is None
     assert prim.SHA256_REGEX.match("a" * 63) is None
     assert prim.SHA256_REGEX.match("a" * 65) is None
+
+
+# ==============================================================================
+# GROUP 6: CENTRALIZED DOMAIN SCALAR INVARIANTS & URN REGEXES
+# ==============================================================================
+
+
+@pytest.mark.unit
+def test_centralized_domain_bounds_and_code_sets() -> None:
+    """Verify canonical gender codes, historical year bounds, coordinate bounds, and scalar limits."""
+    assert prim.GENDER_CODES == frozenset({"M", "F", "U"})
+    assert (prim.MIN_HISTORICAL_YEAR, prim.MAX_HISTORICAL_YEAR) == (1000, 2100)
+    assert (prim.MIN_LATITUDE, prim.MAX_LATITUDE) == (-90.0, 90.0)
+    assert (prim.MIN_LONGITUDE, prim.MAX_LONGITUDE) == (-180.0, 180.0)
+    assert (prim.MIN_QUAY_SCORE, prim.MAX_QUAY_SCORE) == (0, 3)
+    assert prim.MIN_AHNENTAFEL == 1
+    assert (prim.MIN_CONFIDENCE_SCORE, prim.MAX_CONFIDENCE_SCORE) == (0.0, 1.0)
+
+
+@pytest.mark.unit
+def test_centralized_urn_and_scalar_regexes() -> None:
+    """Verify ATOM_ID_REGEX, PUB_CODE_REGEX, NEWS_CATEGORY_REGEX, and URN_REGEXES."""
+    assert prim.ATOM_ID_REGEX.match("IND-000001") is not None
+    assert prim.PUB_CODE_REGEX.match("US_CENSUS") is not None
+    assert prim.NEWS_CATEGORY_REGEX.match("OBIT") is not None
+    assert set(prim.URN_REGEXES.keys()) == {"SRC", "DRAFT", "CENSUS", "VITAL", "CEM"}
+    assert prim.URN_REGEXES["SRC"].match("URN:SRC:1917:NH_MERRIMACK:DOC_001") is not None

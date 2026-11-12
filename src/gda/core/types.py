@@ -5,17 +5,22 @@ Authoritative regex patterns, format tokens, and primitive scalar definitions.
 Operational Role:
     Provides the code-first declarative repository for RFC 4122 UUIDv4 patterns,
     ISO 8601 date and timestamp directives, canonical entity identifier regex patterns,
-    and SHA-256 hexadecimal hash patterns across the GDA core infrastructure.
+    archival URN patterns, gender code sets, historical year bounds, coordinate bounds,
+    scalar metric bounds/patterns, and SHA-256 hexadecimal hash patterns across the GDA
+    core infrastructure.
 """
 
 from __future__ import annotations
 
 import re
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
+    "ATOM_ID_PATTERN",
+    "ATOM_ID_REGEX",
     "ENTITY_ID_PATTERNS",
+    "GENDER_CODES",
     "ISO_DATE_FMT",
     "ISO_DATE_PATTERN",
     "ISO_DATE_REGEX",
@@ -24,8 +29,27 @@ __all__ = [
     "ISO_TIMESTAMP_PATTERN",
     "ISO_TIMESTAMP_REGEX",
     "ISO_YEAR_FMT",
+    "MAX_CONFIDENCE_SCORE",
+    "MAX_HISTORICAL_YEAR",
+    "MAX_LATITUDE",
+    "MAX_LONGITUDE",
+    "MAX_QUAY_SCORE",
+    "MIN_AHNENTAFEL",
+    "MIN_CONFIDENCE_SCORE",
+    "MIN_HISTORICAL_YEAR",
+    "MIN_LATITUDE",
+    "MIN_LONGITUDE",
+    "MIN_QUAY_SCORE",
+    "NEWS_CATEGORY_PATTERN",
+    "NEWS_CATEGORY_REGEX",
+    "PUB_CODE_PATTERN",
+    "PUB_CODE_REGEX",
     "SHA256_PATTERN",
     "SHA256_REGEX",
+    "URN_BASE_PATTERN",
+    "URN_BASE_REGEX",
+    "URN_PATTERNS",
+    "URN_REGEXES",
     "UUID_V4_PATTERN",
     "UUID_V4_REGEX",
 ]
@@ -39,21 +63,53 @@ ISO_DATE_FMT: str = "%Y-%m-%d"
 ISO_TIMESTAMP_FMT: str = "%Y-%m-%dT%H:%M:%SZ"
 
 # ------------------------------------------------------------------------------
+# Canonical Domain Scalar Sets & Numerical Invariants
+# ------------------------------------------------------------------------------
+GENDER_CODES: frozenset[str] = frozenset({"M", "F", "U"})
+MIN_HISTORICAL_YEAR: int = 1000
+MAX_HISTORICAL_YEAR: int = 2100
+
+MIN_LATITUDE: float = -90.0
+MAX_LATITUDE: float = 90.0
+MIN_LONGITUDE: float = -180.0
+MAX_LONGITUDE: float = 180.0
+
+MIN_QUAY_SCORE: int = 0
+MAX_QUAY_SCORE: int = 3
+MIN_AHNENTAFEL: int = 1
+MIN_CONFIDENCE_SCORE: float = 0.0
+MAX_CONFIDENCE_SCORE: float = 1.0
+
+# ------------------------------------------------------------------------------
 # Structural Regex Patterns (from schemas/defs/_shared_defs.schema.json)
 # ------------------------------------------------------------------------------
 UUID_V4_PATTERN: str = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 ISO_DATE_PATTERN: str = r"^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$"
-ISO_TIMESTAMP_PATTERN: str = (
-    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$"
-)
+ISO_TIMESTAMP_PATTERN: str = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
 SHA256_PATTERN: str = r"^[0-9a-f]{64}$"
 
+PUB_CODE_PATTERN: str = r"^[A-Z0-9_-]{2,20}$"
+NEWS_CATEGORY_PATTERN: str = r"^[A-Z]{3,15}$"
+
+ATOM_ID_PATTERN: str = r"^([A-Z]{3})-(\d{6,})$"
 ENTITY_ID_PATTERNS: dict[str, str] = {
-    "IND": r"^IND-\d{5}$",
-    "LOC": r"^LOC-\d{5}$",
-    "SID": r"^SID-\d{5}$",
-    "NOT": r"^NOT-\d{5}$",
-    "REP": r"^REP-\d{5}$",
+    "IND": r"^IND-\d{6,}$",
+    "FID": r"^FID-\d{6,}$",
+    "LOC": r"^LOC-\d{6,}$",
+    "SID": r"^SID-\d{6,}$",
+    "FAM": r"^FAM-\d{6,}$",
+    "NOT": r"^NOT-\d{6,}$",
+    "REP": r"^REP-\d{6,}$",
+    "DRF": r"^DRF-\d{6,}$",
+}
+
+URN_BASE_PATTERN: str = r"^URN:[A-Z0-9_-]+(:[A-Za-z0-9_.-]+)+$"
+URN_PATTERNS: dict[str, str] = {
+    "SRC": r"^URN:SRC:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "DRAFT": r"^URN:DRAFT:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "CENSUS": r"^URN:CENSUS:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "VITAL": r"^URN:VITAL:(BIRTH|MARRIAGE|DEATH):[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "CEM": r"^URN:CEM:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
 }
 
 # ------------------------------------------------------------------------------
@@ -63,3 +119,10 @@ UUID_V4_REGEX: re.Pattern[str] = re.compile(UUID_V4_PATTERN)
 ISO_DATE_REGEX: re.Pattern[str] = re.compile(ISO_DATE_PATTERN)
 ISO_TIMESTAMP_REGEX: re.Pattern[str] = re.compile(ISO_TIMESTAMP_PATTERN)
 SHA256_REGEX: re.Pattern[str] = re.compile(SHA256_PATTERN)
+PUB_CODE_REGEX: re.Pattern[str] = re.compile(PUB_CODE_PATTERN)
+NEWS_CATEGORY_REGEX: re.Pattern[str] = re.compile(NEWS_CATEGORY_PATTERN)
+ATOM_ID_REGEX: re.Pattern[str] = re.compile(ATOM_ID_PATTERN)
+URN_BASE_REGEX: re.Pattern[str] = re.compile(URN_BASE_PATTERN)
+URN_REGEXES: dict[str, re.Pattern[str]] = {
+    nid: re.compile(pattern) for nid, pattern in URN_PATTERNS.items()
+}
