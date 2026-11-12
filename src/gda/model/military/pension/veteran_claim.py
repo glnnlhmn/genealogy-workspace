@@ -10,22 +10,22 @@ Operational Role:
 
 from __future__ import annotations
 
-from typing import ClassVar
-
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import PensionClaimantRole
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.military.pension import PensionClaimantRole
 from gda.model.military.pension.base import MilitaryPensionRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = ["PensionVeteranClaimRecord"]
 
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class PensionVeteranClaimRecord(MilitaryPensionRecord):
     """Evidentiary invalid veteran disability or service pension claim record."""
 
@@ -48,8 +48,6 @@ class PensionVeteranClaimRecord(MilitaryPensionRecord):
         default=None,
         description="Verbatim name or board of examining surgeons conducting physical exam.",
     )
-
-    EXPECTED_CATEGORY: ClassVar[SourceRecordCategory] = SourceRecordCategory.MILITARY
 
     def __post_init__(self) -> None:
         """Enforce veteran claimant role integrity."""

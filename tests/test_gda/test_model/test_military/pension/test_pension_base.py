@@ -4,21 +4,16 @@ Atomized behavioral test suite for MilitaryPensionRecord domain entity.
 
 Operational Role:
     Verifies pension record instantiation invariants, claimant roles, certificate
-    numbers, and identity consistency between veteran and claimant.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
+    numbers, and identity consistency between veteran and claimant with 100% coverage.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     IndividualID,
     LocationID,
@@ -27,6 +22,7 @@ from gda.model.atom.id import (
     TranscriptID,
 )
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.pension import (
     MilitaryPensionRecord,
@@ -34,12 +30,7 @@ from gda.model.military.pension import (
     PensionPaymentAuthority,
 )
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -67,11 +58,6 @@ def valid_source_id() -> SourceID:
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_military_pension_smoke_valid_initialization(
@@ -89,9 +75,9 @@ def test_military_pension_smoke_valid_initialization(
         repository_id=valid_repo_id,
         audit=valid_audit,
         veteran_id=IndividualID("IND-000001"),
-        veteran_name_raw="Glenn D. Lehman",
+        veteran_name_raw="  Glenn D. Lehman  ",
         claimant_id=IndividualID("IND-000001"),
-        claimant_name_raw="Glenn D. Lehman",
+        claimant_name_raw="  Glenn D. Lehman  ",
         claimant_role=PensionClaimantRole.VETERAN,
         payment_authority=PensionPaymentAuthority.US_BUREAU_OF_PENSIONS,
         application_year=HistoricalYear(1890),
@@ -100,6 +86,8 @@ def test_military_pension_smoke_valid_initialization(
     )
     assert rec.veteran_id == IndividualID("IND-000001")
     assert rec.claimant_id == IndividualID("IND-000001")
+    assert rec.veteran_name_raw == "Glenn D. Lehman"
+    assert rec.claimant_name_raw == "Glenn D. Lehman"
     assert rec.claimant_role == PensionClaimantRole.VETERAN
     assert rec.payment_authority == PensionPaymentAuthority.US_BUREAU_OF_PENSIONS
     assert rec.application_year == HistoricalYear(1890)
@@ -107,11 +95,7 @@ def test_military_pension_smoke_valid_initialization(
     assert rec.certificate_number_raw == "SC-741.002"
     assert "Glenn D. Lehman" in str(rec)
     assert "SC-741.002" in str(rec)
-
-
-# ==============================================================================
-# GROUP 2: OPTIONAL ATTRIBUTES & THIRD-PARTY CLAIMANTS
-# ==============================================================================
+    assert "MilitaryPensionRecord(" in repr(rec)
 
 
 @pytest.mark.unit
@@ -150,11 +134,6 @@ def test_military_pension_full_attributes_widow_claim(
     assert rec.service_unit_raw == "Co. E, 1st NH Heavy Artillery"
     assert rec.application_location_id == loc_id
     assert rec.transcript_id == trn_id
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

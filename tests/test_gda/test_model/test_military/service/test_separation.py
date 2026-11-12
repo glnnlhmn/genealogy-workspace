@@ -4,21 +4,17 @@ Atomized behavioral test suite for SeparationDischargeRecord domain entity.
 
 Operational Role:
     Verifies DD-214 and historical discharge certificate structures, mandatory
-    separation years, SPN/SPD codes, foreign service metrics, and travel pay.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
+    separation years, SPN/SPD codes, foreign service metrics, and travel pay
+    with 100% statement and branch coverage.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     IndividualID,
     LocationID,
@@ -27,6 +23,7 @@ from gda.model.atom.id import (
     SourceID,
 )
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.service.base import (
     MilitaryBranch,
@@ -38,7 +35,7 @@ from gda.model.military.service.separation import (
     SeparationFormType,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.0.0+build.1"
 
 
 # ==============================================================================

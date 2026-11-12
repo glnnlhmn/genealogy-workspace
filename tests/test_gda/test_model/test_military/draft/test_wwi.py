@@ -5,22 +5,18 @@ Atomized behavioral test suite for WwiDraftCardRecord domain entity.
 Operational Role:
     Verifies WWI registration card invariants, wave/tier restrictions, physical
     description sub-entities, and draft year boundaries (1917-1918).
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import DraftRecordID, IndividualID, RepositoryID, SourceID
 from gda.model.atom.urn import MilitaryDraftUrn
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.draft.base import DraftCardTier
 from gda.model.military.draft.wwi import (
@@ -29,12 +25,7 @@ from gda.model.military.draft.wwi import (
     WwiPhysicalDescription,
 )
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -60,11 +51,6 @@ def valid_repo_id() -> RepositoryID:
 def valid_source_id() -> SourceID:
     """Return synthetic SourceID."""
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
-
-
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -98,11 +84,6 @@ def test_wwi_draft_card_smoke_valid_initialization(
     assert "WWI_FIRST" in str(rec)
 
 
-# ==============================================================================
-# GROUP 2: DETAILED PHYSICAL DESCRIPTIONS & FIELD EXTRACTIONS
-# ==============================================================================
-
-
 @pytest.mark.unit
 def test_wwi_draft_card_full_extractions(
     valid_source_id: SourceID,
@@ -119,6 +100,8 @@ def test_wwi_draft_card_full_extractions(
         baldness=False,
         physical_disqualifications="Loss of index finger on left hand",
     )
+    assert "WwiPhysicalDescription(" in repr(phys)
+
     rec = WwiDraftCardRecord(
         source_id=valid_source_id,
         source_urn=valid_draft_urn,
@@ -146,11 +129,6 @@ def test_wwi_draft_card_full_extractions(
     assert rec.physical_description is not None
     assert rec.physical_description.eye_color == "Blue"
     assert rec.physical_description.height_description == "Tall"
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

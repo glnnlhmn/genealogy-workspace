@@ -4,21 +4,16 @@ Atomized behavioral test suite for MilitaryServiceRecord domain entity.
 
 Operational Role:
     Verifies service record instantiation invariants, chronological year consistency,
-    branch/component assignments, and raw string boundaries.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
+    branch/component assignments, and raw string boundaries with 100% coverage.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     IndividualID,
     LocationID,
@@ -28,6 +23,7 @@ from gda.model.atom.id import (
     TranscriptID,
 )
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.service.base import (
     MilitaryBranch,
@@ -36,7 +32,7 @@ from gda.model.military.service.base import (
     ServiceComponent,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.0.0+build.1"
 
 
 # ==============================================================================
@@ -99,16 +95,18 @@ def test_military_service_record_smoke_valid_initialization(
         audit=valid_audit,
         service_record_id=valid_service_record_id,
         veteran_id=IndividualID("IND-000001"),
-        veteran_name_raw="Glenn D. Lehman",
+        veteran_name_raw="  Glenn D. Lehman  ",
         branch=MilitaryBranch.ARMY,
-        unit_designation_raw="Co. E, 1st New Hampshire Heavy Artillery",
-        rank_raw="Corporal",
+        unit_designation_raw="  Co. E, 1st New Hampshire Heavy Artillery  ",
+        rank_raw="  Corporal  ",
         enlistment_year=HistoricalYear(1864),
         separation_year=HistoricalYear(1865),
     )
     assert rec.service_record_id == valid_service_record_id
     assert rec.veteran_id == IndividualID("IND-000001")
     assert rec.veteran_name_raw == "Glenn D. Lehman"
+    assert rec.unit_designation_raw == "Co. E, 1st New Hampshire Heavy Artillery"
+    assert rec.rank_raw == "Corporal"
     assert rec.branch == MilitaryBranch.ARMY
     assert rec.service_component == ServiceComponent.REGULAR
     assert rec.separation_character == SeparationCharacter.HONORABLE
@@ -116,6 +114,7 @@ def test_military_service_record_smoke_valid_initialization(
     assert rec.transcript_id is None
     assert "Corporal" in str(rec)
     assert "1864-1865" in str(rec)
+    assert "MilitaryServiceRecord(" in repr(rec)
 
 
 # ==============================================================================

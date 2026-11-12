@@ -15,23 +15,31 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
-from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
-from gda.model.atom.id import IndividualID, LocationID, ServiceRecordID, TranscriptID
-from gda.model.base.source import SourceRecord
-from gda.model.military.service import (
+from gda.core.enums.military import (
     MilitaryBranch,
     SeparationCharacter,
     ServiceComponent,
 )
+from gda.core.enums.sources import SourceRecordCategory
+from gda.core.errors import ModelFormatError
+from gda.model.atom.id import IndividualID, LocationID, ServiceRecordID, TranscriptID
+from gda.model.atom.year import HistoricalYear
+from gda.model.base.source import SourceRecord
 
-__version__ = "1.0.0+build.4"
+__version__ = "2.1.0+build.1"
 
-__all__ = ["MilitaryServiceRecord"]
+__all__ = [
+    "MilitaryBranch",
+    "MilitaryServiceRecord",
+    "SeparationCharacter",
+    "ServiceComponent",
+]
 
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class MilitaryServiceRecord(SourceRecord):
     """Evidentiary military active service, enlistment, or discharge separation record."""
 
@@ -110,7 +118,8 @@ class MilitaryServiceRecord(SourceRecord):
                 "MilitaryServiceRecord 'veteran_name_raw' cannot be empty or whitespace.",
                 details={"service_record_id": str(self.service_record_id)},
             )
-        object.__setattr__(self, "veteran_name_raw", vet_name)
+        if vet_name != self.veteran_name_raw:
+            object.__setattr__(self, "veteran_name_raw", vet_name)
 
         unit_raw = self.unit_designation_raw.strip()
         if not unit_raw:
@@ -118,7 +127,8 @@ class MilitaryServiceRecord(SourceRecord):
                 "MilitaryServiceRecord 'unit_designation_raw' cannot be empty or whitespace.",
                 details={"service_record_id": str(self.service_record_id)},
             )
-        object.__setattr__(self, "unit_designation_raw", unit_raw)
+        if unit_raw != self.unit_designation_raw:
+            object.__setattr__(self, "unit_designation_raw", unit_raw)
 
         rank_str = self.rank_raw.strip()
         if not rank_str:
@@ -126,7 +136,8 @@ class MilitaryServiceRecord(SourceRecord):
                 "MilitaryServiceRecord 'rank_raw' cannot be empty or whitespace.",
                 details={"service_record_id": str(self.service_record_id)},
             )
-        object.__setattr__(self, "rank_raw", rank_str)
+        if rank_str != self.rank_raw:
+            object.__setattr__(self, "rank_raw", rank_str)
 
         self._validate_chronology()
 
@@ -151,4 +162,11 @@ class MilitaryServiceRecord(SourceRecord):
         return (
             f"MilitaryServiceRecord [{self.branch.value}] {self.rank_raw} {self.veteran_name_raw} - "
             f"{self.unit_designation_raw} ({enl}-{sep})"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(service_record_id={self.service_record_id!r}, "
+            f"veteran_id={self.veteran_id!r}, branch={self.branch!r}, "
+            f"unit_designation_raw={self.unit_designation_raw!r})"
         )

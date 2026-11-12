@@ -4,21 +4,17 @@ Atomized behavioral test suite for MilitaryAwardRecord domain entity.
 
 Operational Role:
     Verifies military awards, valor medals, general orders, citation narratives,
-    posthumous indicators, string hygiene, and chronological action invariants.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
+    posthumous indicators, string hygiene, and chronological action invariants
+    with 100% statement and branch coverage.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     IndividualID,
     LocationID,
@@ -27,6 +23,7 @@ from gda.model.atom.id import (
     TranscriptID,
 )
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.awards import (
     AwardScope,
@@ -35,12 +32,7 @@ from gda.model.military.awards import (
 )
 from gda.model.military.service import MilitaryBranch
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.1.0+build.1"
 
 
 @pytest.fixture
@@ -68,11 +60,6 @@ def valid_source_id() -> SourceID:
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_military_award_smoke_valid_initialization(
@@ -90,8 +77,8 @@ def test_military_award_smoke_valid_initialization(
         repository_id=valid_repo_id,
         audit=valid_audit,
         recipient_id=IndividualID("IND-000001"),
-        recipient_name_raw="Glenn D. Lehman",
-        award_name_raw="Silver Star",
+        recipient_name_raw="  Glenn D. Lehman  ",
+        award_name_raw="  Silver Star  ",
         branch=MilitaryBranch.ARMY,
         award_tier=MilitaryAwardTier.SILVER_STAR,
         award_scope=AwardScope.VALOR_IN_COMBAT,
@@ -107,11 +94,7 @@ def test_military_award_smoke_valid_initialization(
     assert rec.is_posthumous is False
     assert "Silver Star" in str(rec)
     assert "1945" in str(rec)
-
-
-# ==============================================================================
-# GROUP 2: OPTIONAL LINKAGES & POSTHUMOUS VALOR
-# ==============================================================================
+    assert "MilitaryAwardRecord(" in repr(rec)
 
 
 @pytest.mark.unit
@@ -139,10 +122,10 @@ def test_military_award_full_attributes_and_posthumous(
         award_scope=AwardScope.VALOR_IN_COMBAT,
         award_year=HistoricalYear(1946),
         action_year=HistoricalYear(1944),
-        general_order_raw="War Department General Orders No. 71",
-        issuing_authority_raw="Headquarters, First United States Army",
+        general_order_raw="  War Department General Orders No. 71  ",
+        issuing_authority_raw="  Headquarters, First United States Army  ",
         is_posthumous=True,
-        action_location_raw="St. Lo, Normandy, France",
+        action_location_raw="  St. Lo, Normandy, France  ",
         action_location_id=loc_id,
         transcript_id=trn_id,
     )
@@ -163,7 +146,7 @@ def test_military_award_same_action_and_award_year(
     valid_repo_id: RepositoryID,
     valid_audit: AuditStamp,
 ) -> None:
-    """Verify MilitaryAwardRecord permits action_year to equal award_year."""
+    """Verify MilitaryAwardRecord permits pre-trimmed optional strings and equal years."""
     rec = MilitaryAwardRecord(
         source_id=valid_source_id,
         source_urn=valid_award_urn,
@@ -179,13 +162,14 @@ def test_military_award_same_action_and_award_year(
         award_scope=AwardScope.WOUND_IN_ACTION,
         award_year=HistoricalYear(1944),
         action_year=HistoricalYear(1944),
+        general_order_raw="GO No. 12",
+        issuing_authority_raw="HQ 1st Infantry Division",
+        action_location_raw="Normandy, France",
     )
     assert rec.action_year == rec.award_year
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
+    assert rec.general_order_raw == "GO No. 12"
+    assert rec.issuing_authority_raw == "HQ 1st Infantry Division"
+    assert rec.action_location_raw == "Normandy, France"
 
 
 @pytest.mark.unit

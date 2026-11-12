@@ -5,22 +5,18 @@ Atomized behavioral test suite for ColonialMilitiaRecord domain entity.
 Operational Role:
     Verifies colonial and Revolutionary War militia enrollment invariants, substitute
     provisions, militia classification tiers, and 1607-1815 registration boundaries.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import DraftRecordID, IndividualID, RepositoryID, SourceID
 from gda.model.atom.urn import MilitaryDraftUrn
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.draft.base import DraftCardTier
 from gda.model.military.draft.colonial import (
@@ -29,12 +25,7 @@ from gda.model.military.draft.colonial import (
     ColonialWarPeriod,
 )
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -62,11 +53,6 @@ def valid_source_id() -> SourceID:
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_colonial_militia_smoke_valid_initialization(
@@ -89,18 +75,13 @@ def test_colonial_militia_smoke_valid_initialization(
         draft_year=HistoricalYear(1776),
         board_jurisdiction_raw="Town of Concord, Province of New Hampshire",
         card_tier=DraftCardTier.OTHER,
-        colony_or_state_raw="Province of New Hampshire",
+        colony_or_state_raw="  Province of New Hampshire  ",
     )
     assert rec.conflict_period == ColonialWarPeriod.REVOLUTIONARY_WAR
     assert rec.militia_class == ColonialMilitiaClass.TRAINBAND
     assert rec.colony_or_state_raw == "Province of New Hampshire"
     assert rec.substitute_provided is False
     assert "Glenn Lehman" in str(rec)
-
-
-# ==============================================================================
-# GROUP 2: DETAILED REGIMENTAL DATA & SUBSTITUTES
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -139,11 +120,6 @@ def test_colonial_militia_substitute_and_unit_details(
     assert rec.company_officer_raw == "Capt. Benjamin Emery"
     assert rec.substitute_individual_id == sub_id
     assert rec.substitute_name_raw == "Ebenezer Virgin"
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

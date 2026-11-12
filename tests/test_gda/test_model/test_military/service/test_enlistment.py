@@ -4,23 +4,19 @@ Atomized behavioral test suite for EnlistmentMusterRecord domain entity.
 
 Operational Role:
     Verifies enlistment contracts, muster rolls, CMSR jacket structures,
-    term length constraints, bounties, and substitute linkages.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
+    term length constraints, bounties, and substitute linkages with 100% coverage.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, RepositoryID, ServiceRecordID, SourceID
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.service.base import (
     MilitaryBranch,
@@ -32,12 +28,7 @@ from gda.model.military.service.enlistment import (
     MusterRollType,
 )
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.1.0+build.1"
 
 
 @pytest.fixture
@@ -69,11 +60,6 @@ def valid_source_id() -> SourceID:
 def valid_service_record_id() -> ServiceRecordID:
     """Return synthetic ServiceRecordID."""
     return ServiceRecordID("a1a646d3-9c61-4a70-8b14-c48c8b417c8a")
-
-
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -111,11 +97,6 @@ def test_enlistment_muster_smoke_valid_initialization(
     assert "Private" in str(rec)
 
 
-# ==============================================================================
-# GROUP 2: BOUNTIES, TERMS & SUBSTITUTES
-# ==============================================================================
-
-
 @pytest.mark.unit
 def test_enlistment_muster_full_bounty_and_substitute(
     valid_source_id: SourceID,
@@ -150,7 +131,7 @@ def test_enlistment_muster_full_bounty_and_substitute(
         bounty_due_usd=200.0,
         credited_town_or_ward_raw="Concord, Ward 4",
         substitute_for_id=sub_principal_id,
-        substitute_for_name_raw="Ebenezer Sargent",
+        substitute_for_name_raw="  Ebenezer Sargent  ",
     )
     assert rec.enlistment_term_months == 36
     assert rec.muster_officer_raw == "Capt. William H. Chaffin"
@@ -169,9 +150,9 @@ def test_enlistment_muster_substitute_id_only(
     valid_audit: AuditStamp,
     valid_service_record_id: ServiceRecordID,
 ) -> None:
-    """Verify EnlistmentMusterRecord permits substitute_for_id without name."""
+    """Verify EnlistmentMusterRecord handles blank and pre-trimmed substitute names."""
     sub_principal_id = IndividualID("IND-000099")
-    rec = EnlistmentMusterRecord(
+    rec_blank = EnlistmentMusterRecord(
         source_id=valid_source_id,
         source_urn=valid_service_urn,
         record_category=SourceRecordCategory.MILITARY,
@@ -186,14 +167,29 @@ def test_enlistment_muster_substitute_id_only(
         rank_raw="Private",
         roll_type=MusterRollType.CMSR_JACKET,
         substitute_for_id=sub_principal_id,
+        substitute_for_name_raw="   ",
     )
-    assert rec.substitute_for_id == sub_principal_id
-    assert rec.substitute_for_name_raw is None
+    assert rec_blank.substitute_for_id == sub_principal_id
+    assert rec_blank.substitute_for_name_raw is None
 
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
+    rec_clean = EnlistmentMusterRecord(
+        source_id=valid_source_id,
+        source_urn=valid_service_urn,
+        record_category=SourceRecordCategory.MILITARY,
+        description="Substitute with pre-trimmed name",
+        repository_id=valid_repo_id,
+        audit=valid_audit,
+        service_record_id=valid_service_record_id,
+        veteran_id=IndividualID("IND-000001"),
+        veteran_name_raw="Glenn Lehman",
+        branch=MilitaryBranch.ARMY,
+        unit_designation_raw="Co. A",
+        rank_raw="Private",
+        roll_type=MusterRollType.CMSR_JACKET,
+        substitute_for_name_raw="Ebenezer Sargent",
+    )
+    assert rec_clean.substitute_for_id is None
+    assert rec_clean.substitute_for_name_raw == "Ebenezer Sargent"
 
 
 @pytest.mark.unit

@@ -10,36 +10,34 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import DraftCardTier, WwiiDraftWave
 from gda.core.errors import ModelFormatError
+from gda.core.introspectable import IntrospectableMixin
+from gda.core.types import (
+    MAX_HEIGHT_INCHES,
+    MAX_WEIGHT_LBS,
+    MIN_HEIGHT_INCHES,
+    MIN_WEIGHT_LBS,
+    WWII_DRAFT_YEARS,
+)
 from gda.model.atom.id import IndividualID
-from gda.model.military.draft.base import DraftCardTier, MilitaryDraftRecord
+from gda.model.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = ["WwiiDraftCardRecord", "WwiiDraftWave", "WwiiPhysicalMetrics"]
 
 
-class WwiiDraftWave(StrEnum):
-    """Selective Training and Service Act registration waves."""
-
-    FIRST = "FIRST"  # Oct 16, 1940 (Ages 21-35)
-    SECOND = "SECOND"  # July 1, 1941 (Age 21 attained)
-    THIRD = "THIRD"  # Feb 16, 1942 (Ages 20-21, 35-44)
-    FOURTH_OLD_MANS = (
-        "FOURTH_OLD_MANS"  # April 27, 1942 (Ages 45-64, not liable for military service)
-    )
-    FIFTH = "FIFTH"  # June 30, 1942 (Ages 18-20)
-    SIXTH = "SIXTH"  # Dec 1942 (Age 18 ongoing)
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
-class WwiiPhysicalMetrics:
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
+class WwiiPhysicalMetrics(IntrospectableMixin):
     """Physical description reported by the registrar on WWII Form 1/DSS Form 1."""
 
     race_verbatim: str | None = Field(
@@ -48,14 +46,14 @@ class WwiiPhysicalMetrics:
     )
     height_inches: int | None = Field(
         default=None,
-        ge=36,
-        le=96,
+        ge=MIN_HEIGHT_INCHES,
+        le=MAX_HEIGHT_INCHES,
         description="Recorded approximate height in total inches.",
     )
     weight_lbs: int | None = Field(
         default=None,
-        ge=50,
-        le=500,
+        ge=MIN_WEIGHT_LBS,
+        le=MAX_WEIGHT_LBS,
         description="Recorded approximate weight in pounds.",
     )
     complexion: str | None = Field(
@@ -75,8 +73,17 @@ class WwiiPhysicalMetrics:
         description="Scars, tattoos, amputations, or identifying marks.",
     )
 
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(race_verbatim={self.race_verbatim!r}, "
+            f"height_inches={self.height_inches!r}, weight_lbs={self.weight_lbs!r})"
+        )
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class WwiiDraftCardRecord(MilitaryDraftRecord):
     """Specialized evidentiary record for WWII Selective Service Draft Cards (1940-1946)."""
 
@@ -121,7 +128,7 @@ class WwiiDraftCardRecord(MilitaryDraftRecord):
         description="Registrar's physical description metrics from card reverse.",
     )
 
-    VALID_YEARS: ClassVar[set[int]] = {1940, 1941, 1942, 1943, 1944, 1945, 1946}
+    VALID_YEARS: ClassVar[frozenset[int]] = WWII_DRAFT_YEARS
 
     def __post_init__(self) -> None:
         """Enforce WWII wave consistency, tier constraints, and registration years."""

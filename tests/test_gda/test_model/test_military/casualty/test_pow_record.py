@@ -5,22 +5,18 @@ Atomized behavioral test suite for PrisonerOfWarRecord domain entity.
 Operational Role:
     Verifies POW capture records, detaining powers, prison camp facilities,
     repatriation/escape chronological bounds, and in-captivity fatalities.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, RepositoryID, SourceID
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.casualty import (
     CasualtyCategory,
@@ -29,12 +25,7 @@ from gda.model.military.casualty import (
 )
 from gda.model.military.service import MilitaryBranch
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -62,11 +53,6 @@ def valid_source_id() -> SourceID:
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_pow_record_smoke_valid_initialization(
@@ -91,8 +77,8 @@ def test_pow_record_smoke_valid_initialization(
         unit_designation_raw="8th Air Force, 100th Bomb Group",
         rank_raw="Lieutenant",
         camp_type=PowCampType.OFFICER_CAMP,
-        camp_name_raw="Stalag Luft III",
-        detaining_power_raw="Germany",
+        camp_name_raw="  Stalag Luft III  ",
+        detaining_power_raw="  Germany  ",
         capture_year=HistoricalYear(1944),
     )
     assert rec.casualty_category == CasualtyCategory.PRISONER_OF_WAR
@@ -102,11 +88,6 @@ def test_pow_record_smoke_valid_initialization(
     assert rec.capture_year == HistoricalYear(1944)
     assert rec.died_in_captivity is False
     assert rec.release_or_repatriation_year is None
-
-
-# ==============================================================================
-# GROUP 2: REPATRIATION & IN-CAPTIVITY FATALITIES
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -172,11 +153,6 @@ def test_pow_record_died_in_captivity(
         died_in_captivity=True,
     )
     assert rec.died_in_captivity is True
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

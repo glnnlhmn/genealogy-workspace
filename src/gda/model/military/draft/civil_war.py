@@ -10,17 +10,22 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import (
+    CivilWarConscriptionAllegiance,
+    CivilWarEnrollmentClass,
+    DraftCardTier,
+)
 from gda.core.errors import ModelFormatError
+from gda.core.types import CIVIL_WAR_DRAFT_YEARS
 from gda.model.atom.id import IndividualID
-from gda.model.military.draft.base import DraftCardTier, MilitaryDraftRecord
+from gda.model.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = [
     "CivilWarConscriptionAllegiance",
@@ -29,23 +34,10 @@ __all__ = [
 ]
 
 
-class CivilWarConscriptionAllegiance(StrEnum):
-    """Allegiance authority governing the draft enrollment."""
-
-    UNION = "UNION"
-    CONFEDERATE = "CONFEDERATE"
-
-
-class CivilWarEnrollmentClass(StrEnum):
-    """Statutory enrollment classification under the Conscription/Enrollment Acts."""
-
-    CLASS_1 = "CLASS_1"  # Unmarried men ages 20-45; married men ages 20-35
-    CLASS_2 = "CLASS_2"  # Married men over age 35
-    VOLUNTEER_EXEMPT = "VOLUNTEER_EXEMPT"  # Already in service or honorably discharged
-    CONFEDERATE_GENERAL = "CONFEDERATE_GENERAL"  # Standard Confederate conscript class
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class CivilWarDraftRecord(MilitaryDraftRecord):
     """Evidentiary draft enrollment record from the American Civil War (1862-1865)."""
 
@@ -86,13 +78,13 @@ class CivilWarDraftRecord(MilitaryDraftRecord):
         description="Transcribed raw name of the furnished substitute.",
     )
 
-    VALID_TIERS: ClassVar[set[DraftCardTier]] = {DraftCardTier.OTHER}
+    VALID_TIERS: ClassVar[frozenset[DraftCardTier]] = frozenset({DraftCardTier.OTHER})
 
     def __post_init__(self) -> None:
         """Enforce Civil War enrollment year boundaries and substitution rules."""
         super().__post_init__()
 
-        if not (1862 <= self.draft_year.value <= 1865):
+        if self.draft_year.value not in CIVIL_WAR_DRAFT_YEARS:
             raise ModelFormatError(
                 f"CivilWarDraftRecord draft_year must be between 1862 and 1865, "
                 f"got {self.draft_year.value}."

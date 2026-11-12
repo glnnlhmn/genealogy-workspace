@@ -5,32 +5,23 @@ Atomized behavioral test suite for CombatCasualtyRecord domain entity.
 Operational Role:
     Verifies combat engagement casualties (KIA, WIA, DOW, MIA), causes,
     field medical evacuations, string hygiene, and died-of-wounds chronological invariants.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, RepositoryID, SourceID
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.casualty import CasualtyCategory, CombatCasualtyRecord
 from gda.model.military.service import MilitaryBranch
 
-__version__ = "1.0.0+build.2"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -56,11 +47,6 @@ def valid_repo_id() -> RepositoryID:
 def valid_source_id() -> SourceID:
     """Return synthetic SourceID."""
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
-
-
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -93,11 +79,6 @@ def test_combat_casualty_smoke_valid_initialization(
     assert rec.engagement_name_raw == "Battle of Gettysburg"
     assert rec.cause_of_casualty_raw == "Gunshot wound to chest"
     assert rec.died_of_wounds_year is None
-
-
-# ==============================================================================
-# GROUP 2: DIED OF WOUNDS, EVACUATIONS & STRING NORMALIZATION
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -187,11 +168,6 @@ def test_combat_casualty_none_optional_engagement(
         engagement_name_raw=None,
     )
     assert rec.engagement_name_raw is None
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

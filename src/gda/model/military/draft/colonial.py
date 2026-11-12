@@ -4,49 +4,36 @@ Colonial and Revolutionary War militia enrollment and levy record domain entity.
 
 Operational Role:
     Extends MilitaryDraftRecord for pre-1862 conscription, colonial militia musters,
-    provincial quotas, and Revolutionary War class levies (1607-1783). Enforces
+    provincial quotas, and Revolutionary War class levies (1607-1815). Enforces
     militia unit hierarchies, alarm list classifications, and equipment readiness.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import (
+    ColonialMilitiaClass,
+    ColonialWarPeriod,
+    DraftCardTier,
+)
 from gda.core.errors import ModelFormatError
+from gda.core.types import COLONIAL_MILITIA_MAX_YEAR, COLONIAL_MILITIA_MIN_YEAR
 from gda.model.atom.id import IndividualID
-from gda.model.military.draft.base import DraftCardTier, MilitaryDraftRecord
+from gda.model.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = ["ColonialMilitiaClass", "ColonialMilitiaRecord", "ColonialWarPeriod"]
 
 
-class ColonialWarPeriod(StrEnum):
-    """Historical conflict or statutory period governing the colonial enrollment."""
-
-    COLONIAL_INTERCOLONIAL = (
-        "COLONIAL_INTERCOLONIAL"  # Pre-1754 (King Philip's, Queen Anne's, etc.)
-    )
-    FRENCH_AND_INDIAN = "FRENCH_AND_INDIAN"  # 1754-1763
-    REVOLUTIONARY_WAR = "REVOLUTIONARY_WAR"  # 1775-1783
-    EARLY_REPUBLIC = "EARLY_REPUBLIC"  # 1784-1815 (War of 1812 militias)
-
-
-class ColonialMilitiaClass(StrEnum):
-    """Statutory readiness or service classification in colonial militia law."""
-
-    TRAINBAND = "TRAINBAND"  # Standard active defense company (typically ages 16-50/60)
-    ALARM_LIST = "ALARM_LIST"  # Secondary home reserve (exempt men, boys, seniors)
-    MINUTEMAN = "MINUTEMAN"  # Rapid deployment detachment
-    CONTINENTAL_LEVY = "CONTINENTAL_LEVY"  # Drafted to fulfill provincial Continental Line quota
-    TOWN_CLASS = "TOWN_CLASS"  # Quota class subdivision assigned to procure a soldier
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class ColonialMilitiaRecord(MilitaryDraftRecord):
     """Evidentiary record for colonial militia enrollments, muster rolls, and levies."""
 
@@ -87,15 +74,16 @@ class ColonialMilitiaRecord(MilitaryDraftRecord):
         description="Transcribed raw name of the substitute provided.",
     )
 
-    VALID_TIERS: ClassVar[set[DraftCardTier]] = {DraftCardTier.OTHER}
+    VALID_TIERS: ClassVar[frozenset[DraftCardTier]] = frozenset({DraftCardTier.OTHER})
 
     def __post_init__(self) -> None:
         """Enforce pre-1862 historical year boundaries and colonial raw string hygiene."""
         super().__post_init__()
 
-        if not (1607 <= self.draft_year.value <= 1815):
+        if not (COLONIAL_MILITIA_MIN_YEAR <= self.draft_year.value <= COLONIAL_MILITIA_MAX_YEAR):
             raise ModelFormatError(
-                f"ColonialMilitiaRecord draft_year must be between 1607 and 1815, "
+                f"ColonialMilitiaRecord draft_year must be between "
+                f"{COLONIAL_MILITIA_MIN_YEAR} and {COLONIAL_MILITIA_MAX_YEAR}, "
                 f"got {self.draft_year.value}."
             )
 
@@ -105,7 +93,8 @@ class ColonialMilitiaRecord(MilitaryDraftRecord):
                 "ColonialMilitiaRecord 'colony_or_state_raw' cannot be empty or whitespace.",
                 details={"draft_record_id": str(self.draft_record_id)},
             )
-        object.__setattr__(self, "colony_or_state_raw", colony)
+        if colony != self.colony_or_state_raw:
+            object.__setattr__(self, "colony_or_state_raw", colony)
 
         if self.substitute_provided and not (
             self.substitute_individual_id

@@ -21,7 +21,7 @@ import pytest
 
 import gda.core.types as prim
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.1.0+build.1"
 
 
 # ==============================================================================
@@ -164,6 +164,23 @@ def test_centralized_domain_bounds_and_code_sets() -> None:
     assert (prim.MIN_QUAY_SCORE, prim.MAX_QUAY_SCORE) == (0, 3)
     assert prim.MIN_AHNENTAFEL == 1
     assert (prim.MIN_CONFIDENCE_SCORE, prim.MAX_CONFIDENCE_SCORE) == (0.0, 1.0)
+
+
+@pytest.mark.unit
+def test_military_domain_bounds_and_era_year_sets() -> None:
+    """Verify centralized military scalar bounds and historical draft era year sets."""
+    assert (prim.MIN_ENLISTMENT_TERM_MONTHS, prim.MAX_ENLISTMENT_TERM_MONTHS) == (1, 120)
+    assert prim.MAX_FOREIGN_SERVICE_MONTHS == 600
+    assert prim.MAX_BOUNTY_LAND_ACREAGE == 1000
+    assert prim.MAX_MINOR_CHILDREN_COUNT == 25
+    assert (prim.MIN_VIETNAM_LOTTERY_NUMBER, prim.MAX_VIETNAM_LOTTERY_NUMBER) == (1, 366)
+    assert (prim.MIN_HEIGHT_INCHES, prim.MAX_HEIGHT_INCHES) == (36, 96)
+    assert (prim.MIN_WEIGHT_LBS, prim.MAX_WEIGHT_LBS) == (50, 500)
+    assert (prim.COLONIAL_MILITIA_MIN_YEAR, prim.COLONIAL_MILITIA_MAX_YEAR) == (1607, 1815)
+    assert prim.CIVIL_WAR_DRAFT_YEARS == frozenset({1862, 1863, 1864, 1865})
+    assert prim.WWI_DRAFT_YEARS == frozenset({1917, 1918})
+    assert prim.WWII_DRAFT_YEARS == frozenset({1940, 1941, 1942, 1943, 1944, 1945, 1946})
+    assert prim.MODERN_SSS_MIN_YEAR == 1948
 
 
 @pytest.mark.unit

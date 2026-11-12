@@ -15,22 +15,23 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import BountyLandAct, PensionClaimantRole
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
+from gda.core.types import MAX_BOUNTY_LAND_ACREAGE
 from gda.model.atom.id import IndividualID, LocationID, TranscriptID
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.source import SourceRecord
-from gda.model.military.pension import (
-    BountyLandAct,
-    PensionClaimantRole,
+
+__version__ = "2.1.0+build.1"
+
+__all__ = ["BountyLandAct", "BountyLandWarrantRecord"]
+
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
 )
-
-__version__ = "1.0.0+build.1"
-
-__all__ = ["BountyLandWarrantRecord"]
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class BountyLandWarrantRecord(SourceRecord):
     """Evidentiary military bounty land warrant application, certificate, or patent."""
 
@@ -65,7 +66,7 @@ class BountyLandWarrantRecord(SourceRecord):
     acreage: int = Field(
         ...,
         ge=1,
-        le=1000,
+        le=MAX_BOUNTY_LAND_ACREAGE,
         description="Number of acres granted (typically 40, 80, 120, or 160 acres).",
     )
     warrant_year: HistoricalYear = Field(
@@ -110,21 +111,24 @@ class BountyLandWarrantRecord(SourceRecord):
             raise ModelFormatError(
                 "BountyLandWarrantRecord 'veteran_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "veteran_name_raw", vet_name)
+        if vet_name != self.veteran_name_raw:
+            object.__setattr__(self, "veteran_name_raw", vet_name)
 
         warr_name = self.warrantee_name_raw.strip()
         if not warr_name:
             raise ModelFormatError(
                 "BountyLandWarrantRecord 'warrantee_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "warrantee_name_raw", warr_name)
+        if warr_name != self.warrantee_name_raw:
+            object.__setattr__(self, "warrantee_name_raw", warr_name)
 
         warr_num = self.warrant_number_raw.strip()
         if not warr_num:
             raise ModelFormatError(
                 "BountyLandWarrantRecord 'warrant_number_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "warrant_number_raw", warr_num)
+        if warr_num != self.warrant_number_raw:
+            object.__setattr__(self, "warrant_number_raw", warr_num)
 
         if self.assignee_id is not None or self.assignee_name_raw is not None:
             assignee_str = self.assignee_name_raw.strip() if self.assignee_name_raw else ""
@@ -133,11 +137,19 @@ class BountyLandWarrantRecord(SourceRecord):
                     "BountyLandWarrantRecord requires non-empty assignee_name_raw "
                     "or assignee_id when specifying warrant assignment."
                 )
-            if self.assignee_name_raw is not None:
-                object.__setattr__(self, "assignee_name_raw", assignee_str)
+            normalized_assignee = assignee_str or None
+            if normalized_assignee != self.assignee_name_raw:
+                object.__setattr__(self, "assignee_name_raw", normalized_assignee)
 
     def __str__(self) -> str:
         return (
             f"BountyLandWarrantRecord [{self.bounty_act.value}] Warrant#{self.warrant_number_raw} "
             f"({self.acreage} acres) - {self.warrantee_name_raw} ({self.warrant_year.value})"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(veteran_id={self.veteran_id!r}, "
+            f"bounty_act={self.bounty_act!r}, warrant_number_raw={self.warrant_number_raw!r}, "
+            f"acreage={self.acreage!r})"
         )

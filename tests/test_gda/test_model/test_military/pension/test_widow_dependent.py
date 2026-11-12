@@ -5,22 +5,18 @@ Atomized behavioral test suite for PensionWidowDependentRecord domain entity.
 Operational Role:
     Verifies widow, minor orphan, and dependent parent pension claims, marriage
     chronology invariants, guardian appointments, and child schedules.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, RepositoryID, SourceID
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.pension import (
     PensionClaimantRole,
@@ -28,12 +24,7 @@ from gda.model.military.pension import (
     PensionWidowDependentRecord,
 )
 
-__version__ = "1.0.0+build.3"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -59,11 +50,6 @@ def valid_repo_id() -> RepositoryID:
 def valid_source_id() -> SourceID:
     """Return synthetic SourceID."""
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
-
-
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -100,11 +86,6 @@ def test_pension_widow_smoke_valid_initialization(
     assert rec.marriage_year == HistoricalYear(1866)
     assert rec.veteran_death_year == HistoricalYear(1894)
     assert rec.minor_children_count == 2
-
-
-# ==============================================================================
-# GROUP 2: MINOR ORPHANS & REMARRIAGES
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -173,11 +154,6 @@ def test_pension_remarried_widow_valid_chronology(
     assert rec.marriage_year == HistoricalYear(1866)
 
 
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.regression
 def test_pension_widow_invalid_claimant_role_fails(
@@ -214,7 +190,6 @@ def test_pension_widow_chronology_violations_fail(
     valid_audit: AuditStamp,
 ) -> None:
     """Verify ModelFormatError raised if death or remarriage precede marriage."""
-    # Veteran death precedes marriage
     with pytest.raises(ModelFormatError, match="cannot precede marriage_year"):
         PensionWidowDependentRecord(
             source_id=valid_source_id,
@@ -234,7 +209,6 @@ def test_pension_widow_chronology_violations_fail(
             veteran_death_year=HistoricalYear(1865),
         )
 
-    # Remarriage precedes marriage
     with pytest.raises(ModelFormatError, match="cannot precede marriage_year"):
         PensionWidowDependentRecord(
             source_id=valid_source_id,

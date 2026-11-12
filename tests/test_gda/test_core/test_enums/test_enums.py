@@ -24,7 +24,7 @@ from pydantic import BaseModel, ValidationError
 
 import gda.core.enums as ge
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.1.0+build.1"
 
 
 # ==============================================================================
@@ -70,14 +70,14 @@ def test_all_enum_classes_are_exported_in_dunder_all(
 
 
 # ==============================================================================
-# GROUP 2: Exact Sealed Public Interface Contract (53 Items)
+# GROUP 2: Exact Sealed Public Interface Contract (74 Items)
 # ==============================================================================
 
 
 @pytest.mark.smoke
 @pytest.mark.integrity
 def test_enums_package_exact_public_interface() -> None:
-    """Verify gda.core.enums.__all__ matches the exact sealed public contract of 53 items."""
+    """Verify gda.core.enums.__all__ matches the exact sealed public contract of 74 items."""
     exact_expected_contract = {
         # Core Domain (7)
         "AssociatedRole",
@@ -132,14 +132,36 @@ def test_enums_package_exact_public_interface() -> None:
         "TextQuality",
         "TranscriptLegibility",
         "WwiCardType",
-        # Sources & Military Domain (7)
+        # Sources Domain (6)
         "EducationLevel",
-        "MilitaryBranch",
         "MilitaryConflict",
         "MilitaryDraftType",
         "MilitaryWar",
         "SourceRecordCategory",
         "SourceRecordType",
+        # Military Domain (22)
+        "AwardScope",
+        "BountyLandAct",
+        "CasualtyCategory",
+        "CivilWarConscriptionAllegiance",
+        "CivilWarEnrollmentClass",
+        "ColonialMilitiaClass",
+        "ColonialWarPeriod",
+        "DraftCardTier",
+        "IntermentCemeteryType",
+        "MilitaryAwardTier",
+        "MilitaryBranch",
+        "ModernDraftEra",
+        "MusterRollType",
+        "PensionClaimantRole",
+        "PensionPaymentAuthority",
+        "PowCampType",
+        "SeparationCharacter",
+        "SeparationFormType",
+        "ServiceComponent",
+        "SssClassification",
+        "WwiCitizenshipStatus",
+        "WwiiDraftWave",
     }
 
     actual_exported = set(ge.__all__)

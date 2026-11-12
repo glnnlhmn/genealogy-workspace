@@ -6,19 +6,22 @@ Operational Role:
     Provides the code-first declarative repository for RFC 4122 UUIDv4 patterns,
     ISO 8601 date and timestamp directives, canonical entity identifier regex patterns,
     archival URN patterns, gender code sets, historical year bounds, coordinate bounds,
-    scalar metric bounds/patterns, and SHA-256 hexadecimal hash patterns across the GDA
-    core infrastructure.
+    scalar metric bounds/patterns, military domain scalar bounds, and SHA-256 hexadecimal
+    hash patterns across the GDA core infrastructure.
 """
 
 from __future__ import annotations
 
 import re
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.1.0+build.1"
 
 __all__ = [
     "ATOM_ID_PATTERN",
     "ATOM_ID_REGEX",
+    "CIVIL_WAR_DRAFT_YEARS",
+    "COLONIAL_MILITIA_MAX_YEAR",
+    "COLONIAL_MILITIA_MIN_YEAR",
     "ENTITY_ID_PATTERNS",
     "GENDER_CODES",
     "ISO_DATE_FMT",
@@ -29,17 +32,29 @@ __all__ = [
     "ISO_TIMESTAMP_PATTERN",
     "ISO_TIMESTAMP_REGEX",
     "ISO_YEAR_FMT",
+    "MAX_BOUNTY_LAND_ACREAGE",
     "MAX_CONFIDENCE_SCORE",
+    "MAX_ENLISTMENT_TERM_MONTHS",
+    "MAX_FOREIGN_SERVICE_MONTHS",
+    "MAX_HEIGHT_INCHES",
     "MAX_HISTORICAL_YEAR",
     "MAX_LATITUDE",
     "MAX_LONGITUDE",
+    "MAX_MINOR_CHILDREN_COUNT",
     "MAX_QUAY_SCORE",
+    "MAX_VIETNAM_LOTTERY_NUMBER",
+    "MAX_WEIGHT_LBS",
     "MIN_AHNENTAFEL",
     "MIN_CONFIDENCE_SCORE",
+    "MIN_ENLISTMENT_TERM_MONTHS",
+    "MIN_HEIGHT_INCHES",
     "MIN_HISTORICAL_YEAR",
     "MIN_LATITUDE",
     "MIN_LONGITUDE",
     "MIN_QUAY_SCORE",
+    "MIN_VIETNAM_LOTTERY_NUMBER",
+    "MIN_WEIGHT_LBS",
+    "MODERN_SSS_MIN_YEAR",
     "NEWS_CATEGORY_PATTERN",
     "NEWS_CATEGORY_REGEX",
     "PUB_CODE_PATTERN",
@@ -52,6 +67,8 @@ __all__ = [
     "URN_REGEXES",
     "UUID_V4_PATTERN",
     "UUID_V4_REGEX",
+    "WWI_DRAFT_YEARS",
+    "WWII_DRAFT_YEARS",
 ]
 
 # ------------------------------------------------------------------------------
@@ -79,6 +96,28 @@ MAX_QUAY_SCORE: int = 3
 MIN_AHNENTAFEL: int = 1
 MIN_CONFIDENCE_SCORE: float = 0.0
 MAX_CONFIDENCE_SCORE: float = 1.0
+
+# ------------------------------------------------------------------------------
+# Military Record Scalar Bounds & Era Year Sets
+# ------------------------------------------------------------------------------
+MIN_ENLISTMENT_TERM_MONTHS: int = 1
+MAX_ENLISTMENT_TERM_MONTHS: int = 120
+MAX_FOREIGN_SERVICE_MONTHS: int = 600
+MAX_BOUNTY_LAND_ACREAGE: int = 1000
+MAX_MINOR_CHILDREN_COUNT: int = 25
+MIN_VIETNAM_LOTTERY_NUMBER: int = 1
+MAX_VIETNAM_LOTTERY_NUMBER: int = 366
+MIN_HEIGHT_INCHES: int = 36
+MAX_HEIGHT_INCHES: int = 96
+MIN_WEIGHT_LBS: int = 50
+MAX_WEIGHT_LBS: int = 500
+
+COLONIAL_MILITIA_MIN_YEAR: int = 1607
+COLONIAL_MILITIA_MAX_YEAR: int = 1815
+CIVIL_WAR_DRAFT_YEARS: frozenset[int] = frozenset({1862, 1863, 1864, 1865})
+WWI_DRAFT_YEARS: frozenset[int] = frozenset({1917, 1918})
+WWII_DRAFT_YEARS: frozenset[int] = frozenset({1940, 1941, 1942, 1943, 1944, 1945, 1946})
+MODERN_SSS_MIN_YEAR: int = 1948
 
 # ------------------------------------------------------------------------------
 # Structural Regex Patterns (from schemas/defs/_shared_defs.schema.json)

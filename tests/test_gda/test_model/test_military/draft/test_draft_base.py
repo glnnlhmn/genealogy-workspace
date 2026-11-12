@@ -5,20 +5,15 @@ Atomized behavioral test suite for MilitaryDraftRecord domain entity.
 Operational Role:
     Verifies draft registration base record instantiation, field hygiene, classification
     integrity, URN constraints, and audit linkages against canonical base attributes.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     DraftRecordID,
     IndividualID,
@@ -28,15 +23,11 @@ from gda.model.atom.id import (
     TranscriptID,
 )
 from gda.model.atom.urn import MilitaryDraftUrn, SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.8"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -70,11 +61,6 @@ def valid_draft_record_id() -> DraftRecordID:
     return DraftRecordID("DRF-000001")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_military_draft_record_smoke_valid_initialization(
@@ -94,9 +80,9 @@ def test_military_draft_record_smoke_valid_initialization(
         audit=valid_audit,
         draft_record_id=valid_draft_record_id,
         registrant_id=IndividualID("IND-000001"),
-        registrant_name_raw="Glenn D. Lehman",
+        registrant_name_raw="  Glenn D. Lehman  ",
         draft_year=HistoricalYear(1917),
-        board_jurisdiction_raw="Local Board No. 1, Merrimack County, NH",
+        board_jurisdiction_raw="  Local Board No. 1, Merrimack County, NH  ",
     )
     assert rec.draft_record_id == valid_draft_record_id
     assert rec.registrant_id == IndividualID("IND-000001")
@@ -107,11 +93,7 @@ def test_military_draft_record_smoke_valid_initialization(
     assert rec.transcript_id is None
     assert "Glenn D. Lehman" in str(rec)
     assert "1917" in str(rec)
-
-
-# ==============================================================================
-# GROUP 2: OPTIONAL LINKAGES & EXTENSIONS
-# ==============================================================================
+    assert "MilitaryDraftRecord(" in repr(rec)
 
 
 @pytest.mark.unit
@@ -142,11 +124,6 @@ def test_military_draft_record_full_attributes(
     )
     assert rec.board_location_id == loc_id
     assert rec.transcript_id == trn_id
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & ERROR CONDITIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

@@ -4,7 +4,8 @@ Authoritative categorical and domain enumerations package for GDA Core.
 
 Operational Role:
     Provides standardized classifications, evidentiary confidence metrics,
-    kinship roles, onomastic classifications, temporal qualifiers, and archival categories.
+    kinship roles, onomastic classifications, temporal qualifiers, military
+    classifications, and archival categories.
 """
 
 from __future__ import annotations
@@ -48,6 +49,30 @@ from gda.core.enums.location import (
     JurisdictionCategory,
     LocationType,
 )
+from gda.core.enums.military import (
+    AwardScope,
+    BountyLandAct,
+    CasualtyCategory,
+    CivilWarConscriptionAllegiance,
+    CivilWarEnrollmentClass,
+    ColonialMilitiaClass,
+    ColonialWarPeriod,
+    DraftCardTier,
+    IntermentCemeteryType,
+    MilitaryAwardTier,
+    MilitaryBranch,
+    ModernDraftEra,
+    MusterRollType,
+    PensionClaimantRole,
+    PensionPaymentAuthority,
+    PowCampType,
+    SeparationCharacter,
+    SeparationFormType,
+    ServiceComponent,
+    SssClassification,
+    WwiCitizenshipStatus,
+    WwiiDraftWave,
+)
 from gda.core.enums.site import (
     MarkerCondition,
     MarkerMaterial,
@@ -57,7 +82,6 @@ from gda.core.enums.site import (
 )
 from gda.core.enums.sources import (
     EducationLevel,
-    MilitaryBranch,
     MilitaryConflict,
     MilitaryDraftType,
     MilitaryWar,
@@ -79,17 +103,25 @@ from gda.core.enums.vital import (
     VitalModifier,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.1.0+build.1"
 
 __all__ = [
     "AssociatedRole",
+    "AwardScope",
     "BirthPlurality",
+    "BountyLandAct",
+    "CasualtyCategory",
     "CensusYearUS",
     "CitizenshipStatus",
+    "CivilWarConscriptionAllegiance",
+    "CivilWarEnrollmentClass",
+    "ColonialMilitiaClass",
+    "ColonialWarPeriod",
     "DateModifier",
     "DispositionType",
     "DivorceDecreeType",
     "DocumentSide",
+    "DraftCardTier",
     "EducationLevel",
     "EyeColor",
     "FactType",
@@ -97,6 +129,7 @@ __all__ = [
     "HistoricNameType",
     "HomeOwnership",
     "IDType",
+    "IntermentCemeteryType",
     "JurisdictionCategory",
     "LegalPlaintiff",
     "Legibility",
@@ -108,24 +141,34 @@ __all__ = [
     "MarkerCondition",
     "MarkerMaterial",
     "MarkerType",
+    "MilitaryAwardTier",
     "MilitaryBranch",
     "MilitaryConflict",
     "MilitaryDraftType",
     "MilitaryWar",
+    "ModernDraftEra",
+    "MusterRollType",
     "NoteType",
     "OperationalStatus",
     "PedigreeType",
+    "PensionClaimantRole",
+    "PensionPaymentAuthority",
     "PhysicalBuild",
+    "PowCampType",
     "PublicationFrequency",
     "QualityAssessment",
     "QuayScore",
     "ResidentialStatus",
     "SelectiveServiceClass",
+    "SeparationCharacter",
+    "SeparationFormType",
+    "ServiceComponent",
     "Sex",
     "SiteType",
     "SmartIDPrefix",
     "SourceRecordCategory",
     "SourceRecordType",
+    "SssClassification",
     "TaxpayerClassification",
     "TestimonyMedium",
     "TextQuality",
@@ -134,5 +177,7 @@ __all__ = [
     "UnionType",
     "VitalModifier",
     "WwiCardType",
+    "WwiCitizenshipStatus",
+    "WwiiDraftWave",
     "normalize_modifier",
 ]

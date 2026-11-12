@@ -10,18 +10,16 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
-from typing import ClassVar
-
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import MusterRollType
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
+from gda.core.types import MAX_ENLISTMENT_TERM_MONTHS, MIN_ENLISTMENT_TERM_MONTHS
 from gda.model.atom.id import IndividualID
 from gda.model.military.service.base import MilitaryServiceRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = [
     "EnlistmentMusterRecord",
@@ -29,19 +27,10 @@ __all__ = [
 ]
 
 
-class MusterRollType(StrEnum):
-    """Specific form or administrative type of muster roll."""
-
-    ENLISTMENT_CONTRACT = "ENLISTMENT_CONTRACT"
-    MUSTER_IN = "MUSTER_IN"
-    BIMONTHLY_MUSTER = "BIMONTHLY_MUSTER"
-    MUSTER_OUT = "MUSTER_OUT"
-    DESCRIPTIVE_ROLL = "DESCRIPTIVE_ROLL"
-    CMSR_JACKET = "CMSR_JACKET"
-    SPECIAL_REPRESENTATION = "SPECIAL_REPRESENTATION"
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class EnlistmentMusterRecord(MilitaryServiceRecord):
     """Evidentiary military enlistment or muster roll record."""
 
@@ -51,8 +40,8 @@ class EnlistmentMusterRecord(MilitaryServiceRecord):
     )
     enlistment_term_months: int | None = Field(
         default=None,
-        ge=1,
-        le=120,
+        ge=MIN_ENLISTMENT_TERM_MONTHS,
+        le=MAX_ENLISTMENT_TERM_MONTHS,
         description="Term of enlistment or service obligation in months (e.g. 3, 9, 36).",
     )
     muster_officer_raw: str | None = Field(
@@ -82,8 +71,6 @@ class EnlistmentMusterRecord(MilitaryServiceRecord):
         description="Verbatim name of the drafted principal for whom servicemember substituted.",
     )
 
-    EXPECTED_CATEGORY: ClassVar[SourceRecordCategory] = SourceRecordCategory.MILITARY
-
     def __post_init__(self) -> None:
         """Enforce muster text sanitization and substitute linkage consistency."""
         super().__post_init__()
@@ -95,5 +82,6 @@ class EnlistmentMusterRecord(MilitaryServiceRecord):
                     "EnlistmentMusterRecord requires non-empty substitute_for_name_raw "
                     "or substitute_for_id when specifying substitute service."
                 )
-            if self.substitute_for_name_raw is not None:
-                object.__setattr__(self, "substitute_for_name_raw", name_raw)
+            normalized_name = name_raw or None
+            if normalized_name != self.substitute_for_name_raw:
+                object.__setattr__(self, "substitute_for_name_raw", normalized_name)

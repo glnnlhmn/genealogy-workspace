@@ -10,18 +10,16 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
-from typing import ClassVar
-
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import SeparationFormType
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
+from gda.core.types import MAX_FOREIGN_SERVICE_MONTHS
 from gda.model.atom.id import LocationID
 from gda.model.military.service.base import MilitaryServiceRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = [
     "SeparationDischargeRecord",
@@ -29,19 +27,10 @@ __all__ = [
 ]
 
 
-class SeparationFormType(StrEnum):
-    """Statutory or administrative certificate form type."""
-
-    DD_214 = "DD_214"
-    DD_215 = "DD_215"
-    WD_AGO_53_55 = "WD_AGO_53_55"
-    NAVPERS_553 = "NAVPERS_553"
-    NAVMC_78_PD = "NAVMC_78_PD"
-    CERTIFICATE_OF_DISCHARGE = "CERTIFICATE_OF_DISCHARGE"
-    OTHER = "OTHER"
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class SeparationDischargeRecord(MilitaryServiceRecord):
     """Evidentiary military discharge, release, or certificate of separation."""
 
@@ -64,7 +53,7 @@ class SeparationDischargeRecord(MilitaryServiceRecord):
     foreign_service_months: int | None = Field(
         default=None,
         ge=0,
-        le=600,
+        le=MAX_FOREIGN_SERVICE_MONTHS,
         description="Cumulative creditable foreign/sea service in months.",
     )
     separation_facility_raw: str | None = Field(
@@ -84,8 +73,6 @@ class SeparationDischargeRecord(MilitaryServiceRecord):
         ge=0.0,
         description="Final settlement travel/mileage reimbursement paid to place of entry.",
     )
-
-    EXPECTED_CATEGORY: ClassVar[SourceRecordCategory] = SourceRecordCategory.MILITARY
 
     def __post_init__(self) -> None:
         """Enforce separation field hygiene and chronological release validation."""

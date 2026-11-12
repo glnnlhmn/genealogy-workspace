@@ -5,22 +5,18 @@ Atomized behavioral test suite for ModernSelectiveServiceRecord domain entity.
 Operational Role:
     Verifies modern Selective Service registration invariants, Vietnam lottery
     number constraints (1-366), post-1948 year boundaries, and SSS classifications.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import DraftRecordID, IndividualID, RepositoryID, SourceID
 from gda.model.atom.urn import MilitaryDraftUrn
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.draft.base import DraftCardTier
 from gda.model.military.draft.modern_sss import (
@@ -29,12 +25,7 @@ from gda.model.military.draft.modern_sss import (
     SssClassification,
 )
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -60,11 +51,6 @@ def valid_repo_id() -> RepositoryID:
 def valid_source_id() -> SourceID:
     """Return synthetic SourceID."""
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
-
-
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -99,11 +85,6 @@ def test_modern_sss_smoke_valid_initialization(
     assert "Glenn Lehman" in str(rec)
 
 
-# ==============================================================================
-# GROUP 2: POST-1980 CONTINUOUS REGISTRATION
-# ==============================================================================
-
-
 @pytest.mark.unit
 def test_modern_sss_post_1980_registration(
     valid_source_id: SourceID,
@@ -132,11 +113,6 @@ def test_modern_sss_post_1980_registration(
     assert rec.draft_era == ModernDraftEra.POST_1980_REGISTRATION
     assert rec.sss_number_raw == "27-04-62-094"
     assert rec.lottery_sequence_number is None
-
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

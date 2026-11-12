@@ -10,32 +10,27 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import DraftCardTier, WwiCitizenshipStatus
 from gda.core.errors import ModelFormatError
-from gda.model.military.draft.base import DraftCardTier, MilitaryDraftRecord
+from gda.core.introspectable import IntrospectableMixin
+from gda.core.types import WWI_DRAFT_YEARS
+from gda.model.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = ["WwiCitizenshipStatus", "WwiDraftCardRecord", "WwiPhysicalDescription"]
 
 
-class WwiCitizenshipStatus(StrEnum):
-    """Controlled classification of citizenship declared on WWI registration cards."""
-
-    NATIVE_BORN = "NATIVE_BORN"
-    NATURALIZED_CITIZEN = "NATURALIZED_CITIZEN"
-    ALIEN_DECLARED = "ALIEN_DECLARED"  # Declarant (First Papers filed)
-    NON_DECLARANT = "NON_DECLARANT"
-    UNKNOWN = "UNKNOWN"
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
-class WwiPhysicalDescription:
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
+class WwiPhysicalDescription(IntrospectableMixin):
     """Registrar's physical description recorded on the reverse of the WWI card."""
 
     height_description: str | None = Field(
@@ -63,8 +58,18 @@ class WwiPhysicalDescription:
         description="Verbatim remarks on physical disabilities, loss of limb, or sight.",
     )
 
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(height_description={self.height_description!r}, "
+            f"build_description={self.build_description!r}, eye_color={self.eye_color!r}, "
+            f"hair_color={self.hair_color!r})"
+        )
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class WwiDraftCardRecord(MilitaryDraftRecord):
     """Specialized evidentiary record for WWI Draft Registration Cards (1917-1918)."""
 
@@ -105,11 +110,13 @@ class WwiDraftCardRecord(MilitaryDraftRecord):
         description="Registrar's observation report on reverse of card.",
     )
 
-    VALID_TIERS: ClassVar[set[DraftCardTier]] = {
-        DraftCardTier.WWI_FIRST,
-        DraftCardTier.WWI_SECOND,
-        DraftCardTier.WWI_THIRD,
-    }
+    VALID_TIERS: ClassVar[frozenset[DraftCardTier]] = frozenset(
+        {
+            DraftCardTier.WWI_FIRST,
+            DraftCardTier.WWI_SECOND,
+            DraftCardTier.WWI_THIRD,
+        }
+    )
 
     def __post_init__(self) -> None:
         """Enforce WWI tier restrictions and registration year boundaries."""
@@ -117,11 +124,11 @@ class WwiDraftCardRecord(MilitaryDraftRecord):
 
         if self.card_tier not in self.VALID_TIERS:
             raise ModelFormatError(
-                f"WwiDraftCardRecord requires card_tier in {[t.value for t in self.VALID_TIERS]}, "
+                f"WwiDraftCardRecord requires card_tier in {sorted(t.value for t in self.VALID_TIERS)}, "
                 f"got '{self.card_tier.value}'."
             )
 
-        if self.draft_year.value not in {1917, 1918}:
+        if self.draft_year.value not in WWI_DRAFT_YEARS:
             raise ModelFormatError(
                 f"WwiDraftCardRecord draft_year must be 1917 or 1918, got {self.draft_year.value}."
             )

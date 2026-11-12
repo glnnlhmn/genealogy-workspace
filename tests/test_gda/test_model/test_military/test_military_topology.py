@@ -1,15 +1,18 @@
 """Path: tests/test_gda/test_model/test_military/test_military_topology.py
 
-Architectural topology and re-export verification suite for gda.model.military.
+Architectural topology, interface lock, and re-export verification suite for gda.model.military.
 
 Operational Role:
     Verifies that all military record domains (draft, service, pension, casualty, awards)
-    export canonical entities cleanly without circular imports or __all__ drift.
+    export canonical entities cleanly without circular imports, upward dependencies,
+    or __all__ drift, and enforce strict frozen Pydantic dataclass configuration.
 """
 
 from __future__ import annotations
 
+import ast
 import inspect
+from dataclasses import is_dataclass
 from pathlib import Path
 
 import pytest
@@ -20,6 +23,8 @@ import gda.model.military.casualty as casualty_mod
 import gda.model.military.draft as draft_mod
 import gda.model.military.pension as pension_mod
 import gda.model.military.service as service_mod
+from gda.core.introspectable import IntrospectableMixin
+from gda.model.base.source import SourceRecord
 from gda.model.military import (
     AwardScope,
     BountyLandAct,
@@ -61,16 +66,56 @@ from gda.model.military import (
     WwiDraftCardRecord,
     WwiiDraftCardRecord,
     WwiiDraftWave,
+    WwiiPhysicalMetrics,
+    WwiPhysicalDescription,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "2.0.0+build.1"
+
+_EXPECTED_ENTITIES = (
+    # Draft
+    MilitaryDraftRecord,
+    ColonialMilitiaRecord,
+    CivilWarDraftRecord,
+    WwiDraftCardRecord,
+    WwiiDraftCardRecord,
+    ModernSelectiveServiceRecord,
+    # Service
+    MilitaryServiceRecord,
+    EnlistmentMusterRecord,
+    SeparationDischargeRecord,
+    # Pension
+    MilitaryPensionRecord,
+    PensionVeteranClaimRecord,
+    PensionWidowDependentRecord,
+    BountyLandWarrantRecord,
+    # Casualty
+    MilitaryCasualtyRecord,
+    CombatCasualtyRecord,
+    PrisonerOfWarRecord,
+    MilitaryBurialRecord,
+    # Awards
+    MilitaryAwardRecord,
+)
+
+_EXPECTED_VALUE_OBJECTS = (
+    WwiPhysicalDescription,
+    WwiiPhysicalMetrics,
+)
+
+_FORBIDDEN_IMPORTS = (
+    "gda.enums",
+    "gda.model.xref",
+    "gda.entity",
+    "gda.manager",
+    "gda.db",
+    "gda.engine",
+    "cli",
+    "ancestry_desk",
+)
 
 
-# ==============================================================================
-# GROUP 1: INTEGRITY & EXPORT CONSISTENCY
-# ==============================================================================
-
-
+@pytest.mark.smoke
 @pytest.mark.integrity
 def test_military_root_reexports_match_subpackages() -> None:
     """Verify military root re-exports encapsulate subpackages without drift."""
@@ -79,44 +124,46 @@ def test_military_root_reexports_match_subpackages() -> None:
 
     for mod in subpackages:
         assert hasattr(mod, "__all__"), f"Module {mod.__name__} missing __all__"
-        accumulated_sub_all.update(mod.__all__)
+        sub_all = list(mod.__all__)
+        assert sub_all == sorted(sub_all), f"{mod.__name__}.__all__ must be sorted"
+        accumulated_sub_all.update(sub_all)
 
-    root_all = set(military_root.__all__)
-    missing_in_root = accumulated_sub_all - root_all
+    root_all = list(military_root.__all__)
+    assert root_all == sorted(root_all), "gda.model.military.__all__ must be sorted"
+    missing_in_root = accumulated_sub_all - set(root_all)
     assert not missing_in_root, f"Symbols missing from military root __all__: {missing_in_root}"
 
 
 @pytest.mark.integrity
 def test_military_canonical_entities_instantiable() -> None:
-    """Verify all primary domain entities are exposed at military root namespace."""
-    expected_entities = [
-        # Draft
-        MilitaryDraftRecord,
-        ColonialMilitiaRecord,
-        CivilWarDraftRecord,
-        WwiDraftCardRecord,
-        WwiiDraftCardRecord,
-        ModernSelectiveServiceRecord,
-        # Service
-        MilitaryServiceRecord,
-        EnlistmentMusterRecord,
-        SeparationDischargeRecord,
-        # Pension
-        MilitaryPensionRecord,
-        PensionVeteranClaimRecord,
-        PensionWidowDependentRecord,
-        BountyLandWarrantRecord,
-        # Casualty
-        MilitaryCasualtyRecord,
-        CombatCasualtyRecord,
-        PrisonerOfWarRecord,
-        MilitaryBurialRecord,
-        # Awards
-        MilitaryAwardRecord,
-    ]
-    for cls in expected_entities:
+    """Verify all primary domain entities extend SourceRecord and IntrospectableMixin."""
+    for cls in _EXPECTED_ENTITIES:
         assert hasattr(military_root, cls.__name__)
         assert inspect.isclass(cls)
+        assert issubclass(cls, SourceRecord), f"{cls.__name__} must extend SourceRecord"
+        assert issubclass(cls, IntrospectableMixin), (
+            f"{cls.__name__} must extend IntrospectableMixin"
+        )
+
+    for vo_cls in _EXPECTED_VALUE_OBJECTS:
+        assert hasattr(military_root, vo_cls.__name__)
+        assert issubclass(vo_cls, IntrospectableMixin)
+
+
+@pytest.mark.integrity
+@pytest.mark.parametrize(
+    "model_cls",
+    (*_EXPECTED_ENTITIES, *_EXPECTED_VALUE_OBJECTS),
+    ids=lambda c: c.__name__,
+)
+def test_military_models_enforce_strict_frozen_pydantic_config(model_cls: type) -> None:
+    """Verify all gda.model.military dataclasses enforce frozen=True, extra='forbid', strict=True."""
+    assert is_dataclass(model_cls)
+    assert model_cls.__dataclass_params__.frozen is True  # type: ignore[attr-defined]
+    pydantic_cfg = getattr(model_cls, "__pydantic_config__", {})
+    assert pydantic_cfg.get("frozen") is True
+    assert pydantic_cfg.get("extra") == "forbid"
+    assert pydantic_cfg.get("strict") is True
 
 
 @pytest.mark.integrity
@@ -144,15 +191,34 @@ def test_military_enums_values_and_members() -> None:
     assert MusterRollType.MUSTER_IN == "MUSTER_IN"
 
     # Draft
-    assert DraftCardTier.FIRST_REGISTRATION == "FIRST_REGISTRATION"
-    assert ColonialMilitiaClass.COMMON_MILITIA == "COMMON_MILITIA"
-    assert ColonialWarPeriod.KING_PHILIPS_WAR == "KING_PHILIPS_WAR"
+    assert DraftCardTier.WWI_FIRST == "WWI_FIRST"
+    assert DraftCardTier.WWII_FOURTH == "WWII_FOURTH"
+    assert ColonialMilitiaClass.TRAINBAND == "TRAINBAND"
+    assert ColonialWarPeriod.REVOLUTIONARY_WAR == "REVOLUTIONARY_WAR"
     assert CivilWarEnrollmentClass.CLASS_1 == "CLASS_1"
     assert CivilWarConscriptionAllegiance.UNION == "UNION"
     assert WwiCitizenshipStatus.NATIVE_BORN == "NATIVE_BORN"
-    assert WwiiDraftWave.FIRST_WAVE == "FIRST_WAVE"
+    assert WwiiDraftWave.FIRST == "FIRST"
     assert ModernDraftEra.POST_1980_REGISTRATION == "POST_1980_REGISTRATION"
-    assert SssClassification.CLASS_1_A == "CLASS_1_A"
+    assert SssClassification.ONE_A == "1-A"
+
+
+@pytest.mark.integrity
+def test_military_package_has_zero_upward_or_legacy_imports() -> None:
+    """Verify gda.model.military never imports legacy gda.enums or higher-level packages."""
+    pkg_dir = Path(inspect.getfile(military_root)).parent
+    for py_path in pkg_dir.rglob("*.py"):
+        tree = ast.parse(py_path.read_text(encoding="utf-8"), filename=str(py_path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not alias.name.startswith(_FORBIDDEN_IMPORTS), (
+                        f"Forbidden import in {py_path}: '{alias.name}'"
+                    )
+            elif isinstance(node, ast.ImportFrom) and node.module is not None:
+                assert not node.module.startswith(_FORBIDDEN_IMPORTS), (
+                    f"Forbidden import in {py_path}: '{node.module}'"
+                )
 
 
 @pytest.mark.integrity

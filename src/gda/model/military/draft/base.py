@@ -3,44 +3,38 @@
 Domain entity model representing military conscription registration records.
 
 Operational Role:
-    Extends SourceRecord composite to represent WWI and WWII draft registration
-    cards. Enforces registration round boundaries, board jurisdiction capture,
-    raw-versus-resolved name preservation, and transcript asset decoupling.
+    Extends SourceRecord composite to represent WWI, WWII, colonial, Civil War,
+    and modern draft registration cards. Enforces registration round boundaries,
+    board jurisdiction capture, raw-versus-resolved name preservation, and
+    transcript asset decoupling.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import DraftCardTier
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
 from gda.model.atom.id import DraftRecordID, IndividualID, LocationID, TranscriptID
 from gda.model.atom.urn import MilitaryDraftUrn
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.source import SourceRecord
 
-__version__ = "1.0.0+build.3"
+__version__ = "2.1.0+build.1"
 
 __all__ = ["DraftCardTier", "MilitaryDraftRecord"]
 
 
-class DraftCardTier(StrEnum):
-    """Controlled classification of US military draft registration rounds."""
-
-    WWI_FIRST = "WWI_FIRST"  # June 5, 1917 (Ages 21-31)
-    WWI_SECOND = "WWI_SECOND"  # June 5 / Aug 24, 1918 (Age 21 attained)
-    WWI_THIRD = "WWI_THIRD"  # Sept 12, 1918 (Ages 18-21, 31-45)
-    WWII_FOURTH = "WWII_FOURTH"  # April 27, 1942 ('Old Man's Draft', Ages 45-64)
-    OTHER = "OTHER"
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class MilitaryDraftRecord(SourceRecord):
-    """Evidentiary draft registration card record (WWI/WWII)."""
+    """Evidentiary draft registration card record across historical eras."""
 
     draft_record_id: DraftRecordID = Field(
         ...,
@@ -99,7 +93,8 @@ class MilitaryDraftRecord(SourceRecord):
                 "MilitaryDraftRecord 'registrant_name_raw' cannot be empty or whitespace.",
                 details={"draft_record_id": str(self.draft_record_id)},
             )
-        object.__setattr__(self, "registrant_name_raw", raw_name)
+        if raw_name != self.registrant_name_raw:
+            object.__setattr__(self, "registrant_name_raw", raw_name)
 
         board_raw = self.board_jurisdiction_raw.strip()
         if not board_raw:
@@ -107,10 +102,18 @@ class MilitaryDraftRecord(SourceRecord):
                 "MilitaryDraftRecord 'board_jurisdiction_raw' cannot be empty or whitespace.",
                 details={"draft_record_id": str(self.draft_record_id)},
             )
-        object.__setattr__(self, "board_jurisdiction_raw", board_raw)
+        if board_raw != self.board_jurisdiction_raw:
+            object.__setattr__(self, "board_jurisdiction_raw", board_raw)
 
     def __str__(self) -> str:
         return (
             f"MilitaryDraftRecord [{self.card_tier.value}] {self.registrant_name_raw} "
             f"({self.draft_year}) - {self.source_urn}"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(draft_record_id={self.draft_record_id!r}, "
+            f"registrant_id={self.registrant_id!r}, draft_year={self.draft_year!r}, "
+            f"card_tier={self.card_tier!r})"
         )

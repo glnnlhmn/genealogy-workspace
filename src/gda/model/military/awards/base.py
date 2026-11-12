@@ -15,23 +15,30 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
-from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
-from gda.model.atom.id import IndividualID, LocationID, TranscriptID
-from gda.model.base.source import SourceRecord
-from gda.model.military.awards import (
+from gda.core.enums.military import (
     AwardScope,
     MilitaryAwardTier,
+    MilitaryBranch,
 )
-from gda.model.military.service import MilitaryBranch
+from gda.core.enums.sources import SourceRecordCategory
+from gda.core.errors import ModelFormatError
+from gda.model.atom.id import IndividualID, LocationID, TranscriptID
+from gda.model.atom.year import HistoricalYear
+from gda.model.base.source import SourceRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
-__all__ = ["MilitaryAwardRecord"]
+__all__ = [
+    "AwardScope",
+    "MilitaryAwardRecord",
+    "MilitaryAwardTier",
+]
 
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class MilitaryAwardRecord(SourceRecord):
     """Evidentiary military medal, decoration, or citation award record."""
 
@@ -109,21 +116,22 @@ class MilitaryAwardRecord(SourceRecord):
             raise ModelFormatError(
                 "MilitaryAwardRecord 'recipient_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "recipient_name_raw", name)
+        if name != self.recipient_name_raw:
+            object.__setattr__(self, "recipient_name_raw", name)
 
         award = self.award_name_raw.strip()
         if not award:
             raise ModelFormatError(
                 "MilitaryAwardRecord 'award_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "award_name_raw", award)
+        if award != self.award_name_raw:
+            object.__setattr__(self, "award_name_raw", award)
 
-        if self.action_year is not None:
-            if self.award_year.value < self.action_year.value:
-                raise ModelFormatError(
-                    f"award_year ({self.award_year.value}) cannot precede "
-                    f"action_year ({self.action_year.value})."
-                )
+        if self.action_year is not None and self.award_year.value < self.action_year.value:
+            raise ModelFormatError(
+                f"award_year ({self.award_year.value}) cannot precede "
+                f"action_year ({self.action_year.value})."
+            )
 
         if self.general_order_raw is not None:
             go = self.general_order_raw.strip()
@@ -131,7 +139,8 @@ class MilitaryAwardRecord(SourceRecord):
                 raise ModelFormatError(
                     "MilitaryAwardRecord 'general_order_raw' cannot be empty or whitespace."
                 )
-            object.__setattr__(self, "general_order_raw", go)
+            if go != self.general_order_raw:
+                object.__setattr__(self, "general_order_raw", go)
 
         if self.issuing_authority_raw is not None:
             auth = self.issuing_authority_raw.strip()
@@ -139,7 +148,8 @@ class MilitaryAwardRecord(SourceRecord):
                 raise ModelFormatError(
                     "MilitaryAwardRecord 'issuing_authority_raw' cannot be empty or whitespace."
                 )
-            object.__setattr__(self, "issuing_authority_raw", auth)
+            if auth != self.issuing_authority_raw:
+                object.__setattr__(self, "issuing_authority_raw", auth)
 
         if self.action_location_raw is not None:
             loc = self.action_location_raw.strip()
@@ -147,11 +157,19 @@ class MilitaryAwardRecord(SourceRecord):
                 raise ModelFormatError(
                     "MilitaryAwardRecord 'action_location_raw' cannot be empty or whitespace."
                 )
-            object.__setattr__(self, "action_location_raw", loc)
+            if loc != self.action_location_raw:
+                object.__setattr__(self, "action_location_raw", loc)
 
     def __str__(self) -> str:
         post = " (Posthumous)" if self.is_posthumous else ""
         return (
             f"MilitaryAwardRecord [{self.award_tier.value}] {self.award_name_raw}{post} -> "
             f"{self.recipient_name_raw} ({self.award_year.value})"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(recipient_id={self.recipient_id!r}, "
+            f"award_tier={self.award_tier!r}, award_name_raw={self.award_name_raw!r}, "
+            f"award_year={self.award_year!r})"
         )

@@ -4,21 +4,16 @@ Atomized behavioral test suite for MilitaryCasualtyRecord domain entity.
 
 Operational Role:
     Verifies base military casualty report instantiation, string sanitization,
-    source category enforcement, and representation contracts.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
+    source category enforcement, and representation contracts with 100% coverage.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     IndividualID,
     LocationID,
@@ -27,17 +22,13 @@ from gda.model.atom.id import (
     TranscriptID,
 )
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.casualty import CasualtyCategory
 from gda.model.military.casualty.base import MilitaryCasualtyRecord
 from gda.model.military.service import MilitaryBranch
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.1.0+build.1"
 
 
 @pytest.fixture
@@ -65,11 +56,6 @@ def valid_source_id() -> SourceID:
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_military_casualty_smoke_valid_initialization(
@@ -87,12 +73,12 @@ def test_military_casualty_smoke_valid_initialization(
         repository_id=valid_repo_id,
         audit=valid_audit,
         servicemember_id=IndividualID("IND-000001"),
-        servicemember_name_raw="Glenn D. Lehman",
+        servicemember_name_raw="  Glenn D. Lehman  ",
         branch=MilitaryBranch.ARMY,
         casualty_category=CasualtyCategory.WOUNDED_IN_ACTION,
         casualty_year=HistoricalYear(1944),
-        unit_designation_raw="Company C, 16th Infantry",
-        rank_raw="Sergeant",
+        unit_designation_raw="  Company C, 16th Infantry  ",
+        rank_raw="  Sergeant  ",
     )
     assert rec.servicemember_id == IndividualID("IND-000001")
     assert rec.servicemember_name_raw == "Glenn D. Lehman"
@@ -105,11 +91,7 @@ def test_military_casualty_smoke_valid_initialization(
     assert rec.casualty_location_id is None
     assert "WOUNDED_IN_ACTION" in str(rec)
     assert "Sergeant" in str(rec)
-
-
-# ==============================================================================
-# GROUP 2: OPTIONAL ATTRIBUTES & LOCATIONS
-# ==============================================================================
+    assert "MilitaryCasualtyRecord(" in repr(rec)
 
 
 @pytest.mark.unit
@@ -119,10 +101,10 @@ def test_military_casualty_full_attributes(
     valid_repo_id: RepositoryID,
     valid_audit: AuditStamp,
 ) -> None:
-    """Verify MilitaryCasualtyRecord correctly preserves serial numbers and locations."""
+    """Verify MilitaryCasualtyRecord preserves both padded and pre-trimmed optional strings."""
     loc_id = LocationID("LOC-000088")
     trn_id = TranscriptID("e1a646d3-9c61-4a70-8b14-c48c8b417c8f")
-    rec = MilitaryCasualtyRecord(
+    rec_padded = MilitaryCasualtyRecord(
         source_id=valid_source_id,
         source_urn=valid_casualty_urn,
         record_category=SourceRecordCategory.MILITARY,
@@ -136,22 +118,37 @@ def test_military_casualty_full_attributes(
         casualty_year=HistoricalYear(1942),
         unit_designation_raw="USS Hornet (CV-8)",
         rank_raw="Aviation Machinist's Mate 2nd Class",
-        service_number_raw="312-99-01",
+        service_number_raw="  312-99-01  ",
         theater_of_operations_raw="Pacific Theater of Operations",
-        casualty_location_raw="Battle of the Santa Cruz Islands",
+        casualty_location_raw="  Battle of the Santa Cruz Islands  ",
         casualty_location_id=loc_id,
         transcript_id=trn_id,
     )
-    assert rec.service_number_raw == "312-99-01"
-    assert rec.theater_of_operations_raw == "Pacific Theater of Operations"
-    assert rec.casualty_location_raw == "Battle of the Santa Cruz Islands"
-    assert rec.casualty_location_id == loc_id
-    assert rec.transcript_id == trn_id
+    assert rec_padded.service_number_raw == "312-99-01"
+    assert rec_padded.theater_of_operations_raw == "Pacific Theater of Operations"
+    assert rec_padded.casualty_location_raw == "Battle of the Santa Cruz Islands"
+    assert rec_padded.casualty_location_id == loc_id
+    assert rec_padded.transcript_id == trn_id
 
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & ERROR CONDITIONS
-# ==============================================================================
+    rec_clean = MilitaryCasualtyRecord(
+        source_id=valid_source_id,
+        source_urn=valid_casualty_urn,
+        record_category=SourceRecordCategory.MILITARY,
+        description="Pre-trimmed optional attributes",
+        repository_id=valid_repo_id,
+        audit=valid_audit,
+        servicemember_id=IndividualID("IND-000001"),
+        servicemember_name_raw="Glenn Lehman",
+        branch=MilitaryBranch.NAVY,
+        casualty_category=CasualtyCategory.KILLED_IN_ACTION,
+        casualty_year=HistoricalYear(1942),
+        unit_designation_raw="USS Hornet (CV-8)",
+        rank_raw="Aviation Machinist's Mate 2nd Class",
+        service_number_raw="312-99-01",
+        casualty_location_raw="Battle of the Santa Cruz Islands",
+    )
+    assert rec_clean.service_number_raw == "312-99-01"
+    assert rec_clean.casualty_location_raw == "Battle of the Santa Cruz Islands"
 
 
 @pytest.mark.unit

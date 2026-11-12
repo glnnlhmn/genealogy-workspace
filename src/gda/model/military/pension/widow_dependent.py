@@ -15,19 +15,32 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import PensionClaimantRole
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
+from gda.core.types import MAX_MINOR_CHILDREN_COUNT
 from gda.model.atom.id import IndividualID, LocationID
-from gda.model.military.pension import PensionClaimantRole
+from gda.model.atom.year import HistoricalYear
 from gda.model.military.pension.base import MilitaryPensionRecord
 
-__version__ = "1.0.0+build.2"
+__version__ = "2.1.0+build.1"
 
 __all__ = ["PensionWidowDependentRecord"]
 
+_DEPENDENT_ROLES: frozenset[PensionClaimantRole] = frozenset(
+    {
+        PensionClaimantRole.WIDOW,
+        PensionClaimantRole.REMARRIED_WIDOW,
+        PensionClaimantRole.MINOR_CHILD,
+        PensionClaimantRole.DEPENDENT_PARENT,
+        PensionClaimantRole.OTHER_DEPENDENT,
+    }
+)
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class PensionWidowDependentRecord(MilitaryPensionRecord):
     """Evidentiary military widow, orphan, or dependent parent pension claim record."""
 
@@ -62,7 +75,7 @@ class PensionWidowDependentRecord(MilitaryPensionRecord):
     minor_children_count: int | None = Field(
         default=None,
         ge=0,
-        le=25,
+        le=MAX_MINOR_CHILDREN_COUNT,
         description="Number of minor children under statutory age (e.g. 16) supported by claim.",
     )
     monthly_allowance_usd: float | None = Field(
@@ -71,35 +84,34 @@ class PensionWidowDependentRecord(MilitaryPensionRecord):
         description="Monthly pension stipend awarded in USD.",
     )
 
-    EXPECTED_CATEGORY: ClassVar[SourceRecordCategory] = SourceRecordCategory.MILITARY
+    ALLOWED_ROLES: ClassVar[frozenset[PensionClaimantRole]] = _DEPENDENT_ROLES
 
     def __post_init__(self) -> None:
         """Enforce dependent claimant role boundaries and chronological validity."""
         super().__post_init__()
 
-        valid_roles = {
-            PensionClaimantRole.WIDOW,
-            PensionClaimantRole.REMARRIED_WIDOW,
-            PensionClaimantRole.MINOR_CHILD,
-            PensionClaimantRole.DEPENDENT_PARENT,
-            PensionClaimantRole.OTHER_DEPENDENT,
-        }
-        if self.claimant_role not in valid_roles:
+        if self.claimant_role not in self.ALLOWED_ROLES:
             raise ModelFormatError(
                 f"PensionWidowDependentRecord requires claimant_role in "
-                f"{sorted(r.value for r in valid_roles)}, got '{self.claimant_role.value}'."
+                f"{sorted(r.value for r in self.ALLOWED_ROLES)}, got '{self.claimant_role.value}'."
             )
 
-        if self.marriage_year and self.veteran_death_year:
-            if self.veteran_death_year.value < self.marriage_year.value:
-                raise ModelFormatError(
-                    f"veteran_death_year ({self.veteran_death_year.value}) cannot precede "
-                    f"marriage_year ({self.marriage_year.value})."
-                )
+        if (
+            self.marriage_year is not None
+            and self.veteran_death_year is not None
+            and self.veteran_death_year.value < self.marriage_year.value
+        ):
+            raise ModelFormatError(
+                f"veteran_death_year ({self.veteran_death_year.value}) cannot precede "
+                f"marriage_year ({self.marriage_year.value})."
+            )
 
-        if self.remarriage_year and self.marriage_year:
-            if self.remarriage_year.value < self.marriage_year.value:
-                raise ModelFormatError(
-                    f"remarriage_year ({self.remarriage_year.value}) cannot precede "
-                    f"marriage_year ({self.marriage_year.value})."
-                )
+        if (
+            self.remarriage_year is not None
+            and self.marriage_year is not None
+            and self.remarriage_year.value < self.marriage_year.value
+        ):
+            raise ModelFormatError(
+                f"remarriage_year ({self.remarriage_year.value}) cannot precede "
+                f"marriage_year ({self.marriage_year.value})."
+            )

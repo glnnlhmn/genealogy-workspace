@@ -15,22 +15,26 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import PensionClaimantRole, PensionPaymentAuthority
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
 from gda.model.atom.id import IndividualID, LocationID, TranscriptID
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.source import SourceRecord
-from gda.model.military.pension import (
-    PensionClaimantRole,
-    PensionPaymentAuthority,
+
+__version__ = "2.1.0+build.1"
+
+__all__ = [
+    "MilitaryPensionRecord",
+    "PensionClaimantRole",
+    "PensionPaymentAuthority",
+]
+
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
 )
-
-__version__ = "1.0.0+build.1"
-
-__all__ = ["MilitaryPensionRecord"]
-
-
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
 class MilitaryPensionRecord(SourceRecord):
     """Evidentiary military pension application, certificate, or payment ledger record."""
 
@@ -108,14 +112,16 @@ class MilitaryPensionRecord(SourceRecord):
             raise ModelFormatError(
                 "MilitaryPensionRecord 'veteran_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "veteran_name_raw", vet_name)
+        if vet_name != self.veteran_name_raw:
+            object.__setattr__(self, "veteran_name_raw", vet_name)
 
         clm_name = self.claimant_name_raw.strip()
         if not clm_name:
             raise ModelFormatError(
                 "MilitaryPensionRecord 'claimant_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "claimant_name_raw", clm_name)
+        if clm_name != self.claimant_name_raw:
+            object.__setattr__(self, "claimant_name_raw", clm_name)
 
         if (
             self.claimant_role == PensionClaimantRole.VETERAN
@@ -133,4 +139,11 @@ class MilitaryPensionRecord(SourceRecord):
             f"MilitaryPensionRecord [{self.payment_authority.value}] {self.claimant_name_raw} "
             f"({self.claimant_role.value}) - Vet: {self.veteran_name_raw} "
             f"({self.application_year.value}){app}{cert}"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(veteran_id={self.veteran_id!r}, "
+            f"claimant_id={self.claimant_id!r}, claimant_role={self.claimant_role!r}, "
+            f"application_year={self.application_year!r})"
         )

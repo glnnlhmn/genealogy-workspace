@@ -15,20 +15,32 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import (
+    CasualtyCategory,
+    IntermentCemeteryType,
+    MilitaryBranch,
+    PowCampType,
+)
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
 from gda.model.atom.id import IndividualID, LocationID, TranscriptID
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.source import SourceRecord
-from gda.model.military.casualty import CasualtyCategory
-from gda.model.military.service import MilitaryBranch
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
-__all__ = ["MilitaryCasualtyRecord"]
+__all__ = [
+    "CasualtyCategory",
+    "IntermentCemeteryType",
+    "MilitaryCasualtyRecord",
+    "PowCampType",
+]
 
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class MilitaryCasualtyRecord(SourceRecord):
     """Evidentiary military casualty notification or report entry."""
 
@@ -98,21 +110,24 @@ class MilitaryCasualtyRecord(SourceRecord):
             raise ModelFormatError(
                 "MilitaryCasualtyRecord 'servicemember_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "servicemember_name_raw", name)
+        if name != self.servicemember_name_raw:
+            object.__setattr__(self, "servicemember_name_raw", name)
 
         unit = self.unit_designation_raw.strip()
         if not unit:
             raise ModelFormatError(
                 "MilitaryCasualtyRecord 'unit_designation_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "unit_designation_raw", unit)
+        if unit != self.unit_designation_raw:
+            object.__setattr__(self, "unit_designation_raw", unit)
 
         rank = self.rank_raw.strip()
         if not rank:
             raise ModelFormatError(
                 "MilitaryCasualtyRecord 'rank_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "rank_raw", rank)
+        if rank != self.rank_raw:
+            object.__setattr__(self, "rank_raw", rank)
 
         if self.service_number_raw is not None:
             s_num = self.service_number_raw.strip()
@@ -120,7 +135,8 @@ class MilitaryCasualtyRecord(SourceRecord):
                 raise ModelFormatError(
                     "MilitaryCasualtyRecord 'service_number_raw' cannot be empty or whitespace."
                 )
-            object.__setattr__(self, "service_number_raw", s_num)
+            if s_num != self.service_number_raw:
+                object.__setattr__(self, "service_number_raw", s_num)
 
         if self.casualty_location_raw is not None:
             c_loc = self.casualty_location_raw.strip()
@@ -128,11 +144,18 @@ class MilitaryCasualtyRecord(SourceRecord):
                 raise ModelFormatError(
                     "MilitaryCasualtyRecord 'casualty_location_raw' cannot be empty or whitespace."
                 )
-            object.__setattr__(self, "casualty_location_raw", c_loc)
+            if c_loc != self.casualty_location_raw:
+                object.__setattr__(self, "casualty_location_raw", c_loc)
 
     def __str__(self) -> str:
         return (
             f"MilitaryCasualtyRecord [{self.casualty_category.value}] {self.rank_raw} "
             f"{self.servicemember_name_raw} - {self.unit_designation_raw} "
             f"({self.casualty_year.value})"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(servicemember_id={self.servicemember_id!r}, "
+            f"casualty_category={self.casualty_category!r}, casualty_year={self.casualty_year!r})"
         )

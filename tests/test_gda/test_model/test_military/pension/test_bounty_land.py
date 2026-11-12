@@ -5,20 +5,15 @@ Atomized behavioral test suite for BountyLandWarrantRecord domain entity.
 Operational Role:
     Verifies federal bounty land warrant certificates, acreage allocations,
     statutory Congressional Act references, and assignee transfer linkages.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     IndividualID,
     LocationID,
@@ -27,6 +22,7 @@ from gda.model.atom.id import (
     TranscriptID,
 )
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.pension import (
     BountyLandAct,
@@ -34,12 +30,7 @@ from gda.model.military.pension import (
     PensionClaimantRole,
 )
 
-__version__ = "1.0.0+build.3"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.1.0+build.1"
 
 
 @pytest.fixture
@@ -67,11 +58,6 @@ def valid_source_id() -> SourceID:
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_bounty_land_warrant_smoke_valid_initialization(
@@ -89,15 +75,17 @@ def test_bounty_land_warrant_smoke_valid_initialization(
         repository_id=valid_repo_id,
         audit=valid_audit,
         veteran_id=IndividualID("IND-000001"),
-        veteran_name_raw="Glenn D. Lehman",
+        veteran_name_raw="  Glenn D. Lehman  ",
         warrantee_id=IndividualID("IND-000001"),
-        warrantee_name_raw="Glenn D. Lehman",
+        warrantee_name_raw="  Glenn D. Lehman  ",
         claimant_role=PensionClaimantRole.VETERAN,
         bounty_act=BountyLandAct.ACT_OF_1855,
-        warrant_number_raw="BLW-10492",
+        warrant_number_raw="  BLW-10492  ",
         acreage=160,
         warrant_year=HistoricalYear(1855),
     )
+    assert rec.veteran_name_raw == "Glenn D. Lehman"
+    assert rec.warrantee_name_raw == "Glenn D. Lehman"
     assert rec.warrant_number_raw == "BLW-10492"
     assert rec.acreage == 160
     assert rec.bounty_act == BountyLandAct.ACT_OF_1855
@@ -105,11 +93,7 @@ def test_bounty_land_warrant_smoke_valid_initialization(
     assert rec.assignee_id is None
     assert "160 acres" in str(rec)
     assert "Glenn D. Lehman" in str(rec)
-
-
-# ==============================================================================
-# GROUP 2: ASSIGNEES & GLO PATENTS
-# ==============================================================================
+    assert "BountyLandWarrantRecord(" in repr(rec)
 
 
 @pytest.mark.unit
@@ -142,7 +126,7 @@ def test_bounty_land_warrant_full_assignee_and_patent(
         patent_land_office_raw="Fort Des Moines Land Office, Iowa",
         patent_location_id=loc_id,
         assignee_id=assignee_id,
-        assignee_name_raw="Josiah Bartlett",
+        assignee_name_raw="  Josiah Bartlett  ",
         transcript_id=trn_id,
     )
     assert rec.assignee_id == assignee_id
@@ -159,9 +143,9 @@ def test_bounty_land_warrant_assignee_id_only(
     valid_repo_id: RepositoryID,
     valid_audit: AuditStamp,
 ) -> None:
-    """Verify BountyLandWarrantRecord permits assignee_id without assignee_name_raw."""
+    """Verify BountyLandWarrantRecord handles blank and pre-trimmed assignee names."""
     assignee_id = IndividualID("IND-000099")
-    rec = BountyLandWarrantRecord(
+    rec_blank = BountyLandWarrantRecord(
         source_id=valid_source_id,
         source_urn=valid_bounty_urn,
         record_category=SourceRecordCategory.MILITARY,
@@ -178,14 +162,31 @@ def test_bounty_land_warrant_assignee_id_only(
         acreage=160,
         warrant_year=HistoricalYear(1855),
         assignee_id=assignee_id,
+        assignee_name_raw="   ",
     )
-    assert rec.assignee_id == assignee_id
-    assert rec.assignee_name_raw is None
+    assert rec_blank.assignee_id == assignee_id
+    assert rec_blank.assignee_name_raw is None
 
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
+    rec_clean = BountyLandWarrantRecord(
+        source_id=valid_source_id,
+        source_urn=valid_bounty_urn,
+        record_category=SourceRecordCategory.MILITARY,
+        description="Assigned warrant with pre-trimmed name",
+        repository_id=valid_repo_id,
+        audit=valid_audit,
+        veteran_id=IndividualID("IND-000001"),
+        veteran_name_raw="Glenn Lehman",
+        warrantee_id=IndividualID("IND-000001"),
+        warrantee_name_raw="Glenn Lehman",
+        claimant_role=PensionClaimantRole.VETERAN,
+        bounty_act=BountyLandAct.ACT_OF_1855,
+        warrant_number_raw="BLW-10492",
+        acreage=160,
+        warrant_year=HistoricalYear(1855),
+        assignee_name_raw="Josiah Bartlett",
+    )
+    assert rec_clean.assignee_id is None
+    assert rec_clean.assignee_name_raw == "Josiah Bartlett"
 
 
 @pytest.mark.unit

@@ -5,22 +5,18 @@ Atomized behavioral test suite for PensionVeteranClaimRecord domain entity.
 Operational Role:
     Verifies invalid veteran disability claims, monthly allowance metrics,
     disability percentages, and surgeon board evaluations.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, RepositoryID, SourceID
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.pension import (
     PensionClaimantRole,
@@ -28,12 +24,7 @@ from gda.model.military.pension import (
     PensionVeteranClaimRecord,
 )
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.0.0+build.1"
 
 
 @pytest.fixture
@@ -59,11 +50,6 @@ def valid_repo_id() -> RepositoryID:
 def valid_source_id() -> SourceID:
     """Return synthetic SourceID."""
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
-
-
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -101,11 +87,6 @@ def test_pension_veteran_claim_smoke_valid_initialization(
     assert rec.monthly_allowance_usd == 12.0
     assert rec.examining_surgeon_raw == "Dr. Charles P. Bancroft"
     assert "Cold Harbor" in str(rec.disability_description_raw)
-
-
-# ==============================================================================
-# GROUP 2: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
 
 
 @pytest.mark.unit

@@ -5,22 +5,18 @@ Atomized behavioral test suite for MilitaryBurialRecord domain entity.
 Operational Role:
     Verifies military cemetery burials, national cemeteries, ABMC sites,
     plot/section assignments, and interment chronological coherence.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract verification.
-    - Fully decorated: Pytest marker taxonomy (@pytest.mark.unit, @pytest.mark.smoke, @pytest.mark.regression).
-    - Synthetic baselines: Pure in-memory fixtures with isolated basetemp execution.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, RepositoryID, SourceID
 from gda.model.atom.urn import SourceURN
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.military.casualty import (
     CasualtyCategory,
@@ -29,12 +25,7 @@ from gda.model.military.casualty import (
 )
 from gda.model.military.service import MilitaryBranch
 
-__version__ = "1.0.0+build.1"
-
-
-# ==============================================================================
-# FIXTURES
-# ==============================================================================
+__version__ = "2.1.0+build.1"
 
 
 @pytest.fixture
@@ -62,11 +53,6 @@ def valid_source_id() -> SourceID:
     return SourceID("c9a646d3-9c61-4a70-8b14-c48c8b417c8d")
 
 
-# ==============================================================================
-# GROUP 1: SMOKE & GOLDEN PATH
-# ==============================================================================
-
-
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_military_burial_smoke_valid_initialization(
@@ -91,7 +77,7 @@ def test_military_burial_smoke_valid_initialization(
         unit_designation_raw="Company C, 16th Infantry",
         rank_raw="Corporal",
         cemetery_type=IntermentCemeteryType.NATIONAL_CEMETERY,
-        cemetery_name_raw="Arlington National Cemetery",
+        cemetery_name_raw="  Arlington National Cemetery  ",
         interment_year=HistoricalYear(1948),
     )
     assert rec.cemetery_type == IntermentCemeteryType.NATIONAL_CEMETERY
@@ -99,11 +85,6 @@ def test_military_burial_smoke_valid_initialization(
     assert rec.interment_year == HistoricalYear(1948)
     assert rec.plot_section_raw is None
     assert rec.headstone_type_raw is None
-
-
-# ==============================================================================
-# GROUP 2: PLOTS, HEADSTONES & LOCATIONS
-# ==============================================================================
 
 
 @pytest.mark.unit
@@ -115,7 +96,7 @@ def test_military_burial_full_attributes(
 ) -> None:
     """Verify MilitaryBurialRecord preserves plot, headstone, and location identifiers."""
     loc_id = LocationID("LOC-000112")
-    rec = MilitaryBurialRecord(
+    rec_padded = MilitaryBurialRecord(
         source_id=valid_source_id,
         source_urn=valid_casualty_urn,
         record_category=SourceRecordCategory.MILITARY,
@@ -132,18 +113,34 @@ def test_military_burial_full_attributes(
         cemetery_type=IntermentCemeteryType.ABMC_OVERSEAS,
         cemetery_name_raw="Normandy American Cemetery",
         interment_year=HistoricalYear(1944),
-        plot_section_raw="Plot D, Row 12, Grave 28",
+        plot_section_raw="  Plot D, Row 12, Grave 28  ",
         headstone_type_raw="Latin Cross (White Marble)",
         cemetery_location_id=loc_id,
     )
-    assert rec.plot_section_raw == "Plot D, Row 12, Grave 28"
-    assert rec.headstone_type_raw == "Latin Cross (White Marble)"
-    assert rec.cemetery_location_id == loc_id
+    assert rec_padded.plot_section_raw == "Plot D, Row 12, Grave 28"
+    assert rec_padded.headstone_type_raw == "Latin Cross (White Marble)"
+    assert rec_padded.cemetery_location_id == loc_id
 
-
-# ==============================================================================
-# GROUP 3: BOUNDARY & VALIDATION REJECTIONS
-# ==============================================================================
+    rec_clean = MilitaryBurialRecord(
+        source_id=valid_source_id,
+        source_urn=valid_casualty_urn,
+        record_category=SourceRecordCategory.MILITARY,
+        description="Pre-trimmed plot section",
+        repository_id=valid_repo_id,
+        audit=valid_audit,
+        servicemember_id=IndividualID("IND-000001"),
+        servicemember_name_raw="Glenn Lehman",
+        branch=MilitaryBranch.ARMY,
+        casualty_category=CasualtyCategory.KILLED_IN_ACTION,
+        casualty_year=HistoricalYear(1944),
+        unit_designation_raw="116th Infantry Regiment",
+        rank_raw="Sergeant",
+        cemetery_type=IntermentCemeteryType.ABMC_OVERSEAS,
+        cemetery_name_raw="Normandy American Cemetery",
+        interment_year=HistoricalYear(1944),
+        plot_section_raw="Plot D, Row 12, Grave 28",
+    )
+    assert rec_clean.plot_section_raw == "Plot D, Row 12, Grave 28"
 
 
 @pytest.mark.unit

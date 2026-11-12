@@ -9,24 +9,24 @@ Operational Role:
 
 from __future__ import annotations
 
-from typing import ClassVar
-
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.military import CasualtyCategory, PowCampType
 from gda.core.errors import ModelFormatError
-from gda.enums.sources import SourceRecordCategory
-from gda.model.atom.date import HistoricalYear
 from gda.model.atom.id import LocationID
-from gda.model.military.casualty import CasualtyCategory, PowCampType
+from gda.model.atom.year import HistoricalYear
 from gda.model.military.casualty.base import MilitaryCasualtyRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "2.1.0+build.1"
 
 __all__ = ["PrisonerOfWarRecord"]
 
 
-@dataclass(config=ConfigDict(kw_only=True, frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+)
 class PrisonerOfWarRecord(MilitaryCasualtyRecord):
     """Evidentiary military prisoner of war internment record."""
 
@@ -59,8 +59,6 @@ class PrisonerOfWarRecord(MilitaryCasualtyRecord):
         description="Resolved civil jurisdiction LocationID of the prison camp.",
     )
 
-    EXPECTED_CATEGORY: ClassVar[SourceRecordCategory] = SourceRecordCategory.MILITARY
-
     def __post_init__(self) -> None:
         """Enforce prisoner of war category and chronological detention order."""
         super().__post_init__()
@@ -76,18 +74,22 @@ class PrisonerOfWarRecord(MilitaryCasualtyRecord):
             raise ModelFormatError(
                 "PrisonerOfWarRecord 'camp_name_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "camp_name_raw", c_name)
+        if c_name != self.camp_name_raw:
+            object.__setattr__(self, "camp_name_raw", c_name)
 
         pwr = self.detaining_power_raw.strip()
         if not pwr:
             raise ModelFormatError(
                 "PrisonerOfWarRecord 'detaining_power_raw' cannot be empty or whitespace."
             )
-        object.__setattr__(self, "detaining_power_raw", pwr)
+        if pwr != self.detaining_power_raw:
+            object.__setattr__(self, "detaining_power_raw", pwr)
 
-        if self.release_or_repatriation_year is not None:
-            if self.release_or_repatriation_year.value < self.capture_year.value:
-                raise ModelFormatError(
-                    f"release_or_repatriation_year ({self.release_or_repatriation_year.value}) "
-                    f"cannot precede capture_year ({self.capture_year.value})."
-                )
+        if (
+            self.release_or_repatriation_year is not None
+            and self.release_or_repatriation_year.value < self.capture_year.value
+        ):
+            raise ModelFormatError(
+                f"release_or_repatriation_year ({self.release_or_repatriation_year.value}) "
+                f"cannot precede capture_year ({self.capture_year.value})."
+            )
