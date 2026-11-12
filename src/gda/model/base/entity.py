@@ -23,10 +23,12 @@ from typing import Any, Literal, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.archival import NoteType
+from gda.core.enums.core import SmartIDPrefix
+from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.enums.archival import NoteType
-from gda.enums.core import SmartIDPrefix
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import AtomID, NoteID, SourceID
 from gda.model.base.audit import AuditStamp
@@ -34,7 +36,7 @@ from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 from gda.util.ids import extract_max_smart_id, mint_smart_id
 
-__version__ = "1.1.0+build.7"
+__version__ = "1.2.0+build.1"
 
 __all__ = ["BaseEntity", "BaseEntityGUID", "EntityLifecycleMixin"]
 
@@ -74,7 +76,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
 
     def touch(self, timestamp: IsoTimestamp | None = None) -> Self:
         """Return a copy with refreshed updated_at timestamp on the audit stamp."""
-        new_ts = timestamp if timestamp is not None else IsoTimestamp.now_utc()
+        new_ts = timestamp if timestamp is not None else IsoTimestamp(utc_now_iso())
         _logger.debug(
             "Touching entity lifecycle timestamp",
             details={"entity_id": str(self.id), "timestamp": str(new_ts)},
@@ -101,7 +103,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
         timestamp: IsoTimestamp | None = None,
     ) -> Self:
         """Return a copy marked as deprecated with optional successor reference."""
-        now_ts = timestamp if timestamp is not None else IsoTimestamp.now_utc()
+        now_ts = timestamp if timestamp is not None else IsoTimestamp(utc_now_iso())
         _logger.debug(
             "Deprecating entity",
             details={"entity_id": str(self.id), "superseded_by": str(superseded_by)},
@@ -111,7 +113,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
 
     def restore(self, timestamp: IsoTimestamp | None = None) -> Self:
         """Return a copy with tombstone restored to active state."""
-        now_ts = timestamp if timestamp is not None else IsoTimestamp.now_utc()
+        now_ts = timestamp if timestamp is not None else IsoTimestamp(utc_now_iso())
         _logger.debug("Restoring deprecated entity", details={"entity_id": str(self.id)})
         target_tombstone_cls = type(self.tombstone)
         restored_tombstone = target_tombstone_cls(is_deprecated=False, superseded_by=None)
@@ -162,7 +164,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
         )
         return replace(
             self,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             notes=[*self.notes, new_note],
         )
 
@@ -183,7 +185,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
         )
         return replace(
             self,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             notes=filtered,
         )
 
@@ -207,7 +209,13 @@ class EntityLifecycleMixin(IntrospectableMixin):
         results = list(self.notes)
 
         if note_type is not None:
-            resolved_type = note_type if isinstance(note_type, NoteType) else NoteType(note_type)
+            if isinstance(note_type, NoteType):
+                resolved_type = note_type
+            else:
+                try:
+                    resolved_type = NoteType(note_type.strip().upper())
+                except ValueError as exc:
+                    raise ModelFormatError(f"Invalid NoteType value: '{note_type}'.") from exc
             results = [n for n in results if n.note_type == resolved_type]
 
         if tag is not None:
@@ -247,6 +255,11 @@ class EntityLifecycleMixin(IntrospectableMixin):
             },
             "tombstone": {
                 "is_deprecated": self.tombstone.is_deprecated,
+                "deprecated_at": (
+                    str(self.tombstone.deprecated_at)
+                    if self.tombstone.deprecated_at is not None
+                    else None
+                ),
                 "superseded_by": (
                     str(self.tombstone.superseded_by)
                     if self.tombstone.superseded_by is not None
@@ -263,7 +276,8 @@ class EntityLifecycleMixin(IntrospectableMixin):
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class BaseEntity[ID_T: AtomID](EntityLifecycleMixin):
@@ -297,7 +311,8 @@ class BaseEntity[ID_T: AtomID](EntityLifecycleMixin):
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class BaseEntityGUID(EntityLifecycleMixin):
@@ -316,6 +331,8 @@ class BaseEntityGUID(EntityLifecycleMixin):
 
     def __post_init__(self) -> None:
         """Enforce string-based identity and supersession type alignment."""
+        if not self.id.strip():
+            raise ModelFormatError("BaseEntityGUID 'id' cannot be empty or whitespace.")
         if self.tombstone.superseded_by is not None:
             if not isinstance(self.tombstone.superseded_by, str):
                 raise TypeError(

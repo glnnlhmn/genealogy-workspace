@@ -1,16 +1,12 @@
-"""Path: tests/test_gda/test_model/test_base/test_age.py
+"""Path: tests/test_gda/test_model/test_base/test_zero_intra_base/test_age.py
 
 Comprehensive test suite verifying Age formatting and boundaries.
 
 Operational Role:
     Verifies that Age parses discrete years, months, and days,
-    preserves verbatim text, validates boundary constraints, formats cleanly,
-    and enforces immutability.
-
-Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract mapping.
-    - Fully decorated: Standard 7-marker taxonomy.
-    - Zero production disk I/O.
+    preserves verbatim text, validates boundary constraints, blocks bool/str
+    coercion under strict mode, formats cleanly, and enforces immutability with
+    100% statement and branch coverage.
 """
 
 from __future__ import annotations
@@ -18,11 +14,12 @@ from __future__ import annotations
 from dataclasses import FrozenInstanceError
 
 import pytest
+from pydantic import ValidationError
 
 from gda.core.errors import ModelFormatError
 from gda.model.base.age import Age
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.1.0+build.1"
 
 
 # ==============================================================================
@@ -56,23 +53,26 @@ def test_age_years_only() -> None:
 @pytest.mark.unit
 @pytest.mark.smoke
 def test_age_raw_text_only() -> None:
-    """Verify Age falls back to raw_text when numeric parts are None."""
-    age = Age(raw_text="about 30 years")
+    """Verify Age falls back to trimmed raw_text when numeric parts are None."""
+    age = Age(raw_text="  about 30 years  ")
     assert age.formatted_age == "about 30 years"
     assert str(age) == "about 30 years"
 
 
 # ==============================================================================
-# GROUP 2: DEFENSIVE BOUNDARIES & INVALID ATTRIBUTES
+# GROUP 2: DEFENSIVE BOUNDARIES & STRICT VALIDATION
 # ==============================================================================
 
 
 @pytest.mark.unit
 @pytest.mark.regression
-def test_age_empty_raises_error() -> None:
-    """Verify Age raises ModelFormatError when completely unpopulated."""
+def test_age_empty_or_whitespace_only_raises_error() -> None:
+    """Verify Age raises ModelFormatError when completely unpopulated or blank raw_text."""
     with pytest.raises(ModelFormatError, match="must specify raw_text or at least one of"):
         Age()
+
+    with pytest.raises(ModelFormatError, match="must specify raw_text or at least one of"):
+        Age(raw_text="   ")
 
 
 @pytest.mark.unit
@@ -102,17 +102,23 @@ def test_age_invalid_days_raises_error(bad_day: int) -> None:
 
 
 @pytest.mark.unit
-def test_age_immutability() -> None:
-    """Verify Age is frozen and immutable."""
+@pytest.mark.regression
+def test_age_strict_mode_rejects_booleans_and_numeric_strings() -> None:
+    """Verify strict=True rejects booleans and string integers for numeric fields."""
+    with pytest.raises(ValidationError):
+        Age(years=True)  # type: ignore[arg-type]
+
+    with pytest.raises(ValidationError):
+        Age(years="50")  # type: ignore[arg-type]
+
+
+@pytest.mark.unit
+def test_age_immutability_and_introspection() -> None:
+    """Verify Age is frozen and renders .help()."""
     age = Age(years=50)
     with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
         age.years = 51  # type: ignore[misc]
 
-
-@pytest.mark.unit
-def test_age_introspection() -> None:
-    """Verify .help() renders on Age."""
-    age = Age(years=50)
     help_text = age.help(as_str=True)
     assert help_text is not None
     assert "=== Age Public Directory ===" in help_text

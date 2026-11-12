@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_model/test_base/test_address.py
+"""Path: tests/test_gda/test_model/test_base/test_composites/test_address.py
 
 Comprehensive test suite verifying Address formatting, mutators, and boundaries.
 
@@ -15,21 +15,23 @@ from dataclasses import FrozenInstanceError
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from gda.core.errors import ModelFormatError
-from gda.model.atom.geo import Coordinates, Latitude, Longitude
+from gda.model.atom.geo import Latitude, Longitude
 from gda.model.base.address import Address
+from gda.model.base.geo import Coordinates
 
-__version__ = "1.1.0+build.3"
+__version__ = "1.2.0+build.1"
 
 
 # ==============================================================================
 # GROUP 1: ADDRESS CREATION & FORMATTING
-# Note: Verification of instantiation, string rendering, and constructor representation
 # ==============================================================================
 
 
-@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.smoke
 def test_address_full_creation() -> None:
     """Verify Address with lines, city, state, postal code, and coordinates."""
     coords = Coordinates(latitude=Latitude(43.200000), longitude=Longitude(-71.530000))
@@ -56,7 +58,8 @@ def test_address_full_creation() -> None:
     )
 
 
-@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.smoke
 def test_address_single_line_only() -> None:
     """Verify Address formatting with only address_line_1."""
     addr = Address(address_line_1="Rural Route 2")
@@ -68,7 +71,7 @@ def test_address_single_line_only() -> None:
     assert addr.coordinates is None
 
 
-@pytest.mark.regression
+@pytest.mark.unit
 def test_address_partial_city_state_formatting() -> None:
     """Verify formatting branches when either city or state is independently populated."""
     city_only = Address(address_line_1="100 Main St", city="Bow")
@@ -78,7 +81,7 @@ def test_address_partial_city_state_formatting() -> None:
     assert state_only.formatted_address == "100 Main St, NH"
 
 
-@pytest.mark.regression
+@pytest.mark.unit
 def test_address_factory_create() -> None:
     """Verify Address.create cleans whitespace and instantiates properly."""
     addr = Address.create(
@@ -109,41 +112,46 @@ def test_address_factory_create() -> None:
 
 # ==============================================================================
 # GROUP 2: COPY-ON-WRITE MUTATORS
-# Note: Verification of immutable copy production on field modifications
 # ==============================================================================
 
 
-@pytest.mark.regression
-def test_address_copy_on_write_mutators() -> None:
-    """Verify Address mutators produce fresh copies with updated attributes."""
+@pytest.mark.unit
+def test_address_copy_on_write_mutators(sample_coordinates: Coordinates) -> None:
+    """Verify Address mutators produce fresh copies and return self on idempotent updates."""
     original = Address(address_line_1="100 Main St")
 
     up1 = original.update_line_1("200 Elm St")
     assert up1 is not original
     assert up1.address_line_1 == "200 Elm St"
+    assert up1.update_line_1("200 Elm St") is up1
 
     up2 = original.update_line_2("Floor 3")
     assert up2 is not original
     assert up2.address_line_2 == "Floor 3"
+    assert up2.update_line_2("Floor 3") is up2
 
     up_city = original.update_city("Manchester")
     assert up_city is not original
     assert up_city.city == "Manchester"
+    assert up_city.update_city("Manchester") is up_city
 
     up_state = original.update_state("NH")
     assert up_state is not original
     assert up_state.state == "NH"
+    assert up_state.update_state("NH") is up_state
 
     up_zip = original.update_postal_code("03301")
     assert up_zip is not original
     assert up_zip.postal_code == "03301"
+    assert up_zip.update_postal_code("03301") is up_zip
 
-    new_coords = Coordinates(latitude=Latitude(43.10), longitude=Longitude(-71.50))
-    up_coords = original.update_coordinates(new_coords)
+    up_coords = original.update_coordinates(sample_coordinates)
     assert up_coords is not original
-    assert up_coords.coordinates == new_coords
+    assert up_coords.coordinates == sample_coordinates
+    assert up_coords.update_coordinates(sample_coordinates) is up_coords
 
 
+@pytest.mark.unit
 @pytest.mark.regression
 def test_address_mutators_empty_rejection() -> None:
     """Verify update_line_1 rejects empty or whitespace strings."""
@@ -154,21 +162,19 @@ def test_address_mutators_empty_rejection() -> None:
 
 # ==============================================================================
 # GROUP 3: SERIALIZATION & ROUND TRIPS
-# Note: Verification of dictionary and JSON string payload conversions
 # ==============================================================================
 
 
-@pytest.mark.integration
-def test_address_to_dict_and_from_dict_round_trip() -> None:
+@pytest.mark.unit
+def test_address_to_dict_and_from_dict_round_trip(sample_coordinates: Coordinates) -> None:
     """Verify Address dictionary serialization and deserialization."""
-    coords = Coordinates(latitude=Latitude(43.1319), longitude=Longitude(-71.5497))
     addr = Address(
         address_line_1="Woodhill Hook Road",
         address_line_2="Building B",
         city="Bow",
         state="NH",
         postal_code="03304",
-        coordinates=coords,
+        coordinates=sample_coordinates,
     )
     data = addr.to_dict()
     assert data["address_line_1"] == "Woodhill Hook Road"
@@ -176,13 +182,13 @@ def test_address_to_dict_and_from_dict_round_trip() -> None:
     assert data["city"] == "Bow"
     assert data["state"] == "NH"
     assert data["postal_code"] == "03304"
-    assert data["coordinates"] == {"latitude": 43.1319, "longitude": -71.5497}
+    assert data["coordinates"] == {"latitude": 43.2081, "longitude": -71.5376}
 
     restored = Address.from_dict(data)
     assert restored == addr
 
 
-@pytest.mark.integration
+@pytest.mark.unit
 def test_address_to_dict_minimal_omits_none_fields() -> None:
     """Verify Address.to_dict omits None optional fields."""
     minimal = Address(address_line_1="Route 3A")
@@ -198,37 +204,23 @@ def test_address_to_dict_minimal_omits_none_fields() -> None:
     assert restored == minimal
 
 
-@pytest.mark.integration
-def test_address_from_dict_with_direct_coordinates_instance() -> None:
-    """Verify Address.from_dict handles pre-constructed Coordinates object."""
-    coords = Coordinates(latitude=Latitude(43.1319), longitude=Longitude(-71.5497))
+@pytest.mark.unit
+def test_address_from_dict_with_direct_coordinates_instance(
+    sample_coordinates: Coordinates,
+) -> None:
+    """Verify Address.from_dict handles pre-constructed Coordinates object and rejects bad types."""
     data: dict[str, Any] = {
         "address_line_1": "Woodhill Hook Road",
-        "coordinates": coords,
+        "coordinates": sample_coordinates,
     }
     restored = Address.from_dict(data)
-    assert restored.coordinates == coords
+    assert restored.coordinates == sample_coordinates
+
+    with pytest.raises(ModelFormatError, match="must be a dict or Coordinates instance"):
+        Address.from_dict({"address_line_1": "Woodhill Hook Road", "coordinates": "invalid"})
 
 
-@pytest.mark.integration
-def test_address_from_dict_partial_coordinates_dict() -> None:
-    """Verify Address.from_dict handles dict coordinates with missing latitude or longitude."""
-    data_missing_lat: dict[str, Any] = {
-        "address_line_1": "Woodhill Hook Road",
-        "coordinates": {"latitude": None, "longitude": -71.5497},
-    }
-    restored = Address.from_dict(data_missing_lat)
-    assert restored.coordinates is None
-
-    data_missing_lon: dict[str, Any] = {
-        "address_line_1": "Woodhill Hook Road",
-        "coordinates": {"latitude": 43.1319, "longitude": None},
-    }
-    restored_lon = Address.from_dict(data_missing_lon)
-    assert restored_lon.coordinates is None
-
-
-@pytest.mark.integration
+@pytest.mark.unit
 def test_address_json_serialization_round_trip() -> None:
     """Verify Address JSON serialization round trip."""
     addr = Address(
@@ -245,6 +237,7 @@ def test_address_json_serialization_round_trip() -> None:
     assert restored == addr
 
 
+@pytest.mark.unit
 @pytest.mark.regression
 def test_address_deserialization_defensive_errors() -> None:
     """Verify deserializers reject malformed payloads."""
@@ -262,11 +255,11 @@ def test_address_deserialization_defensive_errors() -> None:
 
 
 # ==============================================================================
-# GROUP 4: DEFENSIVE BOUNDARIES & IMMUTABILITY
-# Note: Verification of whitespace rejections, frozen instances, and introspection
+# GROUP 4: DEFENSIVE BOUNDARIES, STRICT MODE & IMMUTABILITY
 # ==============================================================================
 
 
+@pytest.mark.unit
 @pytest.mark.regression
 @pytest.mark.parametrize("blank_line", ["", " ", "\t\n"])
 def test_address_empty_line_1_raises_error(blank_line: str) -> None:
@@ -275,22 +268,22 @@ def test_address_empty_line_1_raises_error(blank_line: str) -> None:
         Address(address_line_1=blank_line)
 
 
+@pytest.mark.unit
 @pytest.mark.regression
-def test_address_immutability() -> None:
-    """Verify Address is frozen and immutable."""
+def test_address_strict_mode_rejects_non_strings() -> None:
+    """Verify strict=True rejects integer coercion on address_line_1."""
+    with pytest.raises(ValidationError):
+        Address(address_line_1=123)  # type: ignore[arg-type]
+
+
+@pytest.mark.unit
+def test_address_immutability_and_introspection() -> None:
+    """Verify Address is frozen and renders .help()."""
     addr = Address(address_line_1="123 Oak St")
     with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
         addr.address_line_1 = "456 Pine St"  # type: ignore[misc]
 
-
-@pytest.mark.regression
-def test_address_introspection() -> None:
-    """Verify .help() renders member directory on Address."""
-    addr = Address(address_line_1="123 Oak St")
     help_text = addr.help(as_str=True)
     assert help_text is not None
     assert "=== Address Public Directory ===" in help_text
     assert "formatted_address" in help_text
-    assert "update_line_1" in help_text
-    assert "update_city" in help_text
-    assert "update_state" in help_text

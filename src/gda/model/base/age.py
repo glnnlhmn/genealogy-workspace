@@ -8,7 +8,7 @@ Operational Role:
     Preserves verbatim text while parsing discrete years, months, and days.
 
 Architecture:
-    - Age: Pydantic dataclass validating event age assertions.
+    - Age: Strict immutable Pydantic dataclass validating event age assertions.
 """
 
 from __future__ import annotations
@@ -20,12 +20,14 @@ from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.1.0+build.1"
+
+__all__ = ["Age"]
 
 _logger = GDALogger(__name__)
 
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class Age(IntrospectableMixin):
     """Event age assertion capturing discrete units and verbatim historical strings."""
 
@@ -63,6 +65,7 @@ class Age(IntrospectableMixin):
 
     @property
     def formatted_age(self) -> str:
+        """Render normalized unit shorthand or fallback to verbatim text."""
         parts: list[str] = []
         if self.years is not None:
             parts.append(f"{self.years}y")
@@ -73,8 +76,7 @@ class Age(IntrospectableMixin):
 
         if parts:
             return " ".join(parts)
-        assert self.raw_text is not None
-        return self.raw_text
+        return self.raw_text.strip() if self.raw_text is not None else ""
 
     def __str__(self) -> str:
         return self.formatted_age

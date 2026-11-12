@@ -9,7 +9,7 @@ Operational Role:
     with copy-on-write mutators, factory instantiation, and serialization parity.
 
 Architecture:
-    - Address: Immutable Pydantic dataclass validating street address components.
+    - Address: Strict immutable Pydantic dataclass validating street address components.
 """
 
 from __future__ import annotations
@@ -23,14 +23,14 @@ from pydantic.dataclasses import dataclass
 
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.model.atom.geo import Coordinates, Latitude, Longitude
+from gda.model.base.geo import Coordinates
 
-__version__ = "1.1.0+build.2"
+__version__ = "1.2.0+build.1"
 
 __all__ = ["Address"]
 
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class Address(IntrospectableMixin):
     """Structured postal address capturing street lines, city, state, postal codes, and coordinates."""
 
@@ -57,7 +57,7 @@ class Address(IntrospectableMixin):
 
     def __post_init__(self) -> None:
         """Enforce non-empty primary street line invariant."""
-        if not self.address_line_1 or not self.address_line_1.strip():
+        if not self.address_line_1.strip():
             raise ModelFormatError(
                 "Address address_line_1 cannot be empty or whitespace.",
                 details={"field": "address_line_1"},
@@ -90,8 +90,7 @@ class Address(IntrospectableMixin):
         coordinates: Coordinates | None = None,
     ) -> Address:
         """Factory constructor instantiating a validated Address."""
-        clean_1 = address_line_1.strip() if address_line_1 else ""
-        if not clean_1:
+        if not isinstance(address_line_1, str) or not address_line_1.strip():
             raise ModelFormatError("Address address_line_1 cannot be empty or whitespace.")
 
         clean_2 = address_line_2.strip() if address_line_2 and address_line_2.strip() else None
@@ -100,7 +99,7 @@ class Address(IntrospectableMixin):
         clean_zip = postal_code.strip() if postal_code and postal_code.strip() else None
 
         return cls(
-            address_line_1=clean_1,
+            address_line_1=address_line_1.strip(),
             address_line_2=clean_2,
             city=clean_city,
             state=clean_state,
@@ -110,33 +109,45 @@ class Address(IntrospectableMixin):
 
     def update_line_1(self, address_line_1: str) -> Self:
         """Return a new immutable copy with updated primary street address line."""
-        clean = address_line_1.strip() if address_line_1 else ""
-        if not clean:
+        if not isinstance(address_line_1, str) or not address_line_1.strip():
             raise ModelFormatError("Address address_line_1 cannot be empty or whitespace.")
+        clean = address_line_1.strip()
+        if clean == self.address_line_1:
+            return self
         return replace(self, address_line_1=clean)
 
     def update_line_2(self, address_line_2: str | None) -> Self:
         """Return a new immutable copy with updated secondary street address line."""
         clean = address_line_2.strip() if address_line_2 and address_line_2.strip() else None
+        if clean == self.address_line_2:
+            return self
         return replace(self, address_line_2=clean)
 
     def update_city(self, city: str | None) -> Self:
         """Return a new immutable copy with updated city descriptor."""
         clean = city.strip() if city and city.strip() else None
+        if clean == self.city:
+            return self
         return replace(self, city=clean)
 
     def update_state(self, state: str | None) -> Self:
         """Return a new immutable copy with updated state descriptor."""
         clean = state.strip() if state and state.strip() else None
+        if clean == self.state:
+            return self
         return replace(self, state=clean)
 
     def update_postal_code(self, postal_code: str | None) -> Self:
         """Return a new immutable copy with updated postal code."""
         clean = postal_code.strip() if postal_code and postal_code.strip() else None
+        if clean == self.postal_code:
+            return self
         return replace(self, postal_code=clean)
 
     def update_coordinates(self, coordinates: Coordinates | None) -> Self:
         """Return a new immutable copy with updated geospatial coordinates."""
+        if coordinates == self.coordinates:
+            return self
         return replace(self, coordinates=coordinates)
 
     def to_dict(self) -> dict[str, Any]:
@@ -153,10 +164,7 @@ class Address(IntrospectableMixin):
         if self.postal_code is not None:
             data["postal_code"] = self.postal_code
         if self.coordinates is not None:
-            data["coordinates"] = {
-                "latitude": self.coordinates.latitude.value,
-                "longitude": self.coordinates.longitude.value,
-            }
+            data["coordinates"] = self.coordinates.to_dict()
         return data
 
     @classmethod
@@ -166,21 +174,20 @@ class Address(IntrospectableMixin):
             raise ModelFormatError("Address payload must be a dictionary.")
 
         raw_1 = data.get("address_line_1")
-        if not raw_1 or not str(raw_1).strip():
+        if not isinstance(raw_1, str) or not raw_1.strip():
             raise ModelFormatError("Missing required field 'address_line_1' for Address.")
 
         coords_obj: Coordinates | None = None
         raw_coords = data.get("coordinates")
         if isinstance(raw_coords, dict):
-            lat = raw_coords.get("latitude")
-            lon = raw_coords.get("longitude")
-            if lat is not None and lon is not None:
-                coords_obj = Coordinates(latitude=Latitude(lat), longitude=Longitude(lon))
+            coords_obj = Coordinates.from_dict(raw_coords)
         elif isinstance(raw_coords, Coordinates):
             coords_obj = raw_coords
+        elif raw_coords is not None:
+            raise ModelFormatError("Address 'coordinates' must be a dict or Coordinates instance.")
 
         return cls.create(
-            address_line_1=str(raw_1),
+            address_line_1=raw_1,
             address_line_2=data.get("address_line_2"),
             city=data.get("city"),
             state=data.get("state"),

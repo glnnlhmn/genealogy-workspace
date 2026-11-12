@@ -20,14 +20,13 @@ from typing import Any, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.vital import PedigreeType, UnionDissolutionType, UnionType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.enums.vital import PedigreeType, UnionDissolutionType, UnionType
-from gda.model.atom.date import EventDate
 from gda.model.atom.id import IndividualID
-from gda.model.base.time_period import TimePeriod
+from gda.model.base.date import EventDate, TimePeriod
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.1.0+build.1"
 
 __all__ = ["ChildLink", "FamilyUnion"]
 
@@ -66,7 +65,9 @@ def _normalize_pedigree(pedigree: PedigreeType | str) -> PedigreeType:
     """Normalize pedigree inputs from string tokens or enums."""
     if isinstance(pedigree, PedigreeType):
         return pedigree
-    token = str(pedigree).strip().upper()
+    if not isinstance(pedigree, str):
+        raise ModelFormatError(f"Invalid PedigreeType type: {type(pedigree).__name__}.")
+    token = pedigree.strip().upper()
     if token in _PEDIGREE_MAP:
         return _PEDIGREE_MAP[token]
     raise ModelFormatError(f"Cannot normalize '{pedigree}' to a valid PedigreeType.")
@@ -76,7 +77,9 @@ def _normalize_union_type(union_type: UnionType | str) -> UnionType:
     """Normalize union type inputs from string tokens or enums."""
     if isinstance(union_type, UnionType):
         return union_type
-    token = str(union_type).strip().upper()
+    if not isinstance(union_type, str):
+        raise ModelFormatError(f"Invalid UnionType type: {type(union_type).__name__}.")
+    token = union_type.strip().upper()
     if token in _UNION_TYPE_MAP:
         return _UNION_TYPE_MAP[token]
     raise ModelFormatError(f"Cannot normalize '{union_type}' to a valid UnionType.")
@@ -90,7 +93,11 @@ def _normalize_dissolution(
         return None
     if isinstance(dissolution_type, UnionDissolutionType):
         return dissolution_type
-    token = str(dissolution_type).strip().upper()
+    if not isinstance(dissolution_type, str):
+        raise ModelFormatError(
+            f"Invalid UnionDissolutionType type: {type(dissolution_type).__name__}."
+        )
+    token = dissolution_type.strip().upper()
     if token in _DISSOLUTION_MAP:
         return _DISSOLUTION_MAP[token]
     raise ModelFormatError(
@@ -99,7 +106,7 @@ def _normalize_dissolution(
 
 
 @total_ordering
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class ChildLink(IntrospectableMixin):
     """Associative child relationship link within a domestic or biological family unit."""
 
@@ -140,10 +147,10 @@ class ChildLink(IntrospectableMixin):
         if not isinstance(data, dict):
             raise ModelFormatError("ChildLink payload must be a dictionary.")
         cid = data.get("child_id")
-        if not cid:
+        if not isinstance(cid, (str, IndividualID)) or not str(cid).strip():
             raise ModelFormatError("Missing required field 'child_id' for ChildLink.")
         ped = data.get("pedigree", PedigreeType.BIRTH)
-        return cls.create(child_id=str(cid), pedigree=ped)
+        return cls.create(child_id=cid, pedigree=ped)
 
     def to_json(self) -> str:
         """Serialize ChildLink to a JSON formatted string."""
@@ -175,7 +182,7 @@ class ChildLink(IntrospectableMixin):
         return NotImplemented
 
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class FamilyUnion(IntrospectableMixin):
     """Characterization of union inception, dissolution, and temporal bounds."""
 
@@ -254,9 +261,7 @@ class FamilyUnion(IntrospectableMixin):
         if self.dissolution_type is not None:
             data["dissolution_type"] = self.dissolution_type.value
         if self.period is not None:
-            start_str = str(self.period.start_date) if self.period.start_date else None
-            end_str = str(self.period.end_date) if self.period.end_date else None
-            data["period"] = {"start_date": start_str, "end_date": end_str}
+            data["period"] = self.period.to_dict()
         return data
 
     @classmethod
@@ -270,12 +275,7 @@ class FamilyUnion(IntrospectableMixin):
         raw_period = data.get("period")
         period_obj: TimePeriod | None = None
         if isinstance(raw_period, dict):
-            s_str = raw_period.get("start_date")
-            e_str = raw_period.get("end_date")
-            period_obj = TimePeriod(
-                start_date=EventDate.create(s_str) if s_str else None,
-                end_date=EventDate.create(e_str) if e_str else None,
-            )
+            period_obj = TimePeriod.from_dict(raw_period)
         elif isinstance(raw_period, TimePeriod):
             period_obj = raw_period
 
@@ -306,3 +306,9 @@ class FamilyUnion(IntrospectableMixin):
         if self.period:
             parts.append(f"Period: {self.period}")
         return ", ".join(parts)
+
+    def __repr__(self) -> str:
+        return (
+            f"FamilyUnion(union_type={self.union_type}, "
+            f"dissolution_type={self.dissolution_type}, period={self.period!r})"
+        )

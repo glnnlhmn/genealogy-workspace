@@ -26,13 +26,12 @@ from typing import Any, Self, cast
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.enums.vital import HistoricNameType, NameStatus
-from gda.model.atom.date import DateModifier, DateString, EventDate
-from gda.model.base.time_period import TimePeriod
+from gda.model.base.date import TimePeriod
 
-__version__ = "1.1.0+build.8"
+__version__ = "1.2.0+build.2"
 
 __all__ = [
     "CanonicalName",
@@ -42,12 +41,13 @@ __all__ = [
     "NameBase",
     "NameLifecycleMixin",
     "NamePerson",
-    "NameStatus",
     "NameThing",
 ]
 
+_UNSET: Any = object()
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class HistoricVariant(IntrospectableMixin):
     """Discrete historical naming phase for an evolutionary place, site, or artifact."""
 
@@ -66,10 +66,12 @@ class HistoricVariant(IntrospectableMixin):
 
     def __post_init__(self) -> None:
         """Enforce non-empty string boundaries."""
-        if not self.raw or not self.raw.strip():
+        if not self.raw.strip():
             raise ModelFormatError("HistoricVariant 'raw' cannot be empty or whitespace.")
-        if not self.name or not self.name.strip():
+        if not self.name.strip():
             raise ModelFormatError("HistoricVariant 'name' cannot be empty or whitespace.")
+        if self.comment is not None and not self.comment.strip():
+            raise ModelFormatError("HistoricVariant 'comment' cannot be blank if provided.")
 
     @classmethod
     def create(
@@ -81,18 +83,31 @@ class HistoricVariant(IntrospectableMixin):
         comment: str | None = None,
     ) -> HistoricVariant:
         """Factory constructor instantiating a validated HistoricVariant."""
-        res_type = (
-            historic_name_type
-            if isinstance(historic_name_type, HistoricNameType)
-            else HistoricNameType(historic_name_type)
-        )
+        if not isinstance(raw, str) or not raw.strip():
+            raise ModelFormatError("HistoricVariant 'raw' cannot be empty or whitespace.")
+
+        if isinstance(historic_name_type, HistoricNameType):
+            res_type = historic_name_type
+        elif isinstance(historic_name_type, str):
+            try:
+                res_type = HistoricNameType(historic_name_type.strip().upper())
+            except ValueError as exc:
+                raise ModelFormatError(
+                    f"Invalid HistoricNameType value: '{historic_name_type}'."
+                ) from exc
+        else:
+            raise ModelFormatError(
+                f"Invalid HistoricNameType type: {type(historic_name_type).__name__}."
+            )
+
         norm_name = name.strip() if name and name.strip() else raw.strip()
+        clean_comment = comment.strip() if comment and comment.strip() else None
         return cls(
             raw=raw.strip(),
             name=norm_name,
             historic_name_type=res_type,
             valid_period=valid_period,
-            comment=comment.strip() if comment else None,
+            comment=clean_comment,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -103,12 +118,7 @@ class HistoricVariant(IntrospectableMixin):
             "historic_name_type": self.historic_name_type.value,
         }
         if self.valid_period is not None:
-            start_str = str(self.valid_period.start_date) if self.valid_period.start_date else None
-            end_str = str(self.valid_period.end_date) if self.valid_period.end_date else None
-            data["valid_period"] = {
-                "start_date": start_str,
-                "end_date": end_str,
-            }
+            data["valid_period"] = self.valid_period.to_dict()
         if self.comment is not None:
             data["comment"] = self.comment
         return data
@@ -120,7 +130,7 @@ class HistoricVariant(IntrospectableMixin):
             raise ModelFormatError("HistoricVariant payload must be a dictionary.")
 
         raw_val = data.get("raw")
-        if not raw_val or not str(raw_val).strip():
+        if not isinstance(raw_val, str) or not raw_val.strip():
             raise ModelFormatError("Missing required field 'raw' for HistoricVariant.")
 
         name_val = data.get("name") or raw_val
@@ -128,95 +138,102 @@ class HistoricVariant(IntrospectableMixin):
         raw_period = data.get("valid_period")
         period_obj: TimePeriod | None = None
         if isinstance(raw_period, dict):
-            start_str = raw_period.get("start_date")
-            end_str = raw_period.get("end_date")
-            start_ev = (
-                EventDate(date=DateString(str(start_str)), modifier=DateModifier.EXACT)
-                if start_str
-                else None
-            )
-            end_ev = (
-                EventDate(date=DateString(str(end_str)), modifier=DateModifier.EXACT)
-                if end_str
-                else None
-            )
-            if start_ev is not None or end_ev is not None:
-                period_obj = TimePeriod(start_date=start_ev, end_date=end_ev)
+            period_obj = TimePeriod.from_dict(raw_period)
         elif isinstance(raw_period, TimePeriod):
             period_obj = raw_period
 
         return cls.create(
-            raw=str(raw_val),
+            raw=raw_val,
             name=str(name_val),
             historic_name_type=data.get("historic_name_type", HistoricNameType.HISTORICAL),
             valid_period=period_obj,
             comment=data.get("comment"),
         )
 
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        return (
+            f"HistoricVariant(raw={self.raw!r}, name={self.name!r}, "
+            f"historic_name_type={self.historic_name_type}, "
+            f"valid_period={self.valid_period!r}, comment={self.comment!r})"
+        )
+
 
 class NameLifecycleMixin(IntrospectableMixin):
     """Reusable copy-on-write mutators for naming models."""
 
+    raw: str
+    canonical: str
+    aliases: list[str]
+    alt_spellings: list[str]
+    comment: str | None
+
     def update_raw(self, raw: str) -> Self:
         """Return a new immutable copy with updated verbatim raw text."""
-        clean = raw.strip() if raw else ""
-        if not clean:
+        if not isinstance(raw, str) or not raw.strip():
             raise ModelFormatError("Raw name cannot be empty or whitespace.")
+        clean = raw.strip()
+        if clean == self.raw:
+            return self
         return cast(Self, replace(cast(Any, self), raw=clean))
 
     def update_canonical(self, canonical: str) -> Self:
         """Return a new immutable copy with updated canonical display name."""
-        clean = canonical.strip() if canonical else ""
-        if not clean:
+        if not isinstance(canonical, str) or not canonical.strip():
             raise ModelFormatError("Canonical name cannot be empty or whitespace.")
+        clean = canonical.strip()
+        if clean == self.canonical:
+            return self
         return cast(Self, replace(cast(Any, self), canonical=clean))
 
     def add_alias(self, alias: str) -> Self:
         """Return a new immutable copy with unique alias appended."""
-        clean = alias.strip() if alias else ""
-        if not clean:
+        if not isinstance(alias, str) or not alias.strip():
             raise ModelFormatError("Alias cannot be empty or whitespace.")
-        current_aliases: list[str] = getattr(self, "aliases", [])
-        if clean in current_aliases:
+        clean = alias.strip()
+        if clean in self.aliases:
             return self
-        return cast(Self, replace(cast(Any, self), aliases=[*current_aliases, clean]))
+        return cast(Self, replace(cast(Any, self), aliases=[*self.aliases, clean]))
 
     def remove_alias(self, alias: str) -> Self:
         """Return a new immutable copy with target alias removed."""
-        clean = alias.strip() if alias else ""
-        current_aliases: list[str] = getattr(self, "aliases", [])
-        filtered = [a for a in current_aliases if a != clean]
-        if len(filtered) == len(current_aliases):
+        clean = alias.strip() if isinstance(alias, str) else ""
+        if not clean or clean not in self.aliases:
             return self
-        return cast(Self, replace(cast(Any, self), aliases=filtered))
+        return cast(Self, replace(cast(Any, self), aliases=[a for a in self.aliases if a != clean]))
 
     def add_spelling(self, spelling: str) -> Self:
         """Return a new immutable copy with unique alternate spelling appended."""
-        clean = spelling.strip() if spelling else ""
-        if not clean:
+        if not isinstance(spelling, str) or not spelling.strip():
             raise ModelFormatError("Alternate spelling cannot be empty or whitespace.")
-        current_spellings: list[str] = getattr(self, "alt_spellings", [])
-        if clean in current_spellings:
+        clean = spelling.strip()
+        if clean in self.alt_spellings:
             return self
-        return cast(Self, replace(cast(Any, self), alt_spellings=[*current_spellings, clean]))
+        return cast(Self, replace(cast(Any, self), alt_spellings=[*self.alt_spellings, clean]))
 
     def remove_spelling(self, spelling: str) -> Self:
         """Return a new immutable copy with target alternate spelling removed."""
-        clean = spelling.strip() if spelling else ""
-        current_spellings: list[str] = getattr(self, "alt_spellings", [])
-        filtered = [s for s in current_spellings if s != clean]
-        if len(filtered) == len(current_spellings):
+        clean = spelling.strip() if isinstance(spelling, str) else ""
+        if not clean or clean not in self.alt_spellings:
             return self
-        return cast(Self, replace(cast(Any, self), alt_spellings=filtered))
+        return cast(
+            Self,
+            replace(cast(Any, self), alt_spellings=[s for s in self.alt_spellings if s != clean]),
+        )
 
     def update_comment(self, comment: str | None) -> Self:
         """Return a new immutable copy with updated contextual comment."""
-        clean = comment.strip() if comment is not None else None
+        clean = comment.strip() if comment and comment.strip() else None
+        if clean == self.comment:
+            return self
         return cast(Self, replace(cast(Any, self), comment=clean))
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class NameBase(NameLifecycleMixin):
@@ -236,18 +253,35 @@ class NameBase(NameLifecycleMixin):
 
     def __post_init__(self) -> None:
         """Enforce base noun invariants."""
-        if not self.raw or not self.raw.strip():
+        if not self.raw.strip():
             raise ModelFormatError(f"{self.__class__.__name__} 'raw' cannot be empty.")
-        if not self.canonical or not self.canonical.strip():
+        if not self.canonical.strip():
             raise ModelFormatError(f"{self.__class__.__name__} 'canonical' cannot be empty.")
+        if any(not a.strip() for a in self.aliases):
+            raise ModelFormatError("aliases cannot contain empty or whitespace strings.")
         if len(self.aliases) != len(set(self.aliases)):
             raise ModelFormatError("Duplicate entries found in aliases.")
+        if any(not s.strip() for s in self.alt_spellings):
+            raise ModelFormatError("alt_spellings cannot contain empty or whitespace strings.")
         if len(self.alt_spellings) != len(set(self.alt_spellings)):
             raise ModelFormatError("Duplicate entries found in alt_spellings.")
+        if self.comment is not None and not self.comment.strip():
+            raise ModelFormatError(f"{self.__class__.__name__} 'comment' cannot be blank.")
+
+    def __str__(self) -> str:
+        return self.canonical
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(raw={self.raw!r}, canonical={self.canonical!r}, "
+            f"aliases={self.aliases!r}, alt_spellings={self.alt_spellings!r}, "
+            f"comment={self.comment!r})"
+        )
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class NamePerson(NameBase):
@@ -265,6 +299,8 @@ class NamePerson(NameBase):
     def __post_init__(self) -> None:
         """Enforce persona invariants."""
         super().__post_init__()
+        if any(not m.strip() for m in self.married):
+            raise ModelFormatError("married cannot contain empty or whitespace strings.")
         if len(self.married) != len(set(self.married)):
             raise ModelFormatError("Duplicate entries found in married.")
 
@@ -297,6 +333,9 @@ class NamePerson(NameBase):
         comment: str | None = None,
     ) -> NamePerson:
         """Factory constructor instantiating a validated NamePerson."""
+        if not isinstance(raw, str) or not raw.strip():
+            raise ModelFormatError("NamePerson 'raw' cannot be empty or whitespace.")
+
         clean_married: list[str] = []
         if married:
             for m in married:
@@ -321,60 +360,70 @@ class NamePerson(NameBase):
         computed_canonical = canonical.strip() if canonical and canonical.strip() else None
         if not computed_canonical:
             name_parts = [
-                p
+                p.strip()
                 for p in (prefix, given, middle, surname, suffix)
                 if isinstance(p, str) and p.strip()
             ]
             computed_canonical = " ".join(name_parts) if name_parts else raw.strip()
 
-        kwargs: dict[str, Any] = {
-            "raw": raw.strip(),
-            "canonical": computed_canonical,
-            "prefix": prefix.strip() if prefix else None,
-            "given": given.strip() if given else None,
-            "middle": middle.strip() if middle else None,
-            "surname": surname.strip() if surname else None,
-            "suffix": suffix.strip() if suffix else None,
-            "married": clean_married,
-            "aliases": clean_aliases,
-            "alt_spellings": clean_spellings,
-            "comment": comment.strip() if comment else None,
-        }
-        return cls(**kwargs)
+        return cls(
+            raw=raw.strip(),
+            canonical=computed_canonical,
+            prefix=prefix.strip() if prefix and prefix.strip() else None,
+            given=given.strip() if given and given.strip() else None,
+            middle=middle.strip() if middle and middle.strip() else None,
+            surname=surname.strip() if surname and surname.strip() else None,
+            suffix=suffix.strip() if suffix and suffix.strip() else None,
+            married=clean_married,
+            aliases=clean_aliases,
+            alt_spellings=clean_spellings,
+            comment=comment.strip() if comment and comment.strip() else None,
+        )
 
     def add_married(self, married_name: str) -> NamePerson:
         """Return a new immutable copy with unique married surname appended."""
-        clean = married_name.strip() if married_name else ""
-        if not clean:
+        if not isinstance(married_name, str) or not married_name.strip():
             raise ModelFormatError("Married name cannot be empty or whitespace.")
+        clean = married_name.strip()
         if clean in self.married:
             return self
         return replace(self, married=[*self.married, clean])
 
     def remove_married(self, married_name: str) -> NamePerson:
         """Return a new immutable copy with target married surname removed."""
-        clean = married_name.strip() if married_name else ""
-        filtered = [m for m in self.married if m != clean]
-        if len(filtered) == len(self.married):
+        clean = married_name.strip() if isinstance(married_name, str) else ""
+        if not clean or clean not in self.married:
             return self
-        return replace(self, married=filtered)
+        return replace(self, married=[m for m in self.married if m != clean])
 
     def update_parts(
         self,
-        prefix: str | None = None,
-        given: str | None = None,
-        middle: str | None = None,
-        surname: str | None = None,
-        suffix: str | None = None,
+        prefix: str | None = _UNSET,
+        given: str | None = _UNSET,
+        middle: str | None = _UNSET,
+        surname: str | None = _UNSET,
+        suffix: str | None = _UNSET,
     ) -> NamePerson:
-        """Return a new immutable copy with updated personal onomastic components."""
+        """Return a new immutable copy with updated personal onomastic components.
+
+        Passing None or blank whitespace clears the component to None; omitting an
+        argument preserves the existing component value.
+        """
+
+        def _resolve(incoming: str | None, current: str | None) -> str | None:
+            if incoming is _UNSET:
+                return current
+            if incoming is None:
+                return None
+            return incoming.strip() if incoming.strip() else None
+
         return replace(
             self,
-            prefix=prefix.strip() if prefix is not None else self.prefix,
-            given=given.strip() if given is not None else self.given,
-            middle=middle.strip() if middle is not None else self.middle,
-            surname=surname.strip() if surname is not None else self.surname,
-            suffix=suffix.strip() if suffix is not None else self.suffix,
+            prefix=_resolve(prefix, self.prefix),
+            given=_resolve(given, self.given),
+            middle=_resolve(middle, self.middle),
+            surname=_resolve(surname, self.surname),
+            suffix=_resolve(suffix, self.suffix),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -409,7 +458,7 @@ class NamePerson(NameBase):
         raw_val = data.get("raw")
         if not raw_val:
             raw_val = data.get("raw_name")
-        if not raw_val or not str(raw_val).strip():
+        if not isinstance(raw_val, str) or not raw_val.strip():
             raise ModelFormatError("Missing required field 'raw' for NamePerson.")
 
         can_val = data.get("canonical")
@@ -429,7 +478,7 @@ class NamePerson(NameBase):
             comment_val = data.get("notes")
 
         return cls.create(
-            raw=str(raw_val),
+            raw=raw_val,
             canonical=str(can_val) if can_val else None,
             prefix=data.get("prefix"),
             given=data.get("given"),
@@ -459,9 +508,19 @@ class NamePerson(NameBase):
         """Return full structured personal name representation."""
         return self.full_name
 
+    def __repr__(self) -> str:
+        return (
+            f"NamePerson(raw={self.raw!r}, canonical={self.canonical!r}, "
+            f"prefix={self.prefix!r}, given={self.given!r}, middle={self.middle!r}, "
+            f"surname={self.surname!r}, suffix={self.suffix!r}, "
+            f"married={self.married!r}, aliases={self.aliases!r}, "
+            f"alt_spellings={self.alt_spellings!r}, comment={self.comment!r})"
+        )
+
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class NameThing(NameBase):
@@ -487,6 +546,9 @@ class NameThing(NameBase):
         comment: str | None = None,
     ) -> NameThing:
         """Factory constructor instantiating a validated NameThing."""
+        if not isinstance(raw, str) or not raw.strip():
+            raise ModelFormatError("NameThing 'raw' cannot be empty or whitespace.")
+
         clean_aliases: list[str] = []
         if aliases:
             for a in aliases:
@@ -503,15 +565,14 @@ class NameThing(NameBase):
 
         computed_can = canonical.strip() if canonical and canonical.strip() else raw.strip()
 
-        kwargs: dict[str, Any] = {
-            "raw": raw.strip(),
-            "canonical": computed_can,
-            "aliases": clean_aliases,
-            "alt_spellings": clean_spellings,
-            "historic": list(historic) if historic else [],
-            "comment": comment.strip() if comment else None,
-        }
-        return cls(**kwargs)
+        return cls(
+            raw=raw.strip(),
+            canonical=computed_can,
+            aliases=clean_aliases,
+            alt_spellings=clean_spellings,
+            historic=list(historic) if historic else [],
+            comment=comment.strip() if comment and comment.strip() else None,
+        )
 
     def add_historic_variant(
         self,
@@ -521,7 +582,7 @@ class NameThing(NameBase):
         valid_period: TimePeriod | None = None,
         comment: str | None = None,
     ) -> NameThing:
-        """Return a new immutable copy appending a HistoricVariant."""
+        """Return a new immutable copy appending a unique HistoricVariant."""
         variant = HistoricVariant.create(
             raw=raw,
             name=name,
@@ -529,11 +590,15 @@ class NameThing(NameBase):
             valid_period=valid_period,
             comment=comment,
         )
+        if variant in self.historic:
+            return self
         return replace(self, historic=[*self.historic, variant])
 
     def remove_historic_variant(self, raw: str) -> NameThing:
         """Return a new immutable copy removing matching HistoricVariants by raw text."""
-        clean = raw.strip() if raw else ""
+        clean = raw.strip() if isinstance(raw, str) else ""
+        if not clean:
+            return self
         filtered = [v for v in self.historic if v.raw != clean]
         if len(filtered) == len(self.historic):
             return self
@@ -561,7 +626,7 @@ class NameThing(NameBase):
         raw_val = data.get("raw")
         if not raw_val:
             raw_val = data.get("raw_name")
-        if not raw_val or not str(raw_val).strip():
+        if not isinstance(raw_val, str) or not raw_val.strip():
             raise ModelFormatError("Missing required field 'raw' for NameThing.")
 
         can_val = data.get("canonical")
@@ -574,10 +639,8 @@ class NameThing(NameBase):
             for item in raw_historic:
                 if isinstance(item, dict):
                     variants.append(HistoricVariant.from_dict(item))
-                elif hasattr(item, "raw") and hasattr(item, "historic_name_type"):
-                    variants.append(cast(HistoricVariant, item))
-                else:
-                    continue
+                elif isinstance(item, HistoricVariant):
+                    variants.append(item)
 
         alt_spellings_list = data.get("alt_spellings")
         if alt_spellings_list is None:
@@ -588,7 +651,7 @@ class NameThing(NameBase):
             comment_val = data.get("notes")
 
         return cls.create(
-            raw=str(raw_val),
+            raw=raw_val,
             canonical=str(can_val) if can_val else None,
             aliases=data.get("aliases"),
             alt_spellings=alt_spellings_list,
@@ -612,6 +675,13 @@ class NameThing(NameBase):
     def __str__(self) -> str:
         """Render concise human-readable title representation."""
         return self.canonical
+
+    def __repr__(self) -> str:
+        return (
+            f"NameThing(raw={self.raw!r}, canonical={self.canonical!r}, "
+            f"aliases={self.aliases!r}, alt_spellings={self.alt_spellings!r}, "
+            f"historic={self.historic!r}, comment={self.comment!r})"
+        )
 
 
 # ==============================================================================

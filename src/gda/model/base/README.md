@@ -22,7 +22,6 @@ Reusable domain composite building blocks: audit stamps, tombstone records, onom
 | `name.py` | `1.1.0+build.8` | Canonical personal, jurisdictional, artifact, and historical naming representations. |
 | `note.py` | `1.0.0+build.9` | Archival research note representation using Pydantic dataclasses. |
 | `source.py` | `1.0.0+build.4` | Canonical source composites, citation pointers, and archival metadata headers. |
-| `time_period.py` | `1.0.0+build.1` | Temporal bounding primitives for historical entity lifecycles. |
 | `tombstone.py` | `1.0.0+build.6` | In-place entity lifecycle and deprecation tombstone using Pydantic dataclasses. |
 | `transcript.py` | `1.0.0+build.3` | Full-text transcription and abstract representation using Pydantic dataclasses. |
 

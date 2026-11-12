@@ -10,9 +10,9 @@ Operational Role:
     lightweight contextual comments.
 
 Architecture:
-    - AssociatedRole: Controlled enumeration imported from gda.enums.core.
-    - AssociatedIndividual: Pydantic dataclass validating participant associations,
-      primary/tertiary role exclusivity, and residence site anchoring.
+    - AssociatedRole: Controlled enumeration imported from gda.core.enums.core.
+    - AssociatedIndividual: Strict Pydantic dataclass validating participant
+      associations, primary/tertiary role exclusivity, and residence site anchoring.
 """
 
 from __future__ import annotations
@@ -24,28 +24,25 @@ from typing import Any, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.core import AssociatedRole
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.enums.core import AssociatedRole
 from gda.model.atom.id import IndividualID, SiteID
 
-__version__ = "1.0.0+build.7"
+__version__ = "1.1.0+build.1"
+
+__all__ = ["AssociatedIndividual"]
 
 _logger = GDALogger(__name__)
 
 
-# ==============================================================================
-# PARTICIPANT ASSOCIATION RECORD
-# ==============================================================================
-
-
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class AssociatedIndividual(IntrospectableMixin):
     """Secondary participant mentioned in an archival source or assertion.
 
     Attributes:
-        role: Primary controlled classification from gda.enums.core.AssociatedRole.
+        role: Primary controlled classification from gda.core.enums.core.AssociatedRole.
         individual_id: Resolved canonical individual entity ID (preferred if known).
         name_raw: Verbatim transcribed name (mandatory if individual_id is omitted).
         role_verbatim: Original unconstrained title or relationship text.
@@ -121,17 +118,23 @@ class AssociatedIndividual(IntrospectableMixin):
             if (individual_id is None or isinstance(individual_id, IndividualID))
             else IndividualID(individual_id)
         )
-        resolved_role = role if isinstance(role, AssociatedRole) else AssociatedRole(role)
-        resolved_tertiary = [
-            r if isinstance(r, AssociatedRole) else AssociatedRole(r)
-            for r in (tertiary_roles or [])
-        ]
+        try:
+            resolved_role = (
+                role if isinstance(role, AssociatedRole) else AssociatedRole(role.strip().upper())
+            )
+            resolved_tertiary = [
+                r if isinstance(r, AssociatedRole) else AssociatedRole(r.strip().upper())
+                for r in (tertiary_roles or [])
+            ]
+        except ValueError as exc:
+            raise ModelFormatError(f"Invalid AssociatedRole value: {exc}") from exc
+
         resolved_residence = (
             residence if (residence is None or isinstance(residence, SiteID)) else SiteID(residence)
         )
-        clean_name = name_raw.strip() if name_raw is not None else None
-        clean_comment = comment.strip() if comment is not None else None
-        clean_verbatim = role_verbatim.strip() if role_verbatim is not None else None
+        clean_name = name_raw.strip() if name_raw and name_raw.strip() else None
+        clean_comment = comment.strip() if comment and comment.strip() else None
+        clean_verbatim = role_verbatim.strip() if role_verbatim and role_verbatim.strip() else None
 
         return cls(
             role=resolved_role,
@@ -145,7 +148,12 @@ class AssociatedIndividual(IntrospectableMixin):
 
     def update_role(self, role: AssociatedRole | str) -> Self:
         """Return a new immutable copy with updated primary role."""
-        resolved_role = role if isinstance(role, AssociatedRole) else AssociatedRole(role)
+        try:
+            resolved_role = (
+                role if isinstance(role, AssociatedRole) else AssociatedRole(role.strip().upper())
+            )
+        except ValueError as exc:
+            raise ModelFormatError(f"Invalid AssociatedRole value: {exc}") from exc
         if resolved_role == self.role:
             return self
         return replace(self, role=resolved_role)
@@ -161,7 +169,7 @@ class AssociatedIndividual(IntrospectableMixin):
 
     def update_comment(self, comment: str | None) -> Self:
         """Return a new immutable copy with updated commentary."""
-        clean = comment.strip() if comment is not None else None
+        clean = comment.strip() if comment and comment.strip() else None
         if clean == self.comment:
             return self
         return replace(self, comment=clean)
@@ -218,6 +226,3 @@ class AssociatedIndividual(IntrospectableMixin):
             f"role_verbatim={self.role_verbatim!r}, tertiary_roles={self.tertiary_roles!r}, "
             f"residence={self.residence!r}, comment={self.comment!r})"
         )
-
-
-__all__ = ["AssociatedIndividual"]
