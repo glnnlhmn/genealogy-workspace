@@ -22,7 +22,7 @@ from gda.core.errors import ModelFormatError, ModelPrefixMismatchError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import ATOM_ID_REGEX, UUID_V4_REGEX
 
-__version__ = "1.0.2+build.3"
+__version__ = "1.0.2+build.4"
 
 __all__ = [
     "AtomID",
@@ -33,6 +33,7 @@ __all__ = [
     "LocationID",
     "MediaID",
     "NoteID",
+    "OrganizationID",
     "RepositoryID",
     "ServiceRecordID",
     "SiteID",
@@ -168,6 +169,13 @@ class DraftRecordID(AtomID):
     """Canonical Draft Record entity identifier ('DRF-######')."""
 
     EXPECTED_PREFIX: ClassVar[str | None] = "DRF"
+
+
+@dataclass(eq=False, repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
+class OrganizationID(AtomID):
+    """Canonical Organization entity identifier ('ORG-######')."""
+
+    EXPECTED_PREFIX: ClassVar[str | None] = "ORG"
 
 
 @total_ordering

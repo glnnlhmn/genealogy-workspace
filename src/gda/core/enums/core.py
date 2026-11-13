@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from enum import IntEnum, StrEnum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "AssociatedRole",
@@ -140,6 +140,7 @@ class SmartIDPrefix(StrEnum):
     NOT = "NOT"  # Note
     REP = "REP"  # Repository
     DRF = "DRF"  # DraftRecord
+    ORG = "ORG"  # Organization
 
 
 class QuayScore(IntEnum):

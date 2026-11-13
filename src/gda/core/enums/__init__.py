@@ -5,7 +5,7 @@ Authoritative categorical and domain enumerations package for GDA Core.
 Operational Role:
     Provides standardized classifications, evidentiary confidence metrics,
     kinship roles, onomastic classifications, temporal qualifiers, military
-    classifications, and archival categories.
+    classifications, organization taxonomies, and archival categories.
 """
 
 from __future__ import annotations
@@ -73,6 +73,11 @@ from gda.core.enums.military import (
     WwiCitizenshipStatus,
     WwiiDraftWave,
 )
+from gda.core.enums.orgs import (
+    AffiliationType,
+    MembershipStatus,
+    OrganizationCategory,
+)
 from gda.core.enums.site import (
     MarkerCondition,
     MarkerMaterial,
@@ -103,9 +108,10 @@ from gda.core.enums.vital import (
     VitalModifier,
 )
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.1.0+build.2"
 
 __all__ = [
+    "AffiliationType",
     "AssociatedRole",
     "AwardScope",
     "BirthPlurality",
@@ -141,6 +147,7 @@ __all__ = [
     "MarkerCondition",
     "MarkerMaterial",
     "MarkerType",
+    "MembershipStatus",
     "MilitaryAwardTier",
     "MilitaryBranch",
     "MilitaryConflict",
@@ -150,6 +157,7 @@ __all__ = [
     "MusterRollType",
     "NoteType",
     "OperationalStatus",
+    "OrganizationCategory",
     "PedigreeType",
     "PensionClaimantRole",
     "PensionPaymentAuthority",

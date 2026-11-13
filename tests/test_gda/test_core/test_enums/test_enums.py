@@ -24,7 +24,7 @@ from pydantic import BaseModel, ValidationError
 
 import gda.core.enums as ge
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.1.0+build.2"
 
 
 # ==============================================================================
@@ -70,14 +70,14 @@ def test_all_enum_classes_are_exported_in_dunder_all(
 
 
 # ==============================================================================
-# GROUP 2: Exact Sealed Public Interface Contract (74 Items)
+# GROUP 2: Exact Sealed Public Interface Contract (77 Items)
 # ==============================================================================
 
 
 @pytest.mark.smoke
 @pytest.mark.integrity
 def test_enums_package_exact_public_interface() -> None:
-    """Verify gda.core.enums.__all__ matches the exact sealed public contract of 74 items."""
+    """Verify gda.core.enums.__all__ matches the exact sealed public contract of 77 items."""
     exact_expected_contract = {
         # Core Domain (7)
         "AssociatedRole",
@@ -162,6 +162,10 @@ def test_enums_package_exact_public_interface() -> None:
         "SssClassification",
         "WwiCitizenshipStatus",
         "WwiiDraftWave",
+        # Orgs Domain (3)
+        "AffiliationType",
+        "MembershipStatus",
+        "OrganizationCategory",
     }
 
     actual_exported = set(ge.__all__)
