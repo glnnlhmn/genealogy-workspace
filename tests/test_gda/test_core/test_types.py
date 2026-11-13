@@ -21,7 +21,7 @@ import pytest
 
 import gda.core.types as prim
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.2.0+build.1"
 
 
 # ==============================================================================
@@ -181,6 +181,23 @@ def test_military_domain_bounds_and_era_year_sets() -> None:
     assert prim.WWI_DRAFT_YEARS == frozenset({1917, 1918})
     assert prim.WWII_DRAFT_YEARS == frozenset({1940, 1941, 1942, 1943, 1944, 1945, 1946})
     assert prim.MODERN_SSS_MIN_YEAR == 1948
+
+
+@pytest.mark.unit
+def test_enumerated_schedule_bounds_and_era_year_sets() -> None:
+    """Verify centralized census and tax assessment bounds and historical year sets."""
+    assert prim.CENSUS_SHEET_SIDES == frozenset({"A", "B"})
+    assert prim.MAX_CENSUS_LINE_NUMBER == 200
+    assert prim.TAX_ASSESSMENT_MIN_YEAR == 1600
+    assert prim.US_FEDERAL_CENSUS_TALLY_YEARS == frozenset({1790, 1800, 1810, 1820, 1830, 1840})
+    assert prim.US_FEDERAL_CENSUS_1850_1870_YEARS == frozenset({1850, 1860, 1870})
+    assert prim.US_FEDERAL_CENSUS_1900_1910_YEARS == frozenset({1900, 1910})
+    assert len(prim.US_FEDERAL_CENSUS_YEARS) == 17
+    assert prim.US_MORTALITY_SCHEDULE_YEARS == frozenset({1850, 1860, 1870, 1880, 1885})
+    assert prim.US_AGRICULTURAL_SCHEDULE_YEARS == frozenset({1850, 1860, 1870, 1880})
+    assert prim.US_MANUFACTURING_SCHEDULE_YEARS == frozenset({1810, 1820, 1850, 1860, 1870, 1880})
+    assert prim.US_SLAVE_SCHEDULE_YEARS == frozenset({1850, 1860})
+    assert prim.US_VETERANS_SCHEDULE_YEAR == 1890
 
 
 @pytest.mark.unit
