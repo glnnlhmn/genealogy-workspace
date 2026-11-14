@@ -20,6 +20,7 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.probate import EstatePropertyCategory, ProbateLedgerEntryKind
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
@@ -32,7 +33,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "EstateInventoryRecord",
@@ -82,6 +83,17 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _parse_probate_enum[E](enum_cls: type[E], raw: Any, field_name: str) -> E:
+    """Resolve a probate StrEnum by instance, exact value, or uppercase member name."""
+    if isinstance(raw, enum_cls):
+        return raw
+    token = str(raw).strip().upper()
+    for member in enum_cls:  # type: ignore[attr-defined]
+        if token in (member.name, member.value):
+            return member  # type: ignore[no-any-return]
+    raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.")
+
+
 @dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
 class InventoryLineItem(IntrospectableMixin):
     """Single appraised real or personal property row in an estate inventory."""
@@ -95,8 +107,8 @@ class InventoryLineItem(IntrospectableMixin):
         ...,
         description="Verbatim description of the chattel, livestock, note, or real estate parcel.",
     )
-    property_category: str = Field(
-        default="OTHER",
+    property_category: EstatePropertyCategory = Field(
+        default=EstatePropertyCategory.OTHER,
         description="Taxonomic asset class (REAL_ESTATE, LIVESTOCK, HOUSEHOLD, TOOLS, NOTES_RECEIVABLE, CASH, OTHER).",
     )
     appraised_value_raw: str | None = Field(
@@ -118,7 +130,7 @@ class InventoryLineItem(IntrospectableMixin):
     )
 
     def __post_init__(self) -> None:
-        """Enforce non-empty item description and normalized category/currency codes."""
+        """Enforce non-empty item description and normalized currency code."""
         clean_desc = self.item_description_raw.strip()
         if not clean_desc:
             raise ModelFormatError(
@@ -127,15 +139,6 @@ class InventoryLineItem(IntrospectableMixin):
             )
         if clean_desc != self.item_description_raw:
             object.__setattr__(self, "item_description_raw", clean_desc)
-
-        clean_cat = self.property_category.strip().upper()
-        if not clean_cat:
-            raise ModelFormatError(
-                "InventoryLineItem 'property_category' cannot be empty or whitespace.",
-                details={"line_number": self.line_number},
-            )
-        if clean_cat != self.property_category:
-            object.__setattr__(self, "property_category", clean_cat)
 
         clean_curr = self.currency_code.strip().upper()
         if len(clean_curr) != 3 or not clean_curr.isalpha():
@@ -150,7 +153,7 @@ class InventoryLineItem(IntrospectableMixin):
         cls,
         line_number: int,
         item_description_raw: str,
-        property_category: str = "OTHER",
+        property_category: EstatePropertyCategory | str = EstatePropertyCategory.OTHER,
         appraised_value_raw: str | None = None,
         appraised_value_numeric: float | int | None = None,
         currency_code: str = "USD",
@@ -161,10 +164,8 @@ class InventoryLineItem(IntrospectableMixin):
         return cls(
             line_number=line_number,
             item_description_raw=item_description_raw,
-            property_category=(
-                property_category.strip().upper()
-                if isinstance(property_category, str)
-                else property_category
+            property_category=_parse_probate_enum(
+                EstatePropertyCategory, property_category, "EstatePropertyCategory"
             ),
             appraised_value_raw=appraised_value_raw,
             appraised_value_numeric=res_num,
@@ -179,7 +180,7 @@ class InventoryLineItem(IntrospectableMixin):
         data: dict[str, Any] = {
             "line_number": self.line_number,
             "item_description_raw": self.item_description_raw,
-            "property_category": self.property_category,
+            "property_category": self.property_category.value,
             "currency_code": self.currency_code,
         }
         if self.appraised_value_raw is not None:
@@ -204,7 +205,7 @@ class InventoryLineItem(IntrospectableMixin):
         return cls.create(
             line_number=int(line_num),
             item_description_raw=str(desc),
-            property_category=str(data.get("property_category", "OTHER")),
+            property_category=data.get("property_category", EstatePropertyCategory.OTHER),
             appraised_value_raw=data.get("appraised_value_raw"),
             appraised_value_numeric=data.get("appraised_value_numeric"),
             currency_code=str(data.get("currency_code", "USD")),
@@ -241,8 +242,8 @@ class ProbateLedgerEntry(IntrospectableMixin):
         ...,
         description="Verbatim name of the creditor, debtor, physician, undertaker, or distributee.",
     )
-    entry_kind: str = Field(
-        default="DEBT_PAID",
+    entry_kind: ProbateLedgerEntryKind = Field(
+        default=ProbateLedgerEntryKind.DEBT_PAID,
         description="Accounting line classification (RECEIPT, DEBT_PAID, EXPENSE, DISTRIBUTION).",
     )
     party_id: IndividualID | None = Field(
@@ -264,7 +265,7 @@ class ProbateLedgerEntry(IntrospectableMixin):
     )
 
     def __post_init__(self) -> None:
-        """Enforce non-empty party_name_raw and uppercase entry_kind."""
+        """Enforce non-empty party_name_raw hygiene."""
         clean_party = self.party_name_raw.strip()
         if not clean_party:
             raise ModelFormatError(
@@ -274,21 +275,12 @@ class ProbateLedgerEntry(IntrospectableMixin):
         if clean_party != self.party_name_raw:
             object.__setattr__(self, "party_name_raw", clean_party)
 
-        clean_kind = self.entry_kind.strip().upper()
-        if not clean_kind:
-            raise ModelFormatError(
-                "ProbateLedgerEntry 'entry_kind' cannot be empty or whitespace.",
-                details={"line_number": self.line_number},
-            )
-        if clean_kind != self.entry_kind:
-            object.__setattr__(self, "entry_kind", clean_kind)
-
     @classmethod
     def create(
         cls,
         line_number: int,
         party_name_raw: str,
-        entry_kind: str = "DEBT_PAID",
+        entry_kind: ProbateLedgerEntryKind | str = ProbateLedgerEntryKind.DEBT_PAID,
         party_id: IndividualID | str | None = None,
         purpose_raw: str | None = None,
         amount_raw: str | None = None,
@@ -304,7 +296,9 @@ class ProbateLedgerEntry(IntrospectableMixin):
         return cls(
             line_number=line_number,
             party_name_raw=party_name_raw,
-            entry_kind=(entry_kind.strip().upper() if isinstance(entry_kind, str) else entry_kind),
+            entry_kind=_parse_probate_enum(
+                ProbateLedgerEntryKind, entry_kind, "ProbateLedgerEntryKind"
+            ),
             party_id=res_party,
             purpose_raw=purpose_raw,
             amount_raw=amount_raw,
@@ -316,7 +310,7 @@ class ProbateLedgerEntry(IntrospectableMixin):
         data: dict[str, Any] = {
             "line_number": self.line_number,
             "party_name_raw": self.party_name_raw,
-            "entry_kind": self.entry_kind,
+            "entry_kind": self.entry_kind.value,
         }
         if self.party_id is not None:
             data["party_id"] = str(self.party_id)
@@ -342,7 +336,7 @@ class ProbateLedgerEntry(IntrospectableMixin):
         return cls.create(
             line_number=int(line_num),
             party_name_raw=str(party),
-            entry_kind=str(data.get("entry_kind", "DEBT_PAID")),
+            entry_kind=data.get("entry_kind", ProbateLedgerEntryKind.DEBT_PAID),
             party_id=data.get("party_id"),
             purpose_raw=data.get("purpose_raw"),
             amount_raw=data.get("amount_raw"),
@@ -365,7 +359,7 @@ class ProbateLedgerEntry(IntrospectableMixin):
         return cls.from_dict(data)
 
     def __str__(self) -> str:
-        return f"Line {self.line_number}: {self.party_name_raw} [{self.entry_kind}]"
+        return f"Line {self.line_number}: {self.party_name_raw} [{self.entry_kind.value}]"
 
 
 @dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))

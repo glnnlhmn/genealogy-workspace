@@ -5,7 +5,8 @@ Comprehensive unit tests for gda.model.probate.inventory
 
 Operational Role:
     Exercises InventoryLineItem, ProbateLedgerEntry, and EstateInventoryRecord
-    creation, numeric valuation totals, flatten_items() and flatten_ledger_entries()
+    creation, EstatePropertyCategory and ProbateLedgerEntryKind enum parsing,
+    numeric valuation totals, flatten_items() and flatten_ledger_entries()
     tabular projections, dict/JSON round-trip serialization, and defensive
     deserialization boundaries.
 """
@@ -15,6 +16,7 @@ from __future__ import annotations
 import pytest
 
 from gda.core.enums.core import AssociatedRole
+from gda.core.enums.probate import EstatePropertyCategory, ProbateLedgerEntryKind
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
@@ -30,7 +32,7 @@ from gda.model.probate import (
     ProbateLedgerEntry,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.1.0+build.1"
 
 _SID = "11111111-1111-4111-8111-111111111111"
 _SID_2 = "22222222-2222-4222-8222-222222222222"
@@ -70,7 +72,7 @@ def test_inventory_item_ledger_and_record_roundtrip() -> None:
     item2 = InventoryLineItem.create(
         line_number=2,
         item_description_raw="1 yoke of working oxen",
-        property_category="LIVESTOCK",
+        property_category=EstatePropertyCategory.LIVESTOCK,
         appraised_value_raw="$145.00",
         appraised_value_numeric=145.0,
     )
@@ -80,7 +82,8 @@ def test_inventory_item_ledger_and_record_roundtrip() -> None:
     )
 
     assert item1.item_description_raw == "Homestead farm of 80 acres in Concord"
-    assert item1.property_category == "REAL_ESTATE"
+    assert item1.property_category is EstatePropertyCategory.REAL_ESTATE
+    assert item2.property_category is EstatePropertyCategory.LIVESTOCK
     assert item1.currency_code == "USD"
     assert str(item1) == "Line 1: Homestead farm of 80 acres in Concord"
     assert InventoryLineItem.from_json(item1.to_json()) == item1
@@ -102,10 +105,12 @@ def test_inventory_item_ledger_and_record_roundtrip() -> None:
     led2 = ProbateLedgerEntry.create(
         line_number=2,
         party_name_raw="John H. Abbott",
+        entry_kind=ProbateLedgerEntryKind.DISTRIBUTION,
     )
 
     assert led1.party_name_raw == "Dr. Charles P. Gage"
-    assert led1.entry_kind == "DEBT_PAID"
+    assert led1.entry_kind is ProbateLedgerEntryKind.DEBT_PAID
+    assert led2.entry_kind is ProbateLedgerEntryKind.DISTRIBUTION
     assert str(led1) == "Line 1: Dr. Charles P. Gage [DEBT_PAID]"
     assert ProbateLedgerEntry.from_json(led1.to_json()) == led1
 
@@ -249,20 +254,18 @@ def test_inventory_validation_and_minimal_roundtrip() -> None:
     direct_item = InventoryLineItem(
         line_number=1,
         item_description_raw="  Brass clock  ",
-        property_category="  household  ",
         currency_code="  gbp  ",
     )
     assert direct_item.item_description_raw == "Brass clock"
-    assert direct_item.property_category == "HOUSEHOLD"
+    assert direct_item.property_category is EstatePropertyCategory.OTHER
     assert direct_item.currency_code == "GBP"
 
     direct_led = ProbateLedgerEntry(
         line_number=1,
         party_name_raw="  John Smith  ",
-        entry_kind="  receipt  ",
     )
     assert direct_led.party_name_raw == "John Smith"
-    assert direct_led.entry_kind == "RECEIPT"
+    assert direct_led.entry_kind is ProbateLedgerEntryKind.DEBT_PAID
 
     direct_rec = EstateInventoryRecord(
         source_id=SourceID(_SID),
@@ -284,9 +287,9 @@ def test_inventory_validation_and_minimal_roundtrip() -> None:
     with pytest.raises(ModelFormatError, match="item_description_raw"):
         InventoryLineItem.create(line_number=1, item_description_raw="   ")
 
-    with pytest.raises(ModelFormatError, match="property_category"):
+    with pytest.raises(ModelFormatError, match="Invalid EstatePropertyCategory value"):
         InventoryLineItem.create(
-            line_number=1, item_description_raw="Clock", property_category="   "
+            line_number=1, item_description_raw="Clock", property_category="INVALID_CAT"
         )
 
     with pytest.raises(ModelFormatError, match="Invalid currency_code"):
@@ -305,8 +308,8 @@ def test_inventory_validation_and_minimal_roundtrip() -> None:
     with pytest.raises(ModelFormatError, match="party_name_raw"):
         ProbateLedgerEntry.create(line_number=1, party_name_raw="   ")
 
-    with pytest.raises(ModelFormatError, match="entry_kind"):
-        ProbateLedgerEntry.create(line_number=1, party_name_raw="Party", entry_kind="   ")
+    with pytest.raises(ModelFormatError, match="Invalid ProbateLedgerEntryKind value"):
+        ProbateLedgerEntry.create(line_number=1, party_name_raw="Party", entry_kind="INVALID_KIND")
 
     with pytest.raises(ModelFormatError, match="must be a dictionary"):
         ProbateLedgerEntry.from_dict("bad")  # type: ignore[arg-type]

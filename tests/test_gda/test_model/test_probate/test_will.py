@@ -5,8 +5,9 @@ Comprehensive unit tests for gda.model.probate.will
 
 Operational Role:
     Exercises WillBequest and ProbateRecord creation, URN:WILL and URN:SRC
-    resolution, category and record_type bounds, duplicate bequest prevention,
-    dict/JSON round-trip serialization, and defensive deserialization boundaries.
+    resolution, BequestType enum parsing, category and record_type bounds,
+    duplicate bequest prevention, dict/JSON round-trip serialization, and
+    defensive deserialization boundaries.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 import pytest
 
 from gda.core.enums.core import AssociatedRole
+from gda.core.enums.probate import BequestType
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
@@ -25,7 +27,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.tombstone import Tombstone
 from gda.model.probate import ProbateRecord, WillBequest
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.1.0+build.1"
 
 _SID = "11111111-1111-4111-8111-111111111111"
 _SID_2 = "22222222-2222-4222-8222-222222222222"
@@ -67,11 +69,13 @@ def test_will_bequest_and_probate_record_roundtrip() -> None:
         item_number=2,
         beneficiary_name_raw="John H. Abbott",
         property_or_amount_raw="$500 in lawful money",
+        bequest_type=BequestType.MONETARY,
     )
 
     assert b1.beneficiary_name_raw == "Mary E. Abbott"
     assert b1.property_or_amount_raw == "Homestead farm of 80 acres in Concord"
-    assert b1.bequest_type == "REAL_ESTATE"
+    assert b1.bequest_type is BequestType.REAL_ESTATE
+    assert b2.bequest_type is BequestType.MONETARY
     assert str(b1) == "Item 1: Mary E. Abbott (Homestead farm of 80 acres in Concord)"
     assert WillBequest.from_json(b1.to_json()) == b1
 
@@ -188,16 +192,15 @@ def test_probate_record_validation_and_minimal_roundtrip() -> None:
         assert opt_key not in min_dict
     assert ProbateRecord.from_dict(min_dict) == minimal
 
-    # Direct constructor normalizes whitespace/case on WillBequest and ProbateRecord
+    # Direct constructor normalizes whitespace on WillBequest and ProbateRecord
     direct_b = WillBequest(
         item_number=1,
         beneficiary_name_raw="  Hannah Kimball  ",
         property_or_amount_raw="  Silver spoons  ",
-        bequest_type="  personal_property  ",
     )
     assert direct_b.beneficiary_name_raw == "Hannah Kimball"
     assert direct_b.property_or_amount_raw == "Silver spoons"
-    assert direct_b.bequest_type == "PERSONAL_PROPERTY"
+    assert direct_b.bequest_type is BequestType.PERSONAL_PROPERTY
 
     direct_rec = ProbateRecord(
         source_id=SourceID(_SID),
@@ -220,12 +223,12 @@ def test_probate_record_validation_and_minimal_roundtrip() -> None:
     with pytest.raises(ModelFormatError, match="property_or_amount_raw"):
         WillBequest.create(item_number=1, beneficiary_name_raw="Heir", property_or_amount_raw="   ")
 
-    with pytest.raises(ModelFormatError, match="bequest_type"):
+    with pytest.raises(ModelFormatError, match="Invalid BequestType value"):
         WillBequest.create(
             item_number=1,
             beneficiary_name_raw="Heir",
             property_or_amount_raw="$10",
-            bequest_type="   ",
+            bequest_type="INVALID_KIND",
         )
 
     with pytest.raises(ModelFormatError, match="must be a dictionary"):

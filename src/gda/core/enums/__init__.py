@@ -5,7 +5,8 @@ Authoritative categorical and domain enumerations package for GDA Core.
 Operational Role:
     Provides standardized classifications, evidentiary confidence metrics,
     kinship roles, onomastic classifications, temporal qualifiers, military
-    classifications, organization taxonomies, and archival categories.
+    classifications, organization taxonomies, probate/land classifications,
+    and archival categories.
 """
 
 from __future__ import annotations
@@ -45,6 +46,10 @@ from gda.core.enums.fiscal import (
     ResidentialStatus,
     TaxpayerClassification,
 )
+from gda.core.enums.land import (
+    DeedPartyRole,
+    LandGrantBasis,
+)
 from gda.core.enums.location import (
     JurisdictionCategory,
     LocationType,
@@ -78,6 +83,11 @@ from gda.core.enums.orgs import (
     MembershipStatus,
     OrganizationCategory,
 )
+from gda.core.enums.probate import (
+    BequestType,
+    EstatePropertyCategory,
+    ProbateLedgerEntryKind,
+)
 from gda.core.enums.site import (
     MarkerCondition,
     MarkerMaterial,
@@ -108,12 +118,13 @@ from gda.core.enums.vital import (
     VitalModifier,
 )
 
-__version__ = "1.1.0+build.2"
+__version__ = "1.2.0+build.1"
 
 __all__ = [
     "AffiliationType",
     "AssociatedRole",
     "AwardScope",
+    "BequestType",
     "BirthPlurality",
     "BountyLandAct",
     "CasualtyCategory",
@@ -124,11 +135,13 @@ __all__ = [
     "ColonialMilitiaClass",
     "ColonialWarPeriod",
     "DateModifier",
+    "DeedPartyRole",
     "DispositionType",
     "DivorceDecreeType",
     "DocumentSide",
     "DraftCardTier",
     "EducationLevel",
+    "EstatePropertyCategory",
     "EyeColor",
     "FactType",
     "HairColor",
@@ -137,6 +150,7 @@ __all__ = [
     "IDType",
     "IntermentCemeteryType",
     "JurisdictionCategory",
+    "LandGrantBasis",
     "LegalPlaintiff",
     "Legibility",
     "LocationType",
@@ -163,6 +177,7 @@ __all__ = [
     "PensionPaymentAuthority",
     "PhysicalBuild",
     "PowCampType",
+    "ProbateLedgerEntryKind",
     "PublicationFrequency",
     "QualityAssessment",
     "QuayScore",

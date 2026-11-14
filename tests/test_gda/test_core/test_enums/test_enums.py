@@ -24,7 +24,7 @@ from pydantic import BaseModel, ValidationError
 
 import gda.core.enums as ge
 
-__version__ = "1.1.0+build.2"
+__version__ = "1.2.0+build.1"
 
 
 # ==============================================================================
@@ -70,14 +70,14 @@ def test_all_enum_classes_are_exported_in_dunder_all(
 
 
 # ==============================================================================
-# GROUP 2: Exact Sealed Public Interface Contract (77 Items)
+# GROUP 2: Exact Sealed Public Interface Contract (82 Items)
 # ==============================================================================
 
 
 @pytest.mark.smoke
 @pytest.mark.integrity
 def test_enums_package_exact_public_interface() -> None:
-    """Verify gda.core.enums.__all__ matches the exact sealed public contract of 77 items."""
+    """Verify gda.core.enums.__all__ matches the exact sealed public contract of 82 items."""
     exact_expected_contract = {
         # Core Domain (7)
         "AssociatedRole",
@@ -119,6 +119,13 @@ def test_enums_package_exact_public_interface() -> None:
         "HomeOwnership",
         "ResidentialStatus",
         "TaxpayerClassification",
+        # Land Domain (2)
+        "DeedPartyRole",
+        "LandGrantBasis",
+        # Probate Domain (3)
+        "BequestType",
+        "EstatePropertyCategory",
+        "ProbateLedgerEntryKind",
         # Archival Domain (12)
         "DocumentSide",
         "EyeColor",

@@ -19,6 +19,7 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.probate import BequestType
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
@@ -31,7 +32,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "ProbateRecord",
@@ -83,6 +84,17 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _parse_bequest_type(raw: BequestType | str) -> BequestType:
+    """Resolve BequestType by enum instance, exact value, or uppercase member name."""
+    if isinstance(raw, BequestType):
+        return raw
+    token = str(raw).strip().upper()
+    for member in BequestType:
+        if token in (member.name, member.value):
+            return member
+    raise ModelFormatError(f"Invalid BequestType value: '{raw}'.")
+
+
 @dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
 class WillBequest(IntrospectableMixin):
     """Single structured devise, legacy, or guardianship clause in a will or codicil."""
@@ -108,9 +120,9 @@ class WillBequest(IntrospectableMixin):
         default=None,
         description="Verbatim kinship or status phrase (e.g., 'beloved wife', 'eldest son').",
     )
-    bequest_type: str = Field(
-        default="PERSONAL_PROPERTY",
-        description="Classification of bequest (REAL_ESTATE, PERSONAL_PROPERTY, MONETARY, RESIDUARY, GUARDIANSHIP).",
+    bequest_type: BequestType = Field(
+        default=BequestType.PERSONAL_PROPERTY,
+        description="Classification of bequest (REAL_ESTATE, PERSONAL_PROPERTY, MONETARY, RESIDUARY, GUARDIANSHIP, OTHER).",
     )
     conditions_raw: str | None = Field(
         default=None,
@@ -118,7 +130,7 @@ class WillBequest(IntrospectableMixin):
     )
 
     def __post_init__(self) -> None:
-        """Enforce non-empty beneficiary, bequest description, and uppercase bequest_type."""
+        """Enforce non-empty beneficiary and bequest description hygiene."""
         clean_ben = self.beneficiary_name_raw.strip()
         if not clean_ben:
             raise ModelFormatError(
@@ -137,15 +149,6 @@ class WillBequest(IntrospectableMixin):
         if clean_prop != self.property_or_amount_raw:
             object.__setattr__(self, "property_or_amount_raw", clean_prop)
 
-        clean_type = self.bequest_type.strip().upper()
-        if not clean_type:
-            raise ModelFormatError(
-                "WillBequest 'bequest_type' cannot be empty or whitespace.",
-                details={"item_number": self.item_number},
-            )
-        if clean_type != self.bequest_type:
-            object.__setattr__(self, "bequest_type", clean_type)
-
     @classmethod
     def create(
         cls,
@@ -154,7 +157,7 @@ class WillBequest(IntrospectableMixin):
         property_or_amount_raw: str,
         beneficiary_id: IndividualID | str | None = None,
         relationship_raw: str | None = None,
-        bequest_type: str = "PERSONAL_PROPERTY",
+        bequest_type: BequestType | str = BequestType.PERSONAL_PROPERTY,
         conditions_raw: str | None = None,
     ) -> WillBequest:
         """Factory constructor instantiating a validated WillBequest."""
@@ -169,9 +172,7 @@ class WillBequest(IntrospectableMixin):
             property_or_amount_raw=property_or_amount_raw,
             beneficiary_id=res_ben,
             relationship_raw=relationship_raw,
-            bequest_type=(
-                bequest_type.strip().upper() if isinstance(bequest_type, str) else bequest_type
-            ),
+            bequest_type=_parse_bequest_type(bequest_type),
             conditions_raw=conditions_raw,
         )
 
@@ -181,7 +182,7 @@ class WillBequest(IntrospectableMixin):
             "item_number": self.item_number,
             "beneficiary_name_raw": self.beneficiary_name_raw,
             "property_or_amount_raw": self.property_or_amount_raw,
-            "bequest_type": self.bequest_type,
+            "bequest_type": self.bequest_type.value,
         }
         if self.beneficiary_id is not None:
             data["beneficiary_id"] = str(self.beneficiary_id)
@@ -210,7 +211,7 @@ class WillBequest(IntrospectableMixin):
             property_or_amount_raw=str(prop),
             beneficiary_id=data.get("beneficiary_id"),
             relationship_raw=data.get("relationship_raw"),
-            bequest_type=str(data.get("bequest_type", "PERSONAL_PROPERTY")),
+            bequest_type=data.get("bequest_type", BequestType.PERSONAL_PROPERTY),
             conditions_raw=data.get("conditions_raw"),
         )
 
