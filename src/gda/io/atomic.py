@@ -24,7 +24,15 @@ from typing import IO, Any
 from gda.core.introspectable import IntrospectableMixin
 from gda.io.errors import AtomicWriteError, DirectoryCreationError, FileLockError
 
-__version__ = "0.2.0+build.r1"
+__version__ = "1.0.0+build.2"
+
+__all__ = [
+    "AtomicWriter",
+    "atomic_write",
+    "atomic_write_bytes",
+    "atomic_write_stream",
+    "atomic_write_text",
+]
 
 
 class AtomicWriter(IntrospectableMixin):

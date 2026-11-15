@@ -22,7 +22,7 @@ from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_BASE_REGEX, URN_REGEXES
 
-__version__ = "1.0.1+build.3"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "ArchivalURN",

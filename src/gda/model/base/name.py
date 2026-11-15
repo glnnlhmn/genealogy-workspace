@@ -31,7 +31,7 @@ from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.model.base.date import TimePeriod
 
-__version__ = "1.2.0+build.2"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "CanonicalName",

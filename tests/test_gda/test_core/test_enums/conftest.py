@@ -20,7 +20,7 @@ from pydantic import BaseModel
 
 import gda.core.enums as ge
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 
 @pytest.fixture(scope="session")
@@ -40,7 +40,7 @@ def all_enum_classes() -> tuple[type[Enum], ...]:
 @pytest.fixture(scope="session")
 def all_exported_symbols_count() -> int:
     """Return the exact count of items declared in gda.core.enums.__all__."""
-    return 53
+    return 84
 
 
 class SampleEnumModel(BaseModel):

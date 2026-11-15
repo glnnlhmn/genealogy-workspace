@@ -4,7 +4,7 @@ Targeted behavioral test suite verifying bibliographic and source enums.
 
 Operational Role:
     Validates documentary categories, granular source records,
-    educational attainments, and military conflict taxonomies.
+    educational attainments, military draft types, and conflict taxonomies.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 verification per behavioral contract.
@@ -18,14 +18,14 @@ import pytest
 
 from gda.core.enums.sources import (
     EducationLevel,
-    MilitaryBranch,
     MilitaryConflict,
+    MilitaryDraftType,
     MilitaryWar,
     SourceRecordCategory,
     SourceRecordType,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 # ==============================================================================
 # GROUP 1: Document Classifications
@@ -33,6 +33,7 @@ __version__ = "1.0.0+build.3"
 
 
 @pytest.mark.unit
+@pytest.mark.smoke
 def test_source_record_category_tokens() -> None:
     """Verify high-level archival category classifications."""
     assert SourceRecordCategory.VITAL == "VITAL"
@@ -54,7 +55,7 @@ def test_source_record_type_vital_and_probate() -> None:
 
 
 # ==============================================================================
-# GROUP 2: Education & Military Taxonomies
+# GROUP 2: Education, Draft Types & Military Conflict Taxonomies
 # ==============================================================================
 
 
@@ -65,18 +66,18 @@ def test_education_level_tokens() -> None:
     assert EducationLevel.HS == "HS"
     assert EducationLevel.COLL == "COLL"
     assert EducationLevel.GRAD == "GRAD"
+    assert EducationLevel.VOC == "VOC"
+    assert EducationLevel.OTHER == "OTHER"
 
 
 @pytest.mark.unit
-def test_military_branch_and_conflicts() -> None:
-    """Verify military service branches and historical conflict codes."""
-    assert MilitaryBranch.ARMY == "ARMY"
-    assert MilitaryBranch.NAVY == "NAVY"
-    assert (
-        MilitaryConflict.CIVIL_WAR == "CW"
-        if hasattr(MilitaryConflict, "CIVIL_WAR")
-        else MilitaryConflict.CW == "CW"
-    )
+def test_military_draft_and_conflicts() -> None:
+    """Verify military draft classifications and historical conflict codes."""
+    assert MilitaryDraftType.DRAFT_REGISTRATION == "DRAFT_REGISTRATION"
+    assert MilitaryDraftType.ENROLLMENT_LIST == "ENROLLMENT_LIST"
+    assert MilitaryDraftType.CONSCRIPTION_CARD == "CONSCRIPTION_CARD"
+    assert MilitaryDraftType.MUSTERING_ROLL == "MUSTERING_ROLL"
+    assert MilitaryConflict.CW == "CW"
     assert MilitaryWar.CIVIL_WAR == "CIVIL_WAR"
     assert MilitaryWar.WWI == "WWI"
     assert MilitaryWar.WWII == "WWII"

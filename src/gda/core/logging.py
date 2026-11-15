@@ -25,7 +25,13 @@ from typing import Any
 from gda.core.config import LoggingConfig
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.7"
+__version__ = "1.0.0+build.8"
+
+__all__ = [
+    "ConsoleFormatter",
+    "GDALogger",
+    "JsonFormatter",
+]
 
 
 class JsonFormatter(logging.Formatter):

@@ -25,6 +25,7 @@ from gda.core.dates import parse_iso_date_parts, utc_now_iso
 from gda.core.enums.archival import NoteType
 from gda.core.enums.vital import PedigreeType, UnionDissolutionType, UnionType
 from gda.core.errors import ModelFormatError
+from gda.core.types import ENTITY_ID_REGEXES
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FamilyID, IndividualID, NoteID
 from gda.model.base.audit import AuditStamp
@@ -34,11 +35,11 @@ from gda.model.base.family import ChildLink, FamilyUnion
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "2.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = ["Family"]
 
-_FAMILY_ID_PATTERN: re.Pattern[str] = re.compile(r"^FAM-\d{6,}$")
+_FAMILY_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["FAM"]
 _FAMILY_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:fam:[a-z0-9_:\-]+$")
 
 

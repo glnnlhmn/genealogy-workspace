@@ -122,91 +122,91 @@ from gda.core.enums.vital import (
     VitalModifier,
 )
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
-    "AffiliationType",
-    "ArrivalPassageClass",
-    "AssociatedRole",
-    "AwardScope",
-    "BequestType",
-    "BirthPlurality",
-    "BountyLandAct",
-    "CasualtyCategory",
-    "CensusYearUS",
-    "CitizenshipStatus",
-    "CivilWarConscriptionAllegiance",
-    "CivilWarEnrollmentClass",
-    "ColonialMilitiaClass",
-    "ColonialWarPeriod",
-    "DateModifier",
-    "DeedPartyRole",
-    "DispositionType",
-    "DivorceDecreeType",
-    "DocumentSide",
-    "DraftCardTier",
-    "EducationLevel",
-    "EstatePropertyCategory",
-    "EyeColor",
-    "FactType",
-    "HairColor",
-    "HistoricNameType",
-    "HomeOwnership",
-    "IDType",
-    "IntermentCemeteryType",
-    "JurisdictionCategory",
-    "LandGrantBasis",
-    "LegalPlaintiff",
-    "Legibility",
-    "LocationType",
-    "MODIFIER_ALIASES",
-    "MannerOfDeath",
-    "MaritalHistoryDissolution",
-    "MaritalStatus",
-    "MarkerCondition",
-    "MarkerMaterial",
-    "MarkerType",
-    "MembershipStatus",
-    "MilitaryAwardTier",
-    "MilitaryBranch",
-    "MilitaryConflict",
-    "MilitaryDraftType",
-    "MilitaryWar",
-    "ModernDraftEra",
-    "MusterRollType",
-    "NaturalizationStage",
-    "NoteType",
-    "OperationalStatus",
-    "OrganizationCategory",
-    "PedigreeType",
-    "PensionClaimantRole",
-    "PensionPaymentAuthority",
-    "PhysicalBuild",
-    "PowCampType",
-    "ProbateLedgerEntryKind",
-    "PublicationFrequency",
-    "QualityAssessment",
-    "QuayScore",
-    "ResidentialStatus",
-    "SelectiveServiceClass",
-    "SeparationCharacter",
-    "SeparationFormType",
-    "ServiceComponent",
-    "Sex",
-    "SiteType",
-    "SmartIDPrefix",
-    "SourceRecordCategory",
-    "SourceRecordType",
-    "SssClassification",
-    "TaxpayerClassification",
-    "TestimonyMedium",
-    "TextQuality",
-    "TranscriptLegibility",
-    "UnionDissolutionType",
-    "UnionType",
-    "VitalModifier",
-    "WwiCardType",
-    "WwiCitizenshipStatus",
-    "WwiiDraftWave",
-    "normalize_modifier",
+    "AffiliationType",  # orgs.py
+    "ArrivalPassageClass",  # immigration.py
+    "AssociatedRole",  # core.py
+    "AwardScope",  # military.py
+    "BequestType",  # probate.py
+    "BirthPlurality",  # vital.py
+    "BountyLandAct",  # military.py
+    "CasualtyCategory",  # military.py
+    "CensusYearUS",  # date.py
+    "CitizenshipStatus",  # fiscal.py
+    "CivilWarConscriptionAllegiance",  # military.py
+    "CivilWarEnrollmentClass",  # military.py
+    "ColonialMilitiaClass",  # military.py
+    "ColonialWarPeriod",  # military.py
+    "DateModifier",  # date.py
+    "DeedPartyRole",  # land.py
+    "DispositionType",  # vital.py
+    "DivorceDecreeType",  # vital.py
+    "DocumentSide",  # archival.py
+    "DraftCardTier",  # military.py
+    "EducationLevel",  # sources.py
+    "EstatePropertyCategory",  # probate.py
+    "EyeColor",  # archival.py
+    "FactType",  # core.py
+    "HairColor",  # archival.py
+    "HistoricNameType",  # vital.py
+    "HomeOwnership",  # fiscal.py
+    "IDType",  # core.py
+    "IntermentCemeteryType",  # military.py
+    "JurisdictionCategory",  # location.py
+    "LandGrantBasis",  # land.py
+    "LegalPlaintiff",  # vital.py
+    "Legibility",  # archival.py
+    "LocationType",  # location.py
+    "MODIFIER_ALIASES",  # date.py
+    "MannerOfDeath",  # vital.py
+    "MaritalHistoryDissolution",  # vital.py
+    "MaritalStatus",  # vital.py
+    "MarkerCondition",  # site.py
+    "MarkerMaterial",  # site.py
+    "MarkerType",  # site.py
+    "MembershipStatus",  # orgs.py
+    "MilitaryAwardTier",  # military.py
+    "MilitaryBranch",  # military.py
+    "MilitaryConflict",  # sources.py
+    "MilitaryDraftType",  # sources.py
+    "MilitaryWar",  # sources.py
+    "ModernDraftEra",  # military.py
+    "MusterRollType",  # military.py
+    "NaturalizationStage",  # immigration.py
+    "NoteType",  # archival.py
+    "OperationalStatus",  # site.py
+    "OrganizationCategory",  # orgs.py
+    "PedigreeType",  # vital.py
+    "PensionClaimantRole",  # military.py
+    "PensionPaymentAuthority",  # military.py
+    "PhysicalBuild",  # archival.py
+    "PowCampType",  # military.py
+    "ProbateLedgerEntryKind",  # probate.py
+    "PublicationFrequency",  # archival.py
+    "QualityAssessment",  # core.py
+    "QuayScore",  # core.py
+    "ResidentialStatus",  # fiscal.py
+    "SelectiveServiceClass",  # archival.py
+    "SeparationCharacter",  # military.py
+    "SeparationFormType",  # military.py
+    "ServiceComponent",  # military.py
+    "Sex",  # core.py
+    "SiteType",  # site.py
+    "SmartIDPrefix",  # core.py
+    "SourceRecordCategory",  # sources.py
+    "SourceRecordType",  # sources.py
+    "SssClassification",  # military.py
+    "TaxpayerClassification",  # fiscal.py
+    "TestimonyMedium",  # archival.py
+    "TextQuality",  # archival.py
+    "TranscriptLegibility",  # archival.py
+    "UnionDissolutionType",  # vital.py
+    "UnionType",  # vital.py
+    "VitalModifier",  # vital.py
+    "WwiCardType",  # archival.py
+    "WwiCitizenshipStatus",  # military.py
+    "WwiiDraftWave",  # military.py
+    "normalize_modifier",  # date.py
 ]

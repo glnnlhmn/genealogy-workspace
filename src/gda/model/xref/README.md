@@ -1,7 +1,7 @@
-# Cross-Reference & Relational Edge Models (src/gda/model/xref)
+# Cross-Reference & Derived Relational Index Models (src/gda/model/xref)
 
 ## Architectural Role
-Decoupled, immutable relational edge dataclasses connecting personas, domestic family units, secondary event participants, and digital media assets with deterministic compound primary keys.
+Tier-4 decoupled, immutable relational edge dataclasses connecting individuals, families, organizations, facts, locations, sites, sources, media, and surnames with deterministic compound keys.
 
 ## Quality Gate & Verification Status
 - **Quality Gate:** 100.0% Statement & Branch Coverage
@@ -11,12 +11,18 @@ Decoupled, immutable relational edge dataclasses connecting personas, domestic f
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `fact_participant_xref.py` | `1.0.0+build.1` | Associative relational edge linking individuals to facts in participant roles. |
-| `individual_family_xref.py` | `1.0.0+build.1` | Relational kinship cross-reference edge linking individuals and family units. |
-| `media_xref.py` | `1.0.0+build.4` | Associative relational cross-reference edge linking domain entities to media assets. |
+| `fact_participant_xref.py` | `1.0.0+build.3` | Cross-reference bridge and index model linking evidentiary facts to participating individuals. |
+| `individual_family_xref.py` | `1.0.0+build.3` | Cross-reference bridge and index model linking individuals to nuclear family units. |
+| `individual_organization_xref.py` | `1.0.0+build.1` | Cross-reference bridge and index model linking institutional organizations to affiliated individuals. |
+| `individual_source_xref.py` | `1.0.0+build.1` | Cross-reference bridge and index model linking archival sources to individuals. |
+| `individual_surname_xref.py` | `1.0.0+build.2` | Cross-reference bridge and index model linking normalized surnames to individuals. |
+| `location_xref.py` | `1.0.0+build.1` | Cross-reference bridge and index model linking civil jurisdictions to entities and sources. |
+| `media_xref.py` | `1.0.0+build.3` | Cross-reference bridge and index model linking digital media assets to entities and sources. |
+| `site_xref.py` | `1.0.0+build.1` | Cross-reference bridge and index model linking physical venues (Sites) to entities and sources. |
+| `surname_xref.py` | `1.0.0+build.1` | Onomastic surname equivalence and orthographic variant expansion index model. |
 
 ## Public Exports & Consumption Contract
-Exports: `FactParticipantXRef`, `IndividualFamilyXRef`, `MediaXRef`.
+Exports: `FactParticipantXRef`, `IndividualFamilyXRef`, `IndividualOrganizationXRef`, `IndividualSourceXRef`, `IndividualSurnameXRef`, `LocationTargetID`, `LocationXRef`, `MediaTargetID`, `MediaXRef`, `SiteTargetID`, `SiteXRef`, `SurnameXRef`.
 
 ---
-Generated dynamically by `src/system/gen_readme.py`.
+Generated dynamically by `src/system/gen_readme/gen_readme.py`.

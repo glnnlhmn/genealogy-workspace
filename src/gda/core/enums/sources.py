@@ -11,11 +11,10 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "EducationLevel",
-    "MilitaryBranch",
     "MilitaryConflict",
     "MilitaryDraftType",
     "MilitaryWar",
@@ -213,18 +212,6 @@ class MilitaryDraftType(StrEnum):
     ENROLLMENT_LIST = "ENROLLMENT_LIST"
     CONSCRIPTION_CARD = "CONSCRIPTION_CARD"
     MUSTERING_ROLL = "MUSTERING_ROLL"
-
-
-class MilitaryBranch(StrEnum):
-    """Armed forces branches."""
-
-    ARMY = "ARMY"
-    NAVY = "NAVY"
-    MARINES = "MARINES"
-    AIR_FORCE = "AIR_FORCE"
-    COAST_GUARD = "COAST_GUARD"
-    MILITIA = "MILITIA"
-    OTHER = "OTHER"
 
 
 class MilitaryWar(StrEnum):

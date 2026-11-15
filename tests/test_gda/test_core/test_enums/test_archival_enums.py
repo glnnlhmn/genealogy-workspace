@@ -26,7 +26,7 @@ from gda.core.enums.archival import (
     WwiCardType,
 )
 
-__version__ = "1.1.0+build.4"
+__version__ = "1.0.0+build.4"
 
 # Prevent pytest test collection on TestimonyMedium
 TestimonyMedium.__test__ = False

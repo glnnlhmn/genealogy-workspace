@@ -3,10 +3,10 @@
 Shared pytest fixtures and contract assertion helpers for gda.model.xref tests.
 
 Operational Role:
-    Provides canonical AtomID, UUIDv4, HistoricalYear, and Fact fixtures along
-    with a reusable assert_xref_contract() helper that verifies immutability,
-    dynamic xref_key/sort_key invariants, total ordering, and dict/JSON
-    round-trip parity across all XRef models.
+    Re-exports canonical UUID constants from tests.test_gda.test_model.conftest
+    and provides the assert_xref_contract() helper and sample_individual_fact
+    fixture for gda.model.xref verification. Canonical AtomID and HistoricalYear
+    fixtures are inherited from tests/test_gda/test_model/conftest.py.
 """
 
 from __future__ import annotations
@@ -15,27 +15,26 @@ import dataclasses
 from typing import Any
 
 import pytest
+from tests.test_gda.test_model.conftest import (
+    SAMPLE_MEDIA_UUID_1,
+    SAMPLE_MEDIA_UUID_2,
+    SAMPLE_SOURCE_UUID_1,
+    SAMPLE_SOURCE_UUID_2,
+)
 
 from gda.core.enums.core import AssociatedRole, FactType
 from gda.core.errors import ModelFormatError
-from gda.model.atom.id import (
-    FactID,
-    FamilyID,
-    IndividualID,
-    LocationID,
-    MediaID,
-    SiteID,
-    SourceID,
-)
-from gda.model.atom.year import BirthYear, DeathYear, HistoricalYear
 from gda.model.entity.fact import Fact, FactParticipant
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
-SAMPLE_SOURCE_UUID_1 = "11111111-1111-4111-8111-111111111111"
-SAMPLE_SOURCE_UUID_2 = "22222222-2222-4222-8222-222222222222"
-SAMPLE_MEDIA_UUID_1 = "aaaa1111-1111-4111-8111-111111111111"
-SAMPLE_MEDIA_UUID_2 = "bbbb2222-2222-4222-8222-222222222222"
+__all__ = [
+    "SAMPLE_MEDIA_UUID_1",
+    "SAMPLE_MEDIA_UUID_2",
+    "SAMPLE_SOURCE_UUID_1",
+    "SAMPLE_SOURCE_UUID_2",
+    "assert_xref_contract",
+]
 
 
 def assert_xref_contract(xref_instance: Any, xref_cls: type[Any]) -> None:
@@ -56,66 +55,6 @@ def assert_xref_contract(xref_instance: Any, xref_cls: type[Any]) -> None:
 
     with pytest.raises(ModelFormatError, match="Failed to parse"):
         xref_cls.from_json("{bad-json")
-
-
-@pytest.fixture
-def sample_fact_id() -> FactID:
-    """Return canonical FactID('FID-000104')."""
-    return FactID("FID-000104")
-
-
-@pytest.fixture
-def sample_individual_id() -> IndividualID:
-    """Return canonical IndividualID('IND-000010')."""
-    return IndividualID("IND-000010")
-
-
-@pytest.fixture
-def sample_family_id() -> FamilyID:
-    """Return canonical FamilyID('FAM-000001')."""
-    return FamilyID("FAM-000001")
-
-
-@pytest.fixture
-def sample_location_id() -> LocationID:
-    """Return canonical LocationID('LOC-000001')."""
-    return LocationID("LOC-000001")
-
-
-@pytest.fixture
-def sample_site_id() -> SiteID:
-    """Return canonical SiteID('SID-000005')."""
-    return SiteID("SID-000005")
-
-
-@pytest.fixture
-def sample_source_id() -> SourceID:
-    """Return canonical SourceID UUIDv4."""
-    return SourceID(SAMPLE_SOURCE_UUID_1)
-
-
-@pytest.fixture
-def sample_media_id() -> MediaID:
-    """Return canonical MediaID UUIDv4."""
-    return MediaID(SAMPLE_MEDIA_UUID_1)
-
-
-@pytest.fixture
-def sample_year() -> HistoricalYear:
-    """Return canonical HistoricalYear(1878)."""
-    return HistoricalYear(1878)
-
-
-@pytest.fixture
-def sample_birth_year() -> BirthYear:
-    """Return canonical BirthYear(1844)."""
-    return BirthYear(1844)
-
-
-@pytest.fixture
-def sample_death_year() -> DeathYear:
-    """Return canonical DeathYear(1912)."""
-    return DeathYear(1912)
 
 
 @pytest.fixture

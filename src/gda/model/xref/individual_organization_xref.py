@@ -7,7 +7,8 @@ Operational Role:
     relational index row linking an active OrganizationID ('ORG-######') to an
     affiliated IndividualID ('IND-######'), capturing OrganizationCategory,
     AffiliationType, MembershipStatus, optional start_year and end_year
-    HistoricalYear bounds, and chronological span validation.
+    HistoricalYear bounds, chronological span validation, and direct construction
+    from an active Organization entity via from_organization().
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import IndividualID, OrganizationID
 from gda.model.atom.year import HistoricalYear
+from gda.model.entity.organization import Organization
 
 __version__ = "1.0.0+build.1"
 
@@ -171,7 +173,7 @@ class IndividualOrganizationXRef(IntrospectableMixin):
         )
         res_cat = _parse_org_category(org_category)
         res_aff = _parse_affiliation_type(affiliation_type)
-        res_stat = _parse_membership_status(membership_status)
+        res_status = _parse_membership_status(membership_status)
         res_start = _resolve_year(start_year)
         res_end = _resolve_year(end_year)
 
@@ -180,9 +182,38 @@ class IndividualOrganizationXRef(IntrospectableMixin):
             individual_id=res_ind,
             org_category=res_cat,
             affiliation_type=res_aff,
-            membership_status=res_stat,
+            membership_status=res_status,
             start_year=res_start,
             end_year=res_end,
+        )
+
+    @classmethod
+    def from_organization(
+        cls,
+        organization: Organization,
+        individual_id: IndividualID | str,
+        affiliation_type: AffiliationType | str = AffiliationType.MEMBER,
+        membership_status: MembershipStatus | str = MembershipStatus.ACTIVE,
+        start_year: HistoricalYear | int | None = None,
+        end_year: HistoricalYear | int | None = None,
+    ) -> IndividualOrganizationXRef:
+        """Construct an IndividualOrganizationXRef directly from an active Organization entity."""
+        if not isinstance(organization, Organization):
+            raise ModelFormatError(
+                "IndividualOrganizationXRef.from_organization requires an Organization entity."
+            )
+        if organization.is_deprecated:
+            raise ModelFormatError(
+                f"Cannot index deprecated Organization '{organization.id.value}'."
+            )
+        return cls.create(
+            organization_id=organization.id,
+            individual_id=individual_id,
+            org_category=organization.category,
+            affiliation_type=affiliation_type,
+            membership_status=membership_status,
+            start_year=start_year,
+            end_year=end_year,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -210,16 +241,15 @@ class IndividualOrganizationXRef(IntrospectableMixin):
         iid = data.get("individual_id")
         cat = data.get("org_category")
 
-        if not all((oid, iid, cat)):
+        if not oid or not iid or not cat:
             raise ModelFormatError(
-                "IndividualOrganizationXRef requires 'organization_id', "
-                "'individual_id', and 'org_category'."
+                "IndividualOrganizationXRef requires 'organization_id', 'individual_id', and 'org_category'."
             )
 
         return cls.create(
-            organization_id=str(oid),
-            individual_id=str(iid),
-            org_category=str(cat),
+            organization_id=oid,
+            individual_id=iid,
+            org_category=cat,
             affiliation_type=data.get("affiliation_type", AffiliationType.MEMBER),
             membership_status=data.get("membership_status", MembershipStatus.ACTIVE),
             start_year=data.get("start_year"),
@@ -227,27 +257,28 @@ class IndividualOrganizationXRef(IntrospectableMixin):
         )
 
     def to_json(self) -> str:
-        """Serialize IndividualOrganizationXRef to a JSON formatted string."""
-        return json.dumps(self.to_dict(), ensure_ascii=False)
+        """Serialize IndividualOrganizationXRef to a JSON string."""
+        return json.dumps(self.to_dict(), ensure_ascii=False, sort_keys=True)
 
     @classmethod
     def from_json(cls, payload: str) -> IndividualOrganizationXRef:
-        """Deserialize a JSON string directly into an IndividualOrganizationXRef."""
+        """Deserialize a JSON string into an IndividualOrganizationXRef."""
         try:
             data = json.loads(payload)
         except Exception as exc:
             raise ModelFormatError(
-                f"Failed to parse IndividualOrganizationXRef JSON string: {exc}"
+                f"Failed to parse IndividualOrganizationXRef JSON: {exc}"
             ) from exc
         return cls.from_dict(data)
 
-    def __lt__(self, other: Any) -> bool:
-        """Support deterministic organization, chronological, and individual sorting."""
-        if isinstance(other, IndividualOrganizationXRef):
-            return self.sort_key < other.sort_key
-        return NotImplemented
+    def __lt__(self, other: object) -> bool:
+        """Compare IndividualOrganizationXRef instances by sort_key."""
+        if not isinstance(other, IndividualOrganizationXRef):
+            return NotImplemented
+        return self.sort_key < other.sort_key
 
     def __str__(self) -> str:
+        """Return concise human-readable string representation."""
         span = ""
         if self.start_year is not None or self.end_year is not None:
             s_str = str(int(self.start_year)) if self.start_year is not None else "?"

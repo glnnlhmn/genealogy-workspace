@@ -36,7 +36,7 @@ from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 from gda.util.ids import extract_max_smart_id, mint_smart_id
 
-__version__ = "1.3.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = ["BaseEntity", "BaseEntityGUID", "EntityLifecycleMixin"]
 

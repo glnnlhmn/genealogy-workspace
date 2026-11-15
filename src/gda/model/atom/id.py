@@ -22,7 +22,7 @@ from gda.core.errors import ModelFormatError, ModelPrefixMismatchError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import ATOM_ID_REGEX, UUID_V4_REGEX
 
-__version__ = "1.0.2+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "AtomID",
@@ -61,7 +61,7 @@ class AtomID(IntrospectableMixin):
         """Validate canonical 'AAA-######' syntax and prefix constraints."""
         if not isinstance(self.value, str) or not self._PATTERN.match(self.value):
             raise ModelFormatError(
-                f"Invalid AtomID format: '{self.value}'. Must match '^[A-Z]{{3}}-\\d{{6,}}$'.",
+                f"Invalid AtomID format: '{self.value}'. Must match '^[A-Z]{{3}}-\\d{{6}}$'.",
                 error_code="ERR_MODEL_FORMAT",
                 details={"value": self.value},
             )

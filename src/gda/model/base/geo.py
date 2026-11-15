@@ -20,7 +20,7 @@ from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.geo import Latitude, Longitude
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = ["Coordinates"]
 

@@ -27,7 +27,7 @@ from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.date import DateString
 
-__version__ = "1.1.0+build.2"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["EventDate", "TimePeriod"]
 

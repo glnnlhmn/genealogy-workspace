@@ -22,7 +22,11 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.io.atomic import AtomicWriter, atomic_write_stream
 from gda.io.errors import BackupError
 
-__version__ = "0.2.0+build.r1"
+__version__ = "1.0.0+build.2"
+
+__all__ = [
+    "GDABackupManager",
+]
 
 
 class GDABackupManager(IntrospectableMixin):

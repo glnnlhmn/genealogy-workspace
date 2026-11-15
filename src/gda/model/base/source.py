@@ -30,7 +30,7 @@ from gda.model.base.association import AssociatedIndividual
 from gda.model.base.audit import AuditStamp
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = ["RecordMetadata", "SourceRecord", "SourceReference"]
 

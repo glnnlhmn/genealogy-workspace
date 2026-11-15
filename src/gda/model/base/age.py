@@ -20,7 +20,7 @@ from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = ["Age"]
 

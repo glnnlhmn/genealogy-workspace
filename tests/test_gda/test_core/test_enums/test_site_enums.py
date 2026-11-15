@@ -25,7 +25,7 @@ from gda.core.enums.site import (
     SiteType,
 )
 
-__version__ = "1.1.0+build.5"
+__version__ = "1.0.0+build.5"
 
 
 # ==============================================================================

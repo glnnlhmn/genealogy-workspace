@@ -26,18 +26,18 @@ from gda.util.text import (
     slugify,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
-    "clean_string",
-    "clean_whitespace",
-    "extract_max_smart_id",
-    "mint_smart_id",
-    "mint_uuid",
-    "normalize_ascii",
-    "parse_smart_id",
-    "phonetic_nysiis",
-    "phonetic_soundex",
-    "slugify",
-    "verify_id",
+    "clean_string",  # text.py
+    "clean_whitespace",  # text.py
+    "extract_max_smart_id",  # ids.py
+    "mint_smart_id",  # ids.py
+    "mint_uuid",  # ids.py
+    "normalize_ascii",  # text.py
+    "parse_smart_id",  # ids.py
+    "phonetic_nysiis",  # text.py
+    "phonetic_soundex",  # text.py
+    "slugify",  # text.py
+    "verify_id",  # ids.py
 ]

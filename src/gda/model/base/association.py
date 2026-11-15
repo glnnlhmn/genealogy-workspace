@@ -30,7 +30,7 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 from gda.model.atom.id import IndividualID, SiteID
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = ["AssociatedIndividual"]
 

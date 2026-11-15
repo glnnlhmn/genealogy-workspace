@@ -4,18 +4,18 @@ Authoritative regex patterns, format tokens, and primitive scalar definitions.
 
 Operational Role:
     Provides the code-first declarative repository for RFC 4122 UUIDv4 patterns,
-    ISO 8601 date and timestamp directives, canonical entity identifier regex patterns,
-    archival URN patterns, gender code sets, historical year bounds, coordinate bounds,
-    scalar metric bounds/patterns, military domain scalar bounds, enumerated schedule
-    year sets/bounds, and SHA-256 hexadecimal hash patterns across the GDA core
-    infrastructure.
+    ISO 8601 date and timestamp directives, canonical 6-digit entity identifier
+    regex patterns, archival URN patterns across all documentary domains, gender
+    code sets, historical year bounds, coordinate bounds, scalar metric bounds/patterns,
+    military domain scalar bounds, enumerated schedule year sets/bounds, and SHA-256
+    hexadecimal hash patterns across the GDA core infrastructure.
 """
 
 from __future__ import annotations
 
 import re
 
-__version__ = "1.2.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = [
     "ATOM_ID_PATTERN",
@@ -25,6 +25,7 @@ __all__ = [
     "COLONIAL_MILITIA_MAX_YEAR",
     "COLONIAL_MILITIA_MIN_YEAR",
     "ENTITY_ID_PATTERNS",
+    "ENTITY_ID_REGEXES",
     "GENDER_CODES",
     "ISO_DATE_FMT",
     "ISO_DATE_PATTERN",
@@ -80,8 +81,8 @@ __all__ = [
     "US_VETERANS_SCHEDULE_YEAR",
     "UUID_V4_PATTERN",
     "UUID_V4_REGEX",
-    "WWI_DRAFT_YEARS",
     "WWII_DRAFT_YEARS",
+    "WWI_DRAFT_YEARS",
 ]
 
 # ------------------------------------------------------------------------------
@@ -170,7 +171,7 @@ US_SLAVE_SCHEDULE_YEARS: frozenset[int] = frozenset({1850, 1860})
 US_VETERANS_SCHEDULE_YEAR: int = 1890
 
 # ------------------------------------------------------------------------------
-# Structural Regex Patterns (from schemas/defs/_shared_defs.schema.json)
+# Structural Regex Patterns (Strict 6-digit SmartID standard)
 # ------------------------------------------------------------------------------
 UUID_V4_PATTERN: str = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 ISO_DATE_PATTERN: str = r"^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$"
@@ -180,16 +181,17 @@ SHA256_PATTERN: str = r"^[0-9a-f]{64}$"
 PUB_CODE_PATTERN: str = r"^[A-Z0-9_-]{2,20}$"
 NEWS_CATEGORY_PATTERN: str = r"^[A-Z]{3,15}$"
 
-ATOM_ID_PATTERN: str = r"^([A-Z]{3})-(\d{6,})$"
+ATOM_ID_PATTERN: str = r"^([A-Z]{3})-(\d{6})$"
 ENTITY_ID_PATTERNS: dict[str, str] = {
-    "IND": r"^IND-\d{6,}$",
-    "FID": r"^FID-\d{6,}$",
-    "LOC": r"^LOC-\d{6,}$",
-    "SID": r"^SID-\d{6,}$",
-    "FAM": r"^FAM-\d{6,}$",
-    "NOT": r"^NOT-\d{6,}$",
-    "REP": r"^REP-\d{6,}$",
-    "DRF": r"^DRF-\d{6,}$",
+    "IND": r"^IND-\d{6}$",
+    "FID": r"^FID-\d{6}$",
+    "LOC": r"^LOC-\d{6}$",
+    "SID": r"^SID-\d{6}$",
+    "FAM": r"^FAM-\d{6}$",
+    "NOT": r"^NOT-\d{6}$",
+    "REP": r"^REP-\d{6}$",
+    "DRF": r"^DRF-\d{6}$",
+    "ORG": r"^ORG-\d{6}$",
 }
 
 URN_BASE_PATTERN: str = r"^URN:[A-Z0-9_-]+(:[A-Za-z0-9_.-]+)+$"
@@ -199,6 +201,15 @@ URN_PATTERNS: dict[str, str] = {
     "CENSUS": r"^URN:CENSUS:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
     "VITAL": r"^URN:VITAL:(BIRTH|MARRIAGE|DEATH):[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
     "CEM": r"^URN:CEM:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "DIPLOMA": r"^URN:DIPLOMA:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "IMMIGRATION": r"^URN:IMMIGRATION:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "NATURALIZATION": r"^URN:NATURALIZATION:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "LAND": r"^URN:LAND:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "MS": r"^URN:MS:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "BIBLE": r"^URN:BIBLE:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "NARRATIVE": r"^URN:NARRATIVE:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "OTHER": r"^URN:OTHER:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
+    "WILL": r"^URN:WILL:[0-9]{4}:[A-Z0-9_]+:[A-Za-z0-9_.-]+$",
 }
 
 # ------------------------------------------------------------------------------
@@ -211,6 +222,9 @@ SHA256_REGEX: re.Pattern[str] = re.compile(SHA256_PATTERN)
 PUB_CODE_REGEX: re.Pattern[str] = re.compile(PUB_CODE_PATTERN)
 NEWS_CATEGORY_REGEX: re.Pattern[str] = re.compile(NEWS_CATEGORY_PATTERN)
 ATOM_ID_REGEX: re.Pattern[str] = re.compile(ATOM_ID_PATTERN)
+ENTITY_ID_REGEXES: dict[str, re.Pattern[str]] = {
+    prefix: re.compile(pattern) for prefix, pattern in ENTITY_ID_PATTERNS.items()
+}
 URN_BASE_REGEX: re.Pattern[str] = re.compile(URN_BASE_PATTERN)
 URN_REGEXES: dict[str, re.Pattern[str]] = {
     nid: re.compile(pattern) for nid, pattern in URN_PATTERNS.items()

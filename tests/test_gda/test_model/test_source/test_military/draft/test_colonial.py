@@ -1,0 +1,182 @@
+"""Path: tests/test_gda/test_model/test_source/test_military/draft/test_colonial.py
+
+Atomized behavioral test suite for ColonialMilitiaRecord domain entity.
+
+Operational Role:
+    Verifies colonial and Revolutionary War militia enrollment invariants, substitute
+    provisions, militia classification tiers, and 1607-1815 registration boundaries.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from gda.core.enums.sources import SourceRecordCategory
+from gda.core.errors import ModelFormatError
+from gda.model.atom.id import DraftRecordID, IndividualID, RepositoryID, SourceID
+from gda.model.atom.urn import MilitaryDraftUrn
+from gda.model.atom.year import HistoricalYear
+from gda.model.base.audit import AuditStamp
+from gda.model.source.military.draft.base import DraftCardTier
+from gda.model.source.military.draft.colonial import (
+    ColonialMilitiaClass,
+    ColonialMilitiaRecord,
+    ColonialWarPeriod,
+)
+
+__version__ = "1.0.0+build.2"
+
+
+@pytest.mark.unit
+@pytest.mark.smoke
+def test_colonial_militia_smoke_valid_initialization(
+    valid_source_id: SourceID,
+    valid_draft_urn: MilitaryDraftUrn,
+    valid_repo_id: RepositoryID,
+    valid_audit: AuditStamp,
+) -> None:
+    """Verify minimal valid instantiation of ColonialMilitiaRecord golden path."""
+    rec = ColonialMilitiaRecord(
+        source_id=valid_source_id,
+        source_urn=valid_draft_urn,
+        record_category=SourceRecordCategory.MILITARY,
+        description="1776 Trainband Muster Roll for Concord, NH",
+        repository_id=valid_repo_id,
+        audit=valid_audit,
+        draft_record_id=DraftRecordID("DRF-000001"),
+        registrant_id=IndividualID("IND-000001"),
+        registrant_name_raw="Glenn Lehman",
+        draft_year=HistoricalYear(1776),
+        board_jurisdiction_raw="Town of Concord, Province of New Hampshire",
+        card_tier=DraftCardTier.OTHER,
+        colony_or_state_raw="  Province of New Hampshire  ",
+    )
+    assert rec.conflict_period == ColonialWarPeriod.REVOLUTIONARY_WAR
+    assert rec.militia_class == ColonialMilitiaClass.TRAINBAND
+    assert rec.colony_or_state_raw == "Province of New Hampshire"
+    assert rec.substitute_provided is False
+    assert "Glenn Lehman" in str(rec)
+
+
+@pytest.mark.unit
+def test_colonial_militia_substitute_and_unit_details(
+    valid_source_id: SourceID,
+    valid_draft_urn: MilitaryDraftUrn,
+    valid_repo_id: RepositoryID,
+    valid_audit: AuditStamp,
+) -> None:
+    """Verify ColonialMilitiaRecord handles unit hierarchy, equipment, and substitutes."""
+    sub_id = IndividualID("IND-000002")
+    rec = ColonialMilitiaRecord(
+        source_id=valid_source_id,
+        source_urn=valid_draft_urn,
+        record_category=SourceRecordCategory.MILITARY,
+        description="Revolutionary War Class Levy with Substitute",
+        repository_id=valid_repo_id,
+        audit=valid_audit,
+        draft_record_id=DraftRecordID("DRF-000002"),
+        registrant_id=IndividualID("IND-000001"),
+        registrant_name_raw="Glenn Lehman",
+        draft_year=HistoricalYear(1781),
+        board_jurisdiction_raw="Merrimack County Committee of Safety",
+        card_tier=DraftCardTier.OTHER,
+        colony_or_state_raw="State of New Hampshire",
+        conflict_period=ColonialWarPeriod.REVOLUTIONARY_WAR,
+        militia_class=ColonialMilitiaClass.TOWN_CLASS,
+        regiment_verbatim="Col. Stickney's 11th Regiment of Militia",
+        company_officer_raw="Capt. Benjamin Emery",
+        equipment_readiness_raw="Equipped with musket, bayonet, 24 cartridges",
+        substitute_provided=True,
+        substitute_individual_id=sub_id,
+        substitute_name_raw="Ebenezer Virgin",
+    )
+    assert rec.regiment_verbatim == "Col. Stickney's 11th Regiment of Militia"
+    assert rec.company_officer_raw == "Capt. Benjamin Emery"
+    assert rec.substitute_individual_id == sub_id
+    assert rec.substitute_name_raw == "Ebenezer Virgin"
+
+
+@pytest.mark.unit
+@pytest.mark.regression
+def test_colonial_militia_invalid_year_fails(
+    valid_source_id: SourceID,
+    valid_draft_urn: MilitaryDraftUrn,
+    valid_repo_id: RepositoryID,
+    valid_audit: AuditStamp,
+) -> None:
+    """Verify ModelFormatError raised if draft_year outside 1607-1815."""
+    with pytest.raises(ModelFormatError, match="draft_year must be between 1607 and 1815"):
+        ColonialMilitiaRecord(
+            source_id=valid_source_id,
+            source_urn=valid_draft_urn,
+            record_category=SourceRecordCategory.MILITARY,
+            description="Out of period year",
+            repository_id=valid_repo_id,
+            audit=valid_audit,
+            draft_record_id=DraftRecordID("DRF-000001"),
+            registrant_id=IndividualID("IND-000001"),
+            registrant_name_raw="Glenn Lehman",
+            draft_year=HistoricalYear(1863),
+            board_jurisdiction_raw="Town of Concord",
+            card_tier=DraftCardTier.OTHER,
+            colony_or_state_raw="New Hampshire",
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.regression
+def test_colonial_militia_empty_colony_fails(
+    valid_source_id: SourceID,
+    valid_draft_urn: MilitaryDraftUrn,
+    valid_repo_id: RepositoryID,
+    valid_audit: AuditStamp,
+) -> None:
+    """Verify ModelFormatError raised if colony_or_state_raw is empty or whitespace."""
+    with pytest.raises(ModelFormatError, match="colony_or_state_raw.*cannot be empty"):
+        ColonialMilitiaRecord(
+            source_id=valid_source_id,
+            source_urn=valid_draft_urn,
+            record_category=SourceRecordCategory.MILITARY,
+            description="Empty colony check",
+            repository_id=valid_repo_id,
+            audit=valid_audit,
+            draft_record_id=DraftRecordID("DRF-000001"),
+            registrant_id=IndividualID("IND-000001"),
+            registrant_name_raw="Glenn Lehman",
+            draft_year=HistoricalYear(1776),
+            board_jurisdiction_raw="Town of Concord",
+            card_tier=DraftCardTier.OTHER,
+            colony_or_state_raw="   ",
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.regression
+def test_colonial_militia_missing_substitute_details_fails(
+    valid_source_id: SourceID,
+    valid_draft_urn: MilitaryDraftUrn,
+    valid_repo_id: RepositoryID,
+    valid_audit: AuditStamp,
+) -> None:
+    """Verify ModelFormatError raised when substitute_provided is True without details."""
+    with pytest.raises(
+        ModelFormatError,
+        match="requires substitute_name_raw or substitute_individual_id",
+    ):
+        ColonialMilitiaRecord(
+            source_id=valid_source_id,
+            source_urn=valid_draft_urn,
+            record_category=SourceRecordCategory.MILITARY,
+            description="Missing substitute identity",
+            repository_id=valid_repo_id,
+            audit=valid_audit,
+            draft_record_id=DraftRecordID("DRF-000001"),
+            registrant_id=IndividualID("IND-000001"),
+            registrant_name_raw="Glenn Lehman",
+            draft_year=HistoricalYear(1776),
+            board_jurisdiction_raw="Town of Concord",
+            card_tier=DraftCardTier.OTHER,
+            colony_or_state_raw="Province of New Hampshire",
+            substitute_provided=True,
+            substitute_name_raw="   ",
+        )

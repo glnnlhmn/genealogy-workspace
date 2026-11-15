@@ -39,24 +39,59 @@ from gda.core import (
     ModelRangeError,
 )
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.7"
 
 # ==============================================================================
 # AUTHORITATIVE CONTRACT SPECIFICATION
-# Note: Defines the strict, immutable contract for gda.core exports
+# Note: Defines the strict, immutable contract for gda.core exports (92 symbols)
 # ==============================================================================
 
 AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
     {
+        # config.py (4)
         "AppConfig",
+        "DatabaseConfig",
+        "ImmutableBaseModel",
+        "LoggingConfig",
+        # dates.py (8)
+        "calculate_age_years",
+        "format_utc_timestamp",
+        "parse_iso_date_parts",
+        "parse_iso_timestamp",
+        "utc_now_iso",
+        "utc_today_iso",
+        "validate_iso_date",
+        "validate_iso_timestamp",
+        # errors.py (8)
         "ConfigError",
         "ConfigParseError",
         "ConfigValidationError",
-        "ConsoleFormatter",
-        "DatabaseConfig",
-        "ENTITY_ID_PATTERNS",
-        "GDALogger",
         "GenealogyDeskError",
+        "ModelError",
+        "ModelFormatError",
+        "ModelPrefixMismatchError",
+        "ModelRangeError",
+        # hashes.py (4)
+        "is_valid_sha256",
+        "sha256_bytes",
+        "sha256_file",
+        "sha256_text",
+        # introspectable.py (1)
+        "IntrospectableMixin",
+        # logging.py (3)
+        "ConsoleFormatter",
+        "GDALogger",
+        "JsonFormatter",
+        # types.py (64)
+        "ATOM_ID_PATTERN",
+        "ATOM_ID_REGEX",
+        "CENSUS_SHEET_SIDES",
+        "CIVIL_WAR_DRAFT_YEARS",
+        "COLONIAL_MILITIA_MAX_YEAR",
+        "COLONIAL_MILITIA_MIN_YEAR",
+        "ENTITY_ID_PATTERNS",
+        "ENTITY_ID_REGEXES",
+        "GENDER_CODES",
         "ISO_DATE_FMT",
         "ISO_DATE_PATTERN",
         "ISO_DATE_REGEX",
@@ -65,26 +100,54 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "ISO_TIMESTAMP_PATTERN",
         "ISO_TIMESTAMP_REGEX",
         "ISO_YEAR_FMT",
-        "ImmutableBaseModel",
-        "IntrospectableMixin",
-        "JsonFormatter",
-        "LoggingConfig",
-        "ModelError",
-        "ModelFormatError",
-        "ModelPrefixMismatchError",
-        "ModelRangeError",
+        "MAX_BOUNTY_LAND_ACREAGE",
+        "MAX_CENSUS_LINE_NUMBER",
+        "MAX_CONFIDENCE_SCORE",
+        "MAX_ENLISTMENT_TERM_MONTHS",
+        "MAX_FOREIGN_SERVICE_MONTHS",
+        "MAX_HEIGHT_INCHES",
+        "MAX_HISTORICAL_YEAR",
+        "MAX_LATITUDE",
+        "MAX_LONGITUDE",
+        "MAX_MINOR_CHILDREN_COUNT",
+        "MAX_QUAY_SCORE",
+        "MAX_VIETNAM_LOTTERY_NUMBER",
+        "MAX_WEIGHT_LBS",
+        "MIN_AHNENTAFEL",
+        "MIN_CONFIDENCE_SCORE",
+        "MIN_ENLISTMENT_TERM_MONTHS",
+        "MIN_HEIGHT_INCHES",
+        "MIN_HISTORICAL_YEAR",
+        "MIN_LATITUDE",
+        "MIN_LONGITUDE",
+        "MIN_QUAY_SCORE",
+        "MIN_VIETNAM_LOTTERY_NUMBER",
+        "MIN_WEIGHT_LBS",
+        "MODERN_SSS_MIN_YEAR",
+        "NEWS_CATEGORY_PATTERN",
+        "NEWS_CATEGORY_REGEX",
+        "PUB_CODE_PATTERN",
+        "PUB_CODE_REGEX",
         "SHA256_PATTERN",
         "SHA256_REGEX",
+        "TAX_ASSESSMENT_MIN_YEAR",
+        "URN_BASE_PATTERN",
+        "URN_BASE_REGEX",
+        "URN_PATTERNS",
+        "URN_REGEXES",
+        "US_AGRICULTURAL_SCHEDULE_YEARS",
+        "US_FEDERAL_CENSUS_1850_1870_YEARS",
+        "US_FEDERAL_CENSUS_1900_1910_YEARS",
+        "US_FEDERAL_CENSUS_TALLY_YEARS",
+        "US_FEDERAL_CENSUS_YEARS",
+        "US_MANUFACTURING_SCHEDULE_YEARS",
+        "US_MORTALITY_SCHEDULE_YEARS",
+        "US_SLAVE_SCHEDULE_YEARS",
+        "US_VETERANS_SCHEDULE_YEAR",
         "UUID_V4_PATTERN",
         "UUID_V4_REGEX",
-        "format_utc_timestamp",
-        "is_valid_sha256",
-        "parse_iso_date_parts",
-        "sha256_bytes",
-        "sha256_file",
-        "sha256_text",
-        "validate_iso_date",
-        "validate_iso_timestamp",
+        "WWI_DRAFT_YEARS",
+        "WWII_DRAFT_YEARS",
     }
 )
 
@@ -101,7 +164,7 @@ def test_core_exports_exact_authoritative_symbols() -> None:
     """Verify gda.core exports exactly the authoritative symbol set with zero drift (CTR-001)."""
     actual_symbols = frozenset(gda.core.__all__)
     assert actual_symbols == AUTHORITATIVE_EXPORTS
-    assert len(gda.core.__all__) == 37
+    assert len(gda.core.__all__) == 93
 
 
 @pytest.mark.integrity

@@ -10,15 +10,14 @@ Operational Role:
 
 from __future__ import annotations
 
-import re
 import uuid
 from collections.abc import Iterable
 from typing import Any
 
 from gda.core.enums import IDType, SmartIDPrefix
-from gda.core.types import UUID_V4_REGEX
+from gda.core.types import ATOM_ID_REGEX, UUID_V4_REGEX
 
-__version__ = "0.0.2+build.11"
+__version__ = "1.0.0+build.13"
 
 __all__ = [
     "extract_max_smart_id",
@@ -28,7 +27,7 @@ __all__ = [
     "verify_id",
 ]
 
-_SMART_ID_PATTERN = re.compile(r"^[A-Z]{3}-\d{6}$")
+_SMART_ID_PATTERN = ATOM_ID_REGEX
 
 
 def verify_id(

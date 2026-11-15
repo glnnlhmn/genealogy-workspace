@@ -1,30 +1,26 @@
 # Authoritative Domain Model Suite (src/gda/model)
 
 ## Architectural Role
-Central structural data model hierarchy defining atomic primitives, composite base structures, primary entities, and relational edges.
+Five-pillar structural data model hierarchy uniting atomic primitives (atom), composite base structures (base), canonical graph entities (entity), documentary source records (source), and derived cross-reference edges (xref).
 
 ## Quality Gate & Verification Status
-- **Quality Gate:** >= 95.0% Statement & Branch Coverage
+- **Quality Gate:** 100.0% Statement & Branch Coverage
 - **Verification Suite:** `tests/test_gda/test_model/`
 - **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
 ## Subpackages
-- **`atom/`**: Atomic identification, temporal, metric, and spatial primitives package.
-- **`base/`**: Base model value objects, audit envelopes, and tombstoning contracts.
-- **`entity/`**: Authoritative domain entity dataclass definitions extending BaseEntity.
-- **`enumerated/`**: Enumerated classification models and taxonomy wrappers.
-- **`media/`**: Digital media, artifact metadata, and citation binding models.
-- **`military/`**: Military evidentiary domain models partitioned by record classification.
-- **`orgs/`**: Institutional, religious, military, and civil organization models.
-- **`vital/`**: Vital event record definitions.
-- **`xref/`**: Cross-reference and relational edge models for the genealogical digital archive.
+- **[atom/](atom/README.md)**: Atomic identification, temporal, metric, and spatial primitives package.
+- **[base/](base/README.md)**: Foundational composite value objects, entity envelopes, and lifecycle mixins.
+- **[entity/](entity/README.md)**: Authoritative domain entity dataclass definitions extending BaseEntity.
+- **[source/](source/README.md)**: Archival documentary source record models across all historical domains.
+- **[xref/](xref/README.md)**: Cross-reference bridge and derived index models for the GDA domain layer.
 
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 
 ## Public Exports & Consumption Contract
-Modules export public interfaces explicitly declared in `__all__`.
+Exports: `atom`, `base`, `entity`, `source`, `xref`.
 
 ---
-Generated dynamically by `src/system/gen_readme.py`.
+Generated dynamically by `src/system/gen_readme/gen_readme.py`.

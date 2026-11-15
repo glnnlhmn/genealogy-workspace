@@ -29,7 +29,7 @@ from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import TranscriptID
 from gda.model.base.audit import AuditStamp
 
-__version__ = "1.1.0+build.1"
+__version__ = "1.0.0+build.1"
 
 __all__ = ["Legibility", "TextQuality", "Transcript"]
 

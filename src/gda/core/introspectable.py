@@ -20,7 +20,11 @@ from typing import Any
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
+
+__all__ = [
+    "IntrospectableMixin",
+]
 
 
 class _HybridHelpDescriptor:

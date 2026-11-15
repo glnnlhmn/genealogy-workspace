@@ -38,6 +38,7 @@ from gda.model.atom import (
     MilitaryDraftUrn,
     NewsCategoryCode,
     NoteID,
+    OrganizationID,
     PubCode,
     QuayScore,
     RepositoryID,
@@ -50,7 +51,7 @@ from gda.model.atom import (
     VitalCertificateUrn,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 # ==============================================================================
 # SHARED INVALID INPUT VECTORS (Importable for @pytest.mark.parametrize)
@@ -156,6 +157,7 @@ def all_valid_atoms() -> list[Any]:
         SiteID("SID-000001"),
         FamilyID("FAM-000001"),
         NoteID("NOT-000001"),
+        OrganizationID("ORG-000001"),
         RepositoryID("REP-000001"),
         DraftRecordID("DRF-000001"),
         UUIDv4Str(valid_uuid),

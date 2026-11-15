@@ -23,7 +23,18 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-__version__ = "1.0.0+build.10"
+__version__ = "1.0.0+build.11"
+
+__all__ = [
+    "ConfigError",
+    "ConfigParseError",
+    "ConfigValidationError",
+    "GenealogyDeskError",
+    "ModelError",
+    "ModelFormatError",
+    "ModelPrefixMismatchError",
+    "ModelRangeError",
+]
 
 
 # ==============================================================================

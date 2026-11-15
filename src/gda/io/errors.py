@@ -12,7 +12,17 @@ from __future__ import annotations
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "0.2.0+build.r1"
+__version__ = "1.0.0+build.2"
+
+__all__ = [
+    "AtomicWriteError",
+    "BackupError",
+    "DirectoryCreationError",
+    "FileLockError",
+    "FileReadError",
+    "GDAIOError",
+    "SerializationError",
+]
 
 
 class GDAIOError(GenealogyDeskError):

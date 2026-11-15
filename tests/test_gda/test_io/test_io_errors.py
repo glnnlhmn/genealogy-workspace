@@ -27,7 +27,7 @@ from gda.io.errors import (
     SerializationError,
 )
 
-__version__ = "0.2.0+build.r1"
+__version__ = "1.0.0+build.2"
 
 # ==============================================================================
 # GROUP 1: Exception Hierarchy & Inheritance Contracts
