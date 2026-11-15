@@ -4,10 +4,11 @@ Authoritative public interface and contract verification suite for gda.model.ent
 
 Operational Role:
     Freezes and validates the 6-submodule topology, 9-symbol __all__ facade,
-    submodule __all__ exports, centralized ENTITY_ID_REGEXES integration from
-    gda.core.types, BaseEntity and IntrospectableMixin inheritance, strict
-    frozen Pydantic dataclass configuration, mandatory lifecycle/dirty-tracking/
-    serialization method contracts, and zero upward dependency leaks.
+    submodule __all__ exports, centralized ENTITY_ID_REGEXES and
+    ENTITY_URN_REGEXES integration from gda.core.types, BaseEntity and
+    IntrospectableMixin inheritance, strict frozen Pydantic dataclass
+    configuration, mandatory lifecycle/dirty-tracking/serialization method
+    contracts, and zero upward dependency leaks.
 """
 
 from __future__ import annotations
@@ -28,10 +29,10 @@ import gda.model.entity.location as location_mod
 import gda.model.entity.organization as organization_mod
 import gda.model.entity.site as site_mod
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import ENTITY_ID_REGEXES
+from gda.core.types import ENTITY_ID_REGEXES, ENTITY_URN_REGEXES
 from gda.model.base.entity import BaseEntity
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 _EXPECTED_SUBMODULES = {
     "fact",
@@ -85,8 +86,8 @@ _REQUIRED_ENTITY_MEMBERS = (
 
 _FORBIDDEN_IMPORTS = (
     "gda.enums",
-    "gda.model.source.military",
-    "gda.model.source.orgs",
+    "gda.model.military",
+    "gda.model.orgs",
     "gda.model.xref",
     "gda.entity",
     "gda.manager",
@@ -123,14 +124,21 @@ def test_entity_package_exact_public_interface_and_submodules() -> None:
 
 @pytest.mark.unit
 @pytest.mark.integrity
-def test_entity_classes_use_centralized_core_types_id_regexes() -> None:
-    """Verify every domain entity binds _ID_PATTERN directly from gda.core.types.ENTITY_ID_REGEXES."""
+def test_entity_classes_use_centralized_core_types_id_and_urn_regexes() -> None:
+    """Verify every domain entity binds _ID_PATTERN and _URN_PATTERN from gda.core.types."""
     assert entity_pkg.Fact._ID_PATTERN is ENTITY_ID_REGEXES["FID"]
     assert entity_pkg.Family._ID_PATTERN is ENTITY_ID_REGEXES["FAM"]
     assert entity_pkg.Individual._ID_PATTERN is ENTITY_ID_REGEXES["IND"]
     assert entity_pkg.Location._ID_PATTERN is ENTITY_ID_REGEXES["LOC"]
     assert entity_pkg.Organization._ID_PATTERN is ENTITY_ID_REGEXES["ORG"]
     assert entity_pkg.Site._ID_PATTERN is ENTITY_ID_REGEXES["SID"]
+
+    assert entity_pkg.Fact._URN_PATTERN is ENTITY_URN_REGEXES["FID"]
+    assert entity_pkg.Family._URN_PATTERN is ENTITY_URN_REGEXES["FAM"]
+    assert entity_pkg.Individual._URN_PATTERN is ENTITY_URN_REGEXES["IND"]
+    assert entity_pkg.Location._URN_PATTERN is ENTITY_URN_REGEXES["LOC"]
+    assert entity_pkg.Organization._URN_PATTERN is ENTITY_URN_REGEXES["ORG"]
+    assert entity_pkg.Site._URN_PATTERN is ENTITY_URN_REGEXES["SID"]
 
 
 @pytest.mark.unit

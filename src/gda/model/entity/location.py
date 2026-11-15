@@ -27,7 +27,7 @@ from gda.core.enums.archival import NoteType
 from gda.core.enums.location import JurisdictionCategory
 from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
-from gda.core.types import ENTITY_ID_REGEXES
+from gda.core.types import ENTITY_ID_REGEXES, ENTITY_URN_REGEXES
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID, NoteID
 from gda.model.base.audit import AuditStamp
@@ -38,12 +38,12 @@ from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = ["Location"]
 
 _LOCATION_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["LOC"]
-_LOCATION_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:loc:[a-z0-9_:\-]+$")
+_LOCATION_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["LOC"]
 
 
 @dataclass(

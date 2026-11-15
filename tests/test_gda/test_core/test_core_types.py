@@ -4,8 +4,8 @@ Comprehensive unit test suite for gda.core.types.
 
 Operational Role:
     Verifies declarative regex patterns, compiled regular expressions, ISO
-    format directives, and domain scalar invariants against canonical examples
-    and invalid boundary strings.
+    format directives, entity URN patterns, archival URN patterns, and domain
+    scalar invariants against canonical examples and invalid boundary strings.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract mapping.
@@ -21,7 +21,7 @@ import pytest
 
 import gda.core.types as prim
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.4"
 
 
 # ==============================================================================
@@ -104,7 +104,7 @@ def test_iso_timestamp_regex_rejects_malformed_time_strings() -> None:
 
 
 # ==============================================================================
-# GROUP 4: ENTITY IDENTIFIER PATTERN CONTRACTS
+# GROUP 4: ENTITY IDENTIFIER & ENTITY URN PATTERN CONTRACTS
 # ==============================================================================
 
 
@@ -129,6 +129,26 @@ def test_entity_id_patterns_enforce_strict_six_digit_identifiers() -> None:
         assert regex.match(f"{prefix}-1234567") is None
         assert regex.match(f"{prefix}-12345678") is None
         assert regex.match(f"{prefix.lower()}-000042") is None
+
+
+@pytest.mark.unit
+def test_entity_urn_patterns_cover_all_master_entities() -> None:
+    """Verify ENTITY_URN_PATTERNS and ENTITY_URN_REGEXES cover all 6 master entity prefixes."""
+    expected_entity_prefixes = {"IND", "FAM", "FID", "LOC", "ORG", "SID"}
+    assert set(prim.ENTITY_URN_PATTERNS.keys()) == expected_entity_prefixes
+    assert set(prim.ENTITY_URN_REGEXES.keys()) == expected_entity_prefixes
+
+    samples = {
+        "IND": "urn:gda:ind:smith_john_1842",
+        "FAM": "urn:gda:fam:smith_jones_1865",
+        "FID": "urn:gda:fact:birth_1842_01",
+        "LOC": "urn:gda:loc:us:nh:merrimack:concord",
+        "ORG": "urn:gda:org:us:nh:concord:vfw_post_411",
+        "SID": "urn:gda:site:us:nh:concord:blossom_hill",
+    }
+    for prefix, valid_urn in samples.items():
+        assert prim.ENTITY_URN_REGEXES[prefix].match(valid_urn) is not None
+        assert prim.ENTITY_URN_REGEXES[prefix].match(valid_urn.upper()) is None
 
 
 # ==============================================================================

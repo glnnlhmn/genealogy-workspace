@@ -1,7 +1,7 @@
 # Genealogy Digital Archive Framework (src/gda)
 
 ## Architectural Role
-Top-level shared domain framework uniting core primitives, controlled enumerations, atomic/Safe-Backup I/O, helper utilities, and the five-pillar domain model suite.
+Top-level shared domain framework uniting core primitives, controlled enumerations, atomic/Safe-Backup I/O, helper utilities, the five-pillar domain model suite, and in-memory domain entity collection managers.
 
 ## Quality Gate & Verification Status
 - **Quality Gate:** 100.0% Statement & Branch Coverage
@@ -12,7 +12,7 @@ Top-level shared domain framework uniting core primitives, controlled enumeratio
 - **[core/](core/README.md)**: Core infrastructure, configuration, error contracts, and runtime introspection.
 - **[db/](db/README.md)**: Public package exports and facade for GDA persistence layer.
 - **[engine/](engine/README.md)**: Kinship graph analysis, plausibility engines, and relationship resolvers.
-- **[entity/](entity/README.md)**: Canonical entity representations and active archive registries.
+- **[entity/](entity/README.md)**: Domain entity collection managers, validation services, and persistence gateways.
 - **[io/](io/README.md)**: Genealogy Digital Archive I/O and persistence infrastructure.
 - **[manager/](manager/README.md)**: Stateful data access coordinators, vocabulary governors, and reference authorities.
 - **[model/](model/README.md)**: Authoritative five-pillar domain model suite for the Genealogy Digital Archive.

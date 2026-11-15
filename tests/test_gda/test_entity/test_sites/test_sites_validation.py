@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_entity/test_sites/test_validation.py
+"""Path: tests/test_gda/test_entity/test_sites/test_sites_validation.py
 
 Comprehensive test suite verifying Site validation, URN checks, and collection diagnostics.
 """
@@ -24,12 +24,11 @@ from gda.model.atom.id import SiteID
 from gda.model.base.address import Address
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.8"
 
 
 # ==============================================================================
 # GROUP 1: URN VALIDATION CONTRACTS
-# Note: Verifies deterministic URN tokenization, delimiters, and syntax enforcement
 # ==============================================================================
 
 
@@ -62,7 +61,6 @@ def test_valid_urn_empty_string_raises_validation_error() -> None:
 
 # ==============================================================================
 # GROUP 2: PHYSICAL ADDRESS BOUNDARIES
-# Note: Verifies street address non-empty primary line constraints
 # ==============================================================================
 
 
@@ -96,7 +94,6 @@ def test_valid_site_address_empty_street_raises_validation_error() -> None:
 
 # ==============================================================================
 # GROUP 3: COMPOSITE SITE ENTITY VALIDATION
-# Note: Verifies name, category enum typing, and full invariant validation
 # ==============================================================================
 
 
@@ -136,7 +133,6 @@ def test_valid_site_non_enum_category_raises_validation_error() -> None:
 
 # ==============================================================================
 # GROUP 4: COLLECTION-LEVEL RELATIONAL & GRAVEYARD DIAGNOSTICS
-# Note: Verifies foreign key alignment, tombstone supersession, and index integrity
 # ==============================================================================
 
 
@@ -182,9 +178,10 @@ def test_valid_collection_locations_missing_from_locations_collection_fails(make
 @pytest.mark.regression
 def test_valid_collection_tombstones_self_superseded_fails(make_site) -> None:
     """Verify tombstoned site superseding itself fails verification."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     site = make_site(site_id="SID-000001")
-    tombstone = Tombstone[SiteID]().retire(timestamp=now, superseded_by=SiteID("SID-000001"))
+    tombstone = Tombstone[SiteID]().retire(timestamp=now)
+    object.__setattr__(tombstone, "superseded_by", SiteID("SID-000001"))
     object.__setattr__(site, "tombstone", tombstone)
 
     mock_coll = MagicMock()
@@ -196,7 +193,7 @@ def test_valid_collection_tombstones_self_superseded_fails(make_site) -> None:
 @pytest.mark.regression
 def test_valid_collection_tombstones_missing_replacement_fails(make_site) -> None:
     """Verify tombstoned site superseding non-existent site fails verification."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     tombstone = Tombstone[SiteID]().retire(timestamp=now, superseded_by=SiteID("SID-000099"))
     site = make_site(site_id="SID-000001", tombstone=tombstone)
 
@@ -209,7 +206,7 @@ def test_valid_collection_tombstones_missing_replacement_fails(make_site) -> Non
 @pytest.mark.regression
 def test_valid_collection_tombstones_superseded_by_tombstoned_site_fails(make_site) -> None:
     """Verify tombstoned site superseded by another deprecated site fails verification."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     tombstone_1 = Tombstone[SiteID]().retire(timestamp=now, superseded_by=SiteID("SID-000002"))
     tombstone_2 = Tombstone[SiteID]().retire(timestamp=now)
 
@@ -225,7 +222,7 @@ def test_valid_collection_tombstones_superseded_by_tombstoned_site_fails(make_si
 @pytest.mark.regression
 def test_valid_collection_tombstones_valid_active_supersession_passes(make_site) -> None:
     """Verify tombstoned site superseded by active site passes verification."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     tombstone_1 = Tombstone[SiteID]().retire(timestamp=now, superseded_by=SiteID("SID-000002"))
     tombstone_none = Tombstone[SiteID]().retire(timestamp=now, superseded_by=None)
 
@@ -249,7 +246,7 @@ def test_valid_collection_indexes_synchronized_passes(make_site) -> None:
     mock_coll.__iter__.return_value = [site]
     mock_coll._registry = {site.id: site}
     mock_coll._urn_index = {site.canonical_urn: site.id}
-    mock_coll._alias_index = {"first parish church": site.id}
+    mock_coll._alias_index = {"first parish church": {site.id}}
     mock_coll._location_index = {site.location_id: {site.id}}
     mock_coll._category_index = {site.category: {site.id}}
 
@@ -290,7 +287,7 @@ def test_valid_collection_indexes_urn_mismatch_fails(make_site) -> None:
 
 @pytest.mark.regression
 def test_valid_collection_indexes_missing_alias_fails(make_site) -> None:
-    """Verify index check fails when site alias is absent from alias index."""
+    """Verify index check fails when site alias is absent or site ID missing from alias bucket."""
     site = make_site(site_id="SID-000001")
     site = site.add_alias("Old Church")
 
@@ -302,6 +299,10 @@ def test_valid_collection_indexes_missing_alias_fails(make_site) -> None:
     mock_coll._location_index = {site.location_id: {site.id}}
     mock_coll._category_index = {site.category: {site.id}}
 
+    assert valid_collection_indexes(mock_coll) is False
+
+    # Bucket exists but site.id missing from bucket
+    mock_coll._alias_index = {"old church": set()}
     assert valid_collection_indexes(mock_coll) is False
 
 

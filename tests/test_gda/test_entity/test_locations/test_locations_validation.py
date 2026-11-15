@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_entity/test_locations/test_validation.py
+"""Path: tests/test_gda/test_entity/test_locations/test_locations_validation.py
 
 Unit and regression test suite for location jurisdictional validation primitives.
 
@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from gda.core.enums.location import JurisdictionCategory
 from gda.core.errors import ModelFormatError
 from gda.entity.locations.errors import LocationHierarchyError
 from gda.entity.locations.validation import (
@@ -21,9 +22,9 @@ from gda.entity.locations.validation import (
     valid_urn,
     validate_urn_tier_sequence,
 )
-from gda.enums.location import JurisdictionCategory
 
-__version__ = "1.0.0+build.19"
+__version__ = "1.0.0+build.22"
+
 
 # ==============================================================================
 # GROUP 1: URN FORMAT & SEGMENT DEPTH (PATTERNS 1-7)
@@ -118,6 +119,7 @@ def test_valid_urn_pattern_5_unincorporated_depth_5_valid() -> None:
 def test_valid_urn_category_as_string_valid() -> None:
     """Verify string enum representation is correctly parsed and validated."""
     assert valid_urn("urn:gda:loc:canada", "COUNTRY") is True
+    assert valid_urn("urn:gda:loc:canada", None) is True
 
 
 @pytest.mark.regression
@@ -141,6 +143,9 @@ def test_valid_urn_invalid_syntax_raises_error() -> None:
     """Verify malformed URN strings trigger ModelFormatError."""
     with pytest.raises(ModelFormatError, match="Invalid canonical_urn format"):
         valid_urn("invalid:prefix:usa", JurisdictionCategory.COUNTRY)
+
+    with pytest.raises(ModelFormatError, match="Invalid canonical_urn format"):
+        valid_urn("urn:gda:loc:UPPERCASE_BAD", JurisdictionCategory.COUNTRY)
 
 
 @pytest.mark.regression
@@ -193,6 +198,7 @@ def test_valid_display_text_pattern_1_valid() -> None:
 def test_valid_display_text_pattern_2_valid() -> None:
     """Verify Statoid path string passes with 1 comma."""
     assert valid_display_text("New Hampshire, USA", JurisdictionCategory.STATOID) is True
+    assert valid_display_text("New Hampshire, USA", "STATOID") is True
 
 
 @pytest.mark.regression
@@ -403,7 +409,7 @@ def test_valid_hierarchy_active_node_with_distant_tombstoned_ancestor_raises_err
 
 @pytest.mark.regression
 def test_valid_hierarchy_ancestor_cycle_loop_guard_breaks() -> None:
-    """Verify ancestor traversal loop guard breaks safely when ancestor points to self (covers line 299)."""
+    """Verify ancestor traversal loop guard breaks safely."""
     with patch("gda.entity.locations.validation._split_and_validate_path_parts"):
         pass
     nodes = [

@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_entity/test_sites/test_util.py
+"""Path: tests/test_gda/test_entity/test_sites/test_sites_util.py
 
 Comprehensive test suite verifying Site lifecycle, JSON I/O, and SQLite persistence.
 """
@@ -9,9 +9,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from gda.core.enums.archival import NoteType
 from gda.entity.sites.collection import Sites
 from gda.entity.sites.errors import SiteValidationError
 from gda.entity.sites.util import (
+    _parse_coordinates,
     _parse_event_date,
     _parse_time_period,
     can_tombstone,
@@ -23,22 +25,21 @@ from gda.entity.sites.util import (
     tombstone_site,
     undelete_site,
 )
-from gda.enums.archival import NoteType
-from gda.model.atom.date import EventDate, IsoTimestamp
-from gda.model.atom.geo import Coordinates, Latitude, Longitude
+from gda.model.atom.date import IsoTimestamp
+from gda.model.atom.geo import Latitude, Longitude
 from gda.model.atom.id import NoteID, SiteID
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate, TimePeriod
+from gda.model.base.geo import Coordinates
 from gda.model.base.note import Note
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.site import Site
 
-__version__ = "1.0.0+build.11"
+__version__ = "1.0.0+build.15"
 
 
 # ==============================================================================
 # GROUP 1: TOMBSTONE LIFECYCLE OPERATORS
-# Note: Verifies can_tombstone and tombstone_site validation guards and retirement
 # ==============================================================================
 
 
@@ -103,7 +104,7 @@ def test_can_tombstone_missing_replacement_returns_false(make_site) -> None:
 @pytest.mark.regression
 def test_can_tombstone_tombstoned_replacement_returns_false(make_site) -> None:
     """Verify superseded_by pointing to tombstoned replacement returns error message."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     site1 = make_site("SID-000001")
     site2 = make_site("SID-000002", tombstone=Tombstone[SiteID]().retire(timestamp=now))
     coll = MagicMock()
@@ -146,7 +147,6 @@ def test_tombstone_site_failure_raises_site_validation_error() -> None:
 
 # ==============================================================================
 # GROUP 2: UNDELETE LIFECYCLE OPERATORS
-# Note: Verifies can_undelete and undelete_site reactivation logic and FK guards
 # ==============================================================================
 
 
@@ -188,7 +188,7 @@ def test_can_undelete_active_site_returns_false(active_site) -> None:
 @pytest.mark.regression
 def test_can_undelete_missing_governing_location_returns_false(make_site) -> None:
     """Verify undeleting site with missing governing location returns false."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     site = make_site(
         "SID-000001",
         location_id="LOC-000099",
@@ -231,7 +231,6 @@ def test_undelete_site_failure_raises_site_validation_error(active_site) -> None
 
 # ==============================================================================
 # GROUP 3: DATABASE PERSISTENCE ROUND-TRIPS
-# Note: Verifies load_from_db and save_to_db execution via SiteRowMapper
 # ==============================================================================
 
 
@@ -301,7 +300,7 @@ def test_save_to_db_persists_entities(
 
 
 # ==============================================================================
-# GROUP 4: TIMEPERIOD PARSER & JSON IMPORT/EXPORT SERIALIZATION
+# GROUP 4: TIMEPERIOD, COORDINATES & JSON IMPORT/EXPORT SERIALIZATION
 # ==============================================================================
 
 
@@ -311,8 +310,14 @@ def test_parse_event_date_variations() -> None:
     d = EventDate.create("1800")
     assert _parse_event_date(None) is None
     assert _parse_event_date(d) is d
-    assert _parse_event_date({"date": "1820", "modifier": "EXACT"}).year == 1820
-    assert _parse_event_date("1850").year == 1850
+
+    from_dict = _parse_event_date({"date": "1820", "modifier": "EXACT"})
+    assert from_dict is not None
+    assert str(from_dict.date) == "1820"
+
+    from_str = _parse_event_date("1850")
+    assert from_str is not None
+    assert str(from_str.date) == "1850"
 
 
 @pytest.mark.regression
@@ -333,13 +338,29 @@ def test_parse_time_period_direct_object_and_edge_cases() -> None:
         }
     )
     assert parsed_dates is not None
-    assert parsed_dates.start_date.year == 1800
-    assert parsed_dates.end_date.year == 1900
+    assert str(parsed_dates.start_date.date) == "1800"
+    assert str(parsed_dates.end_date.date) == "1900"
 
     parsed_strings = _parse_time_period({"start_date": "1840", "end_date": "1910"})
     assert parsed_strings is not None
-    assert parsed_strings.start_date.year == 1840
-    assert parsed_strings.end_date.year == 1910
+    assert str(parsed_strings.start_date.date) == "1840"
+    assert str(parsed_strings.end_date.date) == "1910"
+
+
+@pytest.mark.unit
+def test_parse_coordinates_all_branches() -> None:
+    """Verify _parse_coordinates handles None, Coordinates, non-dict, missing keys, valid dict, and invalid dict."""
+    coords = Coordinates(latitude=Latitude(43.12345), longitude=Longitude(-71.54321))
+    assert _parse_coordinates(None) is None
+    assert _parse_coordinates(coords) is coords
+    assert _parse_coordinates("invalid-non-dict") is None
+    assert _parse_coordinates({"latitude": 43.12345}) is None
+    assert _parse_coordinates({"longitude": -71.54321}) is None
+
+    valid_parsed = _parse_coordinates({"latitude": 43.12345, "longitude": -71.54321})
+    assert valid_parsed == coords
+
+    assert _parse_coordinates({"latitude": 999.0, "longitude": -71.54321}) is None
 
 
 @pytest.mark.regression
@@ -349,9 +370,9 @@ def test_import_file_reads_and_adds_sites(
     mock_exists: MagicMock,
     mock_read: MagicMock,
 ) -> None:
-    """Verify import_file deserializes JSON and populates collection."""
+    """Verify import_file deserializes JSON (including audit, tombstone, notes, and coordinates)."""
     mock_exists.return_value = True
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     existing_note = Note.create(
         note_id=NoteID("NOT-000002"),
         note_type=NoteType.RESEARCH,
@@ -374,7 +395,7 @@ def test_import_file_reads_and_adds_sites(
                         "status": "HISTORICAL",
                     }
                 ],
-                "alternate_names": ["The Meetinghouse"],
+                "alternate_names": ["The Meetinghouse", "The Meetinghouse"],
                 "notes": [
                     {
                         "note_id": "NOT-000001",
@@ -382,7 +403,13 @@ def test_import_file_reads_and_adds_sites(
                         "text": "Foundation laid 1800",
                         "audit": {"created_at": now_str, "updated_at": now_str},
                     },
+                    {
+                        "note_id": "NOT-000003",
+                        "note_type": "RESEARCH",
+                        "text": "Note without explicit audit dict",
+                    },
                     existing_note,
+                    "ignored-non-dict-note",
                 ],
                 "address": {
                     "address_line_1": "10 Main St",
@@ -390,8 +417,15 @@ def test_import_file_reads_and_adds_sites(
                     "state": "NH",
                     "postal_code": "03304",
                 },
+                "coordinates": {"latitude": 43.12345, "longitude": -71.54321},
                 "period": {"start_date": "1800", "end_date": "1900"},
                 "is_active": True,
+                "audit": {"created_at": now_str, "updated_at": now_str},
+                "tombstone": {
+                    "is_deprecated": True,
+                    "deprecated_at": now_str,
+                    "superseded_by": "SID-000002",
+                },
             },
             {
                 "id": "SID-000002",
@@ -413,9 +447,12 @@ def test_import_file_reads_and_adds_sites(
     added_site = coll.add.call_args_list[0][0][0]
     assert isinstance(added_site, Site)
     assert added_site.id == SiteID("SID-000001")
-    assert added_site.name.canonical == "Old First Church"
+    assert added_site.tombstone.is_deprecated is True
+    assert added_site.tombstone.superseded_by == SiteID("SID-000002")
     assert "The Meetinghouse" in added_site.aliases
     assert added_site.period is not None
+    assert added_site.coordinates is not None
+    assert len(added_site.notes) == 3
 
 
 @pytest.mark.regression
@@ -425,7 +462,7 @@ def test_import_file_ignores_non_dict_historical_names(
     mock_exists: MagicMock,
     mock_read: MagicMock,
 ) -> None:
-    """Verify import_file skips non-dict entries in historical_names (branch 347->346)."""
+    """Verify import_file skips non-dict entries in historical_names."""
     mock_exists.return_value = True
     payload = {
         "sites": [
@@ -474,8 +511,8 @@ def test_export_file_writes_payload(
     mock_write: MagicMock,
     make_site,
 ) -> None:
-    """Verify export_file formats collection entities into JSON payload."""
-    now = IsoTimestamp.now_utc()
+    """Verify export_file formats collection entities into JSON payload with audit and tombstone."""
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     site = make_site("SID-000001")
     site = site.add_alias("Old Chapel")
     site = site.add_historic_variant("Old Log Meetinghouse")
@@ -485,7 +522,6 @@ def test_export_file_writes_payload(
         text="Sample note",
         audit=AuditStamp(created_at=now, updated_at=now),
     )
-    site = site.update_note(note.note_id, text="Updated text")
     object.__setattr__(site, "notes", [note])
 
     coll = MagicMock()
@@ -500,6 +536,8 @@ def test_export_file_writes_payload(
     assert payload["sites"][0]["id"] == "SID-000001"
     assert "Old Chapel" in payload["sites"][0]["alternate_names"]
     assert payload["sites"][0]["coordinates"] is None
+    assert "audit" in payload["sites"][0]
+    assert "tombstone" in payload["sites"][0]
 
 
 @pytest.mark.regression
@@ -535,7 +573,7 @@ def test_export_file_without_graveyard_filters_tombstoned(
     make_site,
 ) -> None:
     """Verify export_file honors include_graveyard=False branch."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     active = make_site("SID-000001")
     tomb = Tombstone[SiteID]().retire(timestamp=now)
     dead = make_site("SID-000002", tombstone=tomb)

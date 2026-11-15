@@ -14,15 +14,16 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from gda.core.enums.site import SiteType
+from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.sites.errors import SiteValidationError
-from gda.enums.site import SiteType
 from gda.model.entity.site import Site
 
 if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.8"
 
 __all__ = [
     "valid_collection_all",
@@ -36,21 +37,11 @@ __all__ = [
 
 _logger = logging.getLogger(__name__)
 
-_SITE_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:site:[a-z0-9_:\-]+$")
+_SITE_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["SID"]
 
 
 def valid_urn(urn: str) -> bool:
-    """Validate that an individual URN conforms to the canonical site URN pattern.
-
-    Args:
-        urn: Canonical URN string to validate.
-
-    Returns:
-        True if valid.
-
-    Raises:
-        SiteValidationError: If the URN does not conform to the required pattern.
-    """
+    """Validate that an individual URN conforms to the canonical site URN pattern."""
     clean_urn = urn.strip() if urn else ""
     if not clean_urn or not _SITE_URN_PATTERN.match(clean_urn):
         raise SiteValidationError(
@@ -71,17 +62,7 @@ def valid_urn(urn: str) -> bool:
 
 
 def valid_site_address(site: Site) -> bool:
-    """Validate that an optional physical street address complies with domain invariants.
-
-    Args:
-        site: Site entity to inspect.
-
-    Returns:
-        True if valid or address is absent.
-
-    Raises:
-        SiteValidationError: If address_line_1 is empty or whitespace.
-    """
+    """Validate that an optional physical street address complies with domain invariants."""
     if site.address is not None:
         if not site.address.address_line_1 or not site.address.address_line_1.strip():
             raise SiteValidationError(
@@ -92,17 +73,7 @@ def valid_site_address(site: Site) -> bool:
 
 
 def valid_site(site: Site) -> bool:
-    """Validate all individual structural, naming, and classification invariants of a Site.
-
-    Args:
-        site: Site domain entity.
-
-    Returns:
-        True if all invariants pass.
-
-    Raises:
-        SiteValidationError: If any individual invariant is violated.
-    """
+    """Validate all individual structural, naming, and classification invariants of a Site."""
     valid_urn(site.canonical_urn)
     valid_site_address(site)
 
@@ -125,15 +96,7 @@ def valid_collection_locations(
     collection: Sites,
     locations_collection: Locations | None = None,
 ) -> bool:
-    """Verify that every active Site references an active, non-tombstoned LocationID.
-
-    Args:
-        collection: In-memory Sites collection.
-        locations_collection: Optional Locations collection providing authoritative jurisdiction checks.
-
-    Returns:
-        True if all foreign keys resolve cleanly.
-    """
+    """Verify that every active Site references an active, non-tombstoned LocationID."""
     errors: list[str] = []
 
     for site in collection:
@@ -156,14 +119,7 @@ def valid_collection_locations(
 
 
 def valid_collection_tombstones(collection: Sites) -> bool:
-    """Validate tombstone references and detect circular or dangling supersession links.
-
-    Args:
-        collection: In-memory Sites collection.
-
-    Returns:
-        True if tombstone graph integrity is preserved.
-    """
+    """Validate tombstone references and detect circular or dangling supersession links."""
     errors: list[str] = []
     all_sites = {s.id: s for s in collection.iter_all()}
 
@@ -192,14 +148,7 @@ def valid_collection_tombstones(collection: Sites) -> bool:
 
 
 def valid_collection_indexes(collection: Sites) -> bool:
-    """Validate synchronization between internal registry and secondary lookup indexes.
-
-    Args:
-        collection: In-memory Sites collection.
-
-    Returns:
-        True if all index entries are bidirectional and consistent.
-    """
+    """Validate synchronization between internal registry and secondary lookup indexes."""
     errors: list[str] = []
 
     for site in collection:
@@ -210,7 +159,10 @@ def valid_collection_indexes(collection: Sites) -> bool:
 
         for alias in site.aliases:
             c_alias = alias.strip().lower()
-            if c_alias and c_alias not in collection._alias_index:
+            if (
+                c_alias not in collection._alias_index
+                or site.id not in collection._alias_index[c_alias]
+            ):
                 errors.append(f"Alias '{alias}' for site '{site.id}' missing from alias index.")
 
         if site.location_id not in collection._location_index:
@@ -242,15 +194,7 @@ def valid_collection_all(
     collection: Sites,
     locations_collection: Locations | None = None,
 ) -> bool:
-    """Execute all collection-wide validation routines and aggregate diagnostic outcomes.
-
-    Args:
-        collection: In-memory Sites collection.
-        locations_collection: Optional Locations collection for foreign key verification.
-
-    Returns:
-        True if all validation checks succeed.
-    """
+    """Execute all collection-wide validation routines and aggregate diagnostic outcomes."""
     loc_ok = valid_collection_locations(collection, locations_collection)
     tomb_ok = valid_collection_tombstones(collection)
     idx_ok = valid_collection_indexes(collection)

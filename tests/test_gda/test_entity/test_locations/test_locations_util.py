@@ -1,11 +1,12 @@
-"""Path: tests/test_gda/test_entity/test_locations/test_util.py
+"""Path: tests/test_gda/test_entity/test_locations/test_locations_util.py
 
 Unit, regression, and integration test suite for location domain utilities (LU).
 
 Operational Role:
-    Verifies jurisdictional hierarchy construction, graveyard lifecycle and soft-delete
-    rules, atomic child reparenting, file serialization round-trips, and SQLite database
-    persistence operations governing Locations collections.
+    Verifies jurisdictional hierarchy construction, graveyard lifecycle
+    (can_tombstone, tombstone_location, can_undelete, undelete_location),
+    atomic child reparenting, file serialization round-trips (preserving audit
+    and tombstone metadata), and SQLite database persistence operations.
 """
 
 from __future__ import annotations
@@ -15,21 +16,23 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from gda.core.enums.archival import NoteType
+from gda.core.enums.location import JurisdictionCategory
+from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
 from gda.entity.locations.collection import Locations
 from gda.entity.locations.errors import LocationHierarchyError
 from gda.entity.locations.util import (
     build_jurisdiction_hierarchy,
     can_tombstone,
+    can_undelete,
     export_file,
     import_file,
     load_from_db,
     save_to_db,
     tombstone_location,
+    undelete_location,
 )
-from gda.enums.archival import NoteType
-from gda.enums.location import JurisdictionCategory
-from gda.enums.vital import HistoricNameType
 from gda.io.json import GDAJsonIO
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID
@@ -39,7 +42,7 @@ from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
 
-__version__ = "1.0.0+build.19"
+__version__ = "1.0.0+build.23"
 
 
 # ==============================================================================
@@ -81,7 +84,7 @@ def test_build_jurisdiction_hierarchy_increments_past_max_id(
     empty_collection: Locations,
 ) -> None:
     """Verify deterministic max+1 minting past existing entries."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     existing = Location.create(
         location_id=LocationID("LOC-000007"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -277,7 +280,7 @@ def test_can_tombstone_formats_overflow_when_more_than_three_children(
 ) -> None:
     """Verify error diagnostic formats child overflow when target has >3 active children."""
     parent_id = LocationID("LOC-000004")
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     audit = AuditStamp(created_at=now, updated_at=now)
 
     for i in range(10, 14):
@@ -327,7 +330,7 @@ def test_can_tombstone_fails_when_replacement_is_itself_tombstoned(
 ) -> None:
     """Verify specifying an already retired replacement entity returns False."""
     leaf1 = LocationID("LOC-000005")
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     audit = AuditStamp(created_at=now, updated_at=now)
     leaf2 = Location.create(
         location_id=LocationID("LOC-000006"),
@@ -362,7 +365,7 @@ def test_can_tombstone_fails_on_category_mismatch(
 
 
 # ==============================================================================
-# GROUP 3: ATOMIC RETIREMENT & REPARENTING (tombstone_location)
+# GROUP 3: ATOMIC RETIREMENT, REPARENTING & UNDELETE (tombstone_location / undelete_location)
 # ==============================================================================
 
 
@@ -379,6 +382,7 @@ def test_tombstone_location_leaf_without_replacement(
     )
     assert retired.tombstone.is_deprecated is True
     assert retired.tombstone.superseded_by is None
+    assert retired.is_dirty is True
     assert populated_collection._registry[leaf_id].tombstone.is_deprecated is True
     assert leaf_id not in populated_collection
     assert leaf_id in populated_collection._registry
@@ -388,9 +392,9 @@ def test_tombstone_location_leaf_without_replacement(
 def test_tombstone_location_atomically_reparents_active_children(
     populated_collection: Locations,
 ) -> None:
-    """Verify retiring parent reparents all active children to replacement."""
+    """Verify retiring parent reparents all active children to replacement and cleans _parent_index."""
     target_bow = LocationID("LOC-000004")
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     audit = AuditStamp(created_at=now, updated_at=now)
 
     concord = Location.create(
@@ -413,9 +417,40 @@ def test_tombstone_location_atomically_reparents_active_children(
 
     assert retired.tombstone.is_deprecated is True
     assert retired.tombstone.superseded_by == concord.id
+    assert target_bow not in populated_collection._parent_index
 
     child_center = populated_collection[LocationID("LOC-000005")]
     assert child_center.parent_id == concord.id
+    assert populated_collection.find_children(concord.id) == [child_center]
+
+    # Also test retiring when target_bow still has a tombstoned child in _parent_index
+    dead_child = Location.create(
+        location_id=LocationID("LOC-000007"),
+        audit=audit,
+        name=NameThing.create(raw="Old Hamlet", canonical="Old Hamlet"),
+        category=JurisdictionCategory.MUNICIPALITY,
+        canonical_urn="urn:gda:loc:united_states:nh:merrimack:concord:old_hamlet",
+        parent_id=concord.id,
+        tombstone=Tombstone[LocationID]().retire(timestamp=now),
+    )
+    populated_collection.add(dead_child)
+    hopkinton = Location.create(
+        location_id=LocationID("LOC-000008"),
+        audit=audit,
+        name=NameThing.create(raw="Hopkinton", canonical="Hopkinton"),
+        category=JurisdictionCategory.CIVIL_TOWNSHIP,
+        canonical_urn="urn:gda:loc:united_states:nh:merrimack:hopkinton",
+        parent_id=LocationID("LOC-000003"),
+        tombstone=Tombstone[LocationID](),
+    )
+    populated_collection.add(hopkinton)
+    tombstone_location(
+        populated_collection,
+        loc_id=concord.id,
+        reason="Merged into Hopkinton",
+        superseded_by=hopkinton.id,
+    )
+    assert concord.id in populated_collection._parent_index
 
 
 @pytest.mark.regression
@@ -425,6 +460,47 @@ def test_tombstone_location_raises_on_invalid_operation(
     """Verify tombstone_location raises LocationHierarchyError on validation failure."""
     with pytest.raises(LocationHierarchyError, match="does not exist in collection"):
         tombstone_location(populated_collection, "LOC-999999", reason="Error")
+
+
+@pytest.mark.unit
+def test_can_undelete_and_undelete_location_guards(
+    populated_collection: Locations,
+) -> None:
+    """Verify can_undelete and undelete_location enforce parent existence and active state."""
+    ok, err = can_undelete(populated_collection, "LOC-999999")
+    assert ok is False
+    assert "does not exist" in str(err)
+
+    ok, err = can_undelete(populated_collection, "LOC-000005")
+    assert ok is False
+    assert "is not tombstoned" in str(err)
+
+    with pytest.raises(LocationHierarchyError, match="is not tombstoned"):
+        undelete_location(populated_collection, "LOC-000005")
+
+    # Retire leaf and parent, then try to undelete leaf while parent is still tombstoned
+    tombstone_location(populated_collection, "LOC-000005", reason="Leaf retired")
+    tombstone_location(populated_collection, "LOC-000004", reason="Parent retired")
+
+    ok, err = can_undelete(populated_collection, "LOC-000005")
+    assert ok is False
+    assert "parent jurisdiction 'LOC-000004' is missing or tombstoned" in str(err)
+
+    # Restore parent first, then restore leaf
+    restored_parent = undelete_location(populated_collection, "LOC-000004")
+    assert restored_parent.tombstone.is_deprecated is False
+    assert restored_parent.is_dirty is True
+
+    restored_leaf = undelete_location(populated_collection, "LOC-000005")
+    assert restored_leaf.tombstone.is_deprecated is False
+    assert restored_leaf.is_dirty is True
+
+    # Also test undelete of a root COUNTRY node (parent_id is None)
+    col = Locations()
+    c = col.create(name="Canada", category=JurisdictionCategory.COUNTRY)
+    col.soft_delete(c.id, reason="Test")
+    restored_c = col.undelete(c.id)
+    assert restored_c.tombstone.is_deprecated is False
 
 
 # ==============================================================================
@@ -443,11 +519,12 @@ def test_import_file_non_existent_path_returns_zero(
 
 
 @pytest.mark.integration
-def test_export_file_and_import_file_round_trip(
+def test_export_file_and_import_file_round_trip_preserves_tombstones(
     populated_collection: Locations,
     tmp_path: Path,
 ) -> None:
-    """Verify exporting collection to JSON and re-importing restores all entities."""
+    """Verify exporting collection to JSON and re-importing restores active and tombstoned entities."""
+    tombstone_location(populated_collection, "LOC-000005", reason="Dissolved")
     out_path = tmp_path / "export" / "locations.json"
     exported_count = export_file(populated_collection, out_path, include_graveyard=True)
     assert exported_count == 5
@@ -456,7 +533,8 @@ def test_export_file_and_import_file_round_trip(
     new_collection = Locations()
     imported_count = import_file(new_collection, out_path)
     assert imported_count == 5
-    assert len(new_collection) == 5
+    assert len(new_collection) == 4
+    assert len(new_collection.find_tombstoned()) == 1
 
     orig = populated_collection[LocationID("LOC-000004")]
     restored = new_collection[LocationID("LOC-000004")]
@@ -482,8 +560,8 @@ def test_export_file_serializes_non_empty_historical_names(
     empty_collection: Locations,
     tmp_path: Path,
 ) -> None:
-    """Verify export_file iterates and serializes non-empty historical names (covers branch 399->396)."""
-    now = IsoTimestamp.now_utc()
+    """Verify export_file iterates and serializes non-empty historical names."""
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     loc = Location.create(
         location_id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -545,12 +623,18 @@ def test_import_file_deserializes_historical_names_and_notes(
                     {
                         "note_id": "NOT-000001",
                         "note_type": NoteType.GENERAL.value,
-                        "text": "Imported research memo.",
+                        "text": "Imported research memo with explicit audit.",
                         "audit": {
                             "created_at": "2026-10-18T12:00:00Z",
                             "updated_at": "2026-10-18T12:00:00Z",
                         },
-                    }
+                    },
+                    {
+                        "note_id": "NOT-000002",
+                        "note_type": NoteType.RESEARCH.value,
+                        "text": "Imported research memo using default audit.",
+                    },
+                    "non_dict_note_ignored",
                 ],
             },
             {
@@ -570,8 +654,7 @@ def test_import_file_deserializes_historical_names_and_notes(
     loc1 = empty_collection[LocationID("LOC-000001")]
     assert len(loc1.aliases) >= 1
     assert len(loc1.name.historic) == 2
-    assert len(loc1.notes) == 1
-    assert loc1.notes[0].text == "Imported research memo."
+    assert len(loc1.notes) == 2
 
     loc2 = empty_collection[LocationID("LOC-000002")]
     assert loc2.name.canonical == "Plain String Name"
@@ -583,7 +666,7 @@ def test_import_file_ingests_note_objects_directly(
     tmp_path: Path,
 ) -> None:
     """Verify import_file directly attaches Note objects when present in-memory."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     mock_note = Note.create(
         note_id="NOT-000001",
         note_type=NoteType.GENERAL,

@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_entity/test_sites/test_collection.py
+"""Path: tests/test_gda/test_entity/test_sites/test_sites_collection.py
 
 Comprehensive test suite verifying the Sites in-memory collection and lookup index.
 """
@@ -9,18 +9,19 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from gda.core.enums.site import SiteType
 from gda.core.errors import ModelFormatError
 from gda.entity.sites.collection import Sites
 from gda.entity.sites.errors import SiteNotFoundError, SiteValidationError
-from gda.enums.site import SiteType
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID, SiteID
+from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.8"
 
 
 # ==============================================================================
 # GROUP 1: INITIALIZATION, CONTAINMENT & RETRIEVAL CONTRACTS
-# Note: Verifies dict-like accessors, len counts, and URN/alias containment
 # ==============================================================================
 
 
@@ -97,7 +98,6 @@ def test_sites_add_type_error_on_invalid_instance() -> None:
 
 # ==============================================================================
 # GROUP 2: UPDATE AND MUTATION INDEX SYNCHRONIZATION
-# Note: Verifies updating site updates aliases, URNs, location and category buckets
 # ==============================================================================
 
 
@@ -108,7 +108,9 @@ def test_sites_update_reindexes_aliases_and_buckets(make_site) -> None:
     site = site.add_alias("Old Chapel")
     coll = Sites([site])
 
-    assert coll._alias_index.get("old chapel") == site.id
+    assert coll._alias_index.get("old chapel") == {site.id}
+    assert coll.find_by_alias("Old Chapel") == [site]
+    assert coll.find_by_alias("   ") == []
     assert site.id in coll._category_index[SiteType.CHURCH]
 
     updated_site = (
@@ -129,19 +131,21 @@ def test_sites_update_reindexes_aliases_and_buckets(make_site) -> None:
 
 @pytest.mark.regression
 def test_sites_update_location_retains_bucket_when_peers_exist(make_site) -> None:
-    """Verify update removes site from location bucket without deleting bucket if peers exist (branch 185->188)."""
-    site1 = make_site("SID-000001", location_id="LOC-000001")
-    site2 = make_site("SID-000002", location_id="LOC-000001")
+    """Verify update removes site from location bucket without deleting bucket if peers exist."""
+    site1 = make_site("SID-000001", location_id="LOC-000001").add_alias("Shared")
+    site2 = make_site("SID-000002", location_id="LOC-000001").add_alias("Shared")
     coll = Sites([site1, site2])
 
     assert len(coll._location_index[LocationID("LOC-000001")]) == 2
+    assert coll._alias_index["shared"] == {site1.id, site2.id}
 
-    moved_site1 = site1.update_location("LOC-000002")
+    moved_site1 = site1.update_location("LOC-000002").remove_alias("Shared")
     coll.update(moved_site1)
 
     assert LocationID("LOC-000001") in coll._location_index
     assert SiteID("SID-000002") in coll._location_index[LocationID("LOC-000001")]
     assert SiteID("SID-000001") not in coll._location_index[LocationID("LOC-000001")]
+    assert coll._alias_index["shared"] == {site2.id}
 
 
 @pytest.mark.regression
@@ -176,17 +180,15 @@ def test_sites_update_unchanged_fields_and_no_aliases(make_site) -> None:
 
 
 @pytest.mark.regression
-def test_sites_update_alias_key_not_matching_target_id(make_site) -> None:
-    """Verify update cleanly bypasses alias deletion if alias points elsewhere."""
+def test_sites_update_alias_key_missing_from_index(make_site) -> None:
+    """Verify update cleanly bypasses alias deletion if alias key was cleared."""
     site = make_site("SID-000001").add_alias("Shared Alias")
     coll = Sites([site])
-
-    coll._alias_index["shared alias"] = SiteID("SID-000099")
+    coll._alias_index.clear()
 
     updated = site.remove_alias("Shared Alias")
     coll.update(updated)
-
-    assert coll._alias_index.get("shared alias") == SiteID("SID-000099")
+    assert "shared alias" not in coll._alias_index
 
 
 @pytest.mark.regression
@@ -203,14 +205,13 @@ def test_sites_update_missing_site_raises_site_not_found_error(make_site) -> Non
 
 
 # ==============================================================================
-# GROUP 3: QUERY AND FACADE CONVENIENCE ROUTINES
-# Note: Verifies find_by_location, find_by_category, soft_delete, and undelete
+# GROUP 3: QUERY, GRAVEYARD & FACADE CONVENIENCE ROUTINES
 # ==============================================================================
 
 
 @pytest.mark.regression
 def test_sites_iteration_and_iter_all(make_site, tombstoned_site) -> None:
-    """Verify __iter__ (lines 93-95) and iter_all (line 99) yield active vs all records."""
+    """Verify __iter__ and iter_all yield active vs all records."""
     active = make_site("SID-000001")
     coll = Sites([active, tombstoned_site])
 
@@ -220,6 +221,51 @@ def test_sites_iteration_and_iter_all(make_site, tombstoned_site) -> None:
 
     all_iter = list(coll.iter_all())
     assert len(all_iter) == 2
+
+
+@pytest.mark.unit
+def test_sites_graveyard_and_dirty_helpers(make_site) -> None:
+    """Verify get_any, find_tombstoned, resolve_active, dirty_entities, and mark_clean."""
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
+    s1 = make_site("SID-000001").mark_dirty()
+    s2 = make_site(
+        "SID-000002",
+        urn="urn:gda:site:us:nh:bow:old_church_s000002",
+        tombstone=Tombstone[SiteID]().retire(timestamp=now, superseded_by=SiteID("SID-000001")),
+    )
+    s3 = make_site(
+        "SID-000003",
+        urn="urn:gda:site:us:nh:bow:dead_s000003",
+        tombstone=Tombstone[SiteID]().retire(timestamp=now),
+    )
+    # Cyclic tombstoned pair for resolve_active cycle guard
+    s4 = make_site(
+        "SID-000004",
+        urn="urn:gda:site:us:nh:bow:cyc4_s000004",
+        tombstone=Tombstone[SiteID]().retire(timestamp=now, superseded_by=SiteID("SID-000005")),
+    )
+    s5 = make_site(
+        "SID-000005",
+        urn="urn:gda:site:us:nh:bow:cyc5_s000005",
+        tombstone=Tombstone[SiteID]().retire(timestamp=now, superseded_by=SiteID("SID-000004")),
+    )
+
+    coll = Sites([s1, s2, s3, s4, s5])
+    assert coll.dirty_entities() == [s1]
+    coll.mark_clean()
+    assert coll.dirty_entities() == []
+    assert coll.is_dirty is False
+
+    assert coll.get_any("SID-000002") == s2
+    assert coll.get_any("SID-999999") is None
+    assert coll.get_any(12345) is None  # type: ignore[arg-type]
+    assert len(coll.find_tombstoned()) == 4
+
+    assert coll.resolve_active("SID-000001") == coll["SID-000001"]
+    assert coll.resolve_active("SID-000002") == coll["SID-000001"]
+    assert coll.resolve_active("SID-000003") is None
+    assert coll.resolve_active("SID-000004") is None
+    assert coll.resolve_active("SID-999999") is None
 
 
 @pytest.mark.regression
@@ -264,7 +310,6 @@ def test_sites_soft_delete_and_undelete_lifecycle_flow(
 
 # ==============================================================================
 # GROUP 4: CREATION FACTORY & PERSISTENCE DELEGATION
-# Note: Verifies create minting, FK verification, and database facades
 # ==============================================================================
 
 
@@ -287,8 +332,10 @@ def test_sites_create_auto_mints_id_and_urn() -> None:
 
 
 @pytest.mark.regression
-def test_sites_create_with_active_location_collection_happy_path(mock_locations_collection) -> None:
-    """Verify create passes when location collection contains target (branch 290->295)."""
+def test_sites_create_with_active_location_collection_happy_path(
+    mock_locations_collection,
+) -> None:
+    """Verify create passes when location collection contains target."""
     coll = Sites()
     new_site = coll.create(
         name="New Meetinghouse",
@@ -372,7 +419,7 @@ def test_sites_io_facade_delegation(
     mock_export: MagicMock,
     mock_import: MagicMock,
 ) -> None:
-    """Verify import_file and export_file facade methods delegate directly to util (lines 263, 267)."""
+    """Verify import_file and export_file facade methods delegate directly to util."""
     mock_import.return_value = 5
     mock_export.return_value = 5
 

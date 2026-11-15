@@ -58,6 +58,8 @@ from gda.core.types import (
     COLONIAL_MILITIA_MIN_YEAR,
     ENTITY_ID_PATTERNS,
     ENTITY_ID_REGEXES,
+    ENTITY_URN_PATTERNS,
+    ENTITY_URN_REGEXES,
     GENDER_CODES,
     ISO_DATE_FMT,
     ISO_DATE_PATTERN,
@@ -117,7 +119,7 @@ from gda.core.types import (
     WWII_DRAFT_YEARS,
 )
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.0.0+build.10"
 
 __all__ = [
     "ATOM_ID_PATTERN",  # types.py
@@ -134,6 +136,8 @@ __all__ = [
     "DatabaseConfig",  # config.py
     "ENTITY_ID_PATTERNS",  # types.py
     "ENTITY_ID_REGEXES",  # types.py
+    "ENTITY_URN_PATTERNS",  # types.py
+    "ENTITY_URN_REGEXES",  # types.py
     "GDALogger",  # logging.py
     "GENDER_CODES",  # types.py
     "GenealogyDeskError",  # errors.py

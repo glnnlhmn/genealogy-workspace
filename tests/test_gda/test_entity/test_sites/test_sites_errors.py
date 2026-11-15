@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_entity/test_sites/test_errors.py
+"""Path: tests/test_gda/test_entity/test_sites/test_sites_errors.py
 
 Comprehensive test suite verifying the Site error hierarchy.
 """
@@ -14,7 +14,7 @@ from gda.entity.sites.errors import (
     SiteValidationError,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 # ==============================================================================
 # GROUP 1: SITE ERROR HIERARCHY & INITIALIZATION

@@ -39,11 +39,11 @@ from gda.core import (
     ModelRangeError,
 )
 
-__version__ = "1.0.0+build.7"
+__version__ = "1.0.0+build.8"
 
 # ==============================================================================
 # AUTHORITATIVE CONTRACT SPECIFICATION
-# Note: Defines the strict, immutable contract for gda.core exports (92 symbols)
+# Note: Defines the strict, immutable contract for gda.core exports (95 symbols)
 # ==============================================================================
 
 AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
@@ -82,7 +82,7 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "ConsoleFormatter",
         "GDALogger",
         "JsonFormatter",
-        # types.py (64)
+        # types.py (67)
         "ATOM_ID_PATTERN",
         "ATOM_ID_REGEX",
         "CENSUS_SHEET_SIDES",
@@ -91,6 +91,8 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "COLONIAL_MILITIA_MIN_YEAR",
         "ENTITY_ID_PATTERNS",
         "ENTITY_ID_REGEXES",
+        "ENTITY_URN_PATTERNS",
+        "ENTITY_URN_REGEXES",
         "GENDER_CODES",
         "ISO_DATE_FMT",
         "ISO_DATE_PATTERN",
@@ -164,7 +166,7 @@ def test_core_exports_exact_authoritative_symbols() -> None:
     """Verify gda.core exports exactly the authoritative symbol set with zero drift (CTR-001)."""
     actual_symbols = frozenset(gda.core.__all__)
     assert actual_symbols == AUTHORITATIVE_EXPORTS
-    assert len(gda.core.__all__) == 93
+    assert len(gda.core.__all__) == 95
 
 
 @pytest.mark.integrity

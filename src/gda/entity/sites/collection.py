@@ -5,8 +5,8 @@ Authoritative in-memory collection and relational lookup manager for site record
 Operational Role:
     Acts as the primary domain API facade for creating, querying, tombstoning,
     undeleting, and retrieving Site entities situated within civil jurisdictions.
-    Delegates persistence, file I/O, and graveyard lifecycle logic to specialized
-    sibling utility routines in gda.entity.sites.util.
+    Provides manager-ready graveyard inspection, supersession resolution,
+    multi-entity alias lookup, and dirty-entity tracking.
 """
 
 from __future__ import annotations
@@ -16,6 +16,9 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.core import SmartIDPrefix
+from gda.core.enums.site import SiteType
 from gda.core.introspectable import IntrospectableMixin
 from gda.entity.sites.errors import SiteNotFoundError, SiteValidationError
 from gda.entity.sites.util import (
@@ -26,27 +29,27 @@ from gda.entity.sites.util import (
     tombstone_site,
     undelete_site,
 )
-from gda.enums.core import SmartIDPrefix
-from gda.enums.site import SiteType
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.geo import Coordinates
 from gda.model.atom.id import LocationID, SiteID
 from gda.model.base.address import Address
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import TimePeriod
+from gda.model.base.geo import Coordinates
 from gda.model.base.name import NameThing
 from gda.model.base.note import Note
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.site import Site
 from gda.util.ids import extract_max_smart_id, mint_smart_id
-from gda.util.text import slugify
+from gda.util.text import clean_string, slugify
 
 if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.7"
 
-__all__ = ["Sites"]
+__all__ = [
+    "Sites",
+]
 
 
 class Sites(IntrospectableMixin):
@@ -56,7 +59,7 @@ class Sites(IntrospectableMixin):
         """Initialize site registry, URN, alias, location, and category indexes."""
         self._registry: dict[SiteID, Site] = {}
         self._urn_index: dict[str, SiteID] = {}
-        self._alias_index: dict[str, SiteID] = {}
+        self._alias_index: dict[str, set[SiteID]] = defaultdict(set)
         self._location_index: dict[LocationID, set[SiteID]] = defaultdict(set)
         self._category_index: dict[SiteType, set[SiteID]] = defaultdict(set)
         self._is_dirty: bool = False
@@ -78,8 +81,15 @@ class Sites(IntrospectableMixin):
         return self._is_dirty
 
     def mark_clean(self) -> None:
-        """Reset dirty state flag following database synchronization."""
+        """Reset dirty state flag on collection and all registered entities."""
         self._is_dirty = False
+        for site_id, site in list(self._registry.items()):
+            if site.is_dirty:
+                self._registry[site_id] = site.mark_clean()
+
+    def dirty_entities(self) -> list[Site]:
+        """Return all registered sites currently marked dirty in memory."""
+        return [site for site in self._registry.values() if site.is_dirty]
 
     def __len__(self) -> int:
         """Return the count of active (non-tombstoned) sites in the collection."""
@@ -95,33 +105,27 @@ class Sites(IntrospectableMixin):
         """Iterate over all sites, including tombstoned records."""
         yield from self._registry.values()
 
-    def __contains__(self, item: SiteID | str) -> bool:
-        """Check if an active site exists by SiteID, string ID, or canonical URN."""
+    def _resolve_id(self, item: SiteID | str) -> SiteID | None:
+        """Resolve a SiteID, string ID, or canonical URN into a SiteID if registered."""
         if isinstance(item, SiteID):
-            site = self._registry.get(item)
-            return site is not None and not site.tombstone.is_deprecated
+            return item if item in self._registry else None
         if isinstance(item, str):
             if item.startswith("SID-"):
-                site = self._registry.get(SiteID(item))
-                return site is not None and not site.tombstone.is_deprecated
-            site_id = self._urn_index.get(item)
-            if site_id:
-                site = self._registry.get(site_id)
-                return site is not None and not site.tombstone.is_deprecated
-        return False
+                cand = SiteID(item)
+                return cand if cand in self._registry else None
+            cand = self._urn_index.get(item)
+            return cand if cand and cand in self._registry else None
+        return None
+
+    def __contains__(self, item: SiteID | str) -> bool:
+        """Check if an active site exists by SiteID, string ID, or canonical URN."""
+        site_id = self._resolve_id(item)
+        return site_id is not None and not self._registry[site_id].tombstone.is_deprecated
 
     def __getitem__(self, item: SiteID | str) -> Site:
         """Retrieve an active site by SiteID, string ID, or canonical URN."""
-        site_id: SiteID | None = None
-        if isinstance(item, SiteID):
-            site_id = item
-        elif isinstance(item, str):
-            if item.startswith("SID-"):
-                site_id = SiteID(item)
-            else:
-                site_id = self._urn_index.get(item)
-
-        if not site_id or site_id not in self._registry:
+        site_id = self._resolve_id(item)
+        if not site_id:
             raise SiteNotFoundError(f"Site not found: {item}")
 
         site = self._registry[site_id]
@@ -136,6 +140,26 @@ class Sites(IntrospectableMixin):
         except SiteNotFoundError:
             return default
 
+    def get_any(self, item: SiteID | str, default: Site | None = None) -> Site | None:
+        """Retrieve a site by ID or URN regardless of whether it is active or tombstoned."""
+        site_id = self._resolve_id(item)
+        return self._registry[site_id] if site_id is not None else default
+
+    def find_tombstoned(self) -> list[Site]:
+        """Return all retired (tombstoned) sites in the graveyard."""
+        return [site for site in self._registry.values() if site.tombstone.is_deprecated]
+
+    def resolve_active(self, item: SiteID | str) -> Site | None:
+        """Follow superseded_by chains from an identifier to its current active Site."""
+        curr = self.get_any(item)
+        seen: set[SiteID] = set()
+        while curr is not None and curr.tombstone.is_deprecated:
+            if curr.id in seen or curr.tombstone.superseded_by is None:
+                return None
+            seen.add(curr.id)
+            curr = self._registry.get(curr.tombstone.superseded_by)
+        return curr
+
     def add(self, site: Site) -> None:
         """Add a site entity to registry and update all secondary lookup indexes."""
         if not isinstance(site, Site):
@@ -147,7 +171,7 @@ class Sites(IntrospectableMixin):
         self._category_index[site.category].add(site.id)
 
         for alias in site.aliases:
-            self._alias_index[alias.lower()] = site.id
+            self._alias_index[alias.lower()].add(site.id)
 
         self._is_dirty = True
 
@@ -162,10 +186,13 @@ class Sites(IntrospectableMixin):
 
         old_site = self._registry[target_id]
 
+        new_aliases = {a.lower() for a in site.aliases}
         for old_alias in old_site.aliases:
             key = old_alias.lower()
-            if self._alias_index.get(key) == target_id:
-                del self._alias_index[key]
+            if key not in new_aliases and key in self._alias_index:
+                self._alias_index[key].discard(target_id)
+                if not self._alias_index[key]:
+                    del self._alias_index[key]
 
         if old_site.canonical_urn != site.canonical_urn:
             self._urn_index.pop(old_site.canonical_urn, None)
@@ -211,6 +238,18 @@ class Sites(IntrospectableMixin):
         )
         self._is_dirty = True
         return restored
+
+    def find_by_alias(self, alias: str) -> list[Site]:
+        """Query all active sites matching a normalized alias."""
+        cleaned = clean_string(alias)
+        if not cleaned:
+            return []
+        site_ids = self._alias_index.get(cleaned.lower(), set())
+        return [
+            self._registry[sid]
+            for sid in site_ids
+            if sid in self._registry and not self._registry[sid].tombstone.is_deprecated
+        ]
 
     def find_by_location(self, location_id: LocationID | str) -> list[Site]:
         """Query all active sites situated within a governing jurisdiction."""
@@ -295,7 +334,7 @@ class Sites(IntrospectableMixin):
             loc_slug = str(res_loc_id).lower().replace("-", "_")
             urn = f"urn:gda:site:{loc_slug}:{base_slug}_s{site_id.suffix.lower()}"
 
-        now = IsoTimestamp.now_utc()
+        now = IsoTimestamp(utc_now_iso())
         audit = AuditStamp(created_at=now, updated_at=now)
 
         name_obj = NameThing.create(raw=name, canonical=name)

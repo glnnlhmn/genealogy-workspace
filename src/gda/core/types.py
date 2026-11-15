@@ -5,17 +5,18 @@ Authoritative regex patterns, format tokens, and primitive scalar definitions.
 Operational Role:
     Provides the code-first declarative repository for RFC 4122 UUIDv4 patterns,
     ISO 8601 date and timestamp directives, canonical 6-digit entity identifier
-    regex patterns, archival URN patterns across all documentary domains, gender
-    code sets, historical year bounds, coordinate bounds, scalar metric bounds/patterns,
-    military domain scalar bounds, enumerated schedule year sets/bounds, and SHA-256
-    hexadecimal hash patterns across the GDA core infrastructure.
+    regex patterns, canonical entity lookup URN patterns, archival URN patterns
+    across all documentary domains, gender code sets, historical year bounds,
+    coordinate bounds, scalar metric bounds/patterns, military domain scalar bounds,
+    enumerated schedule year sets/bounds, and SHA-256 hexadecimal hash patterns
+    across the GDA core infrastructure.
 """
 
 from __future__ import annotations
 
 import re
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "ATOM_ID_PATTERN",
@@ -26,6 +27,8 @@ __all__ = [
     "COLONIAL_MILITIA_MIN_YEAR",
     "ENTITY_ID_PATTERNS",
     "ENTITY_ID_REGEXES",
+    "ENTITY_URN_PATTERNS",
+    "ENTITY_URN_REGEXES",
     "GENDER_CODES",
     "ISO_DATE_FMT",
     "ISO_DATE_PATTERN",
@@ -171,7 +174,7 @@ US_SLAVE_SCHEDULE_YEARS: frozenset[int] = frozenset({1850, 1860})
 US_VETERANS_SCHEDULE_YEAR: int = 1890
 
 # ------------------------------------------------------------------------------
-# Structural Regex Patterns (Strict 6-digit SmartID standard)
+# Structural Regex Patterns (Strict 6-digit SmartID & Entity/Archival URN standards)
 # ------------------------------------------------------------------------------
 UUID_V4_PATTERN: str = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 ISO_DATE_PATTERN: str = r"^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$"
@@ -192,6 +195,15 @@ ENTITY_ID_PATTERNS: dict[str, str] = {
     "REP": r"^REP-\d{6}$",
     "DRF": r"^DRF-\d{6}$",
     "ORG": r"^ORG-\d{6}$",
+}
+
+ENTITY_URN_PATTERNS: dict[str, str] = {
+    "IND": r"^urn:gda:ind:[a-z0-9_:\-]+$",
+    "FAM": r"^urn:gda:fam:[a-z0-9_:\-]+$",
+    "FID": r"^urn:gda:fact:[a-z0-9_:\-]+$",
+    "LOC": r"^urn:gda:loc:[a-z0-9_:\-]+$",
+    "ORG": r"^urn:gda:org:[a-z0-9_:\-]+$",
+    "SID": r"^urn:gda:site:[a-z0-9_:\-]+$",
 }
 
 URN_BASE_PATTERN: str = r"^URN:[A-Z0-9_-]+(:[A-Za-z0-9_.-]+)+$"
@@ -224,6 +236,9 @@ NEWS_CATEGORY_REGEX: re.Pattern[str] = re.compile(NEWS_CATEGORY_PATTERN)
 ATOM_ID_REGEX: re.Pattern[str] = re.compile(ATOM_ID_PATTERN)
 ENTITY_ID_REGEXES: dict[str, re.Pattern[str]] = {
     prefix: re.compile(pattern) for prefix, pattern in ENTITY_ID_PATTERNS.items()
+}
+ENTITY_URN_REGEXES: dict[str, re.Pattern[str]] = {
+    prefix: re.compile(pattern) for prefix, pattern in ENTITY_URN_PATTERNS.items()
 }
 URN_BASE_REGEX: re.Pattern[str] = re.compile(URN_BASE_PATTERN)
 URN_REGEXES: dict[str, re.Pattern[str]] = {

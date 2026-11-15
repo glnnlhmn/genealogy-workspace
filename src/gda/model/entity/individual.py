@@ -27,7 +27,7 @@ from gda.core.enums.archival import NoteType
 from gda.core.enums.core import Sex
 from gda.core.enums.date import DateModifier
 from gda.core.errors import ModelFormatError, ModelRangeError
-from gda.core.types import ENTITY_ID_REGEXES
+from gda.core.types import ENTITY_ID_REGEXES, ENTITY_URN_REGEXES
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.gender import GenderAtom
 from gda.model.atom.id import IndividualID, LocationID, NoteID, SiteID
@@ -38,12 +38,12 @@ from gda.model.base.name import NamePerson
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = ["Individual"]
 
 _INDIVIDUAL_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["IND"]
-_INDIVIDUAL_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:ind:[a-z0-9_:\-]+$")
+_INDIVIDUAL_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["IND"]
 
 
 def _resolve_vital_date(

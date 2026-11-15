@@ -1,24 +1,25 @@
-"""Path: tests/test_gda/test_entity/test_locations/test_collection.py
+"""Path: tests/test_gda/test_entity/test_locations/test_locations_collection.py
 
 Unit, regression, and integration test suite for the Locations collection class.
 
 Operational Role:
-    Verifies collection-level initialization, CRUD operations, URN and alias indexing,
-    relational containment, cascading soft-delete/tombstone propagation, database
+    Verifies collection-level initialization, CRUD operations, URN, alias,
+    category, and parent indexing, relational containment, cascading
+    soft-delete/undelete propagation, graveyard inspection helpers, database
     persistence synchronization, and refresh behaviors for Locations collections.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
+from gda.core.enums.location import JurisdictionCategory
 from gda.core.errors import ModelFormatError
 from gda.entity.locations.collection import Locations
 from gda.entity.locations.errors import LocationHierarchyError, LocationNotFoundError
-from gda.enums.location import JurisdictionCategory
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID
 from gda.model.base.audit import AuditStamp
@@ -26,7 +27,7 @@ from gda.model.base.name import NameThing
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.14"
 
 
 # ==============================================================================
@@ -46,7 +47,7 @@ def test_locations_init_empty_collection(empty_collection: Locations) -> None:
 @pytest.mark.regression
 def test_locations_init_with_initial_list() -> None:
     """Verify initialization with an initial list of Location instances."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     audit = AuditStamp(created_at=now, updated_at=now)
     loc = Location.create(
         location_id=LocationID("LOC-000001"),
@@ -89,7 +90,6 @@ def test_locations_contains_fallback_branches(
     assert ("non_urn_missing_string" in populated_collection) is False
     assert (12345 in populated_collection) is False  # type: ignore[operator]
 
-    # Verify tombstoned entity returns False for 'in' check across all token formats
     populated_collection.soft_delete("LOC-000005")
     assert (LocationID("LOC-000005") in populated_collection) is False
     assert ("LOC-000005" in populated_collection) is False
@@ -120,7 +120,7 @@ def test_locations_get_returns_default_when_absent(
     populated_collection: Locations,
 ) -> None:
     """Verify get() returns default value when target does not exist."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     default_loc = Location.create(
         location_id=LocationID("LOC-000099"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -134,7 +134,7 @@ def test_locations_get_returns_default_when_absent(
 
 
 # ==============================================================================
-# GROUP 2: MUTATIONS & INDEX SYNCHRONIZATION (add, update, create)
+# GROUP 2: MUTATIONS, MULTI-ENTITY ALIASES & SECONDARY INDEXES
 # ==============================================================================
 
 
@@ -148,43 +148,74 @@ def test_locations_add_rejects_non_location_type(
 
 
 @pytest.mark.regression
-def test_locations_add_filters_blank_aliases(
+def test_locations_add_supports_multi_entity_aliases(
     empty_collection: Locations,
 ) -> None:
-    """Verify add() skips empty or whitespace-only aliases during alias indexing."""
-    now = IsoTimestamp.now_utc()
-    loc = Location.create(
+    """Verify add() indexes multiple entities sharing an alias and update() retains remaining peers."""
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
+    loc1 = Location.create(
         location_id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
-        name=NameThing.create(raw="Node", canonical="Node"),
+        name=NameThing.create(raw="Node 1", canonical="Node 1"),
         category=JurisdictionCategory.COUNTRY,
-        canonical_urn="urn:gda:loc:node",
+        canonical_urn="urn:gda:loc:node1",
         tombstone=Tombstone[LocationID](),
-    )
-    loc = loc.add_alias("Valid Alias")
-    object.__setattr__(loc.name, "aliases", [*loc.name.aliases, "   "])
-    empty_collection.add(loc)
-    assert "valid alias" in empty_collection._alias_index
-    assert "" not in empty_collection._alias_index
+    ).add_alias("Shared Alias")
+
+    loc2 = Location.create(
+        location_id=LocationID("LOC-000002"),
+        audit=AuditStamp(created_at=now, updated_at=now),
+        name=NameThing.create(raw="Node 2", canonical="Node 2"),
+        category=JurisdictionCategory.COUNTRY,
+        canonical_urn="urn:gda:loc:node2",
+        tombstone=Tombstone[LocationID](),
+    ).add_alias("Shared Alias")
+
+    empty_collection.add(loc1)
+    empty_collection.add(loc2)
+
+    assert empty_collection._alias_index["shared alias"] == {loc1.id, loc2.id}
+    assert len(empty_collection.find_by_alias("Shared Alias")) == 2
+    assert empty_collection.find_by_alias("   ") == []
+
+    # Removing alias from loc1 retains loc2 in the bucket
+    loc1_no_alias = loc1.remove_alias("Shared Alias")
+    empty_collection.update(loc1_no_alias)
+    assert empty_collection._alias_index["shared alias"] == {loc2.id}
 
 
 @pytest.mark.regression
 def test_locations_update_replaces_and_reindexes(
     populated_collection: Locations,
 ) -> None:
-    """Verify update() replaces existing record and cleans stale urn/alias indexes."""
+    """Verify update() replaces existing record and cleans stale urn/alias/category/parent indexes."""
     loc = populated_collection["LOC-000004"]
-    updated = loc.add_alias("Bow Village").update_urn(
-        "urn:gda:loc:united_states:nh:merrimack:bow_new"
+    updated = (
+        loc.add_alias("Bow Village")
+        .update_urn("urn:gda:loc:united_states:nh:merrimack:bow_new")
+        .update_category(JurisdictionCategory.MUNICIPALITY)
+        .update_parent(LocationID("LOC-000002"))
     )
 
     populated_collection.update(updated)
     assert "urn:gda:loc:united_states:nh:merrimack:bow_new" in populated_collection
     assert "urn:gda:loc:united_states:nh:merrimack:bow" not in populated_collection
-    assert (
-        populated_collection["LOC-000004"].canonical_urn
-        == "urn:gda:loc:united_states:nh:merrimack:bow_new"
+    assert populated_collection.find_by_category("CIVIL_TOWNSHIP") == []
+    assert populated_collection.find_children("LOC-000003") == []
+    assert updated in populated_collection.find_children(LocationID("LOC-000002"))
+
+    # Also test update where parent bucket and category bucket still have peers
+    c2 = populated_collection.create(
+        name="Peer Municipality",
+        category=JurisdictionCategory.MUNICIPALITY,
+        parent_id="LOC-000002",
     )
+    c2_moved = c2.update_category(JurisdictionCategory.COUNTY_EQUIVALENT).update_parent(
+        LocationID("LOC-000001")
+    )
+    populated_collection.update(c2_moved)
+    assert JurisdictionCategory.MUNICIPALITY in populated_collection._category_index
+    assert LocationID("LOC-000002") in populated_collection._parent_index
 
 
 @pytest.mark.regression
@@ -197,30 +228,22 @@ def test_locations_update_purges_removed_alias(
     populated_collection.update(loc_with_alias)
     assert "temporary alias" in populated_collection._alias_index
 
-    # Remove the alias and update the collection
     loc_without_alias = loc_with_alias.remove_alias("Temporary Alias")
     populated_collection.update(loc_without_alias)
     assert "temporary alias" not in populated_collection._alias_index
 
 
 @pytest.mark.regression
-def test_locations_update_handles_unindexed_or_blank_old_aliases(
+def test_locations_update_handles_unindexed_old_aliases(
     populated_collection: Locations,
 ) -> None:
-    """Verify update() handles old records containing unindexed or whitespace aliases."""
-    loc = populated_collection["LOC-000004"]
-    # Manually inject a blank alias and an alias mapped to another ID into old_loc
-    object.__setattr__(loc.name, "aliases", ["   ", "Mismatched Alias"])
-    populated_collection._registry[loc.id] = loc
-    populated_collection._alias_index["mismatched alias"] = LocationID("LOC-999999")
+    """Verify update() handles old records whose alias key was cleared from _alias_index."""
+    loc = populated_collection["LOC-000004"].add_alias("Unindexed Alias")
+    populated_collection.update(loc)
+    populated_collection._alias_index.clear()
 
-    # Update with clean entity
-    clean_loc = loc.update_name("Bow Township")
-    object.__setattr__(clean_loc.name, "aliases", ["Clean Alias"])
+    clean_loc = loc.remove_alias("Unindexed Alias").add_alias("Clean Alias")
     populated_collection.update(clean_loc)
-
-    # Mismatched alias in index must not be deleted because it pointed to another ID
-    assert populated_collection._alias_index.get("mismatched alias") == LocationID("LOC-999999")
     assert "clean alias" in populated_collection._alias_index
 
 
@@ -232,7 +255,7 @@ def test_locations_update_rejects_non_location_or_missing_id(
     with pytest.raises(TypeError, match="Expected Location instance"):
         empty_collection.update("not_a_loc")  # type: ignore[arg-type]
 
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     loc = Location.create(
         location_id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -262,7 +285,9 @@ def test_locations_create_generates_and_registers_new_entity(
     )
     assert loc2.id == LocationID("LOC-000002")
     assert loc2.parent_id == loc1.id
-    assert "granite state" in empty_collection._alias_index
+    assert empty_collection.find_by_alias("Granite State") == [loc2]
+    assert empty_collection.find_by_category(JurisdictionCategory.STATOID) == [loc2]
+    assert empty_collection.find_children("LOC-000001") == [loc2]
 
 
 @pytest.mark.regression
@@ -275,7 +300,7 @@ def test_locations_create_raises_on_blank_name(
 
 
 # ==============================================================================
-# GROUP 3: HIERARCHY BUILDING & SOFT DELETION
+# GROUP 3: HIERARCHY BUILDING, SOFT DELETION, UNDELETE & GRAVEYARD HELPERS
 # ==============================================================================
 
 
@@ -297,14 +322,14 @@ def test_locations_create_hierarchy_full_chain(
 
 
 @pytest.mark.regression
-def test_locations_soft_delete_with_cascading_reparent(
+def test_locations_soft_delete_with_cascading_reparent_and_graveyard_helpers(
     populated_collection: Locations,
 ) -> None:
-    """Verify soft_delete retires target and reparents child subtree."""
+    """Verify soft_delete, get_any, find_tombstoned, resolve_active, and dirty_entities."""
     bow_id = LocationID("LOC-000004")
     center_id = LocationID("LOC-000005")
 
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     audit = AuditStamp(created_at=now, updated_at=now)
     replacement_bow = Location.create(
         location_id=LocationID("LOC-000006"),
@@ -316,15 +341,36 @@ def test_locations_soft_delete_with_cascading_reparent(
         tombstone=Tombstone[LocationID](),
     )
     populated_collection.add(replacement_bow)
+    populated_collection.mark_clean()
+    assert populated_collection.dirty_entities() == []
 
     retired = populated_collection.soft_delete(
         bow_id, reason="Annexation", superseded_by=replacement_bow.id
     )
     assert retired.tombstone.is_deprecated is True
     assert retired.tombstone.superseded_by == replacement_bow.id
+    assert len(populated_collection.dirty_entities()) == 2
+    assert populated_collection.get_any(bow_id) is retired
+    assert populated_collection.get_any("LOC-000004") is retired
+    assert populated_collection.get_any("urn:gda:loc:united_states:nh:merrimack:bow") is retired
+    assert populated_collection.get_any("LOC-999999") is None
+    assert populated_collection.get_any(99999, default=None) is None  # type: ignore[arg-type]
+    assert populated_collection.find_tombstoned() == [retired]
+    assert populated_collection.resolve_active(bow_id) is replacement_bow
+    assert populated_collection.resolve_active(replacement_bow.id) is replacement_bow
+    assert populated_collection.resolve_active("LOC-999999") is None
 
-    child = populated_collection._registry[center_id]
-    assert child.parent_id == replacement_bow.id
+    # Retire center_id without replacement -> resolve_active returns None
+    retired_center = populated_collection.soft_delete(center_id, reason="Dissolved")
+    assert populated_collection.resolve_active(center_id) is None
+
+    # 2-node cyclic superseded_by guard in resolve_active (bow_id -> center_id -> bow_id)
+    object.__setattr__(retired.tombstone, "superseded_by", center_id)
+    object.__setattr__(retired_center.tombstone, "superseded_by", bow_id)
+    assert populated_collection.resolve_active(bow_id) is None
+
+    populated_collection.mark_clean()
+    assert populated_collection.dirty_entities() == []
 
 
 @pytest.mark.regression
@@ -345,71 +391,36 @@ def test_locations_soft_delete_raises_on_self_supersession(
         populated_collection.soft_delete("LOC-000005", superseded_by="LOC-000005")
 
 
-@pytest.mark.regression
-def test_locations_soft_delete_raises_on_category_mismatch(
-    populated_collection: Locations,
-) -> None:
-    """Verify soft_delete raises LocationHierarchyError on category tier mismatch."""
-    with pytest.raises(LocationHierarchyError, match="must match the jurisdiction tier"):
-        populated_collection.soft_delete("LOC-000004", superseded_by="LOC-000001")
-
-
 # ==============================================================================
-# GROUP 4: PERSISTENCE & FILE I/O FACADES
+# GROUP 4: PERSISTENCE DELEGATION & FILE I/O FACADES
 # ==============================================================================
 
 
-@pytest.mark.integration
-def test_locations_save_to_db_and_load_from_db_facades(
+@pytest.mark.unit
+def test_locations_persistence_and_file_facades(
     populated_collection: Locations,
+    tmp_path: Path,
 ) -> None:
-    """Verify save_to_db, load_from_db, and refresh invoke underlying helpers cleanly."""
-    mock_save = MagicMock(return_value=5)
-    mock_load = MagicMock(return_value=5)
-
+    """Verify from_database, load_from_db, save_to_db, refresh, import_file, and export_file facades."""
     with (
-        patch("gda.entity.locations.collection.save_to_db", mock_save),
-        patch("gda.entity.locations.collection.load_from_db", mock_load),
+        patch("gda.entity.locations.collection.load_from_db", return_value=5) as mock_load,
+        patch("gda.entity.locations.collection.save_to_db", return_value=5) as mock_save,
     ):
-        written = populated_collection.save_to_db()
-        assert written == 5
+        db_col = Locations.from_database()
+        mock_load.assert_called_once_with(db_col)
+
+        assert populated_collection.save_to_db() == 5
         assert populated_collection.is_dirty is False
+        mock_save.assert_called_once_with(populated_collection)
 
-        # Directly invoke the load_from_db facade method
-        loaded_direct = populated_collection.load_from_db()
-        assert loaded_direct == 5
+        assert populated_collection.load_from_db() == 5
+        assert populated_collection.refresh() == 5
+        assert len(populated_collection) == 0
 
-        # Invoke refresh which delegates to load_from_db
-        loaded = populated_collection.refresh()
-        assert loaded == 5
-        assert populated_collection.is_dirty is False
-
-
-@pytest.mark.integration
-def test_locations_file_io_facades(populated_collection: Locations, tmp_path: Path) -> None:
-    """Verify export_file and import_file pass through paths to util helpers."""
-    out_path = tmp_path / "locations_export.json"
-    mock_export = MagicMock(return_value=5)
-    mock_import = MagicMock(return_value=5)
-
-    with (
-        patch("gda.entity.locations.collection.export_file", mock_export),
-        patch("gda.entity.locations.collection.import_file", mock_import),
-    ):
-        res_exp = populated_collection.export_file(out_path, include_graveyard=True)
-        assert res_exp == 5
-        mock_export.assert_called_once_with(populated_collection, out_path, include_graveyard=True)
-
-        res_imp = populated_collection.import_file(out_path)
-        assert res_imp == 5
-        mock_import.assert_called_once_with(populated_collection, out_path)
-
-
-@pytest.mark.integration
-def test_locations_from_database_factory() -> None:
-    """Verify from_database factory instantiates collection and populates from SQLite."""
-    mock_load = MagicMock(return_value=3)
-    with patch("gda.entity.locations.collection.load_from_db", mock_load):
-        col = Locations.from_database()
-        assert isinstance(col, Locations)
-        mock_load.assert_called_once_with(col)
+    out_path = tmp_path / "locs.json"
+    col = Locations()
+    col.create(name="United States", category=JurisdictionCategory.COUNTRY)
+    assert col.export_file(out_path) == 1
+    fresh = Locations()
+    assert fresh.import_file(out_path) == 1
+    assert len(fresh) == 1

@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.location import JurisdictionCategory
 from gda.entity.locations.collection import Locations
-from gda.enums.location import JurisdictionCategory
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID
 from gda.model.base.audit import AuditStamp
@@ -21,13 +21,13 @@ from gda.model.base.name import NameThing
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.8"
 
 
 @pytest.fixture
 def base_audit() -> AuditStamp:
     """Provide a consistent audit stamp for synthetic test locations."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     return AuditStamp(created_at=now, updated_at=now)
 
 

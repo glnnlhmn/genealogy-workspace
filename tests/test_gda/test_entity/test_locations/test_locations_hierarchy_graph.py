@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_entity/test_locations/test_hierarchy_graph.py
+"""Path: tests/test_gda/test_entity/test_locations/test_locations_hierarchy_graph.py
 
 Relational graph and multi-hop hierarchy validation test suite for locations.
 
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from gda.core.enums.location import JurisdictionCategory
 from gda.entity.locations.collection import Locations
 from gda.entity.locations.validation import (
     valid_collection_all,
@@ -20,7 +21,6 @@ from gda.entity.locations.validation import (
     valid_collection_roots,
     valid_collection_tombstones,
 )
-from gda.enums.location import JurisdictionCategory
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID
 from gda.model.base.audit import AuditStamp
@@ -28,7 +28,7 @@ from gda.model.base.name import NameThing
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
 
-__version__ = "1.0.0+build.11"
+__version__ = "1.0.0+build.17"
 
 # ==============================================================================
 # GROUP 1: MULTI-HOP CYCLE DETECTION
@@ -47,7 +47,7 @@ def test_valid_collection_cycles_passes_on_valid_tree(
 def test_valid_collection_cycles_skips_already_visited_nodes() -> None:
     """Verify cycle traversal skips nodes already marked as visited."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
 
     loc_b = Location(
         id=LocationID("LOC-000002"),
@@ -105,7 +105,7 @@ def test_valid_collection_roots_fails_on_floating_island(
 def test_valid_collection_roots_fails_on_missing_parent_reference() -> None:
     """Verify active entity pointing to non-existent parent returns False."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     s = Location(
         id=LocationID("LOC-000002"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -146,7 +146,7 @@ def test_valid_collection_patterns_passes_standard_and_independent_cities(
 def test_valid_collection_patterns_multi_child_loop_continuation(
     consecutive_multi_child_collection: Locations,
 ) -> None:
-    """Verify pattern loop continues across multiple consecutive valid children (covers Line 459->446)."""
+    """Verify pattern loop continues across multiple consecutive valid children."""
     assert valid_collection_patterns(consecutive_multi_child_collection) is True
 
 
@@ -154,7 +154,7 @@ def test_valid_collection_patterns_multi_child_loop_continuation(
 def test_valid_collection_patterns_fails_on_illegal_tier_skip() -> None:
     """Verify civil township directly under statoid returns False."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
 
     c = Location(
         id=LocationID("LOC-000001"),
@@ -192,7 +192,7 @@ def test_valid_collection_patterns_fails_on_illegal_tier_skip() -> None:
 def test_valid_collection_patterns_fails_on_country_with_parent() -> None:
     """Verify COUNTRY node with parent pointer fails pattern check."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     c = Location(
         id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -208,10 +208,10 @@ def test_valid_collection_patterns_fails_on_country_with_parent() -> None:
 
 @pytest.mark.regression
 def test_valid_collection_patterns_fails_on_missing_parent_pointer() -> None:
-    """Verify non-country node without parent fails pattern check."""
+    """Verify non-country node without parent fails pattern check and missing parent skips."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
-    s = Location(
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
+    s_no_parent = Location(
         id=LocationID("LOC-000002"),
         audit=AuditStamp(created_at=now, updated_at=now),
         name=NameThing.create(raw="NH", canonical="NH"),
@@ -220,7 +220,17 @@ def test_valid_collection_patterns_fails_on_missing_parent_pointer() -> None:
         parent_id=None,
         tombstone=Tombstone[LocationID](),
     )
-    col.add(s)
+    s_dangling_parent = Location(
+        id=LocationID("LOC-000003"),
+        audit=AuditStamp(created_at=now, updated_at=now),
+        name=NameThing.create(raw="VT", canonical="VT"),
+        category=JurisdictionCategory.STATOID,
+        canonical_urn="urn:gda:loc:vt",
+        parent_id=LocationID("LOC-999999"),
+        tombstone=Tombstone[LocationID](),
+    )
+    col.add(s_no_parent)
+    col.add(s_dangling_parent)
     assert valid_collection_patterns(col) is False
 
 
@@ -228,7 +238,7 @@ def test_valid_collection_patterns_fails_on_missing_parent_pointer() -> None:
 def test_valid_collection_patterns_fails_on_invalid_intermediate_parents() -> None:
     """Verify statoid under non-country and county under non-statoid fail pattern check."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
 
     c = Location(
         id=LocationID("LOC-000001"),
@@ -294,10 +304,10 @@ def test_valid_collection_tombstones_passes_on_valid_tree(
 
 @pytest.mark.unit
 def test_valid_collection_tombstones_passes_on_deprecated_without_superseded() -> None:
-    """Verify tombstone with no replacement passes tombstone check."""
+    """Verify tombstones with no replacement or valid same-tier replacement pass tombstone check."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
-    c = Location(
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
+    c1 = Location(
         id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
         name=NameThing.create(raw="USA", canonical="USA"),
@@ -305,7 +315,25 @@ def test_valid_collection_tombstones_passes_on_deprecated_without_superseded() -
         canonical_urn="urn:gda:loc:usa",
         tombstone=Tombstone[LocationID]().retire(timestamp=now),
     )
-    col._registry[c.id] = c
+    c2 = Location(
+        id=LocationID("LOC-000002"),
+        audit=AuditStamp(created_at=now, updated_at=now),
+        name=NameThing.create(raw="United States", canonical="United States"),
+        category=JurisdictionCategory.COUNTRY,
+        canonical_urn="urn:gda:loc:united_states",
+        tombstone=Tombstone[LocationID](),
+    )
+    c3 = Location(
+        id=LocationID("LOC-000003"),
+        audit=AuditStamp(created_at=now, updated_at=now),
+        name=NameThing.create(raw="US Old", canonical="US Old"),
+        category=JurisdictionCategory.COUNTRY,
+        canonical_urn="urn:gda:loc:us_old",
+        tombstone=Tombstone[LocationID]().retire(timestamp=now, superseded_by=c2.id),
+    )
+    col._registry[c1.id] = c1
+    col._registry[c2.id] = c2
+    col._registry[c3.id] = c3
     assert valid_collection_tombstones(col) is True
 
 
@@ -325,7 +353,7 @@ def test_valid_collection_tombstones_cycle_and_missing_parent_guard(
     assert valid_collection_tombstones(cyclic_collection) is True
 
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     loc = Location(
         id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -343,7 +371,7 @@ def test_valid_collection_tombstones_cycle_and_missing_parent_guard(
 def test_valid_collection_tombstones_fails_on_invalid_superseded_links() -> None:
     """Verify tombstone with missing or category-mismatched replacement returns False."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
 
     c = Location(
         id=LocationID("LOC-000001"),
@@ -408,7 +436,7 @@ def test_valid_collection_indexes_passes_on_valid_tree(
 def test_valid_collection_indexes_passes_with_populated_aliases() -> None:
     """Verify locations with valid aliases pass index validation."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     name = (
         NameThing.create(raw="USA", canonical="USA").add_alias("United States").add_alias("America")
     )
@@ -436,7 +464,7 @@ def test_valid_collection_indexes_fails_on_desynchronization(
 def test_valid_collection_indexes_fails_on_missing_urn_or_dangling_reference() -> None:
     """Verify missing URN index or dangling index pointer returns False."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     c = Location(
         id=LocationID("LOC-000001"),
         audit=AuditStamp(created_at=now, updated_at=now),
@@ -454,10 +482,10 @@ def test_valid_collection_indexes_fails_on_missing_urn_or_dangling_reference() -
 
 
 @pytest.mark.regression
-def test_valid_collection_indexes_fails_on_missing_alias() -> None:
-    """Verify location with alias missing from alias index returns False."""
+def test_valid_collection_indexes_fails_on_missing_alias_category_or_parent_buckets() -> None:
+    """Verify missing alias, category, or parent index buckets and bucket members return False."""
     col = Locations()
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     name = NameThing.create(raw="USA", canonical="USA").add_alias("United States")
     c = Location(
         id=LocationID("LOC-000001"),
@@ -467,9 +495,28 @@ def test_valid_collection_indexes_fails_on_missing_alias() -> None:
         canonical_urn="urn:gda:loc:usa",
         tombstone=Tombstone[LocationID](),
     )
+    s = Location(
+        id=LocationID("LOC-000002"),
+        audit=AuditStamp(created_at=now, updated_at=now),
+        name=NameThing.create(raw="NH", canonical="NH"),
+        category=JurisdictionCategory.STATOID,
+        canonical_urn="urn:gda:loc:usa:nh",
+        parent_id=c.id,
+        tombstone=Tombstone[LocationID](),
+    )
     col.add(c)
+    col.add(s)
     col._alias_index.clear()
+    col._category_index.clear()
+    col._parent_index.clear()
     assert valid_collection_indexes(col) is False
+
+    # Bucket exists, but entity ID missing from each bucket
+    col2 = Locations([c, s])
+    col2._alias_index["united states"].discard(c.id)
+    col2._category_index[JurisdictionCategory.COUNTRY].discard(c.id)
+    col2._parent_index[c.id].discard(s.id)
+    assert valid_collection_indexes(col2) is False
 
 
 @pytest.mark.smoke

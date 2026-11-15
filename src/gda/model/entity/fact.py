@@ -27,7 +27,7 @@ from gda.core.enums.archival import NoteType
 from gda.core.enums.core import AssociatedRole, FactType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import ENTITY_ID_REGEXES
+from gda.core.types import ENTITY_ID_REGEXES, ENTITY_URN_REGEXES
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FactID, FamilyID, IndividualID, LocationID, NoteID, SiteID
 from gda.model.base.audit import AuditStamp
@@ -37,12 +37,12 @@ from gda.model.base.note import Note
 from gda.model.base.source import SourceReference
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = ["Fact", "FactParticipant"]
 
 _FACT_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["FID"]
-_FACT_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:fact:[a-z0-9_:\-]+$")
+_FACT_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["FID"]
 
 
 def _normalize_role(role: AssociatedRole | str) -> AssociatedRole:

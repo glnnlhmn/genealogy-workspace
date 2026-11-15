@@ -1,6 +1,7 @@
 # Path: src/system/gen_readme/gen_readme.toml
 # Authoritative package documentation registry for gen_readme.py
-# Scoped to audited foundation and domain model packages: gda.core, gda.io, gda.util, and gda.model
+# Scoped to audited foundation, domain model, and entity collection packages:
+# gda.core, gda.io, gda.util, gda.model, and gda.entity
 
 default_root = "."
 
@@ -9,10 +10,10 @@ default_root = "."
 # ==============================================================================
 
 [[packages]]
-path = "src/gda"
-title = "Genealogy Digital Archive Framework (src/gda)"
-role = "Top-level shared domain framework uniting core primitives, controlled enumerations, atomic/Safe-Backup I/O, helper utilities, and the five-pillar domain model suite."
-test_path = "tests/test_gda"
+path = "src/gda/core/enums"
+title = "Authoritative Enumeration Domains (src/gda/core/enums)"
+role = "Authoritative genealogical enumerations inheriting from StrEnum and IntEnum, governing biological sex, evidentiary certainty (QuayScore), events, jurisdictions, organizations, and archival classifications."
+test_path = "tests/test_gda/test_core/test_enums"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
@@ -20,13 +21,6 @@ path = "src/gda/core"
 title = "Core Infrastructure, Primitives & Introspection (src/gda/core)"
 role = "Domain-agnostic foundational infrastructure providing canonical error taxonomies, immutable Pydantic configuration, ISO temporal/SHA-256 helpers, regex/scalar constants, structured logging, and runtime class introspection."
 test_path = "tests/test_gda/test_core"
-quality_gate = "100.0% Statement & Branch Coverage"
-
-[[packages]]
-path = "src/gda/core/enums"
-title = "Authoritative Enumeration Domains (src/gda/core/enums)"
-role = "Authoritative genealogical enumerations inheriting from StrEnum and IntEnum, governing biological sex, evidentiary certainty (QuayScore), events, jurisdictions, organizations, and archival classifications."
-test_path = "tests/test_gda/test_core/test_enums"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
@@ -46,13 +40,6 @@ quality_gate = "100.0% Statement & Branch Coverage"
 # ==============================================================================
 # 2. Five-Pillar Domain Model Hierarchy (src/gda/model)
 # ==============================================================================
-
-[[packages]]
-path = "src/gda/model"
-title = "Authoritative Domain Model Suite (src/gda/model)"
-role = "Five-pillar structural data model hierarchy uniting atomic primitives (atom), composite base structures (base), canonical graph entities (entity), documentary source records (source), and derived cross-reference edges (xref)."
-test_path = "tests/test_gda/test_model"
-quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
 path = "src/gda/model/atom"
@@ -87,13 +74,6 @@ quality_gate = "100.0% Statement & Branch Coverage"
 # ==============================================================================
 
 [[packages]]
-path = "src/gda/model/source"
-title = "Archival Documentary Source Record Suite (src/gda/model/source)"
-role = "Unified Tier-3 documentary SourceRecord and EnumeratedRollRecord suite spanning all 12 historical and evidentiary domains."
-test_path = "tests/test_gda/test_model/test_source"
-quality_gate = "100.0% Statement & Branch Coverage"
-
-[[packages]]
 path = "src/gda/model/source/cemetery"
 title = "Cemetery Marker & Sexton Registry Records (src/gda/model/source/cemetery)"
 role = "Gravestone marker transcriptions, multi-interment memorials, plot registries, and sexton burial ledger records."
@@ -105,20 +85,6 @@ path = "src/gda/model/source/education"
 title = "Academic Credential & Institutional Education Records (src/gda/model/source/education)"
 role = "Academic diplomas, degree conferrals, institutional enrollment records, and scholastic achievement certificates."
 test_path = "tests/test_gda/test_model/test_source/test_education"
-quality_gate = "100.0% Statement & Branch Coverage"
-
-[[packages]]
-path = "src/gda/model/source/enumerated"
-title = "Enumerated Schedules, Directories & Tax Rolls (src/gda/model/source/enumerated)"
-role = "Multi-entry tabular roll and schedule records encompassing US Federal Census population and supplemental schedules, city/county directories, and tax assessment lists."
-test_path = "tests/test_gda/test_model/test_source/test_enumerated"
-quality_gate = "100.0% Statement & Branch Coverage"
-
-[[packages]]
-path = "src/gda/model/source/enumerated/census"
-title = "Census Schedule Foundations (src/gda/model/source/enumerated/census)"
-role = "Shared base abstractions and enumeration district metadata for population and non-population census schedules."
-test_path = "tests/test_gda/test_model/test_source/test_enumerated/census"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
@@ -136,6 +102,13 @@ test_path = "tests/test_gda/test_model/test_source/test_enumerated/census/supple
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
+path = "src/gda/model/source/enumerated/census"
+title = "Census Schedule Foundations (src/gda/model/source/enumerated/census)"
+role = "Shared base abstractions and enumeration district metadata for population and non-population census schedules."
+test_path = "tests/test_gda/test_model/test_source/test_enumerated/census"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
 path = "src/gda/model/source/enumerated/directories"
 title = "City, County & Occupational Directories (src/gda/model/source/enumerated/directories)"
 role = "Historical city, county, and business directory roll records capturing residential addresses, occupations, and spousal listings."
@@ -147,6 +120,13 @@ path = "src/gda/model/source/enumerated/taxes"
 title = "Tax Assessment & Septennial Rolls (src/gda/model/source/enumerated/taxes)"
 role = "Real and personal property tax assessment rolls, poll tax lists, and Pennsylvania Septennial Census enumerations."
 test_path = "tests/test_gda/test_model/test_source/test_enumerated/taxes"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/source/enumerated"
+title = "Enumerated Schedules, Directories & Tax Rolls (src/gda/model/source/enumerated)"
+role = "Multi-entry tabular roll and schedule records encompassing US Federal Census population and supplemental schedules, city/county directories, and tax assessment lists."
+test_path = "tests/test_gda/test_model/test_source/test_enumerated"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
@@ -168,13 +148,6 @@ path = "src/gda/model/source/manuscripts"
 title = "Family Bibles & Narrative Manuscripts (src/gda/model/source/manuscripts)"
 role = "Inscribed family Bible vital registers, personal diaries, correspondence, and unpublished genealogical manuscripts."
 test_path = "tests/test_gda/test_model/test_source/test_manuscripts"
-quality_gate = "100.0% Statement & Branch Coverage"
-
-[[packages]]
-path = "src/gda/model/source/military"
-title = "Military Source Records Suite (src/gda/model/source/military)"
-role = "Evidentiary military source record models encompassing conscription, active service, pensions, bounty land, casualties, burials, and valor awards."
-test_path = "tests/test_gda/test_model/test_source/test_military"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
@@ -213,6 +186,13 @@ test_path = "tests/test_gda/test_model/test_source/test_military/service"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 [[packages]]
+path = "src/gda/model/source/military"
+title = "Military Source Records Suite (src/gda/model/source/military)"
+role = "Evidentiary military source record models encompassing conscription, active service, pensions, bounty land, casualties, burials, and valor awards."
+test_path = "tests/test_gda/test_model/test_source/test_military"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
 path = "src/gda/model/source/orgs"
 title = "Organizational Membership & Roster Source Records (src/gda/model/source/orgs)"
 role = "Documentary membership certificates, lodge initiation/demit records, and multi-entry institutional membership rosters."
@@ -245,4 +225,78 @@ path = "src/gda/model/source/vital"
 title = "Civil & Ecclesiastical Vital Records (src/gda/model/source/vital)"
 role = "Civil and parish birth, baptism, marriage, divorce, and death certificates and register entries."
 test_path = "tests/test_gda/test_model/test_source/test_vital"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model/source"
+title = "Archival Documentary Source Record Suite (src/gda/model/source)"
+role = "Unified Tier-3 documentary SourceRecord and EnumeratedRollRecord suite spanning all 12 historical and evidentiary domains."
+test_path = "tests/test_gda/test_model/test_source"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/model"
+title = "Authoritative Domain Model Suite (src/gda/model)"
+role = "Five-pillar structural data model hierarchy uniting atomic primitives (atom), composite base structures (base), canonical graph entities (entity), documentary source records (source), and derived cross-reference edges (xref)."
+test_path = "tests/test_gda/test_model"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+# ==============================================================================
+# 4. In-Memory Domain Entity Collection Managers (src/gda/entity)
+# ==============================================================================
+
+[[packages]]
+path = "src/gda/entity/facts"
+title = "Evidentiary Fact Collection Manager & Timeline Index (src/gda/entity/facts)"
+role = "Authoritative in-memory collection, secondary subject/type/location/site/participant indexing, outbound FK verification, graveyard lifecycle, and persistence gateway for Fact entities."
+test_path = "tests/test_gda/test_entity/test_facts"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity/families"
+title = "Domestic Family Unit Collection Manager & Kinship Index (src/gda/entity/families)"
+role = "Authoritative in-memory collection, spousal partner and filial child indexing, union classification queries, graveyard lifecycle, and persistence gateway for Family entities."
+test_path = "tests/test_gda/test_entity/test_families"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity/individuals"
+title = "Individual Persona Collection Manager & Onomastic Index (src/gda/entity/individuals)"
+role = "Authoritative in-memory collection, birth/married surname and multi-entity alias indexing, vital place FK verification, graveyard lifecycle, and persistence gateway for Individual entities."
+test_path = "tests/test_gda/test_entity/test_individuals"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity/locations"
+title = "Jurisdictional Location Collection Manager & Hierarchy Graph (src/gda/entity/locations)"
+role = "Authoritative in-memory collection, 5-tier Pattern 1-7 jurisdictional hierarchy builder, multi-hop cycle and root validator, atomic child-reparenting graveyard lifecycle, and persistence gateway for Location entities."
+test_path = "tests/test_gda/test_entity/test_locations"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity/organizations"
+title = "Voluntary & Institutional Organization Collection Manager (src/gda/entity/organizations)"
+role = "Authoritative in-memory collection supporting standalone local chapters and parent/child hierarchies, multi-entity alias indexing, atomic child-reparenting retirement, and persistence gateway for Organization entities."
+test_path = "tests/test_gda/test_entity/test_organizations"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity/sites"
+title = "Physical Site Collection Manager & Spatial Lookup Index (src/gda/entity/sites)"
+role = "Authoritative in-memory collection, governing LocationID and SiteType bucket indexing, multi-entity alias lookup, graveyard lifecycle, and persistence gateway for physical Site entities."
+test_path = "tests/test_gda/test_entity/test_sites"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/entity"
+title = "Domain Entity Collection Managers & Relational Authorities (src/gda/entity)"
+role = "Top-level package facade uniting the six in-memory domain entity collection managers (Facts, Families, Individuals, Locations, Organizations, Sites), relational validators, graveyard lifecycle operators, and persistence gateways."
+test_path = "tests/test_gda/test_entity"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda"
+title = "Genealogy Digital Archive Framework (src/gda)"
+role = "Top-level shared domain framework uniting core primitives, controlled enumerations, atomic/Safe-Backup I/O, helper utilities, the five-pillar domain model suite, and in-memory domain entity collection managers."
+test_path = "tests/test_gda"
 quality_gate = "100.0% Statement & Branch Coverage"

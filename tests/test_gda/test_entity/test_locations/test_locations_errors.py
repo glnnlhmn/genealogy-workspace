@@ -1,4 +1,4 @@
-"""Path: tests/test_gda/test_entity/test_locations/test_errors.py
+"""Path: tests/test_gda/test_entity/test_locations/test_locations_errors.py
 
 Comprehensive test suite verifying location subsystem exception contracts.
 
@@ -19,7 +19,7 @@ from gda.entity.locations.errors import (
     LocationNotFoundError,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 # ==============================================================================
