@@ -14,10 +14,15 @@ from uuid import uuid4
 import pytest
 
 from gda.engine.media_resolver import MediaXRefResolver
-from gda.model.atom.id import IndividualID, SiteID
+from gda.model.atom.id import IndividualID, MediaID, SiteID
 from gda.model.xref.media_xref import MediaXRef
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
+
+
+def _make_media_id() -> MediaID:
+    """Create a fresh RFC 4122 UUIDv4 MediaID."""
+    return MediaID(str(uuid4()))
 
 
 # ==============================================================================
@@ -46,24 +51,24 @@ def test_resolver_introspectable_help() -> None:
 def test_resolver_from_xrefs_smoke() -> None:
     """Verify bulk instantiation from an iterable of MediaXRef edges."""
     ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
-    edge = MediaXRef(
-        entity_id=ind,
-        media_id=media_uuid,
+    media_id = _make_media_id()
+    edge = MediaXRef.create(
+        media_id=media_id,
+        target_id=ind,
     )
     resolver = MediaXRefResolver.from_xrefs([edge])
     assert resolver.edge_count == 1
-    assert resolver.get_media_for_entity(ind) == (media_uuid,)
+    assert resolver.get_media_for_entity(ind) == (media_id,)
 
 
 @pytest.mark.unit
 def test_resolver_export_xrefs_parity() -> None:
     """Verify exported edges match internal indexed state."""
     ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
-    edge = MediaXRef(
-        entity_id=ind,
-        media_id=media_uuid,
+    media_id = _make_media_id()
+    edge = MediaXRef.create(
+        media_id=media_id,
+        target_id=ind,
     )
     resolver = MediaXRefResolver()
     resolver.add_xref(edge)
@@ -79,12 +84,12 @@ def test_resolver_export_xrefs_parity() -> None:
 def test_get_media_for_entity_multiple() -> None:
     """Verify retrieving multiple media assets attached to one entity."""
     ind = IndividualID("IND-000001")
-    med1 = uuid4()
-    med2 = uuid4()
+    med1 = _make_media_id()
+    med2 = _make_media_id()
 
     resolver = MediaXRefResolver()
-    resolver.add_xref(MediaXRef(entity_id=ind, media_id=med1))
-    resolver.add_xref(MediaXRef(entity_id=ind, media_id=med2))
+    resolver.add_xref(MediaXRef.create(media_id=med1, target_id=ind))
+    resolver.add_xref(MediaXRef.create(media_id=med2, target_id=ind))
 
     expected = tuple(sorted([med1, med2]))
     assert resolver.get_media_for_entity(ind) == expected
@@ -95,13 +100,13 @@ def test_get_entities_for_media_group_portrait() -> None:
     """Verify retrieving multiple entities linked to one media asset."""
     ind1 = IndividualID("IND-000001")
     ind2 = IndividualID("IND-000002")
-    media_uuid = uuid4()
+    media_id = _make_media_id()
 
     resolver = MediaXRefResolver()
-    resolver.add_xref(MediaXRef(entity_id=ind1, media_id=media_uuid))
-    resolver.add_xref(MediaXRef(entity_id=ind2, media_id=media_uuid))
+    resolver.add_xref(MediaXRef.create(media_id=media_id, target_id=ind1))
+    resolver.add_xref(MediaXRef.create(media_id=media_id, target_id=ind2))
 
-    assert resolver.get_entities_for_media(media_uuid) == (ind1, ind2)
+    assert resolver.get_entities_for_media(media_id) == (ind1, ind2)
 
 
 @pytest.mark.unit
@@ -109,7 +114,7 @@ def test_traversal_fallbacks_unlinked() -> None:
     """Verify unindexed entities/media return empty tuples."""
     resolver = MediaXRefResolver()
     unlinked_entity = IndividualID("IND-000999")
-    unlinked_media = uuid4()
+    unlinked_media = _make_media_id()
 
     assert resolver.get_media_for_entity(unlinked_entity) == ()
     assert resolver.get_entities_for_media(unlinked_media) == ()
@@ -117,10 +122,10 @@ def test_traversal_fallbacks_unlinked() -> None:
 
 @pytest.mark.regression
 def test_add_duplicate_xref_idempotent() -> None:
-    """Verify re-adding an edge with the same xref_id is a safe no-op."""
+    """Verify re-adding an edge with the same xref_key is a safe no-op."""
     ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
-    edge = MediaXRef(entity_id=ind, media_id=media_uuid)
+    media_id = _make_media_id()
+    edge = MediaXRef.create(media_id=media_id, target_id=ind)
 
     resolver = MediaXRefResolver()
     resolver.add_xref(edge)
@@ -138,16 +143,16 @@ def test_add_duplicate_xref_idempotent() -> None:
 def test_evict_entity_removes_all_media_links() -> None:
     """Verify evicting an entity purges forward and reverse mappings."""
     ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
+    media_id = _make_media_id()
 
     resolver = MediaXRefResolver()
-    resolver.add_xref(MediaXRef(entity_id=ind, media_id=media_uuid))
+    resolver.add_xref(MediaXRef.create(media_id=media_id, target_id=ind))
     assert resolver.edge_count == 1
 
     resolver.evict_entity(ind)
     assert resolver.edge_count == 0
     assert resolver.get_media_for_entity(ind) == ()
-    assert resolver.get_entities_for_media(media_uuid) == ()
+    assert resolver.get_entities_for_media(media_id) == ()
 
 
 @pytest.mark.regression
@@ -155,16 +160,16 @@ def test_evict_media_removes_all_entity_bindings() -> None:
     """Verify evicting a media asset purges all entity references."""
     ind = IndividualID("IND-000001")
     site = SiteID("SID-000001")
-    media_uuid = uuid4()
+    media_id = _make_media_id()
 
     resolver = MediaXRefResolver()
-    resolver.add_xref(MediaXRef(entity_id=ind, media_id=media_uuid))
-    resolver.add_xref(MediaXRef(entity_id=site, media_id=media_uuid))
+    resolver.add_xref(MediaXRef.create(media_id=media_id, target_id=ind))
+    resolver.add_xref(MediaXRef.create(media_id=media_id, target_id=site))
     assert resolver.edge_count == 2
 
-    resolver.evict_media(media_uuid)
+    resolver.evict_media(media_id)
     assert resolver.edge_count == 0
-    assert resolver.get_entities_for_media(media_uuid) == ()
+    assert resolver.get_entities_for_media(media_id) == ()
     assert resolver.get_media_for_entity(ind) == ()
     assert resolver.get_media_for_entity(site) == ()
 

@@ -13,26 +13,29 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.site import SiteType
+from gda.core.enums.vital import HistoricNameType
 from gda.entity.sites.errors import SiteValidationError
-from gda.enums.site import SiteType
-from gda.enums.vital import HistoricNameType
 from gda.io.json import GDAJsonIO
-from gda.model.atom.date import EventDate, IsoTimestamp
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID, SiteID
 from gda.model.base.address import Address
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate, TimePeriod
+from gda.model.base.geo import Coordinates
 from gda.model.base.name import NameThing
 from gda.model.base.note import Note
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.site import Site
-from gda.util.tombstone import stamp_tombstone
+from gda.util.text import clean_string
 
 if TYPE_CHECKING:
+    from gda.db.session import DatabaseSessionManager
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.7"
+__version__ = "1.0.0+build.15"
 
 __all__ = [
     "can_tombstone",
@@ -73,13 +76,33 @@ def _parse_time_period(raw: Any) -> TimePeriod | None:
     return TimePeriod(start_date=start_obj, end_date=end_obj)
 
 
+def _parse_coordinates(raw: Any) -> Coordinates | None:
+    """Safely deserialize raw dictionary representation into Coordinates."""
+    if raw is None:
+        return None
+    if isinstance(raw, Coordinates):
+        return raw
+    if not isinstance(raw, dict):
+        return None
+
+    lat_val = raw.get("latitude")
+    lon_val = raw.get("longitude")
+    if lat_val is None or lon_val is None:
+        return None
+
+    try:
+        return Coordinates.from_dict(raw)
+    except Exception:
+        return None
+
+
 def _export_coordinates(site: Site) -> dict[str, float] | None:
     """Extract coordinates mapping if defined on the site."""
     if site.coordinates is None:
         return None
     return {
-        "latitude": site.coordinates.latitude.value,
-        "longitude": site.coordinates.longitude.value,
+        "latitude": float(site.coordinates.latitude),
+        "longitude": float(site.coordinates.longitude),
     }
 
 
@@ -88,16 +111,7 @@ def can_tombstone(
     site_id: SiteID | str,
     superseded_by: SiteID | str | None = None,
 ) -> tuple[bool, str | None]:
-    """Verify whether a site can be safely retired without violating integrity.
-
-    Args:
-        collection: In-memory Sites collection.
-        site_id: Unique Site identifier to inspect.
-        superseded_by: Optional replacement SiteID.
-
-    Returns:
-        Tuple of (is_valid, error_message_or_none).
-    """
+    """Verify whether a site can be safely retired without violating integrity."""
     target_id = SiteID(str(site_id))
     target = collection._registry.get(target_id)
     if not target:
@@ -127,20 +141,7 @@ def tombstone_site(
     reason: str,
     superseded_by: SiteID | str | None = None,
 ) -> Site:
-    """Atomically retire a site entity and update the registry.
-
-    Args:
-        collection: In-memory Sites collection.
-        site_id: Target Site identifier.
-        reason: Justification for retirement.
-        superseded_by: Optional replacement Site identifier.
-
-    Returns:
-        The retired Site instance.
-
-    Raises:
-        SiteValidationError: If the site cannot be tombstoned.
-    """
+    """Atomically retire a site entity and update the registry."""
     ok, error_msg = can_tombstone(
         collection=collection,
         site_id=site_id,
@@ -153,11 +154,8 @@ def tombstone_site(
     target = collection._registry[target_id]
     replacement_id = SiteID(str(superseded_by)) if superseded_by else None
 
-    retired = stamp_tombstone(
-        entity=target,
-        reason=reason,
-        superseded_by=replacement_id,
-    )
+    _ = clean_string(reason)
+    retired = target.deprecate(superseded_by=replacement_id).mark_dirty()
 
     collection._registry[retired.id] = retired
     return retired
@@ -168,16 +166,7 @@ def can_undelete(
     site_id: SiteID | str,
     locations_collection: Locations | None = None,
 ) -> tuple[bool, str | None]:
-    """Verify whether a tombstoned site can be safely restored to active status.
-
-    Args:
-        collection: In-memory Sites collection.
-        site_id: Target Site identifier.
-        locations_collection: Optional Locations collection to verify governing jurisdiction.
-
-    Returns:
-        Tuple of (is_valid, error_message_or_none).
-    """
+    """Verify whether a tombstoned site can be safely restored to active status."""
     target_id = SiteID(str(site_id))
     target = collection._registry.get(target_id)
     if not target:
@@ -202,19 +191,7 @@ def undelete_site(
     site_id: SiteID | str,
     locations_collection: Locations | None = None,
 ) -> Site:
-    """Atomically restore a tombstoned site back to active status.
-
-    Args:
-        collection: In-memory Sites collection.
-        site_id: Target Site identifier.
-        locations_collection: Optional Locations collection to verify governing jurisdiction.
-
-    Returns:
-        The reactivated Site instance.
-
-    Raises:
-        SiteValidationError: If the site cannot be safely undeleted.
-    """
+    """Atomically restore a tombstoned site back to active status."""
     ok, error_msg = can_undelete(
         collection=collection,
         site_id=site_id,
@@ -226,40 +203,21 @@ def undelete_site(
     target_id = SiteID(str(site_id))
     target = collection._registry[target_id]
 
-    now = IsoTimestamp.now_utc()
-    active_site = Site.create(
-        site_id=target.id,
-        name=target.name,
-        category=target.category,
-        canonical_urn=target.canonical_urn,
-        location_id=target.location_id,
-        audit=target.audit.touch(now),
-        tombstone=Tombstone[SiteID](),
-        notes=list(target.notes),
-        address=target.address,
-        coordinates=target.coordinates,
-        period=target.period,
-        is_active=target.is_active,
-    ).mark_dirty()
-
+    active_site = target.restore().mark_dirty()
     collection._registry[active_site.id] = active_site
     return active_site
 
 
-def load_from_db(collection: Sites) -> int:
-    """Load all site records from the SQLite database directly into the collection.
-
-    Args:
-        collection: In-memory Sites collection to populate.
-
-    Returns:
-        Count of site records loaded.
-    """
+def load_from_db(
+    collection: Sites,
+    session_manager: DatabaseSessionManager | None = None,
+) -> int:
+    """Load all site records from the SQLite database directly into the collection."""
     from gda.db.mapper import SiteRowMapper
     from gda.db.schema import SchemaManager
     from gda.db.session import DatabaseSessionManager
 
-    session = DatabaseSessionManager()
+    session = session_manager or DatabaseSessionManager()
     schema_mgr = SchemaManager(session_manager=session)
     schema_mgr.init_db()
 
@@ -277,20 +235,16 @@ def load_from_db(collection: Sites) -> int:
     return loaded_count
 
 
-def save_to_db(collection: Sites) -> int:
-    """Commit collection entities to the SQLite database and mark the collection clean.
-
-    Args:
-        collection: In-memory Sites collection to persist.
-
-    Returns:
-        Count of records written.
-    """
+def save_to_db(
+    collection: Sites,
+    session_manager: DatabaseSessionManager | None = None,
+) -> int:
+    """Commit collection entities to the SQLite database and mark the collection clean."""
     from gda.db.mapper import SiteRowMapper
     from gda.db.schema import SchemaManager
     from gda.db.session import DatabaseSessionManager
 
-    session = DatabaseSessionManager()
+    session = session_manager or DatabaseSessionManager()
     schema_mgr = SchemaManager(session_manager=session)
     schema_mgr.init_db()
 
@@ -313,22 +267,16 @@ def save_to_db(collection: Sites) -> int:
 
 
 def import_file(collection: Sites, path: Path | str) -> int:
-    """Import sites from a formatted JSON file, load into memory, and add to collection.
-
-    Args:
-        collection: In-memory Sites collection.
-        path: Path to the JSON source file.
-
-    Returns:
-        Count of site entities successfully imported.
-    """
+    """Import sites from a formatted JSON file, preserving audit and tombstone state."""
     json_path = Path(path)
     if not json_path.exists():
         return 0
 
     payload = GDAJsonIO.read(json_path)
     sites_list = payload.get("sites", [])
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp(utc_now_iso())
+    default_audit = AuditStamp(created_at=now, updated_at=now)
+    audit_dict = {"created_at": str(now), "updated_at": str(now)}
 
     for item in sites_list:
         site_id = SiteID(item["id"])
@@ -361,31 +309,65 @@ def import_file(collection: Sites, path: Path | str) -> int:
                     )
 
         for alias in item.get("alternate_names") or item.get("aliases") or []:
-            name_obj = name_obj.add_alias(alias)
+            if alias not in name_obj.aliases:
+                name_obj = name_obj.add_alias(alias)
 
         embedded_notes: list[Note] = []
         for n in item.get("notes", []):
             if isinstance(n, Note):
                 embedded_notes.append(n)
-            else:
-                embedded_notes.append(Note.from_dict(n))
+            elif isinstance(n, dict):
+                note_dict = dict(n)
+                if "audit" not in note_dict:
+                    note_dict["audit"] = audit_dict
+                embedded_notes.append(Note.from_dict(note_dict))
 
         raw_addr = item.get("address")
         addr_obj = Address.from_dict(raw_addr) if isinstance(raw_addr, dict) else None
         period_obj = _parse_time_period(item.get("period"))
+        coordinates_obj = _parse_coordinates(item.get("coordinates"))
+
+        raw_audit = item.get("audit")
+        audit_obj = (
+            AuditStamp(
+                created_at=IsoTimestamp(raw_audit["created_at"]),
+                updated_at=IsoTimestamp(raw_audit["updated_at"]),
+            )
+            if isinstance(raw_audit, dict)
+            else default_audit
+        )
+        raw_tomb = item.get("tombstone")
+        tomb_obj = (
+            Tombstone[SiteID](
+                is_deprecated=bool(raw_tomb.get("is_deprecated", False)),
+                deprecated_at=(
+                    IsoTimestamp(raw_tomb["deprecated_at"])
+                    if raw_tomb.get("deprecated_at")
+                    else None
+                ),
+                superseded_by=(
+                    SiteID(str(raw_tomb["superseded_by"]))
+                    if raw_tomb.get("superseded_by")
+                    else None
+                ),
+            )
+            if isinstance(raw_tomb, dict)
+            else Tombstone[SiteID]()
+        )
 
         site = Site.create(
             site_id=site_id,
-            audit=AuditStamp(created_at=now, updated_at=now),
+            audit=audit_obj,
             name=name_obj,
             category=SiteType(item["category"]),
             canonical_urn=item["canonical_urn"],
             location_id=location_id,
             address=addr_obj,
+            coordinates=coordinates_obj,
             period=period_obj,
             is_active=item.get("is_active", True),
             notes=embedded_notes,
-            tombstone=Tombstone[SiteID](),
+            tombstone=tomb_obj,
         )
         collection.add(site)
 
@@ -397,16 +379,7 @@ def export_file(
     path: Path | str,
     include_graveyard: bool = True,
 ) -> int:
-    """Export site records from the collection to a formatted JSON file.
-
-    Args:
-        collection: In-memory Sites collection.
-        path: Destination filesystem path.
-        include_graveyard: True to include tombstoned records in output.
-
-    Returns:
-        Count of site records exported.
-    """
+    """Export site records from the collection to a formatted JSON file."""
     entities = list(collection.iter_all() if include_graveyard else collection)
     out_list: list[dict[str, Any]] = []
 
@@ -441,6 +414,19 @@ def export_file(
             "alternate_names": list(s.aliases),
             "historical_names": hist_list,
             "notes": notes_list,
+            "audit": {
+                "created_at": str(s.audit.created_at),
+                "updated_at": str(s.audit.updated_at),
+            },
+            "tombstone": {
+                "is_deprecated": s.tombstone.is_deprecated,
+                "deprecated_at": (
+                    str(s.tombstone.deprecated_at) if s.tombstone.deprecated_at else None
+                ),
+                "superseded_by": (
+                    str(s.tombstone.superseded_by) if s.tombstone.superseded_by else None
+                ),
+            },
         }
         out_list.append(item)
 

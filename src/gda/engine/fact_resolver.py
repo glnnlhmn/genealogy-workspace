@@ -14,15 +14,17 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.core import AssociatedRole
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.enums.core import AssociatedRole
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FactID, IndividualID
+from gda.model.atom.year import HistoricalYear
 from gda.model.entity.fact import Fact
 from gda.model.xref.fact_participant_xref import FactParticipantXRef
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["FactParticipantResolver"]
 
@@ -34,7 +36,7 @@ class FactParticipantResolver(IntrospectableMixin):
 
     def __init__(self) -> None:
         """Initialize empty graph index tables and compilation timestamp."""
-        self._last_compiled: IsoTimestamp = IsoTimestamp.now_utc()
+        self._last_compiled: IsoTimestamp = IsoTimestamp(utc_now_iso())
         self._edges: dict[str, FactParticipantXRef] = {}
 
         self._ind_to_facts: dict[IndividualID, set[tuple[FactID, AssociatedRole]]] = defaultdict(
@@ -56,7 +58,7 @@ class FactParticipantResolver(IntrospectableMixin):
 
     def _mark_updated(self) -> None:
         """Advance the index compilation timestamp."""
-        self._last_compiled = IsoTimestamp.now_utc()
+        self._last_compiled = IsoTimestamp(utc_now_iso())
 
     @classmethod
     def from_facts(cls, facts: Iterable[Fact]) -> FactParticipantResolver:
@@ -76,13 +78,14 @@ class FactParticipantResolver(IntrospectableMixin):
 
     def add_xref(self, edge: FactParticipantXRef) -> None:
         """Add a single pre-formed FactParticipantXRef edge into index tables."""
-        if edge.xref_id in self._edges:
+        key = edge.xref_key
+        if key in self._edges:
             return
 
-        self._edges[edge.xref_id] = edge
-        self._ind_to_facts[edge.associated_ind_id].add((edge.fact_id, edge.role))
+        self._edges[key] = edge
+        self._ind_to_facts[edge.individual_id].add((edge.fact_id, edge.role))
 
-        entry = (edge.associated_ind_id, edge.role)
+        entry = (edge.individual_id, edge.role)
         if entry not in self._fact_to_participants[edge.fact_id]:
             self._fact_to_participants[edge.fact_id].append(entry)
 
@@ -90,30 +93,26 @@ class FactParticipantResolver(IntrospectableMixin):
 
     def index_fact(self, fact: Fact) -> None:
         """Index all secondary participants recorded on a Fact domain entity."""
-        fact_id = fact.id
-        event_date = getattr(fact, "date", None)
-        fact_title = getattr(fact, "title", None)
-        primary_subject = fact.primary_subject_id
+        raw_year = fact.year_lower_bound
+        year_atom = HistoricalYear(raw_year) if raw_year is not None else None
 
         for participant in fact.participants:
-            ind_id = participant.individual_id
-            role = participant.role
-            key = FactParticipantXRef.create_key(ind_id, role, fact_id)
             edge = FactParticipantXRef(
-                xref_id=key,
-                associated_ind_id=ind_id,
-                fact_id=fact_id,
-                primary_subject_id=primary_subject,
-                role=role,
-                title=fact_title,
-                event_date=event_date,
+                fact_id=fact.id,
+                individual_id=participant.individual_id,
+                role=participant.role,
+                fact_type=fact.fact_type,
+                is_primary_subject=False,
+                temporal_year=year_atom,
+                location_id=fact.location_id,
+                site_id=fact.site_id,
             )
             self.add_xref(edge)
 
     def evict_individual(self, individual_id: IndividualID) -> None:
         """Safely remove all participation edges and index mappings for an individual."""
         keys_to_delete = [
-            k for k, edge in self._edges.items() if edge.associated_ind_id == individual_id
+            k for k, edge in self._edges.items() if edge.individual_id == individual_id
         ]
 
         if not keys_to_delete:

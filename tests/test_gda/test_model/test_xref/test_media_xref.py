@@ -1,112 +1,116 @@
 """Path: tests/test_gda/test_model/test_xref/test_media_xref.py
 
-Atomized unit and regression test suite for MediaXRef.
+Comprehensive unit tests for gda.model.xref.media_xref.MediaXRef.
 
 Operational Role:
-    Verifies UUID primary keys, entity linkage, frozen immutability,
-    whitespace stripping, and boundary validation for MediaXRef.
+    Exercises MediaXRef creation for both SmartIDPrefix AtomID entity targets
+    and SourceID UUIDv4 targets, IDType and SmartIDPrefix properties, dynamic
+    xref_key and sort_key ordering, dict/JSON round-trip serialization, and
+    defensive validation boundaries.
 """
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
-from uuid import UUID, uuid4
-
 import pytest
-from pydantic import ValidationError
+from tests.test_gda.test_model.test_xref.conftest import (
+    SAMPLE_MEDIA_UUID_1,
+    SAMPLE_MEDIA_UUID_2,
+    SAMPLE_SOURCE_UUID_1,
+    assert_xref_contract,
+)
 
-from gda.model.atom.date import DateString, EventDate
-from gda.model.atom.id import IndividualID, LocationID
-from gda.model.xref.media_xref import MediaXRef
+from gda.core.enums.core import IDType, SmartIDPrefix
+from gda.core.errors import ModelFormatError
+from gda.model.atom.id import (
+    AtomID,
+    FactID,
+    FamilyID,
+    IndividualID,
+    LocationID,
+    MediaID,
+    SiteID,
+    SourceID,
+)
+from gda.model.xref import MediaXRef
 
-__version__ = "1.0.0+build.2"
-
-
-# ==============================================================================
-# GROUP 1: MediaXRef Creation & Field Invariants
-# ==============================================================================
+__version__ = "1.0.0+build.3"
 
 
 @pytest.mark.unit
-def test_media_xref_instantiation_valid() -> None:
-    """Verify construction with entity, media, caption, date, and UUID generation."""
-    ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
-    xref_uuid = uuid4()
-    event_date = EventDate(date=DateString("1885-06-12"))
-
-    edge = MediaXRef(
-        entity_id=ind,
-        media_id=media_uuid,
-        xref_id=xref_uuid,
-        caption="Civil War Tintype",
-        date=event_date,
+@pytest.mark.smoke
+def test_media_xref_atom_and_source_targets_roundtrip(
+    sample_media_id: MediaID,
+    sample_individual_id: IndividualID,
+    sample_source_id: SourceID,
+) -> None:
+    """Verify MediaXRef creation for AtomID and SourceID targets, enums, and serialization."""
+    xref_ind = MediaXRef.create(
+        media_id=f"  {SAMPLE_MEDIA_UUID_1.upper()}  ",
+        target_id="  ind-000010  ",
     )
 
-    assert edge.entity_id == ind
-    assert edge.media_id == media_uuid
-    assert edge.xref_id == xref_uuid
-    assert edge.caption == "Civil War Tintype"
-    assert edge.date == event_date
-    assert edge.compiled_at.value is not None
+    assert_xref_contract(xref_ind, MediaXRef)
+    assert xref_ind.media_id == sample_media_id
+    assert xref_ind.target_id == sample_individual_id
+    assert isinstance(xref_ind.target_id, IndividualID)
+    assert xref_ind.is_source_target is False
+    assert xref_ind.target_id_type is IDType.SMART_ID
+    assert xref_ind.target_prefix is SmartIDPrefix.IND
+    assert xref_ind.xref_key == f"IND-000010::{SAMPLE_MEDIA_UUID_1}"
+    assert xref_ind.sort_key == ("IND-000010", SAMPLE_MEDIA_UUID_1)
+    assert str(xref_ind) == f"MediaXRef [IND-000010::{SAMPLE_MEDIA_UUID_1}] (IND)"
+    assert "MediaXRef(" in repr(xref_ind)
 
-
-@pytest.mark.unit
-def test_media_xref_default_uuid_minting() -> None:
-    """Verify omitted xref_id automatically generates a valid UUID4."""
-    loc = LocationID("LOC-000001")
-    media_uuid = uuid4()
-
-    edge = MediaXRef(
-        entity_id=loc,
-        media_id=media_uuid,
+    # SourceID target via string and direct SourceID instance
+    xref_src = MediaXRef.create(
+        media_id=MediaID(SAMPLE_MEDIA_UUID_2),
+        target_id=f"  {SAMPLE_SOURCE_UUID_1.upper()}  ",
+    )
+    assert_xref_contract(xref_src, MediaXRef)
+    assert xref_src.target_id == sample_source_id
+    assert isinstance(xref_src.target_id, SourceID)
+    assert xref_src.is_source_target is True
+    assert xref_src.target_id_type is IDType.UUID
+    assert xref_src.target_prefix is None
+    assert str(xref_src) == f"MediaXRef [{SAMPLE_SOURCE_UUID_1}::{SAMPLE_MEDIA_UUID_2}] (UUID)"
+    assert (
+        MediaXRef.create(media_id=sample_media_id, target_id=sample_source_id).target_id
+        == sample_source_id
     )
 
-    assert isinstance(edge.xref_id, UUID)
-    assert edge.caption is None
-    assert edge.date is None
+    # Direct typed instances and base AtomID coercion to concrete subclass
+    xref_fam = MediaXRef.create(media_id=SAMPLE_MEDIA_UUID_1, target_id=FamilyID("FAM-000001"))
+    xref_fact = MediaXRef.create(media_id=SAMPLE_MEDIA_UUID_1, target_id=AtomID("FID-000001"))
+    xref_loc = MediaXRef(media_id=sample_media_id, target_id=AtomID("LOC-000001"))
+    xref_site = MediaXRef.create(media_id=SAMPLE_MEDIA_UUID_1, target_id="SID-000001")
+
+    assert isinstance(xref_fam.target_id, FamilyID)
+    assert isinstance(xref_fact.target_id, FactID)
+    assert isinstance(xref_loc.target_id, LocationID)
+    assert isinstance(xref_site.target_id, SiteID)
+
+    # Deterministic ordering
+    assert xref_src < xref_fam < xref_fact < xref_ind < xref_loc < xref_site
 
 
 @pytest.mark.unit
-def test_media_xref_frozen_immutability() -> None:
-    """Verify modifying fields raises frozen instance error."""
-    ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
-    edge = MediaXRef(entity_id=ind, media_id=media_uuid)
+@pytest.mark.integrity
+def test_media_xref_validation_errors(sample_media_id: MediaID) -> None:
+    """Verify validation error branches for MediaXRef."""
+    with pytest.raises(ModelFormatError, match="Invalid UUIDv4 format"):
+        MediaXRef.create(media_id="not-a-uuid", target_id="IND-000001")
 
-    with pytest.raises((FrozenInstanceError, ValidationError)):
-        edge.caption = "Mutated Caption"  # type: ignore[misc]
+    with pytest.raises(ModelFormatError, match="Invalid MediaXRef target_id"):
+        MediaXRef.create(media_id=SAMPLE_MEDIA_UUID_1, target_id="invalid-target")
 
+    with pytest.raises(ModelFormatError, match="Unsupported SmartIDPrefix 'XYZ'"):
+        MediaXRef.create(media_id=SAMPLE_MEDIA_UUID_1, target_id="XYZ-000001")
 
-# ==============================================================================
-# GROUP 2: Validation Boundaries & Defensive Constraints
-# ==============================================================================
+    with pytest.raises(ModelFormatError, match="Unsupported SmartIDPrefix 'XYZ'"):
+        MediaXRef.create(media_id=SAMPLE_MEDIA_UUID_1, target_id=AtomID("XYZ-000001"))
 
+    with pytest.raises(ModelFormatError, match="Unsupported SmartIDPrefix 'XYZ'"):
+        MediaXRef(media_id=sample_media_id, target_id=AtomID("XYZ-000001"))
 
-@pytest.mark.unit
-def test_media_xref_whitespace_stripped() -> None:
-    """Verify string attributes strip leading and trailing whitespace automatically."""
-    ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
-
-    edge = MediaXRef(
-        entity_id=ind,
-        media_id=media_uuid,
-        caption="  Historical Map of Bow  ",
-    )
-
-    assert edge.caption == "Historical Map of Bow"
-
-
-@pytest.mark.regression
-def test_media_xref_extra_fields_forbidden() -> None:
-    """Verify Pydantic rejects undeclared extra attributes."""
-    ind = IndividualID("IND-000001")
-    media_uuid = uuid4()
-
-    with pytest.raises(ValidationError):
-        MediaXRef(  # type: ignore[call-arg]
-            entity_id=ind,
-            media_id=media_uuid,
-            unauthorized_facet="FORBIDDEN",
-        )
+    with pytest.raises(ModelFormatError, match="requires 'media_id' and 'target_id'"):
+        MediaXRef.from_dict({"media_id": SAMPLE_MEDIA_UUID_1})

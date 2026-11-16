@@ -165,44 +165,42 @@ archive_dir = "archive"
 backup_root = "archive/backups_workspace"
 
 # ------------------------------------------------------------------------------
-# 9. GDA ENVIRONMENT & DATABASE TARGET PROFILES
+# GDA RUNTIME & ENVIRONMENT DATABASE CONFIGURATION
 # ------------------------------------------------------------------------------
+[tool.gda]
+app_name = "Genealogy Digital Archive"
+environment = "development"
+debug = false
+
+[tool.gda.database]
+engine = "sqlite"
+db_name = "archive.db"
+db_path = "data/archive.db"
+busy_timeout = 5000
+journal_mode = "WAL"
+foreign_keys = true
+synchronous = "NORMAL"
+
 [tool.gda.environments.DEV]
-description = "Local sandbox for rapid prototyping, migrations, and UI testing."
-db_path = "data/db/gen_desk_dev.sqlite"
-intake_dir = "data/intake/dev"
-export_dir = "reports/dev"
-backup_tier_dir = "archive/backups_workspace/db/dev"
-read_only = false
-debug = true
+engine = "sqlite"
+db_name = "gda_dev.db"
+db_path = "data/db/gda_dev.db"
 timeout_seconds = 30.0
 
 [tool.gda.environments.TEST]
-description = "Automated test target for pytest fixtures and integration suites."
-db_path = "data/db/gen_desk_test.sqlite"
-intake_dir = "data/intake/test"
-export_dir = "gtemp/reports_test"
-backup_tier_dir = "archive/backups_workspace/db/test"
-read_only = false
-debug = true
-timeout_seconds = 10.0
+engine = "sqlite"
+db_name = "gda_test.db"
+db_path = "data/db/gda_test.db"
+timeout_seconds = 15.0
 
 [tool.gda.environments.STAGING]
-description = "Production-mirror sandbox for full-volume validation before release."
-db_path = "data/db/gen_desk_staging.sqlite"
-intake_dir = "data/intake/staging"
-export_dir = "reports/staging"
-backup_tier_dir = "archive/backups_workspace/db/staging"
-read_only = false
-debug = false
-timeout_seconds = 60.0
+engine = "sqlite"
+db_name = "gda_staging.db"
+db_path = "data/db/gda_staging.db"
+timeout_seconds = 30.0
 
 [tool.gda.environments.PROD]
-description = "Authoritative digital archive master repository and persistent records."
-db_path = "data/db/gen_desk_prod.sqlite"
-intake_dir = "data/intake/prod"
-export_dir = "reports/prod"
-backup_tier_dir = "archive/backups_workspace/db/prod"
-read_only = false
-debug = false
-timeout_seconds = 60.0
+engine = "sqlite"
+db_name = "gda_prod.db"
+db_path = "data/db/gda_prod.db"
+timeout_seconds = 30.0

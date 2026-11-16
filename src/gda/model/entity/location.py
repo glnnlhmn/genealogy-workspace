@@ -7,13 +7,14 @@ Operational Role:
     (countries, statoids, counties, civil townships, municipalities, unincorporated places).
     Inherits lifecycle management, audit timestamps, soft-deprecation tombstones, and
     copy-on-write embedded Note collections from BaseEntity[LocationID]. Incorporates
-    the modernized NameThing value object for canonical and multi-phase historical naming.
-    Provides explicit dirty state tracking (_dirty) and dedicated copy-on-write mutators
-    for all jurisdictional fields.
+    the NameThing value object for canonical and multi-phase historical naming,
+    Coordinates from gda.model.base.geo, explicit dirty state tracking (_dirty),
+    and full dictionary/JSON serialization parity.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import replace
 from typing import Any, ClassVar, Self
@@ -21,30 +22,33 @@ from typing import Any, ClassVar, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.archival import NoteType
+from gda.core.enums.location import JurisdictionCategory
+from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
-from gda.enums.archival import NoteType
-from gda.enums.location import JurisdictionCategory
-from gda.enums.vital import HistoricNameType
+from gda.core.types import ENTITY_ID_REGEXES, ENTITY_URN_REGEXES
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.geo import Coordinates
 from gda.model.atom.id import LocationID, NoteID
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import TimePeriod
 from gda.model.base.entity import BaseEntity
+from gda.model.base.geo import Coordinates
 from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.note import Note
-from gda.model.base.time_period import TimePeriod
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.35"
+__version__ = "1.0.0+build.3"
 
 __all__ = ["Location"]
 
-_LOCATION_ID_PATTERN: re.Pattern[str] = re.compile(r"^LOC-\d{6}$")
-_LOCATION_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:loc:[a-z0-9_:\-]+$")
+_LOCATION_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["LOC"]
+_LOCATION_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["LOC"]
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class Location(BaseEntity[LocationID]):
@@ -110,11 +114,14 @@ class Location(BaseEntity[LocationID]):
                 f"Invalid LocationID format: '{raw_id}'. Must match 'LOC-######'."
             )
 
-        if not self.canonical_urn or not self._URN_PATTERN.match(self.canonical_urn):
+        clean_urn = self.canonical_urn.strip() if self.canonical_urn else ""
+        if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
                 f"Invalid canonical_urn format: '{self.canonical_urn}'. "
-                "Must match 'urn:gda:loc:<namespace>'"
+                "Must match 'urn:gda:loc:<namespace>'."
             )
+        if clean_urn != self.canonical_urn:
+            object.__setattr__(self, "canonical_urn", clean_urn)
 
         if (
             self.tombstone.is_deprecated
@@ -211,7 +218,7 @@ class Location(BaseEntity[LocationID]):
         resolved_cat = (
             category
             if isinstance(category, JurisdictionCategory)
-            else JurisdictionCategory(category)
+            else JurisdictionCategory(category.strip().upper())
         )
 
         resolved_parent = (
@@ -232,32 +239,30 @@ class Location(BaseEntity[LocationID]):
             else []
         )
 
-        now_ts = IsoTimestamp.now_utc()
+        now_ts = IsoTimestamp(utc_now_iso())
         resolved_audit = (
             audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[LocationID]()
         resolved_notes = list(notes) if notes is not None else []
 
-        kwargs: dict[str, Any] = {
-            "id": resolved_id,
-            "name": resolved_name,
-            "category": resolved_cat,
-            "canonical_urn": canonical_urn.strip() if canonical_urn else "",
-            "audit": resolved_audit,
-            "tombstone": resolved_tombstone,
-            "notes": resolved_notes,
-            "parent_id": resolved_parent,
-            "predecessor_ids": resolved_preds,
-            "successor_ids": resolved_succs,
-            "is_primary_local_authority": is_primary_local_authority,
-            "is_unincorporated": is_unincorporated,
-            "period": period,
-            "coordinates": coordinates,
-            "_dirty": False,
-        }
-
-        return cls(**kwargs)
+        return cls(
+            id=resolved_id,
+            name=resolved_name,
+            category=resolved_cat,
+            canonical_urn=canonical_urn.strip() if canonical_urn else "",
+            audit=resolved_audit,
+            tombstone=resolved_tombstone,
+            notes=resolved_notes,
+            parent_id=resolved_parent,
+            predecessor_ids=resolved_preds,
+            successor_ids=resolved_succs,
+            is_primary_local_authority=is_primary_local_authority,
+            is_unincorporated=is_unincorporated,
+            period=period,
+            coordinates=coordinates,
+            _dirty=False,
+        )
 
     def mark_clean(self) -> Self:
         """Return a new immutable copy marking entity as clean (persisted to storage)."""
@@ -274,10 +279,12 @@ class Location(BaseEntity[LocationID]):
     def add_alias(self, alias: str) -> Self:
         """Return a new immutable copy with unique alias appended to naming value object."""
         updated_name = self.name.add_alias(alias)
+        if updated_name is self.name:
+            return self
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -289,7 +296,7 @@ class Location(BaseEntity[LocationID]):
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -312,7 +319,7 @@ class Location(BaseEntity[LocationID]):
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -324,7 +331,7 @@ class Location(BaseEntity[LocationID]):
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -341,10 +348,12 @@ class Location(BaseEntity[LocationID]):
             raise TypeError(
                 f"Location 'name' must be an instance of NameThing or str, got {type(name).__name__}."
             )
+        if new_name == self.name:
+            return self
         return replace(
             self,
             name=new_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -353,12 +362,14 @@ class Location(BaseEntity[LocationID]):
         res_cat = (
             category
             if isinstance(category, JurisdictionCategory)
-            else JurisdictionCategory(category)
+            else JurisdictionCategory(category.strip().upper())
         )
+        if res_cat == self.category:
+            return self
         return replace(
             self,
             category=res_cat,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -371,10 +382,12 @@ class Location(BaseEntity[LocationID]):
         )
         if res_parent == self.id:
             raise ModelFormatError("Location cannot be its own parent.")
+        if res_parent == self.parent_id:
+            return self
         return replace(
             self,
             parent_id=res_parent,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -383,30 +396,36 @@ class Location(BaseEntity[LocationID]):
         clean_urn = canonical_urn.strip() if canonical_urn else ""
         if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
-                f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:loc:<namespace>'"
+                f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:loc:<namespace>'."
             )
+        if clean_urn == self.canonical_urn:
+            return self
         return replace(
             self,
             canonical_urn=clean_urn,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
     def update_authority(self, is_primary_local_authority: bool) -> Self:
         """Return a new immutable copy with updated primary local record-keeping authority flag."""
+        if is_primary_local_authority == self.is_primary_local_authority:
+            return self
         return replace(
             self,
             is_primary_local_authority=is_primary_local_authority,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
     def update_unincorporated(self, is_unincorporated: bool) -> Self:
         """Return a new immutable copy with updated municipal incorporation flag."""
+        if is_unincorporated == self.is_unincorporated:
+            return self
         return replace(
             self,
             is_unincorporated=is_unincorporated,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -422,7 +441,7 @@ class Location(BaseEntity[LocationID]):
         return replace(
             self,
             predecessor_ids=[*self.predecessor_ids, res_id],
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -437,7 +456,7 @@ class Location(BaseEntity[LocationID]):
         return replace(
             self,
             predecessor_ids=filtered,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -451,7 +470,7 @@ class Location(BaseEntity[LocationID]):
         return replace(
             self,
             successor_ids=[*self.successor_ids, res_id],
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -464,25 +483,29 @@ class Location(BaseEntity[LocationID]):
         return replace(
             self,
             successor_ids=filtered,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
     def update_coordinates(self, coordinates: Coordinates | None) -> Self:
         """Return a new immutable copy with updated spatial coordinates."""
+        if coordinates == self.coordinates:
+            return self
         return replace(
             self,
             coordinates=coordinates,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
     def update_period(self, period: TimePeriod | None) -> Self:
         """Return a new immutable copy with updated temporal bounds."""
+        if period == self.period:
+            return self
         return replace(
             self,
             period=period,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -495,34 +518,157 @@ class Location(BaseEntity[LocationID]):
         tags: list[str] | None = None,
     ) -> Self:
         """Return a new immutable copy with the targeted embedded note updated."""
-        target_str = str(note_id)
-        found = False
-        new_notes: list[Note] = []
-        for n in self.notes:
-            if str(n.note_id) == target_str:
-                found = True
-                updated_n = n
-                if text is not None:
-                    updated_n = updated_n.update_text(text)
-                if title is not None:
-                    updated_n = updated_n.update_title(title)
-                if note_type is not None:
-                    updated_n = updated_n.update_type(note_type)
-                if tags is not None:
-                    updated_n = updated_n.update_tags(tags)
-                new_notes.append(updated_n)
-            else:
-                new_notes.append(n)
-
-        if not found:
-            return self
-        return replace(
-            self,
-            notes=new_notes,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
-            _dirty=True,
+        updated = super().update_note(
+            note_id=note_id,
+            text=text,
+            title=title,
+            note_type=note_type,
+            tags=tags,
         )
+        if updated is self:
+            return self
+        return replace(updated, _dirty=True)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize Location entity to a dictionary payload."""
+        data: dict[str, Any] = {
+            "id": self.id.value,
+            "name": self.name.to_dict(),
+            "category": self.category.value,
+            "canonical_urn": self.canonical_urn,
+            "predecessor_ids": [pid.value for pid in self.predecessor_ids],
+            "successor_ids": [sid.value for sid in self.successor_ids],
+            "is_primary_local_authority": self.is_primary_local_authority,
+            "is_unincorporated": self.is_unincorporated,
+            "audit": {
+                "created_at": str(self.audit.created_at),
+                "updated_at": str(self.audit.updated_at),
+            },
+            "tombstone": {
+                "is_deprecated": self.tombstone.is_deprecated,
+                "deprecated_at": (
+                    str(self.tombstone.deprecated_at)
+                    if self.tombstone.deprecated_at is not None
+                    else None
+                ),
+                "superseded_by": (
+                    str(self.tombstone.superseded_by)
+                    if self.tombstone.superseded_by is not None
+                    else None
+                ),
+            },
+            "notes": [n.to_dict() for n in self.notes],
+        }
+        if self.parent_id is not None:
+            data["parent_id"] = self.parent_id.value
+        if self.period is not None:
+            data["period"] = self.period.to_dict()
+        if self.coordinates is not None:
+            data["coordinates"] = self.coordinates.to_dict()
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Location:
+        """Deserialize a dictionary payload into an immutable Location entity."""
+        if not isinstance(data, dict):
+            raise ModelFormatError("Location payload must be a dictionary.")
+
+        raw_id = data.get("id")
+        if not raw_id:
+            raise ModelFormatError("Missing required field 'id' for Location.")
+
+        raw_name = data.get("name")
+        if not raw_name:
+            raise ModelFormatError("Missing required field 'name' for Location.")
+
+        raw_category = data.get("category")
+        if not raw_category:
+            raise ModelFormatError("Missing required field 'category' for Location.")
+
+        resolved_name: NameThing | str = (
+            NameThing.from_dict(raw_name) if isinstance(raw_name, dict) else raw_name
+        )
+
+        raw_period = data.get("period")
+        resolved_period: TimePeriod | None = None
+        if isinstance(raw_period, TimePeriod):
+            resolved_period = raw_period
+        elif isinstance(raw_period, dict) and (
+            raw_period.get("start_date") is not None or raw_period.get("end_date") is not None
+        ):
+            resolved_period = TimePeriod.from_dict(raw_period)
+
+        raw_coords = data.get("coordinates")
+        resolved_coords: Coordinates | None = None
+        if isinstance(raw_coords, Coordinates):
+            resolved_coords = raw_coords
+        elif isinstance(raw_coords, dict):
+            resolved_coords = Coordinates.from_dict(raw_coords)
+
+        audit_payload = data.get("audit")
+        audit_obj: AuditStamp | None = None
+        if isinstance(audit_payload, dict):
+            audit_obj = AuditStamp(
+                created_at=IsoTimestamp(audit_payload["created_at"]),
+                updated_at=IsoTimestamp(audit_payload["updated_at"]),
+            )
+
+        tombstone_payload = data.get("tombstone")
+        tombstone_obj: Tombstone[LocationID] | None = None
+        if isinstance(tombstone_payload, dict):
+            tombstone_obj = Tombstone[LocationID](
+                is_deprecated=tombstone_payload.get("is_deprecated", False),
+                deprecated_at=(
+                    IsoTimestamp(tombstone_payload["deprecated_at"])
+                    if tombstone_payload.get("deprecated_at")
+                    else None
+                ),
+                superseded_by=(
+                    LocationID(tombstone_payload["superseded_by"])
+                    if tombstone_payload.get("superseded_by")
+                    else None
+                ),
+            )
+
+        notes_payload = data.get("notes", [])
+        notes_list = [Note.from_dict(n) for n in notes_payload if isinstance(n, dict)]
+
+        return cls.create(
+            location_id=str(raw_id),
+            name=resolved_name,
+            category=str(raw_category),
+            canonical_urn=str(data.get("canonical_urn", "")),
+            audit=audit_obj,
+            tombstone=tombstone_obj,
+            notes=notes_list,
+            parent_id=data.get("parent_id"),
+            predecessor_ids=data.get("predecessor_ids"),
+            successor_ids=data.get("successor_ids"),
+            is_primary_local_authority=bool(data.get("is_primary_local_authority", False)),
+            is_unincorporated=bool(data.get("is_unincorporated", False)),
+            period=resolved_period,
+            coordinates=resolved_coords,
+        )
+
+    def to_json(self) -> str:
+        """Serialize Location entity to a JSON formatted string."""
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
+    @classmethod
+    def from_json(cls, payload: str) -> Location:
+        """Deserialize a JSON string directly into a Location instance."""
+        try:
+            data = json.loads(payload)
+        except Exception as exc:
+            raise ModelFormatError(f"Failed to parse Location JSON string: {exc}") from exc
+        return cls.from_dict(data)
 
     def __str__(self) -> str:
         """Render concise human-readable jurisdictional representation."""
         return f"{self.canonical_name} [{self.category.value}] ({self.id.value})"
+
+    def __repr__(self) -> str:
+        return (
+            f"Location(id={self.id!r}, canonical_name={self.canonical_name!r}, "
+            f"category={self.category!r}, canonical_urn={self.canonical_urn!r})"
+        )

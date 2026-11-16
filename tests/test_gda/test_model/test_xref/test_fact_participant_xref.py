@@ -1,152 +1,207 @@
 """Path: tests/test_gda/test_model/test_xref/test_fact_participant_xref.py
 
-Atomized unit and regression test suite for FactParticipantXRef.
+Comprehensive unit tests for gda.model.xref.fact_participant_xref.FactParticipantXRef.
 
 Operational Role:
-    Verifies compound primary key minting, frozen immutability, whitespace stripping,
-    and boundary validation for FactParticipantXRef.
+    Exercises FactParticipantXRef creation, HistoricalYear integration,
+    optional LocationID and SiteID anchors, dynamic xref_key and sort_key
+    properties, FactParticipantXRef.from_fact() derivation, dict/JSON
+    round-trip serialization, and defensive validation boundaries.
 """
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
-
 import pytest
-from pydantic import ValidationError
+from tests.test_gda.test_model.test_xref.conftest import assert_xref_contract
 
-from gda.core.errors import ModelFormatError
-from gda.enums.core import AssociatedRole
-from gda.model.atom.date import DateString, EventDate
-from gda.model.atom.id import FactID, IndividualID
-from gda.model.xref.fact_participant_xref import FactParticipantXRef
+from gda.core.enums.core import AssociatedRole, FactType
+from gda.core.errors import ModelFormatError, ModelPrefixMismatchError, ModelRangeError
+from gda.model.atom.id import FactID, FamilyID, IndividualID, LocationID, SiteID
+from gda.model.atom.year import HistoricalYear
+from gda.model.entity.fact import Fact, FactParticipant
+from gda.model.xref import FactParticipantXRef
 
-__version__ = "1.0.0+build.2"
-
-
-# ==============================================================================
-# GROUP 1: FactParticipantXRef Creation & Immutability
-# ==============================================================================
+__version__ = "1.0.0+build.3"
 
 
 @pytest.mark.unit
-def test_fact_participant_xref_instantiation_valid() -> None:
-    """Verify valid construction with all primary and participant attributes."""
-    witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
-    fact = FactID("FID-000001")
-    role = AssociatedRole.WITNESS
-    event_date = EventDate(date=DateString("1875-10-14"))
-    key = FactParticipantXRef.create_key(witness, role, fact)
-
-    edge = FactParticipantXRef(
-        xref_id=key,
-        associated_ind_id=witness,
-        fact_id=fact,
-        primary_subject_id=subject,
-        role=role,
-        title="Marriage Solemnization",
-        event_date=event_date,
+@pytest.mark.smoke
+def test_fact_participant_xref_roundtrip_and_ordering(
+    sample_fact_id: FactID,
+    sample_individual_id: IndividualID,
+    sample_location_id: LocationID,
+    sample_site_id: SiteID,
+    sample_year: HistoricalYear,
+) -> None:
+    """Verify FactParticipantXRef creation, dynamic keys, ordering, and round-trip serialization."""
+    xref = FactParticipantXRef.create(
+        fact_id="  fid-000104  ",
+        individual_id="  ind-000010  ",
+        fact_type="  marriage  ",
+        role="  witness  ",
+        temporal_year=1878,
+        location_id="  loc-000001  ",
+        site_id="  sid-000005  ",
     )
 
-    assert edge.xref_id == "IND-000002::WITN::FID-000001"
-    assert edge.associated_ind_id == witness
-    assert edge.primary_subject_id == subject
-    assert edge.fact_id == fact
-    assert edge.role == AssociatedRole.WITNESS
-    assert edge.title == "Marriage Solemnization"
-    assert edge.event_date == event_date
-    assert edge.compiled_at.value is not None
+    assert_xref_contract(xref, FactParticipantXRef)
+    assert xref.fact_id == sample_fact_id
+    assert xref.individual_id == sample_individual_id
+    assert xref.role is AssociatedRole.WITNESS
+    assert xref.fact_type is FactType.MARRIAGE
+    assert xref.is_primary_subject is False
+    assert xref.temporal_year == sample_year
+    assert xref.temporal_year == 1878
+    assert xref.location_id == sample_location_id
+    assert xref.site_id == sample_site_id
+    assert xref.xref_key == "FID-000104::IND-000010::WITNESS"
+    assert xref.sort_key == ("IND-000010", 1878, "MARRIAGE", "FID-000104", "WITNESS")
+    assert str(xref) == "FactParticipantXRef [FID-000104::IND-000010::WITNESS] (MARRIAGE)"
+    assert "FactParticipantXRef(" in repr(xref)
+
+    # Direct atom/enum instances & total ordering comparison
+    earlier = FactParticipantXRef.create(
+        fact_id=FactID("FID-000001"),
+        individual_id=sample_individual_id,
+        fact_type=FactType.BIRTH,
+        role=AssociatedRole.PRIMARY,
+        is_primary_subject=True,
+        temporal_year=HistoricalYear(1850),
+        location_id=sample_location_id,
+        site_id=SiteID("SID-000001"),
+    )
+    undated = FactParticipantXRef.create(
+        fact_id="FID-000200",
+        individual_id="IND-000010",
+        fact_type=FactType.RESIDENCE,
+    )
+
+    assert earlier < xref < undated
 
 
 @pytest.mark.unit
-def test_fact_participant_xref_create_key_deterministic() -> None:
-    """Verify compound key formatting with enum and raw string role."""
-    ind = IndividualID("IND-000002")
-    fact = FactID("FID-000001")
+@pytest.mark.integrity
+def test_fact_participant_xref_from_fact_derivation(
+    sample_individual_fact: Fact,
+) -> None:
+    """Verify FactParticipantXRef.from_fact() for individual facts and family facts."""
+    rows = FactParticipantXRef.from_fact(sample_individual_fact)
+    assert len(rows) == 3
+    assert rows[0].individual_id == IndividualID("IND-000001")
+    assert rows[0].role is AssociatedRole.PRIMARY
+    assert rows[0].is_primary_subject is True
+    assert rows[0].temporal_year == HistoricalYear(1844)
+    assert rows[0].location_id == LocationID("LOC-000001")
+    assert rows[0].site_id == SiteID("SID-000002")
 
-    assert (
-        FactParticipantXRef.create_key(ind, AssociatedRole.INFORMANT, fact)
-        == "IND-000002::INFORMANT::FID-000001"
+    assert rows[1].individual_id == IndividualID("IND-000002")
+    assert rows[1].role is AssociatedRole.INFORMANT
+    assert rows[1].is_primary_subject is False
+
+    assert rows[2].individual_id == IndividualID("IND-000003")
+    assert rows[2].role is AssociatedRole.WITNESS
+    assert rows[2].is_primary_subject is False
+
+    # Family-anchored Fact with spouse projection and duplicate guard
+    fam_fact = Fact.create(
+        fact_id="FID-000020",
+        canonical_urn="urn:gda:fact:abbott_marriage_1868",
+        fact_type=FactType.MARRIAGE,
+        title="Marriage of George W. Abbott and Mary E. Rolfe",
+        primary_subject_id=FamilyID("FAM-000001"),
+        participants=[
+            FactParticipant.create("IND-000010", AssociatedRole.OFFICIANT),
+            FactParticipant.create("IND-000001", AssociatedRole.PRIMARY),
+        ],
     )
-    assert (
-        FactParticipantXRef.create_key(ind, "GODPARENT", fact)
-        == "IND-000002::GODPARENT::FID-000001"
+    fam_rows = FactParticipantXRef.from_fact(
+        fam_fact,
+        family_spouse_ids=(
+            IndividualID("IND-000001"),
+            IndividualID("IND-000002"),
+            IndividualID("IND-000001"),
+        ),
     )
+    assert len(fam_rows) == 3
+    assert fam_rows[0].individual_id == IndividualID("IND-000001")
+    assert fam_rows[0].is_primary_subject is True
+    assert fam_rows[0].temporal_year is None
+    assert fam_rows[1].individual_id == IndividualID("IND-000002")
+    assert fam_rows[1].is_primary_subject is True
+    assert fam_rows[2].individual_id == IndividualID("IND-000010")
+    assert fam_rows[2].role is AssociatedRole.OFFICIANT
+    assert fam_rows[2].is_primary_subject is False
+
+    with pytest.raises(ModelFormatError, match="requires a Fact entity instance"):
+        FactParticipantXRef.from_fact("not-a-fact")  # type: ignore[arg-type]
 
 
 @pytest.mark.unit
-def test_fact_participant_xref_frozen_immutability() -> None:
-    """Verify modifying fields raises frozen instance error."""
-    witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
-    fact = FactID("FID-000001")
-    edge = FactParticipantXRef(
-        xref_id="KEY",
-        associated_ind_id=witness,
-        fact_id=fact,
-        primary_subject_id=subject,
-        role=AssociatedRole.CLERGY,
+@pytest.mark.integrity
+def test_fact_participant_xref_minimal_and_validation_errors() -> None:
+    """Verify minimal FactParticipantXRef round-trip and validation error branches."""
+    minimal = FactParticipantXRef.create(
+        fact_id="FID-000099",
+        individual_id="IND-000099",
+        fact_type=FactType.CENSUS,
     )
+    min_dict = minimal.to_dict()
+    for opt_key in ("temporal_year", "location_id", "site_id"):
+        assert opt_key not in min_dict
+    assert FactParticipantXRef.from_dict(min_dict) == minimal
 
-    with pytest.raises((FrozenInstanceError, ValidationError)):
-        edge.role = AssociatedRole.WITNESS  # type: ignore[misc]
-
-
-# ==============================================================================
-# GROUP 2: Validation Boundaries & Defensive Constraints
-# ==============================================================================
-
-
-@pytest.mark.unit
-def test_fact_participant_xref_whitespace_stripped() -> None:
-    """Verify string attributes strip leading and trailing whitespace automatically."""
-    witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
-    fact = FactID("FID-000001")
-
-    edge = FactParticipantXRef(
-        xref_id="  IND-000002::WITN::FID-000001  ",
-        associated_ind_id=witness,
-        fact_id=fact,
-        primary_subject_id=subject,
-        role=AssociatedRole.WITNESS,
-        title="  Attending Witness at Concord  ",
-    )
-
-    assert edge.xref_id == "IND-000002::WITN::FID-000001"
-    assert edge.title == "Attending Witness at Concord"
-
-
-@pytest.mark.regression
-def test_fact_participant_xref_empty_key_rejected() -> None:
-    """Verify empty or whitespace-only xref_id raises ModelFormatError."""
-    witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
-    fact = FactID("FID-000001")
-
-    with pytest.raises(ModelFormatError, match="xref_id"):
-        FactParticipantXRef(
-            xref_id="   ",
-            associated_ind_id=witness,
-            fact_id=fact,
-            primary_subject_id=subject,
-            role=AssociatedRole.WITNESS,
+    with pytest.raises(ModelPrefixMismatchError, match="expected 'FID'"):
+        FactParticipantXRef.create(
+            fact_id="FCT-000001",
+            individual_id="IND-000001",
+            fact_type=FactType.BIRTH,
         )
 
-
-@pytest.mark.regression
-def test_fact_participant_xref_extra_fields_forbidden() -> None:
-    """Verify Pydantic rejects undeclared extra attributes."""
-    witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
-    fact = FactID("FID-000001")
-
-    with pytest.raises(ValidationError):
-        FactParticipantXRef(  # type: ignore[call-arg]
-            xref_id="KEY",
-            associated_ind_id=witness,
-            fact_id=fact,
-            primary_subject_id=subject,
-            role=AssociatedRole.WITNESS,
-            forbidden_facet="INVALID",
+    with pytest.raises(ModelPrefixMismatchError, match="expected 'IND'"):
+        FactParticipantXRef.create(
+            fact_id="FID-000001",
+            individual_id="ORG-000001",
+            fact_type=FactType.BIRTH,
         )
+
+    with pytest.raises(ModelPrefixMismatchError, match="expected 'LOC'"):
+        FactParticipantXRef.create(
+            fact_id="FID-000001",
+            individual_id="IND-000001",
+            fact_type=FactType.BIRTH,
+            location_id="SID-000001",
+        )
+
+    with pytest.raises(ModelPrefixMismatchError, match="expected 'SID'"):
+        FactParticipantXRef.create(
+            fact_id="FID-000001",
+            individual_id="IND-000001",
+            fact_type=FactType.BIRTH,
+            site_id="LOC-000001",
+        )
+
+    with pytest.raises(ModelFormatError, match="Invalid AssociatedRole value"):
+        FactParticipantXRef.create(
+            fact_id="FID-000001",
+            individual_id="IND-000001",
+            fact_type=FactType.BIRTH,
+            role="INVALID_ROLE",
+        )
+
+    with pytest.raises(ModelFormatError, match="Invalid FactType value"):
+        FactParticipantXRef.create(
+            fact_id="FID-000001",
+            individual_id="IND-000001",
+            fact_type="INVALID_FACT",
+        )
+
+    with pytest.raises(ModelRangeError):
+        FactParticipantXRef.create(
+            fact_id="FID-000001",
+            individual_id="IND-000001",
+            fact_type=FactType.BIRTH,
+            temporal_year=999,
+        )
+
+    with pytest.raises(ModelFormatError, match="requires 'fact_id'"):
+        FactParticipantXRef.from_dict({"fact_id": "FID-000001"})

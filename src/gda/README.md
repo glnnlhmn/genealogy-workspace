@@ -1,24 +1,23 @@
-# Genealogy Digital Archive Engine (src/gda)
+# Genealogy Digital Archive Framework (src/gda)
 
 ## Architectural Role
-Top-level shared domain framework uniting core primitives, data models, entity resolvers, persistence engines, and archival utilities.
+Top-level shared domain framework uniting core primitives, controlled enumerations, atomic/Safe-Backup I/O, helper utilities, the five-pillar domain model suite, in-memory domain entity collection managers, and the SQLite analytical database layer.
 
 ## Quality Gate & Verification Status
-- **Quality Gate:** >= 95.0% Statement & Branch Coverage
+- **Quality Gate:** 100.0% Statement & Branch Coverage
 - **Verification Suite:** `tests/test_gda/`
 - **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
 ## Subpackages
-- **`core/`**: GDA Core framework library.
-- **`db/`**: Public package exports and facade for GDA persistence layer.
-- **`engine/`**: Kinship graph analysis, plausibility engines, and relationship resolvers.
-- **`entity/`**: Canonical entity representations and active archive registries.
-- **`enums/`**: Authoritative controlled enumerations across the digital archive framework.
-- **`io/`**: Genealogy Digital Archive I/O and persistence infrastructure.
-- **`manager/`**: Stateful data access coordinators, vocabulary governors, and reference authorities.
-- **`model/`**: Module stub for __init__.py.
-- **`types/`**: Type definitions, enumerations, structural protocols, and classifications.
-- **`util/`**: Stateless, pure helper utilities for strings, dates, paths, and phonetic hashing.
+- **[core/](core/README.md)**: Core infrastructure, configuration, error contracts, and runtime introspection.
+- **[db/](db/README.md)**: Database persistence, schema migration, and entity mapping facade for GDA.
+- **[engine/](engine/README.md)**: Kinship graph analysis, plausibility engines, and relationship resolvers.
+- **[entity/](entity/README.md)**: Domain entity collection managers, validation services, and persistence gateways.
+- **[io/](io/README.md)**: Genealogy Digital Archive I/O and persistence infrastructure.
+- **[manager/](manager/README.md)**: Stateful data access coordinators, vocabulary governors, and reference authorities.
+- **[model/](model/README.md)**: Authoritative five-pillar domain model suite for the Genealogy Digital Archive.
+- **`repository/`**: Persistence repository interfaces and implementations for GDA models.
+- **[util/](util/README.md)**: Domain-specific helper utilities for identifiers, text sanitization, and phonetics.
 
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
@@ -28,4 +27,4 @@ Top-level shared domain framework uniting core primitives, data models, entity r
 Modules export public interfaces explicitly declared in `__all__`.
 
 ---
-Generated dynamically by `src/system/gen_readme.py`.
+Generated dynamically by `src/system/gen_readme/gen_readme.py`.

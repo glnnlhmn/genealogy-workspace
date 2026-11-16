@@ -13,26 +13,31 @@ Classes:
 from __future__ import annotations
 
 import sqlite3
-from datetime import UTC, datetime
 
+from gda.core.dates import utc_now_iso
 from gda.core.introspectable import IntrospectableMixin
 from gda.db.exceptions import DatabaseOperationalError
 from gda.db.schema.migrations import MIGRATION_REGISTRY
 from gda.db.session import DatabaseSessionManager
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
+
+__all__ = [
+    "SchemaManager",
+]
 
 
 class SchemaManager(IntrospectableMixin):
     """Manage SQLite DDL schema provisioning, migration execution, and inspection."""
 
-    def __init__(self, session_manager: DatabaseSessionManager) -> None:
+    def __init__(self, session_manager: DatabaseSessionManager | None = None) -> None:
         """Initialize SchemaManager.
 
         Args:
-            session_manager: Configured DatabaseSessionManager instance.
+            session_manager: Optional configured DatabaseSessionManager instance.
+                Defaults to a new DatabaseSessionManager() if omitted.
         """
-        self._session = session_manager
+        self._session = session_manager or DatabaseSessionManager()
 
     @property
     def session_manager(self) -> DatabaseSessionManager:
@@ -102,9 +107,9 @@ class SchemaManager(IntrospectableMixin):
                     continue
 
                 try:
-                    with self._session.transaction(conn=conn) as tx_conn:
+                    with self._session.transaction(connection=conn) as tx_conn:
                         tx_conn.executescript(mig.up_sql)
-                        now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+                        now_iso = utc_now_iso()
                         tx_conn.execute(
                             """
                             INSERT INTO schema_migrations (version, name, applied_at)

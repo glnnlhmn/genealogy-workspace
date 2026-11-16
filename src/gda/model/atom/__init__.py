@@ -10,19 +10,13 @@ Operational Role:
 from __future__ import annotations
 
 from gda.model.atom.date import (
-    BirthYear,
-    CensusYear,
-    CensusYearEnum,
-    DateModifier,
     DateString,
-    DeathYear,
-    EventDate,
-    EventDateRange,
-    HistoricalYear,
     IsoTimestamp,
 )
+from gda.model.atom.gender import (
+    GenderAtom,
+)
 from gda.model.atom.geo import (
-    Coordinates,
     Latitude,
     Longitude,
 )
@@ -35,6 +29,7 @@ from gda.model.atom.id import (
     LocationID,
     MediaID,
     NoteID,
+    OrganizationID,
     RepositoryID,
     ServiceRecordID,
     SiteID,
@@ -57,46 +52,47 @@ from gda.model.atom.urn import (
     SourceURN,
     VitalCertificateUrn,
 )
+from gda.model.atom.year import (
+    BirthYear,
+    DeathYear,
+    HistoricalYear,
+)
 
-__version__ = "1.0.0+build.12"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
-    "AhnentafelNumber",
-    "ArchivalURN",
-    "AtomID",
-    "BirthYear",
-    "CemeteryPlotUrn",
-    "CensusUrn",
-    "CensusYear",
-    "CensusYearEnum",
-    "ConfidenceScore",
-    "Coordinates",
-    "DateModifier",
-    "DateString",
-    "DeathYear",
-    "DraftRecordID",
-    "EventDate",
-    "EventDateRange",
-    "FactID",
-    "FamilyID",
-    "HistoricalYear",
-    "IndividualID",
-    "IsoTimestamp",
-    "Latitude",
-    "LocationID",
-    "Longitude",
-    "MediaID",
-    "MilitaryDraftUrn",
-    "NewsCategoryCode",
-    "NoteID",
-    "PubCode",
-    "QuayScore",
-    "RepositoryID",
-    "SiteID",
-    "ServiceRecordID",
-    "SourceID",
-    "SourceURN",
-    "TranscriptID",
-    "UUIDv4Str",
-    "VitalCertificateUrn",
+    "AhnentafelNumber",  # scalar.py
+    "ArchivalURN",  # urn.py
+    "AtomID",  # id.py
+    "BirthYear",  # year.py
+    "CemeteryPlotUrn",  # urn.py
+    "CensusUrn",  # urn.py
+    "ConfidenceScore",  # scalar.py
+    "DateString",  # date.py
+    "DeathYear",  # year.py
+    "DraftRecordID",  # id.py
+    "FactID",  # id.py
+    "FamilyID",  # id.py
+    "GenderAtom",  # gender.py
+    "HistoricalYear",  # year.py
+    "IndividualID",  # id.py
+    "IsoTimestamp",  # date.py
+    "Latitude",  # geo.py
+    "LocationID",  # id.py
+    "Longitude",  # geo.py
+    "MediaID",  # id.py
+    "MilitaryDraftUrn",  # urn.py
+    "NewsCategoryCode",  # scalar.py
+    "NoteID",  # id.py
+    "OrganizationID",  # id.py
+    "PubCode",  # scalar.py
+    "QuayScore",  # scalar.py
+    "RepositoryID",  # id.py
+    "ServiceRecordID",  # id.py
+    "SiteID",  # id.py
+    "SourceID",  # id.py
+    "SourceURN",  # urn.py
+    "TranscriptID",  # id.py
+    "UUIDv4Str",  # id.py
+    "VitalCertificateUrn",  # urn.py
 ]

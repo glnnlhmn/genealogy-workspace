@@ -1,7 +1,6 @@
-# Name: errors.py
-# Path: src/gda/io/errors.py
+"""Path: src/gda/io/errors.py
 
-"""Canonical I/O error hierarchy and specialized persistence exceptions.
+Canonical I/O error hierarchy and specialized persistence exceptions.
 
 Operational Role:
     Defines the exception domain for physical disk mutations, atomic staging,
@@ -13,7 +12,17 @@ from __future__ import annotations
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "0.1.0+build.r5"
+__version__ = "1.0.0+build.2"
+
+__all__ = [
+    "AtomicWriteError",
+    "BackupError",
+    "DirectoryCreationError",
+    "FileLockError",
+    "FileReadError",
+    "GDAIOError",
+    "SerializationError",
+]
 
 
 class GDAIOError(GenealogyDeskError):
@@ -22,6 +31,10 @@ class GDAIOError(GenealogyDeskError):
 
 class AtomicWriteError(GDAIOError):
     """Raised when an atomic staging, writing, syncing, or file replacement operation fails."""
+
+
+class FileLockError(AtomicWriteError):
+    """Raised when temporary file locks or cross-process sharing violations cannot resolve."""
 
 
 class BackupError(GDAIOError):
@@ -34,10 +47,6 @@ class FileReadError(GDAIOError):
 
 class SerializationError(GDAIOError):
     """Raised when serializing data to or deserializing data from structured syntax fails."""
-
-
-class FileLockError(GDAIOError):
-    """Raised when temporary file locks or cross-process sharing violations cannot resolve."""
 
 
 class DirectoryCreationError(GDAIOError):

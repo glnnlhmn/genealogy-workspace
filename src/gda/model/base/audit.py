@@ -8,7 +8,7 @@ Operational Role:
     state transitions.
 
 Architecture:
-    - AuditStamp: Pydantic dataclass validating record timestamps.
+    - AuditStamp: Strict immutable Pydantic dataclass validating record timestamps.
 """
 
 from __future__ import annotations
@@ -16,17 +16,20 @@ from __future__ import annotations
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
+from gda.core.dates import utc_now_iso
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 from gda.model.atom.date import IsoTimestamp
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.1"
+
+__all__ = ["AuditStamp"]
 
 _logger = GDALogger(__name__)
 
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class AuditStamp(IntrospectableMixin):
     """Record lifecycle audit metadata capturing creation and update timestamps."""
 
@@ -54,9 +57,19 @@ class AuditStamp(IntrospectableMixin):
                 },
             )
 
-    def touch(self, updated_at: IsoTimestamp) -> AuditStamp:
+    @classmethod
+    def now(cls) -> AuditStamp:
+        """Mint a synchronized AuditStamp anchored at the current UTC instant."""
+        ts = IsoTimestamp(utc_now_iso())
+        return cls(created_at=ts, updated_at=ts)
+
+    def touch(self, updated_at: IsoTimestamp | None = None) -> AuditStamp:
         """Return a new AuditStamp updating only the updated_at timestamp."""
-        return AuditStamp(created_at=self.created_at, updated_at=updated_at)
+        next_ts = updated_at if updated_at is not None else IsoTimestamp(utc_now_iso())
+        return AuditStamp(created_at=self.created_at, updated_at=next_ts)
+
+    def __str__(self) -> str:
+        return f"created={self.created_at}, updated={self.updated_at}"
 
     def __repr__(self) -> str:
         return f"AuditStamp(created_at={self.created_at!r}, updated_at={self.updated_at!r})"

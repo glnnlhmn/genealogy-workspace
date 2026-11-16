@@ -4,9 +4,9 @@ Authoritative jurisdictional hierarchy construction, graveyard lifecycle, and pe
 
 Operational Role:
     Provides collection-level jurisdiction hierarchy builders, safe tombstone
-    and graveyard lifecycle operators, and SQLite/filesystem persistence routines
-    operating on Locations instances. Delegates low-level text cleaning, URN slugging,
-    and ID minting to gda.util.
+    and undelete graveyard lifecycle operators, and SQLite/filesystem persistence
+    routines operating on Locations instances. Preserves audit and tombstone
+    metadata across JSON export/import round-trips.
 """
 
 from __future__ import annotations
@@ -15,11 +15,12 @@ import dataclasses
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.core import SmartIDPrefix
+from gda.core.enums.location import JurisdictionCategory
+from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
 from gda.entity.locations.errors import LocationHierarchyError
-from gda.enums.core import SmartIDPrefix
-from gda.enums.location import JurisdictionCategory
-from gda.enums.vital import HistoricNameType
 from gda.io.json import GDAJsonIO
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID
@@ -30,16 +31,17 @@ from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
 from gda.util.ids import extract_max_smart_id, mint_smart_id
 from gda.util.text import clean_string, slugify
-from gda.util.tombstone import stamp_tombstone
 
 if TYPE_CHECKING:
+    from gda.db.session import DatabaseSessionManager
     from gda.entity.locations.collection import Locations
 
-__version__ = "1.0.0+build.39"
+__version__ = "1.0.0+build.46"
 
 __all__ = [
     "build_jurisdiction_hierarchy",
     "can_tombstone",
+    "can_undelete",
     "clean_string",
     "export_file",
     "import_file",
@@ -47,6 +49,7 @@ __all__ = [
     "save_to_db",
     "slugify",
     "tombstone_location",
+    "undelete_location",
 ]
 
 
@@ -72,7 +75,7 @@ def _get_or_create_node(
     next_num = extract_max_smart_id(collection._registry.keys(), prefix=SmartIDPrefix.LOC) + 1
     loc_id = LocationID(mint_smart_id(SmartIDPrefix.LOC, next_num))
 
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp(utc_now_iso())
     name_obj = NameThing.create(raw=name, canonical=name)
 
     loc = Location.create(
@@ -276,26 +279,70 @@ def tombstone_location(
             if child.parent_id == target_id and not child.tombstone.is_deprecated
         ]
         for child in active_children:
-            reparented = dataclasses.replace(child, parent_id=replacement_id)
+            reparented = dataclasses.replace(child, parent_id=replacement_id).mark_dirty()
             collection._registry[reparented.id] = reparented
+            collection._parent_index[target_id].discard(reparented.id)
+            collection._parent_index[replacement_id].add(reparented.id)
+        if not collection._parent_index[target_id]:
+            del collection._parent_index[target_id]
 
-    retired = stamp_tombstone(
-        entity=target,
-        reason=reason,
-        superseded_by=replacement_id,
-    )
+    _ = clean_string(reason)
+    retired = target.deprecate(superseded_by=replacement_id).mark_dirty()
 
     collection._registry[retired.id] = retired
     return retired
 
 
-def load_from_db(collection: Locations) -> int:
+def can_undelete(
+    collection: Locations,
+    loc_id: LocationID | str,
+) -> tuple[bool, str | None]:
+    """Verify whether a tombstoned location can be safely restored to active status."""
+    target_id = LocationID(str(loc_id))
+    target = collection._registry.get(target_id)
+    if not target:
+        return False, f"Location '{target_id}' does not exist in collection."
+
+    if not target.tombstone.is_deprecated:
+        return False, f"Location '{target_id}' is not tombstoned."
+
+    if target.parent_id is not None and target.parent_id not in collection:
+        return (
+            False,
+            f"Cannot undelete location '{target_id}'; parent jurisdiction "
+            f"'{target.parent_id}' is missing or tombstoned.",
+        )
+
+    return True, None
+
+
+def undelete_location(
+    collection: Locations,
+    loc_id: LocationID | str,
+) -> Location:
+    """Atomically restore a tombstoned location back to active status."""
+    ok, error_msg = can_undelete(collection=collection, loc_id=loc_id)
+    if not ok:
+        raise LocationHierarchyError(error_msg or "Cannot undelete location.")
+
+    target_id = LocationID(str(loc_id))
+    target = collection._registry[target_id]
+
+    active_loc = target.restore().mark_dirty()
+    collection._registry[active_loc.id] = active_loc
+    return active_loc
+
+
+def load_from_db(
+    collection: Locations,
+    session_manager: DatabaseSessionManager | None = None,
+) -> int:
     """Load all location records from the SQLite database directly into the collection."""
     from gda.db.mapper import LocationRowMapper
     from gda.db.schema import SchemaManager
     from gda.db.session import DatabaseSessionManager
 
-    session = DatabaseSessionManager()
+    session = session_manager or DatabaseSessionManager()
     schema_mgr = SchemaManager(session_manager=session)
     schema_mgr.init_db()
 
@@ -313,13 +360,16 @@ def load_from_db(collection: Locations) -> int:
     return loaded_count
 
 
-def save_to_db(collection: Locations) -> int:
+def save_to_db(
+    collection: Locations,
+    session_manager: DatabaseSessionManager | None = None,
+) -> int:
     """Commit collection entities to the SQLite database and mark the collection clean."""
     from gda.db.mapper import LocationRowMapper
     from gda.db.schema import SchemaManager
     from gda.db.session import DatabaseSessionManager
 
-    session = DatabaseSessionManager()
+    session = session_manager or DatabaseSessionManager()
     schema_mgr = SchemaManager(session_manager=session)
     schema_mgr.init_db()
 
@@ -342,14 +392,16 @@ def save_to_db(collection: Locations) -> int:
 
 
 def import_file(collection: Locations, path: Path | str) -> int:
-    """Import locations from formatted JSON file, load into memory, and save to database."""
+    """Import locations from formatted JSON file, preserving audit and tombstone state."""
     json_path = Path(path)
     if not json_path.exists():
         return 0
 
     payload = GDAJsonIO.read(json_path)
     locations_list = payload.get("locations", [])
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp(utc_now_iso())
+    default_audit = AuditStamp(created_at=now, updated_at=now)
+    audit_dict = {"created_at": str(now), "updated_at": str(now)}
 
     for item in locations_list:
         loc_id = LocationID(item["id"])
@@ -397,11 +449,42 @@ def import_file(collection: Locations, path: Path | str) -> int:
             if isinstance(n, Note):
                 embedded_notes.append(n)
             elif isinstance(n, dict):
-                embedded_notes.append(Note.from_dict(n))
+                note_dict = dict(n)
+                if "audit" not in note_dict:
+                    note_dict["audit"] = audit_dict
+                embedded_notes.append(Note.from_dict(note_dict))
+
+        raw_audit = item.get("audit")
+        resolved_audit = (
+            AuditStamp(
+                created_at=IsoTimestamp(raw_audit["created_at"]),
+                updated_at=IsoTimestamp(raw_audit["updated_at"]),
+            )
+            if isinstance(raw_audit, dict)
+            else default_audit
+        )
+        raw_tomb = item.get("tombstone")
+        resolved_tomb = (
+            Tombstone[LocationID](
+                is_deprecated=bool(raw_tomb.get("is_deprecated", False)),
+                deprecated_at=(
+                    IsoTimestamp(raw_tomb["deprecated_at"])
+                    if raw_tomb.get("deprecated_at")
+                    else None
+                ),
+                superseded_by=(
+                    LocationID(str(raw_tomb["superseded_by"]))
+                    if raw_tomb.get("superseded_by")
+                    else None
+                ),
+            )
+            if isinstance(raw_tomb, dict)
+            else Tombstone[LocationID]()
+        )
 
         loc = Location.create(
             location_id=loc_id,
-            audit=AuditStamp(created_at=now, updated_at=now),
+            audit=resolved_audit,
             name=name_obj,
             category=JurisdictionCategory(item["category"]),
             canonical_urn=item["canonical_urn"],
@@ -409,7 +492,7 @@ def import_file(collection: Locations, path: Path | str) -> int:
             is_primary_local_authority=item.get("is_primary_local_authority", False),
             is_unincorporated=item.get("is_unincorporated", False),
             notes=embedded_notes,
-            tombstone=Tombstone[LocationID](),
+            tombstone=resolved_tomb,
         )
         collection.add(loc)
 
@@ -447,6 +530,19 @@ def export_file(
             "alternate_names": list(e.aliases),
             "historical_names": hist_list,
             "notes": notes_list,
+            "audit": {
+                "created_at": str(e.audit.created_at),
+                "updated_at": str(e.audit.updated_at),
+            },
+            "tombstone": {
+                "is_deprecated": e.tombstone.is_deprecated,
+                "deprecated_at": (
+                    str(e.tombstone.deprecated_at) if e.tombstone.deprecated_at else None
+                ),
+                "superseded_by": (
+                    str(e.tombstone.superseded_by) if e.tombstone.superseded_by else None
+                ),
+            },
         }
         out_list.append(item)
 

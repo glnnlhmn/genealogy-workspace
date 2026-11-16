@@ -18,10 +18,11 @@ from typing import Any, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.enums.sources import SourceRecordCategory
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import MediaID, RepositoryID, SourceID
 from gda.model.atom.scalar import ConfidenceScore, QuayScore
 from gda.model.atom.urn import ArchivalURN, SourceURN
@@ -29,14 +30,14 @@ from gda.model.base.association import AssociatedIndividual
 from gda.model.base.audit import AuditStamp
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.1"
 
 __all__ = ["RecordMetadata", "SourceRecord", "SourceReference"]
 
 _logger = GDALogger(__name__)
 
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class SourceReference(IntrospectableMixin):
     """Archival source pointer attaching evidence to assertions."""
 
@@ -51,13 +52,16 @@ class SourceReference(IntrospectableMixin):
     )
 
     def __post_init__(self) -> None:
-        """Enforce non-empty citation text."""
-        clean_text = self.citation_text.strip()
-        if not clean_text:
+        """Enforce non-empty citation text and non-blank optional page_or_side."""
+        if not self.citation_text.strip():
             err_msg = "SourceReference citation_text cannot be empty."
             _logger.debug("SourceReference validation failed: empty citation_text")
             raise ModelFormatError(err_msg, details={"field": "citation_text"})
-        object.__setattr__(self, "citation_text", clean_text)
+        if self.page_or_side is not None and not self.page_or_side.strip():
+            raise ModelFormatError(
+                "SourceReference page_or_side cannot be blank if provided.",
+                details={"field": "page_or_side"},
+            )
 
     @classmethod
     def create(
@@ -69,6 +73,9 @@ class SourceReference(IntrospectableMixin):
         confidence: ConfidenceScore | float | None = None,
     ) -> SourceReference:
         """Factory constructor instantiating a validated SourceReference."""
+        if not isinstance(citation_text, str) or not citation_text.strip():
+            raise ModelFormatError("SourceReference citation_text cannot be empty.")
+
         resolved_sid = (
             source_id
             if (source_id is None or isinstance(source_id, SourceID))
@@ -80,9 +87,9 @@ class SourceReference(IntrospectableMixin):
             if (confidence is None or isinstance(confidence, ConfidenceScore))
             else ConfidenceScore(confidence)
         )
-        clean_page = page_or_side.strip() if page_or_side is not None else None
+        clean_page = page_or_side.strip() if page_or_side and page_or_side.strip() else None
         return cls(
-            citation_text=citation_text,
+            citation_text=citation_text.strip(),
             source_id=resolved_sid,
             page_or_side=clean_page,
             quay=resolved_quay,
@@ -91,9 +98,9 @@ class SourceReference(IntrospectableMixin):
 
     def update_citation(self, citation_text: str) -> Self:
         """Return a new immutable copy with updated citation text."""
-        clean_text = citation_text.strip()
-        if not clean_text:
+        if not isinstance(citation_text, str) or not citation_text.strip():
             raise ModelFormatError("SourceReference citation_text cannot be empty.")
+        clean_text = citation_text.strip()
         if clean_text == self.citation_text:
             return self
         return replace(self, citation_text=clean_text)
@@ -111,7 +118,7 @@ class SourceReference(IntrospectableMixin):
 
     def update_page_or_side(self, page_or_side: str | None) -> Self:
         """Return a new immutable copy with updated folio/page designation."""
-        clean = page_or_side.strip() if page_or_side is not None else None
+        clean = page_or_side.strip() if page_or_side and page_or_side.strip() else None
         if clean == self.page_or_side:
             return self
         return replace(self, page_or_side=clean)
@@ -153,10 +160,10 @@ class SourceReference(IntrospectableMixin):
         if not isinstance(data, dict):
             raise ModelFormatError("SourceReference payload must be a dictionary.")
         text = data.get("citation_text")
-        if not text:
+        if not isinstance(text, str) or not text.strip():
             raise ModelFormatError("Missing required field 'citation_text' for SourceReference.")
         return cls.create(
-            citation_text=str(text),
+            citation_text=text,
             source_id=data.get("source_id"),
             page_or_side=data.get("page_or_side"),
             quay=data.get("quay"),
@@ -184,13 +191,13 @@ class SourceReference(IntrospectableMixin):
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}(citation_text='{self.citation_text}', "
+            f"{self.__class__.__name__}(citation_text={self.citation_text!r}, "
             f"source_id={self.source_id!r}, page_or_side={self.page_or_side!r}, "
             f"quay={self.quay!r}, confidence={self.confidence!r})"
         )
 
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class RecordMetadata(IntrospectableMixin):
     """Archival record header uniting surrogate UUID, semantic URN, and category."""
 
@@ -204,11 +211,6 @@ class RecordMetadata(IntrospectableMixin):
 
     def __post_init__(self) -> None:
         """Validate non-empty strings across envelope header fields."""
-        if not isinstance(self.source_id, SourceID):
-            raise TypeError(
-                f"RecordMetadata 'source_id' must be SourceID, got {type(self.source_id).__name__}."
-            )
-
         for field_name, value in (
             ("source_urn", self.source_urn),
             ("record_category", self.record_category),
@@ -289,15 +291,18 @@ class RecordMetadata(IntrospectableMixin):
             raise ModelFormatError(f"Failed to parse RecordMetadata JSON string: {exc}") from exc
         return cls.from_dict(data)
 
+    def __str__(self) -> str:
+        return f"RecordMetadata [{self.record_category}/{self.record_type}] {self.source_urn}"
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(source_id={self.source_id!r}, "
-            f"source_urn='{self.source_urn}', record_category='{self.record_category}', "
-            f"record_type='{self.record_type}', repository_id={self.repository_id!r})"
+            f"source_urn={self.source_urn!r}, record_category={self.record_category!r}, "
+            f"record_type={self.record_type!r}, repository_id={self.repository_id!r})"
         )
 
 
-@dataclass(config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True))
+@dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
 class SourceRecord(IntrospectableMixin):
     """Canonical composite representing an evidentiary source document."""
 
@@ -315,30 +320,16 @@ class SourceRecord(IntrospectableMixin):
     associated_people: list[AssociatedIndividual] = Field(
         default_factory=list, description="Collateral person entries."
     )
-    tombstone: Tombstone | None = Field(
+    tombstone: Tombstone[SourceID] | None = Field(
         default=None, description="Soft-deprecation tombstone metadata."
     )
 
     def __post_init__(self) -> None:
-        """Enforce composite invariants on string boundaries and strongly-typed references."""
-        desc = self.description.strip()
-        if not desc:
+        """Enforce composite invariants on string boundaries."""
+        if not self.description.strip():
             raise ModelFormatError(
                 "SourceRecord 'description' cannot be empty or whitespace-only.",
                 details={"source_id": str(self.source_id)},
-            )
-        object.__setattr__(self, "description", desc)
-
-        if not isinstance(self.source_urn, ArchivalURN):
-            raise ModelFormatError(
-                f"SourceRecord 'source_urn' must be an instance of ArchivalURN, "
-                f"got {type(self.source_urn).__name__}."
-            )
-
-        if not isinstance(self.repository_id, RepositoryID):
-            raise ModelFormatError(
-                f"SourceRecord 'repository_id' must be an instance of RepositoryID, "
-                f"got {type(self.repository_id).__name__}."
             )
 
     @property
@@ -364,34 +355,47 @@ class SourceRecord(IntrospectableMixin):
         record_category: SourceRecordCategory | str,
         description: str,
         repository_id: RepositoryID | str,
-        audit: AuditStamp,
+        audit: AuditStamp | None = None,
         media_ids: list[MediaID | str] | None = None,
         associated_people: list[AssociatedIndividual] | None = None,
-        tombstone: Tombstone | None = None,
+        tombstone: Tombstone[SourceID] | None = None,
     ) -> SourceRecord:
         """Factory constructor instantiating a validated SourceRecord."""
+        if not isinstance(description, str) or not description.strip():
+            raise ModelFormatError("SourceRecord 'description' cannot be empty or whitespace-only.")
+
         resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
         resolved_rep = (
             repository_id
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        resolved_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(record_category)
-        )
+        if isinstance(record_category, SourceRecordCategory):
+            resolved_cat = record_category
+        elif isinstance(record_category, str):
+            try:
+                resolved_cat = SourceRecordCategory(record_category.strip().upper())
+            except ValueError as exc:
+                raise ModelFormatError(
+                    f"Invalid SourceRecordCategory value: '{record_category}'."
+                ) from exc
+        else:
+            raise ModelFormatError(
+                f"Invalid SourceRecordCategory type: {type(record_category).__name__}."
+            )
+
         resolved_urn = (
             source_urn if isinstance(source_urn, ArchivalURN) else SourceURN(str(source_urn))
         )
+        resolved_audit = audit if audit is not None else AuditStamp.now()
         resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
         return cls(
             source_id=resolved_sid,
             source_urn=resolved_urn,
             record_category=resolved_cat,
-            description=description,
+            description=description.strip(),
             repository_id=resolved_rep,
-            audit=audit,
+            audit=resolved_audit,
             media_ids=resolved_media,
             associated_people=associated_people or [],
             tombstone=tombstone,
@@ -442,24 +446,33 @@ class SourceRecord(IntrospectableMixin):
                 "SourceRecord requires source_id, source_urn, record_category, description, repository_id, and audit."
             )
 
-        from gda.model.atom.date import IsoTimestamp
-
-        audit_obj = AuditStamp(
-            created_at=IsoTimestamp(audit_payload["created_at"]),
-            updated_at=IsoTimestamp(audit_payload["updated_at"]),
-        )
+        if isinstance(audit_payload, AuditStamp):
+            audit_obj = audit_payload
+        elif isinstance(audit_payload, dict):
+            audit_obj = AuditStamp(
+                created_at=IsoTimestamp(audit_payload["created_at"]),
+                updated_at=IsoTimestamp(audit_payload["updated_at"]),
+            )
+        else:
+            raise ModelFormatError("SourceRecord audit must be an AuditStamp or dictionary.")
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone | None = None
+        tombstone_obj: Tombstone[SourceID] | None = None
         if isinstance(tombstone_payload, dict):
-            tombstone_obj = Tombstone(
+            raw_sup = tombstone_payload.get("superseded_by")
+            sup_id = (
+                raw_sup
+                if (raw_sup is None or isinstance(raw_sup, SourceID))
+                else SourceID(str(raw_sup))
+            )
+            tombstone_obj = Tombstone[SourceID](
                 is_deprecated=tombstone_payload.get("is_deprecated", False),
                 deprecated_at=(
                     IsoTimestamp(tombstone_payload["deprecated_at"])
                     if tombstone_payload.get("deprecated_at")
                     else None
                 ),
-                superseded_by=tombstone_payload.get("superseded_by"),
+                superseded_by=sup_id,
             )
 
         return cls.create(
@@ -491,3 +504,10 @@ class SourceRecord(IntrospectableMixin):
 
     def __str__(self) -> str:
         return f"SourceRecord [{self.record_category.value}] {self.source_urn} ({self.source_id})"
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(source_id={self.source_id!r}, "
+            f"source_urn={self.source_urn!r}, record_category={self.record_category}, "
+            f"repository_id={self.repository_id!r}, audit={self.audit!r})"
+        )

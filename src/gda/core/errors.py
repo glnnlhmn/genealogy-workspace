@@ -4,8 +4,8 @@ Exception hierarchy and error contracts for GDA Core.
 
 Operational Role:
     Defines the root exception tree, structured error details serialization,
-    and diagnostic error codes across domain validation, configuration parsing,
-    and runtime subsystem boundaries.
+    CLI exit code mapping, and diagnostic error codes across domain validation,
+    configuration parsing, and runtime subsystem boundaries.
 
 Classes:
     GenealogyDeskError: Canonical base exception with structured error metadata.
@@ -23,7 +23,18 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.11"
+
+__all__ = [
+    "ConfigError",
+    "ConfigParseError",
+    "ConfigValidationError",
+    "GenealogyDeskError",
+    "ModelError",
+    "ModelFormatError",
+    "ModelPrefixMismatchError",
+    "ModelRangeError",
+]
 
 
 # ==============================================================================
@@ -39,6 +50,7 @@ class GenealogyDeskError(Exception):
         error_code: Standardized system error code string.
         details: Structured dictionary carrying contextual diagnostic state.
         timestamp: ISO 8601 UTC timestamp string ending with Z.
+        exit_code: Process exit code mapped for CLI termination.
     """
 
     def __init__(
@@ -46,6 +58,7 @@ class GenealogyDeskError(Exception):
         message: str,
         error_code: str = "ERR_GENERIC",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
         """Initialize GenealogyDeskError.
 
@@ -53,11 +66,13 @@ class GenealogyDeskError(Exception):
             message: Human-readable diagnostic description of the failure.
             error_code: Canonical uppercase error identifier.
             details: Optional dictionary of contextual diagnostic attributes.
+            exit_code: Process exit code for CLI application termination.
         """
         super().__init__(message)
         self.message = message
         self.error_code = error_code
         self.details = details or {}
+        self.exit_code = exit_code
         self.timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     def __str__(self) -> str:
@@ -68,13 +83,14 @@ class GenealogyDeskError(Exception):
         """Serialize exception metadata into structured JSON-compatible payload.
 
         Returns:
-            Dictionary containing error_code, message, details, and timestamp.
+            Dictionary containing error_code, message, details, timestamp, and exit_code.
         """
         return {
             "error_code": self.error_code,
             "message": self.message,
             "details": self.details,
             "timestamp": self.timestamp,
+            "exit_code": self.exit_code,
         }
 
 
@@ -91,9 +107,10 @@ class ConfigError(GenealogyDeskError):
         message: str,
         error_code: str = "ERR_CONFIG",
         details: dict[str, Any] | None = None,
+        exit_code: int = 2,
     ) -> None:
         """Initialize ConfigError."""
-        super().__init__(message, error_code=error_code, details=details)
+        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ConfigValidationError(ConfigError):
@@ -104,9 +121,10 @@ class ConfigValidationError(ConfigError):
         message: str,
         error_code: str = "ERR_CONFIG_VALIDATION",
         details: dict[str, Any] | None = None,
+        exit_code: int = 2,
     ) -> None:
         """Initialize ConfigValidationError."""
-        super().__init__(message, error_code=error_code, details=details)
+        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ConfigParseError(ConfigError):
@@ -117,9 +135,10 @@ class ConfigParseError(ConfigError):
         message: str,
         error_code: str = "ERR_CONFIG_PARSE",
         details: dict[str, Any] | None = None,
+        exit_code: int = 2,
     ) -> None:
         """Initialize ConfigParseError."""
-        super().__init__(message, error_code=error_code, details=details)
+        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 # ==============================================================================
@@ -135,9 +154,10 @@ class ModelError(GenealogyDeskError):
         message: str,
         error_code: str = "ERR_MODEL_VALIDATION",
         details: dict[str, Any] | None = None,
+        exit_code: int = 3,
     ) -> None:
         """Initialize ModelError."""
-        super().__init__(message, error_code=error_code, details=details)
+        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ModelFormatError(ModelError):
@@ -148,9 +168,10 @@ class ModelFormatError(ModelError):
         message: str,
         error_code: str = "ERR_MODEL_FORMAT",
         details: dict[str, Any] | None = None,
+        exit_code: int = 3,
     ) -> None:
         """Initialize ModelFormatError."""
-        super().__init__(message, error_code=error_code, details=details)
+        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ModelRangeError(ModelError):
@@ -161,9 +182,10 @@ class ModelRangeError(ModelError):
         message: str,
         error_code: str = "ERR_MODEL_RANGE",
         details: dict[str, Any] | None = None,
+        exit_code: int = 3,
     ) -> None:
         """Initialize ModelRangeError."""
-        super().__init__(message, error_code=error_code, details=details)
+        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ModelPrefixMismatchError(ModelError):
@@ -174,6 +196,7 @@ class ModelPrefixMismatchError(ModelError):
         message: str,
         error_code: str = "ERR_MODEL_PREFIX_MISMATCH",
         details: dict[str, Any] | None = None,
+        exit_code: int = 3,
     ) -> None:
         """Initialize ModelPrefixMismatchError."""
-        super().__init__(message, error_code=error_code, details=details)
+        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)

@@ -1,8 +1,6 @@
-# Name: logging.py
-# Path: src/gda/core/logging.py
-# Version: 1.0.0+build.r6
+"""Path: src/gda/core/logging.py
 
-"""Structured JSON and console logging subsystem for GDA Core.
+Structured JSON and console logging subsystem for GDA Core.
 
 Operational Role:
     Implements standardized single-line JSON log formatting for machine ingestion
@@ -27,7 +25,13 @@ from typing import Any
 from gda.core.config import LoggingConfig
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.r6"
+__version__ = "1.0.0+build.8"
+
+__all__ = [
+    "ConsoleFormatter",
+    "GDALogger",
+    "JsonFormatter",
+]
 
 
 class JsonFormatter(logging.Formatter):
@@ -49,12 +53,10 @@ class JsonFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
-        # Structured extra payload
         details = getattr(record, "details", None)
         if isinstance(details, dict):
             payload["details"] = details
 
-        # Exception / Error capture under 'error'
         exc = getattr(record, "exc", None)
         if isinstance(exc, GenealogyDeskError):
             payload["error"] = exc.to_dict()
@@ -137,11 +139,21 @@ class GDALogger:
             self.logger.addHandler(file_handler)
 
     def debug(self, msg: str, *, details: dict[str, Any] | None = None) -> None:
-        """Emit DEBUG level log record."""
+        """Emit DEBUG level log record.
+
+        Args:
+            msg: Log message string.
+            details: Optional structured contextual attributes.
+        """
         self._log(logging.DEBUG, msg, details=details)
 
     def info(self, msg: str, *, details: dict[str, Any] | None = None) -> None:
-        """Emit INFO level log record."""
+        """Emit INFO level log record.
+
+        Args:
+            msg: Log message string.
+            details: Optional structured contextual attributes.
+        """
         self._log(logging.INFO, msg, details=details)
 
     def warning(
@@ -151,7 +163,13 @@ class GDALogger:
         details: dict[str, Any] | None = None,
         exc: Exception | None = None,
     ) -> None:
-        """Emit WARNING level log record."""
+        """Emit WARNING level log record.
+
+        Args:
+            msg: Log message string.
+            details: Optional structured contextual attributes.
+            exc: Optional exception object attached to record.
+        """
         self._log(logging.WARNING, msg, details=details, exc=exc)
 
     def error(
@@ -161,7 +179,13 @@ class GDALogger:
         details: dict[str, Any] | None = None,
         exc: Exception | None = None,
     ) -> None:
-        """Emit ERROR level log record."""
+        """Emit ERROR level log record.
+
+        Args:
+            msg: Log message string.
+            details: Optional structured contextual attributes.
+            exc: Optional exception object attached to record.
+        """
         self._log(logging.ERROR, msg, details=details, exc=exc)
 
     def critical(
@@ -171,7 +195,13 @@ class GDALogger:
         details: dict[str, Any] | None = None,
         exc: Exception | None = None,
     ) -> None:
-        """Emit CRITICAL level log record."""
+        """Emit CRITICAL level log record.
+
+        Args:
+            msg: Log message string.
+            details: Optional structured contextual attributes.
+            exc: Optional exception object attached to record.
+        """
         self._log(logging.CRITICAL, msg, details=details, exc=exc)
 
     def _log(
@@ -182,7 +212,14 @@ class GDALogger:
         details: dict[str, Any] | None = None,
         exc: Exception | None = None,
     ) -> None:
-        """Internal dispatcher attaching extra attributes."""
+        """Internal dispatcher attaching extra attributes.
+
+        Args:
+            level: Numeric logging level identifier.
+            msg: Log message string.
+            details: Optional structured contextual dictionary.
+            exc: Optional exception instance to attach.
+        """
         extra: dict[str, Any] = {}
         if details is not None:
             extra["details"] = details

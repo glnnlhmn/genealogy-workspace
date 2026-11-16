@@ -1,15 +1,14 @@
 """Path: tests/test_gda/test_entity/test_sites/conftest.py
 
 Shared pytest fixtures and test doubles for the sites entity subsystem test suite.
+Inherits mock_locations_collection from tests/test_gda/test_entity/conftest.py.
 """
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
-from gda.enums.site import SiteType
+from gda.core.enums.site import SiteType
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID, SiteID
 from gda.model.base.address import Address
@@ -17,7 +16,7 @@ from gda.model.base.name import NameThing
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.site import Site
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.5"
 
 
 @pytest.fixture
@@ -55,14 +54,6 @@ def active_site(make_site) -> Site:
 @pytest.fixture
 def tombstoned_site(make_site) -> Site:
     """Fixture providing a soft-deprecated Site domain entity."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp("2026-11-15T12:00:00Z")
     tomb = Tombstone[SiteID]().retire(timestamp=now)
     return make_site(site_id="SID-000002", tombstone=tomb)
-
-
-@pytest.fixture
-def mock_locations_collection():
-    """Mock Locations collection fixture answering foreign key lookups."""
-    mock = MagicMock()
-    mock.__contains__.return_value = True
-    return mock

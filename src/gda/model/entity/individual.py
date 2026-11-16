@@ -7,8 +7,9 @@ Operational Role:
     Inherits lifecycle management, audit timestamps, soft-deprecation tombstones, and
     embedded Note collections from BaseEntity[IndividualID]. Incorporates NamePerson
     for structured onomastic identity, GenderAtom for biological/birth sex classification,
-    temporal vital bounds (birth/death dates and places), copy-on-write mutators, full
-    dictionary/JSON serialization parity, and explicit in-memory dirty tracking (_dirty).
+    temporal vital bounds (EventDate supporting exact, approximate, and BETWEEN ranges),
+    copy-on-write mutators, full dictionary/JSON serialization parity, and explicit
+    in-memory dirty tracking (_dirty).
 """
 
 from __future__ import annotations
@@ -21,28 +22,78 @@ from typing import Any, ClassVar, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.dates import parse_iso_date_parts, utc_now_iso
+from gda.core.enums.archival import NoteType
+from gda.core.enums.core import Sex
+from gda.core.enums.date import DateModifier
 from gda.core.errors import ModelFormatError, ModelRangeError
-from gda.enums.archival import NoteType
-from gda.enums.core import Sex
-from gda.model.atom.date import EventDate, EventDateRange, IsoTimestamp
+from gda.core.types import ENTITY_ID_REGEXES, ENTITY_URN_REGEXES
+from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.gender import GenderAtom
 from gda.model.atom.id import IndividualID, LocationID, NoteID, SiteID
 from gda.model.base.audit import AuditStamp
+from gda.model.base.date import EventDate
 from gda.model.base.entity import BaseEntity
 from gda.model.base.name import NamePerson
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.6"
 
 __all__ = ["Individual"]
 
-_INDIVIDUAL_ID_PATTERN: re.Pattern[str] = re.compile(r"^IND-\d{6,}$")
-_INDIVIDUAL_URN_PATTERN: re.Pattern[str] = re.compile(r"^urn:gda:ind:[a-z0-9_:\-]+$")
+_INDIVIDUAL_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["IND"]
+_INDIVIDUAL_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["IND"]
+
+
+def _resolve_vital_date(
+    val: EventDate | str | dict[str, Any] | None,
+) -> EventDate | None:
+    """Resolve raw vital date expression, dict payload, or EventDate into EventDate."""
+    if val is None or isinstance(val, EventDate):
+        return val
+    if isinstance(val, str):
+        return EventDate.create(val)
+    if isinstance(val, dict):
+        if "start_date" in val and "end_date" in val:
+            return EventDate.create(
+                date=str(val["start_date"]),
+                modifier=val.get("modifier", DateModifier.BETWEEN),
+                end_date=str(val["end_date"]),
+            )
+        return EventDate.from_dict(val)
+    raise TypeError(f"Unsupported vital date payload type: {type(val).__name__}.")
+
+
+def _resolve_place_id(
+    place_id: LocationID | SiteID | str | None,
+) -> LocationID | SiteID | None:
+    """Resolve LocationID, SiteID, or prefixed string token into strongly-typed AtomID."""
+    if place_id is None or isinstance(place_id, (LocationID, SiteID)):
+        return place_id
+    token = str(place_id).strip()
+    return SiteID(token) if token.startswith("SID-") else LocationID(token)
+
+
+def _resolve_gender(gender: GenderAtom | Sex | str | None) -> GenderAtom:
+    """Resolve GenderAtom, Sex enum, raw string token, or None into GenderAtom."""
+    if gender is None:
+        return GenderAtom("U")
+    if isinstance(gender, GenderAtom):
+        return gender
+    if isinstance(gender, Sex):
+        return GenderAtom(gender.value[0])
+    token = str(gender).strip()
+    try:
+        sex_member = Sex.from_input(token)
+        return GenderAtom(sex_member.value[0])
+    except ValueError:
+        return GenderAtom(token)
 
 
 @dataclass(
-    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
     kw_only=True,
 )
 class Individual(BaseEntity[IndividualID]):
@@ -59,13 +110,13 @@ class Individual(BaseEntity[IndividualID]):
         default_factory=lambda: GenderAtom("U"),
         description="Biological sex or gender recorded at birth ('M', 'F', or 'U').",
     )
-    birth_date: EventDate | EventDateRange | None = Field(
+    birth_date: EventDate | None = Field(
         default=None,
-        description="Point date or date range for birth/baptism with modifier support.",
+        description="Point or BETWEEN range date for birth/baptism with modifier support.",
     )
-    death_date: EventDate | EventDateRange | None = Field(
+    death_date: EventDate | None = Field(
         default=None,
-        description="Point date or date range for death/burial with modifier support.",
+        description="Point or BETWEEN range date for death/burial with modifier support.",
     )
     birth_place_id: LocationID | SiteID | None = Field(
         default=None,
@@ -102,11 +153,14 @@ class Individual(BaseEntity[IndividualID]):
                 f"Invalid IndividualID format: '{raw_id}'. Must match 'IND-######'."
             )
 
-        if not self.canonical_urn or not self._URN_PATTERN.match(self.canonical_urn):
+        clean_urn = self.canonical_urn.strip() if self.canonical_urn else ""
+        if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
                 f"Invalid canonical_urn format: '{self.canonical_urn}'. "
                 "Must match 'urn:gda:ind:<slug>'."
             )
+        if clean_urn != self.canonical_urn:
+            object.__setattr__(self, "canonical_urn", clean_urn)
 
         if (
             self.tombstone.is_deprecated
@@ -181,12 +235,20 @@ class Individual(BaseEntity[IndividualID]):
     @property
     def birth_year(self) -> int | None:
         """Extract lower-bound birth year directly from temporal atom."""
-        return self.birth_date.year_lower_bound if self.birth_date is not None else None
+        return (
+            parse_iso_date_parts(self.birth_date.date.value)[0]
+            if self.birth_date is not None
+            else None
+        )
 
     @property
     def death_year(self) -> int | None:
         """Extract lower-bound death year directly from temporal atom."""
-        return self.death_date.year_lower_bound if self.death_date is not None else None
+        return (
+            parse_iso_date_parts(self.death_date.date.value)[0]
+            if self.death_date is not None
+            else None
+        )
 
     @property
     def approximate_age(self) -> int | None:
@@ -215,8 +277,8 @@ class Individual(BaseEntity[IndividualID]):
         tombstone: Tombstone[IndividualID] | None = None,
         notes: list[Note] | None = None,
         gender: GenderAtom | Sex | str | None = None,
-        birth_date: EventDate | EventDateRange | str | None = None,
-        death_date: EventDate | EventDateRange | str | None = None,
+        birth_date: EventDate | str | dict[str, Any] | None = None,
+        death_date: EventDate | str | dict[str, Any] | None = None,
         birth_place_id: LocationID | SiteID | str | None = None,
         death_place_id: LocationID | SiteID | str | None = None,
         is_deceased: bool | None = None,
@@ -240,73 +302,35 @@ class Individual(BaseEntity[IndividualID]):
                 f"Individual 'name' must be an instance of NamePerson or str, got {type(name).__name__}."
             )
 
-        resolved_gender = GenderAtom.from_input(gender)
+        resolved_gender = _resolve_gender(gender)
+        resolved_birth_date = _resolve_vital_date(birth_date)
+        resolved_death_date = _resolve_vital_date(death_date)
+        resolved_birth_place = _resolve_place_id(birth_place_id)
+        resolved_death_place = _resolve_place_id(death_place_id)
+        resolved_deceased = is_deceased if is_deceased is not None else True
 
-        resolved_birth_date: EventDate | EventDateRange | None = None
-        if birth_date is not None:
-            resolved_birth_date = (
-                birth_date
-                if isinstance(birth_date, (EventDate, EventDateRange))
-                else EventDate.create(birth_date)
-            )
-
-        resolved_death_date: EventDate | EventDateRange | None = None
-        if death_date is not None:
-            resolved_death_date = (
-                death_date
-                if isinstance(death_date, (EventDate, EventDateRange))
-                else EventDate.create(death_date)
-            )
-
-        resolved_birth_place: LocationID | SiteID | None = None
-        if birth_place_id is not None:
-            if isinstance(birth_place_id, (LocationID, SiteID)):
-                resolved_birth_place = birth_place_id
-            else:
-                str_bp = str(birth_place_id).strip()
-                resolved_birth_place = (
-                    SiteID(str_bp) if str_bp.startswith("SID-") else LocationID(str_bp)
-                )
-
-        resolved_death_place: LocationID | SiteID | None = None
-        if death_place_id is not None:
-            if isinstance(death_place_id, (LocationID, SiteID)):
-                resolved_death_place = death_place_id
-            else:
-                str_dp = str(death_place_id).strip()
-                resolved_death_place = (
-                    SiteID(str_dp) if str_dp.startswith("SID-") else LocationID(str_dp)
-                )
-
-        if is_deceased is not None:
-            resolved_deceased = is_deceased
-        else:
-            resolved_deceased = True
-
-        now_ts = IsoTimestamp.now_utc()
+        now_ts = IsoTimestamp(utc_now_iso())
         resolved_audit = (
             audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
         )
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[IndividualID]()
         resolved_notes = list(notes) if notes is not None else []
 
-        kwargs: dict[str, Any] = {
-            "id": resolved_id,
-            "name": resolved_name,
-            "canonical_urn": canonical_urn.strip() if canonical_urn else "",
-            "gender": resolved_gender,
-            "birth_date": resolved_birth_date,
-            "death_date": resolved_death_date,
-            "birth_place_id": resolved_birth_place,
-            "death_place_id": resolved_death_place,
-            "is_deceased": resolved_deceased,
-            "audit": resolved_audit,
-            "tombstone": resolved_tombstone,
-            "notes": resolved_notes,
-            "_dirty": False,
-        }
-
-        return cls(**kwargs)
+        return cls(
+            id=resolved_id,
+            name=resolved_name,
+            canonical_urn=canonical_urn.strip() if canonical_urn else "",
+            gender=resolved_gender,
+            birth_date=resolved_birth_date,
+            death_date=resolved_death_date,
+            birth_place_id=resolved_birth_place,
+            death_place_id=resolved_death_place,
+            is_deceased=resolved_deceased,
+            audit=resolved_audit,
+            tombstone=resolved_tombstone,
+            notes=resolved_notes,
+            _dirty=False,
+        )
 
     def mark_clean(self) -> Self:
         """Return a new immutable copy marking entity as clean (persisted to storage)."""
@@ -328,7 +352,7 @@ class Individual(BaseEntity[IndividualID]):
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -340,7 +364,7 @@ class Individual(BaseEntity[IndividualID]):
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -352,7 +376,7 @@ class Individual(BaseEntity[IndividualID]):
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -364,7 +388,7 @@ class Individual(BaseEntity[IndividualID]):
         return replace(
             self,
             name=updated_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -381,82 +405,76 @@ class Individual(BaseEntity[IndividualID]):
             raise TypeError(
                 f"Individual 'name' must be an instance of NamePerson or str, got {type(name).__name__}."
             )
+        if new_name == self.name:
+            return self
         return replace(
             self,
             name=new_name,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
     def update_gender(self, gender: GenderAtom | Sex | str) -> Self:
         """Return a new immutable copy with updated gender at birth atom."""
-        res_gender = GenderAtom.from_input(gender)
+        res_gender = _resolve_gender(gender)
+        if res_gender == self.gender:
+            return self
         return replace(
             self,
             gender=res_gender,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
     def update_birth(
         self,
-        birth_date: EventDate | EventDateRange | str | None = None,
+        birth_date: EventDate | str | dict[str, Any] | None = None,
         birth_place_id: LocationID | SiteID | str | None = None,
     ) -> Self:
         """Return a new immutable copy with updated birth event bounds."""
-        resolved_date = (
-            birth_date
-            if (birth_date is None or isinstance(birth_date, (EventDate, EventDateRange)))
-            else EventDate.create(birth_date)
+        resolved_date = _resolve_vital_date(birth_date)
+        final_date = resolved_date if resolved_date is not None else self.birth_date
+        final_place = (
+            _resolve_place_id(birth_place_id) if birth_place_id is not None else self.birth_place_id
         )
 
-        resolved_place: LocationID | SiteID | None = None
-        if birth_place_id is not None:
-            if isinstance(birth_place_id, (LocationID, SiteID)):
-                resolved_place = birth_place_id
-            else:
-                str_bp = str(birth_place_id).strip()
-                resolved_place = SiteID(str_bp) if str_bp.startswith("SID-") else LocationID(str_bp)
-        else:
-            resolved_place = self.birth_place_id
+        if final_date == self.birth_date and final_place == self.birth_place_id:
+            return self
 
         return replace(
             self,
-            birth_date=resolved_date if resolved_date is not None else self.birth_date,
-            birth_place_id=resolved_place,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            birth_date=final_date,
+            birth_place_id=final_place,
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
     def update_death(
         self,
-        death_date: EventDate | EventDateRange | str | None = None,
+        death_date: EventDate | str | dict[str, Any] | None = None,
         death_place_id: LocationID | SiteID | str | None = None,
         is_deceased: bool = True,
     ) -> Self:
         """Return a new immutable copy with updated death event bounds."""
-        resolved_date = (
-            death_date
-            if (death_date is None or isinstance(death_date, (EventDate, EventDateRange)))
-            else EventDate.create(death_date)
+        resolved_date = _resolve_vital_date(death_date)
+        final_date = resolved_date if resolved_date is not None else self.death_date
+        final_place = (
+            _resolve_place_id(death_place_id) if death_place_id is not None else self.death_place_id
         )
 
-        resolved_place: LocationID | SiteID | None = None
-        if death_place_id is not None:
-            if isinstance(death_place_id, (LocationID, SiteID)):
-                resolved_place = death_place_id
-            else:
-                str_dp = str(death_place_id).strip()
-                resolved_place = SiteID(str_dp) if str_dp.startswith("SID-") else LocationID(str_dp)
-        else:
-            resolved_place = self.death_place_id
+        if (
+            final_date == self.death_date
+            and final_place == self.death_place_id
+            and is_deceased == self.is_deceased
+        ):
+            return self
 
         return replace(
             self,
-            death_date=resolved_date if resolved_date is not None else self.death_date,
-            death_place_id=resolved_place,
+            death_date=final_date,
+            death_place_id=final_place,
             is_deceased=is_deceased,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -467,10 +485,12 @@ class Individual(BaseEntity[IndividualID]):
             raise ModelFormatError(
                 f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:ind:<slug>'."
             )
+        if clean_urn == self.canonical_urn:
+            return self
         return replace(
             self,
             canonical_urn=clean_urn,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
             _dirty=True,
         )
 
@@ -483,33 +503,16 @@ class Individual(BaseEntity[IndividualID]):
         tags: list[str] | None = None,
     ) -> Self:
         """Return a new immutable copy with the targeted embedded note updated."""
-        target_str = str(note_id)
-        found = False
-        new_notes: list[Note] = []
-        for n in self.notes:
-            if str(n.note_id) == target_str:
-                found = True
-                updated_n = n
-                if text is not None:
-                    updated_n = updated_n.update_text(text)
-                if title is not None:
-                    updated_n = updated_n.update_title(title)
-                if note_type is not None:
-                    updated_n = updated_n.update_type(note_type)
-                if tags is not None:
-                    updated_n = updated_n.update_tags(tags)
-                new_notes.append(updated_n)
-            else:
-                new_notes.append(n)
-
-        if not found:
-            return self
-        return replace(
-            self,
-            notes=new_notes,
-            audit=self.audit.touch(IsoTimestamp.now_utc()),
-            _dirty=True,
+        updated = super().update_note(
+            note_id=note_id,
+            text=text,
+            title=title,
+            note_type=note_type,
+            tags=tags,
         )
+        if updated is self:
+            return self
+        return replace(updated, _dirty=True)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize Individual entity, domain attributes, and embedded notes to a dictionary."""
@@ -525,6 +528,11 @@ class Individual(BaseEntity[IndividualID]):
             },
             "tombstone": {
                 "is_deprecated": self.tombstone.is_deprecated,
+                "deprecated_at": (
+                    str(self.tombstone.deprecated_at)
+                    if self.tombstone.deprecated_at is not None
+                    else None
+                ),
                 "superseded_by": (
                     str(self.tombstone.superseded_by)
                     if self.tombstone.superseded_by is not None
@@ -562,24 +570,6 @@ class Individual(BaseEntity[IndividualID]):
             else NamePerson.create(raw=str(raw_name))
         )
 
-        b_date_payload = data.get("birth_date")
-        birth_date: EventDate | EventDateRange | None = None
-        if isinstance(b_date_payload, dict):
-            birth_date = (
-                EventDateRange.from_dict(b_date_payload)
-                if "start_date" in b_date_payload
-                else EventDate.from_dict(b_date_payload)
-            )
-
-        d_date_payload = data.get("death_date")
-        death_date: EventDate | EventDateRange | None = None
-        if isinstance(d_date_payload, dict):
-            death_date = (
-                EventDateRange.from_dict(d_date_payload)
-                if "start_date" in d_date_payload
-                else EventDate.from_dict(d_date_payload)
-            )
-
         audit_payload = data.get("audit")
         audit_obj: AuditStamp | None = None
         if isinstance(audit_payload, dict):
@@ -611,16 +601,16 @@ class Individual(BaseEntity[IndividualID]):
         return cls.create(
             individual_id=str(raw_id),
             name=name_obj,
-            canonical_urn=data.get("canonical_urn", ""),
+            canonical_urn=str(data.get("canonical_urn", "")),
             audit=audit_obj,
             tombstone=tombstone_obj,
             notes=notes_list,
             gender=data.get("gender", "U"),
-            birth_date=birth_date,
-            death_date=death_date,
+            birth_date=data.get("birth_date"),
+            death_date=data.get("death_date"),
             birth_place_id=data.get("birth_place_id"),
             death_place_id=data.get("death_place_id"),
-            is_deceased=data.get("is_deceased", True),
+            is_deceased=bool(data.get("is_deceased", True)),
         )
 
     def to_json(self) -> str:
@@ -650,3 +640,9 @@ class Individual(BaseEntity[IndividualID]):
 
         span_str = f" ({', '.join(dates)})" if dates else ""
         return f"{self.full_name} [{self.gender.value}]{span_str} ({self.id.value})"
+
+    def __repr__(self) -> str:
+        return (
+            f"Individual(id={self.id!r}, full_name={self.full_name!r}, "
+            f"gender={self.gender!r}, canonical_urn={self.canonical_urn!r})"
+        )

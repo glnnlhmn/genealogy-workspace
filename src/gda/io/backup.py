@@ -1,27 +1,32 @@
-# Name: backup.py
-# Path: src/gda/io/backup.py
+"""Path: src/gda/io/backup.py
 
-"""Safe Backup Protocol and snapshot lifecycle manager.
+Safe Backup Protocol and snapshot lifecycle manager.
 
 Operational Role:
     Provides pre-mutation snapshot generation, chronological history discovery,
     and atomic snapshot restoration for digital archive files. Enforces zero
     hardcoded folder assumptions by deriving default backup locations relative
     to the target file's parent directory, and guarantees collision-free naming
-    via high-resolution timestamps and monotonic tiebreaker counters.
+    via high-resolution timestamps and monotonic tiebreaker counters. Employs
+    streamed chunked copy buffers to eliminate in-memory file size limits.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
 
 from gda.core.introspectable import IntrospectableMixin
-from gda.io.atomic import AtomicWriter, atomic_write_bytes
+from gda.io.atomic import AtomicWriter, atomic_write_stream
 from gda.io.errors import BackupError
 
-__version__ = "0.1.0+build.r1"
+__version__ = "1.0.0+build.2"
+
+__all__ = [
+    "GDABackupManager",
+]
 
 
 class GDABackupManager(IntrospectableMixin):
@@ -29,6 +34,21 @@ class GDABackupManager(IntrospectableMixin):
 
     BACKUP_EXT: str = ".bk"
     TIMESTAMP_FORMAT: str = "%Y%m%d_%H%M%S"
+    CHUNK_SIZE: int = 64 * 1024
+
+    @classmethod
+    def _stream_file_chunks(cls, file_path: Path) -> Generator[bytes]:
+        """Yield binary chunks of a file without exhausting system memory.
+
+        Args:
+            file_path: Source file path to read in chunks.
+
+        Yields:
+            Byte chunks of length CHUNK_SIZE.
+        """
+        with open(file_path, "rb") as stream:
+            while chunk := stream.read(cls.CHUNK_SIZE):
+                yield chunk
 
     @classmethod
     def resolve_backup_dir(
@@ -90,8 +110,7 @@ class GDABackupManager(IntrospectableMixin):
             counter += 1
 
         try:
-            data = target.read_bytes()
-            atomic_write_bytes(candidate_path, data)
+            atomic_write_stream(candidate_path, cls._stream_file_chunks(target))
         except Exception as err:
             raise BackupError(
                 f"Failed to create backup of '{target}' at '{candidate_path}': {err}"
@@ -104,6 +123,9 @@ class GDABackupManager(IntrospectableMixin):
         cls, target_path: Path | str, backup_dir: Path | str | None = None
     ) -> list[Path]:
         """Discover matching snapshots for a target file sorted chronologically.
+
+        Sorts snapshots newest first using a natural sort key on the timestamp
+        and the subsecond collision counter.
 
         Args:
             target_path: File path whose backups are to be discovered.
@@ -121,17 +143,20 @@ class GDABackupManager(IntrospectableMixin):
             return []
 
         pattern = re.compile(
-            rf"^{re.escape(target.name)}\.\d{{8}}_\d{{6}}(?:_\d+)?{re.escape(cls.BACKUP_EXT)}$"
+            rf"^{re.escape(target.name)}\.(\d{{8}}_\d{{6}})(?:_(\d+))?{re.escape(cls.BACKUP_EXT)}$"
         )
 
-        matches: list[Path] = [
-            child
-            for child in destination.iterdir()
-            if child.is_file() and pattern.match(child.name)
-        ]
+        matches: list[tuple[tuple[str, int], Path]] = []
+        for child in destination.iterdir():
+            if child.is_file():
+                match = pattern.match(child.name)
+                if match:
+                    timestamp_str = match.group(1)
+                    counter = int(match.group(2)) if match.group(2) else 0
+                    matches.append(((timestamp_str, counter), child))
 
-        matches.sort(key=lambda p: (p.name, p.stat().st_mtime), reverse=True)
-        return matches
+        matches.sort(key=lambda item: item[0], reverse=True)
+        return [item[1] for item in matches]
 
     @classmethod
     def restore_backup(cls, backup_path: Path | str, target_path: Path | str) -> Path:
@@ -156,8 +181,7 @@ class GDABackupManager(IntrospectableMixin):
             raise BackupError(f"Cannot restore backup: source '{backup}' is a directory.")
 
         try:
-            data = backup.read_bytes()
-            atomic_write_bytes(target, data)
+            atomic_write_stream(target, cls._stream_file_chunks(backup))
         except Exception as err:
             raise BackupError(
                 f"Failed to restore backup from '{backup}' to '{target}': {err}"
