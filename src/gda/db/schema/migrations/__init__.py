@@ -4,7 +4,7 @@ Migration registry and automated script discovery for GDA DB schema.
 
 Operational Role:
     Aggregates modular versioned DDL migration modules (v001_places through
-    v009_sources_immigration_military) and exports the ordered MIGRATION_REGISTRY.
+    v011_xrefs) and exports the ordered MIGRATION_REGISTRY.
 """
 
 from __future__ import annotations
@@ -21,9 +21,11 @@ from gda.db.schema.migrations import (
     v007_sources_enumerated_publications,
     v008_sources_probate_land,
     v009_sources_immigration_military,
+    v010_sources_education_manuscripts_orgs_other,
+    v011_xrefs,
 )
 
-__version__ = "1.0.0+build.10"
+__version__ = "1.0.0+build.12"
 
 __all__ = [
     "MIGRATION_REGISTRY",
@@ -37,6 +39,8 @@ __all__ = [
     "v007_sources_enumerated_publications",
     "v008_sources_probate_land",
     "v009_sources_immigration_military",
+    "v010_sources_education_manuscripts_orgs_other",
+    "v011_xrefs",
 ]
 
 
@@ -93,5 +97,15 @@ MIGRATION_REGISTRY: list[Migration] = [
         version=v009_sources_immigration_military.VERSION,
         name=v009_sources_immigration_military.NAME,
         up_sql=v009_sources_immigration_military.UP_SQL,
+    ),
+    Migration(
+        version=v010_sources_education_manuscripts_orgs_other.VERSION,
+        name=v010_sources_education_manuscripts_orgs_other.NAME,
+        up_sql=v010_sources_education_manuscripts_orgs_other.UP_SQL,
+    ),
+    Migration(
+        version=v011_xrefs.VERSION,
+        name=v011_xrefs.NAME,
+        up_sql=v011_xrefs.UP_SQL,
     ),
 ]

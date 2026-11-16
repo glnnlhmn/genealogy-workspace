@@ -3,8 +3,8 @@
 Public facade and registry for GDA bidirectional SQLite row mappers.
 
 Operational Role:
-    Aggregates modular entity row mappers (places, organizations, personas,
-    and facts) and exposes the get_mapper() lookup registry.
+    Aggregates modular entity, archival source, and cross-reference row mappers
+    and exposes the get_mapper() lookup registry.
 """
 
 from __future__ import annotations
@@ -17,10 +17,63 @@ from gda.db.mapper.base import (
     _extract_id_str,
     _extract_year_from_text,
 )
+from gda.db.mapper.education_manuscripts_orgs_other import (
+    AcademicCredentialRecordMapper,
+    FamilyBibleRecordMapper,
+    NarrativeManuscriptRecordMapper,
+    OrganizationMembershipRecordMapper,
+    OrganizationRosterRecordMapper,
+    OtherMiscellaneousRecordMapper,
+)
+from gda.db.mapper.enumerated_publications import (
+    DirectoryRollRecordMapper,
+    NewspaperClipRecordMapper,
+    PeriodicalArticleRecordMapper,
+    PopulationScheduleMapper,
+    PublicationMapper,
+    SupplementalScheduleMapper,
+    TaxAssessmentRecordMapper,
+)
 from gda.db.mapper.facts import FactRowMapper
+from gda.db.mapper.immigration_military import (
+    BountyLandWarrantRecordMapper,
+    ImmigrationManifestRecordMapper,
+    MilitaryAwardRecordMapper,
+    MilitaryCasualtyRecordMapper,
+    MilitaryDraftRecordMapper,
+    MilitaryPensionRecordMapper,
+    MilitaryServiceRecordMapper,
+    NaturalizationRecordMapper,
+)
 from gda.db.mapper.organizations import OrganizationRowMapper
 from gda.db.mapper.personas import FamilyRowMapper, IndividualRowMapper
 from gda.db.mapper.places import LocationRowMapper, SiteRowMapper
+from gda.db.mapper.probate_land import (
+    EstateInventoryRecordMapper,
+    LandDeedRecordMapper,
+    LandGrantRecordMapper,
+    ProbateRecordMapper,
+)
+from gda.db.mapper.vital_cemetery import (
+    BaptismRecordMapper,
+    BirthRecordMapper,
+    CemeteryMarkerRecordMapper,
+    CemeteryRegistryRecordMapper,
+    DeathRecordMapper,
+    DivorceRecordMapper,
+    MarriageRecordMapper,
+)
+from gda.db.mapper.xref import (
+    FactParticipantXRefMapper,
+    IndividualFamilyXRefMapper,
+    IndividualOrganizationXRefMapper,
+    IndividualSourceXRefMapper,
+    IndividualSurnameXRefMapper,
+    LocationXRefMapper,
+    MediaXRefMapper,
+    SiteXRefMapper,
+    SurnameXRefMapper,
+)
 from gda.model.entity.fact import Fact
 from gda.model.entity.family import Family
 from gda.model.entity.individual import Individual
@@ -28,16 +81,57 @@ from gda.model.entity.location import Location
 from gda.model.entity.organization import Organization
 from gda.model.entity.site import Site
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.7"
 
 __all__ = [
+    "AcademicCredentialRecordMapper",
+    "BaptismRecordMapper",
     "BaseRowMapper",
+    "BirthRecordMapper",
+    "BountyLandWarrantRecordMapper",
+    "CemeteryMarkerRecordMapper",
+    "CemeteryRegistryRecordMapper",
+    "DeathRecordMapper",
+    "DirectoryRollRecordMapper",
+    "DivorceRecordMapper",
+    "EstateInventoryRecordMapper",
+    "FactParticipantXRefMapper",
     "FactRowMapper",
+    "FamilyBibleRecordMapper",
     "FamilyRowMapper",
+    "ImmigrationManifestRecordMapper",
+    "IndividualFamilyXRefMapper",
+    "IndividualOrganizationXRefMapper",
     "IndividualRowMapper",
+    "IndividualSourceXRefMapper",
+    "IndividualSurnameXRefMapper",
+    "LandDeedRecordMapper",
+    "LandGrantRecordMapper",
     "LocationRowMapper",
+    "LocationXRefMapper",
+    "MarriageRecordMapper",
+    "MediaXRefMapper",
+    "MilitaryAwardRecordMapper",
+    "MilitaryCasualtyRecordMapper",
+    "MilitaryDraftRecordMapper",
+    "MilitaryPensionRecordMapper",
+    "MilitaryServiceRecordMapper",
+    "NarrativeManuscriptRecordMapper",
+    "NaturalizationRecordMapper",
+    "NewspaperClipRecordMapper",
+    "OrganizationMembershipRecordMapper",
+    "OrganizationRosterRecordMapper",
     "OrganizationRowMapper",
+    "OtherMiscellaneousRecordMapper",
+    "PeriodicalArticleRecordMapper",
+    "PopulationScheduleMapper",
+    "ProbateRecordMapper",
+    "PublicationMapper",
     "SiteRowMapper",
+    "SiteXRefMapper",
+    "SupplementalScheduleMapper",
+    "SurnameXRefMapper",
+    "TaxAssessmentRecordMapper",
     "_extract_id_str",
     "_extract_year_from_text",
     "get_mapper",

@@ -26,10 +26,12 @@ from gda.db.schema.migrations import (
     v007_sources_enumerated_publications,
     v008_sources_probate_land,
     v009_sources_immigration_military,
+    v010_sources_education_manuscripts_orgs_other,
+    v011_xrefs,
 )
 from gda.db.session import DatabaseSessionManager
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.7"
 
 
 @pytest.mark.unit
@@ -47,10 +49,12 @@ def test_migrations_dunder_all_and_registry_continuity() -> None:
         "v007_sources_enumerated_publications",
         "v008_sources_probate_land",
         "v009_sources_immigration_military",
+        "v010_sources_education_manuscripts_orgs_other",
+        "v011_xrefs",
     ]
 
     versions = [m.version for m in MIGRATION_REGISTRY]
-    assert versions == [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    assert versions == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
     for mod, expected_ver in (
         (v001_places, 1),
@@ -62,6 +66,8 @@ def test_migrations_dunder_all_and_registry_continuity() -> None:
         (v007_sources_enumerated_publications, 7),
         (v008_sources_probate_land, 8),
         (v009_sources_immigration_military, 9),
+        (v010_sources_education_manuscripts_orgs_other, 10),
+        (v011_xrefs, 11),
     ):
         assert mod.__all__ == ["NAME", "UP_SQL", "VERSION"]
         assert mod.VERSION == expected_ver
@@ -71,13 +77,13 @@ def test_migrations_dunder_all_and_registry_continuity() -> None:
 
 @pytest.mark.integration
 def test_migrations_ddl_creates_expected_tables_and_indexes(tmp_path: Path) -> None:
-    """Verify executing all migrations creates core and archival source tables."""
+    """Verify executing all migrations creates core, source, and xref tables."""
     db_file = tmp_path / "test_migrations.db"
     session = DatabaseSessionManager(db_path=db_file)
     manager = SchemaManager(session_manager=session)
 
     applied = manager.init_db()
-    assert applied == [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    assert applied == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
     with session.get_connection() as conn:
         tables = {
@@ -118,4 +124,19 @@ def test_migrations_ddl_creates_expected_tables_and_indexes(tmp_path: Path) -> N
             "military_bounty_land_warrants",
             "military_casualty_records",
             "military_award_records",
+            "education_credentials",
+            "manuscripts_family_bibles",
+            "manuscripts_narratives",
+            "orgs_memberships",
+            "orgs_rosters",
+            "other_miscellaneous_records",
+            "xref_fact_participants",
+            "xref_individual_families",
+            "xref_individual_organizations",
+            "xref_individual_sources",
+            "xref_individual_surnames",
+            "xref_locations",
+            "xref_media",
+            "xref_sites",
+            "xref_surnames",
         }.issubset(tables)
