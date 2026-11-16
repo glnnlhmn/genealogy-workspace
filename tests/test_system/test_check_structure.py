@@ -22,7 +22,6 @@ from system.util.check_structure import (
     build_tree,
     generate_structure_report,
     main,
-    parse_args,
     resolve_workspace_root,
     run_interactive_menu,
 )
@@ -168,9 +167,7 @@ def test_generate_structure_report_scopes(tmp_path: Path) -> None:
     assert "./tests" not in content_no_tests
 
     # 5. Scope: 'schemas'
-    rep_schemas, count_schemas = generate_structure_report(
-        scope="schemas", workspace_root=tmp_path
-    )
+    rep_schemas, count_schemas = generate_structure_report(scope="schemas", workspace_root=tmp_path)
     assert rep_schemas.name == "GenDeskStructureSchemas.txt"
     assert "./schemas/core.json" in rep_schemas.read_text(encoding="utf-8")
 
@@ -194,9 +191,7 @@ def test_generate_structure_report_nonexistent_domains(tmp_path: Path) -> None:
     empty_workspace = tmp_path / "empty_workspace"
     empty_workspace.mkdir()
 
-    rep1, count1 = generate_structure_report(
-        scope="src-no-tests", workspace_root=empty_workspace
-    )
+    rep1, count1 = generate_structure_report(scope="src-no-tests", workspace_root=empty_workspace)
     assert rep1.name == "GenDeskStructureSrcOnly.txt"
     assert count1 == 0
 

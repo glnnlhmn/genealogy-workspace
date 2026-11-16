@@ -1,23 +1,10 @@
 """Path: src/gda/db/exceptions.py
 
-Database exception hierarchy and error translation contracts for GDA DB.
+Database persistence exception hierarchy for the Genealogy Digital Archive.
 
-Operational Role:
-    Defines the persistence error taxonomy derived from GenealogyDeskError,
-    providing structured error codes, diagnostic metadata serialization, and
-    driver-level translation boundaries for SQLite, Pydantic, and repository tiers.
-
-Classes:
-    DatabaseError: Root exception for all database and persistence layer failures.
-    DatabaseConnectionError: Raised when connection acquisition or lifecycle fails.
-    ConnectionTimeoutError: Raised when database lock contention exceeds timeouts.
-    TransactionError: Raised when transaction execution, commit, or rollback fails.
-    ConstraintViolationError: Raised on relational, unique, or foreign key violations.
-    RecordNotFoundError: Raised when an expected database record cannot be found.
-    SchemaMigrationError: Raised when DDL execution, initialization, or migration fails.
-    DatabaseOperationalError: Raised on driver-level syntax or operational failures.
-    EntityMappingError: Raised when row-to-model or model-to-row deserialization fails.
-    DirtyStateError: Raised when dirty-tracking descriptors or entity states conflict.
+Defines specialized persistence and database error types rooted in the canonical
+GenealogyDeskError hierarchy. Every exception provides a deterministic error_code,
+human-readable message, optional structured details, exit_code, and UTC timestamping.
 """
 
 from __future__ import annotations
@@ -26,165 +13,197 @@ from typing import Any
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
-
-# ==============================================================================
-# SECTION 1: ROOT DATABASE EXCEPTION
-# ==============================================================================
+__all__ = [
+    "ConnectionTimeoutError",
+    "ConstraintViolationError",
+    "DatabaseConnectionError",
+    "DatabaseError",
+    "DatabaseOperationalError",
+    "DirtyStateError",
+    "EntityMappingError",
+    "RecordNotFoundError",
+    "SchemaMigrationError",
+    "TransactionError",
+]
 
 
 class DatabaseError(GenealogyDeskError):
-    """Root base exception for all database engine and persistence layer failures."""
+    """Base exception for all database and persistence operations."""
 
     def __init__(
         self,
         message: str = "An unexpected database error occurred.",
         error_code: str = "ERR_DATABASE",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize DatabaseError.
-
-        Args:
-            message: Human-readable diagnostic description of the failure.
-            error_code: Canonical uppercase error identifier string.
-            details: Optional dictionary carrying contextual diagnostic state.
-        """
-        super().__init__(message=message, error_code=error_code, details=details)
-
-
-# ==============================================================================
-# SECTION 2: CONNECTION & CONCURRENCY EXCEPTIONS
-# ==============================================================================
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class DatabaseConnectionError(DatabaseError):
-    """Raised when establishing, acquiring, or maintaining a database connection fails."""
+    """Raised when a database connection cannot be established or is unexpectedly lost."""
 
     def __init__(
         self,
         message: str = "Failed to establish or maintain database connection.",
         error_code: str = "ERR_DB_CONNECTION",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize DatabaseConnectionError."""
-        super().__init__(message=message, error_code=error_code, details=details)
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class ConnectionTimeoutError(DatabaseConnectionError):
-    """Raised when database connection acquisition times out under lock contention."""
+    """Raised when a database operation exceeds the configured busy timeout under lock contention."""
 
     def __init__(
         self,
-        message: str = "Database connection timed out under lock contention.",
+        message: str = "Database operation timed out under lock contention.",
         error_code: str = "ERR_DB_TIMEOUT",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize ConnectionTimeoutError."""
-        super().__init__(message=message, error_code=error_code, details=details)
-
-
-# ==============================================================================
-# SECTION 3: TRANSACTION & REPOSITORY CONSTRAINTS
-# ==============================================================================
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class TransactionError(DatabaseError):
-    """Raised when a transaction block fails, conflicts, or cannot be finalized."""
+    """Raised when a transaction or savepoint fails to begin, commit, or roll back."""
 
     def __init__(
         self,
-        message: str = "Database transaction failed or was aborted.",
+        message: str = "Database transaction failed.",
         error_code: str = "ERR_DB_TRANSACTION",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize TransactionError."""
-        super().__init__(message=message, error_code=error_code, details=details)
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class ConstraintViolationError(DatabaseError):
-    """Raised when a database unique, foreign key, or check constraint is violated."""
+    """Raised when an INSERT, UPDATE, or DELETE violates UNIQUE, FOREIGN KEY, or CHECK constraints."""
 
     def __init__(
         self,
-        message: str = "Database constraint violation detected.",
+        message: str = "Database integrity constraint violation.",
         error_code: str = "ERR_DB_CONSTRAINT",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize ConstraintViolationError."""
-        super().__init__(message=message, error_code=error_code, details=details)
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class RecordNotFoundError(DatabaseError):
-    """Raised when an expected database record or primary key does not exist."""
+    """Raised when a requested entity record does not exist in the persistence store."""
 
     def __init__(
         self,
         message: str = "Requested database record was not found.",
         error_code: str = "ERR_DB_RECORD_NOT_FOUND",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize RecordNotFoundError."""
-        super().__init__(message=message, error_code=error_code, details=details)
-
-
-# ==============================================================================
-# SECTION 4: SCHEMA, DDL & DRIVER OPERATIONS
-# ==============================================================================
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class SchemaMigrationError(DatabaseError):
-    """Raised when physical schema generation, DDL, or migration runner fails."""
+    """Raised when schema initialization, DDL execution, or version migration fails."""
 
     def __init__(
         self,
-        message: str = "Database schema initialization or migration failed.",
+        message: str = "Database schema migration failed.",
         error_code: str = "ERR_DB_MIGRATION",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize SchemaMigrationError."""
-        super().__init__(message=message, error_code=error_code, details=details)
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class DatabaseOperationalError(DatabaseError):
-    """Raised when low-level driver execution, parameter binding, or SQL syntax fails."""
+    """Raised when the database driver encounters a syntax, table, or I/O operational error."""
 
     def __init__(
         self,
-        message: str = "Database driver operational error occurred.",
+        message: str = "Database driver operational error.",
         error_code: str = "ERR_DB_OPERATIONAL",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize DatabaseOperationalError."""
-        super().__init__(message=message, error_code=error_code, details=details)
-
-
-# ==============================================================================
-# SECTION 5: MODEL MAPPING & PERSISTENCE STATE
-# ==============================================================================
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class EntityMappingError(DatabaseError):
-    """Raised when tabular row data fails deserialization into a domain model."""
+    """Raised when a database row cannot be mapped to or from a domain entity model."""
 
     def __init__(
         self,
-        message: str = "Failed to map database row payload to domain entity model.",
+        message: str = "Failed to map database row to domain entity.",
         error_code: str = "ERR_DB_ENTITY_MAPPING",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize EntityMappingError."""
-        super().__init__(message=message, error_code=error_code, details=details)
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )
 
 
 class DirtyStateError(DatabaseError):
-    """Raised when dirty tracking, version stamp, or uncommitted entity state conflicts."""
+    """Raised when an operation is blocked due to unpersisted dirty state conflicts."""
 
     def __init__(
         self,
-        message: str = "Entity dirty state conflict detected during persistence operation.",
+        message: str = "Operation blocked by unpersisted dirty state conflict.",
         error_code: str = "ERR_DB_DIRTY_STATE",
         details: dict[str, Any] | None = None,
+        exit_code: int = 1,
     ) -> None:
-        """Initialize DirtyStateError."""
-        super().__init__(message=message, error_code=error_code, details=details)
+        super().__init__(
+            message=message,
+            error_code=error_code,
+            details=details,
+            exit_code=exit_code,
+        )

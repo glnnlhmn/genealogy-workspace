@@ -14,7 +14,7 @@ Domain-agnostic foundational infrastructure providing canonical error taxonomies
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `config.py` | `1.0.0+build.14` | Multi-tiered configuration engine for GDA Core components. |
+| `config.py` | `1.0.0+build.15` | Multi-tiered configuration engine for GDA Core components. |
 | `dates.py` | `1.0.0+build.3` | Temporal parsing, ISO-8601 normalization, and date validation routines. |
 | `errors.py` | `1.0.0+build.11` | Exception hierarchy and error contracts for GDA Core. |
 | `hashes.py` | `1.0.0+build.1` | Pure stateless hashing utilities and checksum validators. |

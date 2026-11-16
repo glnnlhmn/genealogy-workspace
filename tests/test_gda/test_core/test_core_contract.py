@@ -39,7 +39,7 @@ from gda.core import (
     ModelRangeError,
 )
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.9"
 
 # ==============================================================================
 # AUTHORITATIVE CONTRACT SPECIFICATION
@@ -256,9 +256,20 @@ def test_config_models_enforce_frozen_and_forbid_extra() -> None:
 @pytest.mark.unit
 def test_config_models_field_names_and_types() -> None:
     """Verify expected field names exist across configuration models (CTR-002)."""
-    assert {"db_path", "busy_timeout", "journal_mode", "foreign_keys", "synchronous"} == set(
-        DatabaseConfig.model_fields.keys()
-    )
+    assert {
+        "engine",
+        "db_name",
+        "db_path",
+        "host",
+        "port",
+        "username",
+        "password",
+        "dsn_override",
+        "busy_timeout",
+        "journal_mode",
+        "foreign_keys",
+        "synchronous",
+    } == set(DatabaseConfig.model_fields.keys())
     assert {
         "level",
         "log_to_console",
@@ -275,10 +286,14 @@ def test_config_models_field_names_and_types() -> None:
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_app_config_derived_property_accessors() -> None:
-    """Verify derived directory property accessors remain declared on AppConfig (CTR-003)."""
-    for prop in ("data_path", "logs_path", "backups_path"):
+    """Verify derived directory and environment property accessors remain declared on AppConfig (CTR-003)."""
+    for prop in ("env_code", "data_path", "logs_path", "backups_path"):
         assert hasattr(AppConfig, prop)
         assert isinstance(getattr(AppConfig, prop), property)
+
+    for db_prop in ("is_in_memory", "resolved_db_name", "connection_string"):
+        assert hasattr(DatabaseConfig, db_prop)
+        assert isinstance(getattr(DatabaseConfig, db_prop), property)
 
 
 # ==============================================================================
@@ -313,7 +328,7 @@ def test_introspectable_mixin_contract() -> None:
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_app_config_load_signature() -> None:
-    """Verify AppConfig.load preserves required classmethod signature and parameter names."""
+    """Verify AppConfig.load and AppConfig.for_environment preserve required classmethod signatures."""
     load_method = getattr(AppConfig, "load", None)
     assert callable(load_method)
     sig = inspect.signature(load_method)
@@ -323,3 +338,7 @@ def test_app_config_load_signature() -> None:
     assert "env_prefix" in params
     assert "env_vars" in params
     assert "overrides" in params
+    assert "env_name" in params
+
+    for_env_method = getattr(AppConfig, "for_environment", None)
+    assert callable(for_env_method)

@@ -4,12 +4,13 @@ Multi-tiered configuration engine for GDA Core components.
 
 Operational Role:
     Defines strongly-typed Pydantic schemas for database, logging, and application
-    configuration. Resolves values across precedence tiers: hardcoded defaults,
-    pyproject.toml, custom TOML configuration files, environment variables,
-    and explicit runtime overrides.
+    configuration. Supports multi-engine database connection strings (SQLite file/memory
+    and client-server RDBMS engines with host, port, username, password, and db_name)
+    and resolves environment-specific database targets (DEV, TEST, STAGING, PROD)
+    from pyproject.toml, custom TOML files, environment variables, and runtime overrides.
 
 Classes:
-    DatabaseConfig: SQLite connection, busy timeout, and PRAGMA settings.
+    DatabaseConfig: Multi-engine connection parameters, credentials, and SQLite PRAGMA settings.
     LoggingConfig: Logging levels, formats, and persistence routing.
     AppConfig: Root application configuration aggregator.
 """
@@ -21,12 +22,13 @@ import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal, Self
+from urllib.parse import quote_plus
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from gda.core.errors import ConfigParseError, ConfigValidationError
 
-__version__ = "1.0.0+build.14"
+__version__ = "1.0.0+build.15"
 
 __all__ = [
     "AppConfig",
@@ -34,6 +36,24 @@ __all__ = [
     "ImmutableBaseModel",
     "LoggingConfig",
 ]
+
+_ENV_ALIAS_TO_CANONICAL: dict[str, Literal["development", "testing", "staging", "production"]] = {
+    "dev": "development",
+    "development": "development",
+    "test": "testing",
+    "testing": "testing",
+    "stage": "staging",
+    "staging": "staging",
+    "prod": "production",
+    "production": "production",
+}
+
+_CANONICAL_TO_ENV_CODE: dict[str, Literal["DEV", "TEST", "STAGING", "PROD"]] = {
+    "development": "DEV",
+    "testing": "TEST",
+    "staging": "STAGING",
+    "production": "PROD",
+}
 
 
 class ImmutableBaseModel(BaseModel):
@@ -43,13 +63,28 @@ class ImmutableBaseModel(BaseModel):
 
 
 class DatabaseConfig(ImmutableBaseModel):
-    """Database connection and PRAGMA configuration parameters."""
+    """Database connection, authentication, and PRAGMA configuration parameters."""
 
+    engine: str = Field(default="sqlite", min_length=1)
+    db_name: str | None = Field(default=None)
     db_path: Path | str = Field(default=Path("data/archive.db"))
+    host: str | None = Field(default=None)
+    port: int | None = Field(default=None, ge=1, le=65535)
+    username: str | None = Field(default=None)
+    password: str | None = Field(default=None)
+    dsn_override: str | None = Field(default=None)
     busy_timeout: int = Field(default=5000, ge=100, le=60000)
     journal_mode: str = Field(default="WAL")
     foreign_keys: bool = Field(default=True)
     synchronous: str = Field(default="NORMAL")
+
+    @field_validator("engine", mode="before")
+    @classmethod
+    def normalize_engine(cls, value: Any) -> str:
+        """Normalize database engine/dialect identifier to lowercase."""
+        if isinstance(value, str) and value.strip():
+            return value.strip().lower()
+        raise ValueError(f"Invalid engine value: {value!r}")
 
     @field_validator("db_path", mode="before")
     @classmethod
@@ -64,17 +99,65 @@ class DatabaseConfig(ImmutableBaseModel):
             return value
         raise ValueError(f"Invalid db_path type: {type(value)}")
 
+    @model_validator(mode="before")
+    @classmethod
+    def synchronize_db_name_and_path(cls, data: Any) -> Any:
+        """Derive db_path from db_name when db_name is given without an explicit db_path."""
+        if isinstance(data, Mapping):
+            mutable = dict(data)
+            if "timeout_seconds" in mutable and "busy_timeout" not in mutable:
+                sec = float(mutable.pop("timeout_seconds"))
+                mutable["busy_timeout"] = int(sec * 1000)
+            else:
+                mutable.pop("timeout_seconds", None)
+
+            db_name_val = mutable.get("db_name")
+            if isinstance(db_name_val, str) and db_name_val.strip() and "db_path" not in mutable:
+                clean_name = db_name_val.strip()
+                if clean_name in (":memory:", "file::memory:"):
+                    mutable["db_path"] = clean_name
+                else:
+                    mutable["db_path"] = Path("data") / clean_name
+            return mutable
+        return data
+
     @property
     def is_in_memory(self) -> bool:
         """Check if target database is an ephemeral in-memory instance."""
         return str(self.db_path) in (":memory:", "file::memory:")
 
     @property
-    def connection_string(self) -> str:
-        """Render SQLite URI connection string."""
+    def resolved_db_name(self) -> str:
+        """Return explicit db_name or derive it from db_path."""
+        if self.db_name and self.db_name.strip():
+            return self.db_name.strip()
         if self.is_in_memory:
-            return "sqlite:///:memory:"
-        return f"sqlite:///{Path(self.db_path).as_posix()}"
+            return ":memory:"
+        return Path(self.db_path).name
+
+    @property
+    def connection_string(self) -> str:
+        """Render URI connection string for SQLite or client-server database engines."""
+        if self.dsn_override and self.dsn_override.strip():
+            return self.dsn_override.strip()
+
+        if self.engine == "sqlite" or self.engine.startswith("sqlite+"):
+            if self.is_in_memory:
+                return f"{self.engine}:///:memory:"
+            return f"{self.engine}:///{Path(self.db_path).as_posix()}"
+
+        auth_segment = ""
+        if self.username:
+            user_enc = quote_plus(self.username)
+            if self.password is not None:
+                pw_enc = quote_plus(self.password)
+                auth_segment = f"{user_enc}:{pw_enc}@"
+            else:
+                auth_segment = f"{user_enc}@"
+
+        host_str = self.host or "localhost"
+        host_segment = f"{host_str}:{self.port}" if self.port is not None else host_str
+        return f"{self.engine}://{auth_segment}{host_segment}/{self.resolved_db_name}"
 
 
 class LoggingConfig(ImmutableBaseModel):
@@ -108,6 +191,16 @@ class AppConfig(ImmutableBaseModel):
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
+    @field_validator("environment", mode="before")
+    @classmethod
+    def normalize_environment(cls, value: Any) -> Any:
+        """Normalize short environment codes (DEV, TEST, STAGING, PROD) to canonical literals."""
+        if isinstance(value, str):
+            mapped = _ENV_ALIAS_TO_CANONICAL.get(value.strip().lower())
+            if mapped is not None:
+                return mapped
+        return value
+
     @field_validator("root_path", mode="before")
     @classmethod
     def validate_root_path(cls, value: Any) -> Path:
@@ -120,6 +213,11 @@ class AppConfig(ImmutableBaseModel):
         if not p.is_dir():
             raise ValueError(f"Root path must be a directory: {p}")
         return p
+
+    @property
+    def env_code(self) -> Literal["DEV", "TEST", "STAGING", "PROD"]:
+        """Return the canonical uppercase environment key (DEV, TEST, STAGING, PROD)."""
+        return _CANONICAL_TO_ENV_CODE[self.environment]
 
     @property
     def data_path(self) -> Path:
@@ -142,12 +240,56 @@ class AppConfig(ImmutableBaseModel):
         self.logs_path.mkdir(parents=True, exist_ok=True)
         self.backups_path.mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
+    def _extract_env_db_settings(
+        environments_table: Mapping[str, Any],
+        target_env: str,
+    ) -> dict[str, Any]:
+        """Extract database settings for a target environment from [tool.gda.environments]."""
+        canonical = _ENV_ALIAS_TO_CANONICAL.get(target_env.strip().lower())
+        env_code = _CANONICAL_TO_ENV_CODE.get(canonical or "", target_env.strip().upper())
+
+        env_entry: Mapping[str, Any] | None = None
+        for candidate in (env_code, env_code.lower(), canonical):
+            if candidate and candidate in environments_table:
+                raw_entry = environments_table[candidate]
+                if isinstance(raw_entry, Mapping):
+                    env_entry = raw_entry
+                    break
+
+        if env_entry is None:
+            return {}
+
+        if isinstance(env_entry.get("database"), Mapping):
+            db_sec = dict(env_entry["database"])
+        else:
+            db_fields = set(DatabaseConfig.model_fields.keys()) | {"timeout_seconds"}
+            db_sec = {k: v for k, v in env_entry.items() if k in db_fields}
+
+        return db_sec
+
+    @classmethod
+    def for_environment(
+        cls,
+        env_name: str,
+        root_path: str | Path | None = None,
+        *,
+        config_path: str | Path | None = None,
+    ) -> Self:
+        """Load AppConfig and resolve [tool.gda.environments.<ENV>] database settings."""
+        return cls.load(
+            config_path=config_path,
+            root_path=root_path,
+            env_name=env_name,
+        )
+
     @classmethod
     def load(
         cls,
         config_path: str | Path | None = None,
         *,
         root_path: str | Path | None = None,
+        env_name: str | None = None,
         env_prefix: str = "GDA_",
         env_vars: Mapping[str, str] | None = None,
         overrides: dict[str, Any] | None = None,
@@ -157,6 +299,8 @@ class AppConfig(ImmutableBaseModel):
         Args:
             config_path: Explicit path to custom TOML config file.
             root_path: Base workspace directory anchor.
+            env_name: Optional target environment ('DEV', 'TEST', 'STAGING', 'PROD')
+                to resolve from [tool.gda.environments.<ENV>].
             env_prefix: Prefix for environment variable overrides.
             env_vars: Optional mapping of environment variables (defaults to os.environ).
             overrides: Direct runtime override dictionary.
@@ -170,6 +314,7 @@ class AppConfig(ImmutableBaseModel):
         """
         payload: dict[str, Any] = {}
         active_env = os.environ if env_vars is None else env_vars
+        environments_table: Mapping[str, Any] = {}
 
         if root_path is not None:
             payload["root_path"] = root_path
@@ -185,6 +330,8 @@ class AppConfig(ImmutableBaseModel):
                     error_code="ERR_CONFIG_FILE_NOT_FOUND",
                     details={"path": str(file_to_load)},
                 )
+            if file_to_load.name == "pyproject.toml":
+                is_pyproject = True
         elif "GDA_CONFIG_PATH" in active_env:
             env_cfg = Path(active_env["GDA_CONFIG_PATH"])
             if not env_cfg.exists():
@@ -194,6 +341,8 @@ class AppConfig(ImmutableBaseModel):
                     details={"path": str(env_cfg)},
                 )
             file_to_load = env_cfg
+            if file_to_load.name == "pyproject.toml":
+                is_pyproject = True
         else:
             base = Path(root_path) if root_path else Path.cwd()
             dedicated_cfg = base / "gda_config.toml"
@@ -209,19 +358,39 @@ class AppConfig(ImmutableBaseModel):
             try:
                 with open(file_to_load, "rb") as fh:
                     raw_toml = tomllib.load(fh)
-                if is_pyproject:
+                if is_pyproject or "tool" in raw_toml:
                     gda_section = raw_toml.get("tool", {}).get("gda", {})
+                    if isinstance(gda_section.get("environments"), Mapping):
+                        environments_table = gda_section["environments"]
                     valid_keys = cls.model_fields.keys()
                     filtered = {k: v for k, v in gda_section.items() if k in valid_keys}
                     payload.update(filtered)
                 else:
-                    payload.update(raw_toml)
+                    if isinstance(raw_toml.get("environments"), Mapping):
+                        environments_table = dict(raw_toml["environments"])
+                    raw_copy = {k: v for k, v in raw_toml.items() if k != "environments"}
+                    payload.update(raw_copy)
             except tomllib.TOMLDecodeError as err:
                 raise ConfigParseError(
                     f"Malformed TOML syntax in {file_to_load}: {err}",
                     error_code="ERR_CONFIG_TOML_PARSE",
                     details={"path": str(file_to_load), "syntax_error": str(err)},
                 ) from err
+
+        if env_name is not None:
+            payload["environment"] = env_name
+
+        # Resolve [tool.gda.environments.<ENV>] when env_name is explicitly requested
+        # or when [tool.gda.database] was not explicitly set in pyproject.toml
+        if environments_table and (env_name is not None or "database" in environments_table):
+            target_env = str(env_name or payload.get("environment", "development"))
+            env_db = cls._extract_env_db_settings(environments_table, target_env)
+            if env_db:
+                base_db = payload.get("database")
+                if isinstance(base_db, Mapping):
+                    payload["database"] = {**base_db, **env_db}
+                else:
+                    payload["database"] = env_db
 
         prefix_len = len(env_prefix)
         for env_key, env_val in active_env.items():

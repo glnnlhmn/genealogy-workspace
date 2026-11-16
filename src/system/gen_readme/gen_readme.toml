@@ -1,7 +1,7 @@
 # Path: src/system/gen_readme/gen_readme.toml
 # Authoritative package documentation registry for gen_readme.py
-# Scoped to audited foundation, domain model, and entity collection packages:
-# gda.core, gda.io, gda.util, gda.model, and gda.entity
+# Scoped to audited foundation, domain model, entity collection, and database packages:
+# gda.core, gda.io, gda.util, gda.model, gda.entity, and gda.db
 
 default_root = "."
 
@@ -294,9 +294,41 @@ role = "Top-level package facade uniting the six in-memory domain entity collect
 test_path = "tests/test_gda/test_entity"
 quality_gate = "100.0% Statement & Branch Coverage"
 
+# ==============================================================================
+# 5. Database Persistence, Schema Migrations & Row Mappers (src/gda/db)
+# ==============================================================================
+
+[[packages]]
+path = "src/gda/db/schema/migrations"
+title = "Modular Analytical SQLite DDL Migration Registry (src/gda/db/schema/migrations)"
+role = "Versioned SQLite DDL migration scripts (v001_places through v005_indexes) provisioning flattened analytical entity tables, relational foreign keys, and B-Tree performance indexes."
+test_path = "tests/test_gda/test_db/test_schema"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/db/schema"
+title = "Schema Migration Coordinator & DDL Engine (src/gda/db/schema)"
+role = "Governs SQLite schema version discovery, idempotent migration execution, and atomic DDL bootstrap via SchemaManager."
+test_path = "tests/test_gda/test_db/test_schema"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/db/mapper"
+title = "Bidirectional Analytical Entity Row Mappers (src/gda/db/mapper)"
+role = "Lossless bidirectional relational row-to-model mappers translating the six core domain entities (Location, Site, Organization, Individual, Family, Fact) to and from flattened SQLite rows."
+test_path = "tests/test_gda/test_db/test_mapper"
+quality_gate = "100.0% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gda/db"
+title = "Database Persistence, Session Lifecycle & Mapping Layer (src/gda/db)"
+role = "SQLite persistence foundation uniting DatabaseSessionManager (WAL mode, foreign keys, atomic transactions, nested savepoints), SchemaManager, modular analytical DDL migrations, bidirectional entity RowMappers, and the DatabaseError hierarchy."
+test_path = "tests/test_gda/test_db"
+quality_gate = "100.0% Statement & Branch Coverage"
+
 [[packages]]
 path = "src/gda"
 title = "Genealogy Digital Archive Framework (src/gda)"
-role = "Top-level shared domain framework uniting core primitives, controlled enumerations, atomic/Safe-Backup I/O, helper utilities, the five-pillar domain model suite, and in-memory domain entity collection managers."
+role = "Top-level shared domain framework uniting core primitives, controlled enumerations, atomic/Safe-Backup I/O, helper utilities, the five-pillar domain model suite, in-memory domain entity collection managers, and the SQLite analytical database layer."
 test_path = "tests/test_gda"
 quality_gate = "100.0% Statement & Branch Coverage"

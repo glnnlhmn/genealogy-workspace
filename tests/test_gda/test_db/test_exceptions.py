@@ -3,13 +3,15 @@
 Behavioral contract and verification test suite for database exception hierarchy.
 
 Validates default messages, error code taxonomies, structured detail dictionaries,
-inheritance relationships, and JSON-compatible serialization contracts.
+exit codes, inheritance relationships, __all__ export surface, and JSON-compatible
+serialization contracts.
 """
 
 from __future__ import annotations
 
 import pytest
 
+import gda.db.exceptions as db_exc_mod
 from gda.core.errors import GenealogyDeskError
 from gda.db.exceptions import (
     ConnectionTimeoutError,
@@ -24,13 +26,31 @@ from gda.db.exceptions import (
     TransactionError,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 # ==============================================================================
 # GROUP 1: INHERITANCE HIERARCHY & ROOT CONTRACTS
-# Note: Verify all specialized database errors derive from GenealogyDeskError
 # ==============================================================================
+
+
+@pytest.mark.unit
+def test_database_exceptions_dunder_all_contract() -> None:
+    """Verify gda.db.exceptions.__all__ is sorted and exports all 10 exception classes."""
+    expected = [
+        "ConnectionTimeoutError",
+        "ConstraintViolationError",
+        "DatabaseConnectionError",
+        "DatabaseError",
+        "DatabaseOperationalError",
+        "DirtyStateError",
+        "EntityMappingError",
+        "RecordNotFoundError",
+        "SchemaMigrationError",
+        "TransactionError",
+    ]
+    assert db_exc_mod.__all__ == expected
+    assert db_exc_mod.__all__ == sorted(db_exc_mod.__all__)
 
 
 @pytest.mark.unit
@@ -68,7 +88,6 @@ def test_database_exceptions_subclass_relationships(
 
 # ==============================================================================
 # GROUP 2: DEFAULT MESSAGES & CANONICAL ERROR CODES
-# Note: Verify default zero-argument instantiation across all exception classes
 # ==============================================================================
 
 
@@ -99,67 +118,88 @@ def test_database_exceptions_default_instantiation(
     assert expected_message_fragment in err.message
     assert str(err) == err.message
     assert err.details == {}
+    assert err.exit_code == 1
     assert err.timestamp.endswith("Z")
 
 
 # ==============================================================================
 # GROUP 3: CUSTOM PAYLOADS & CONTEXTUAL DETAILS
-# Note: Verify custom messages, diagnostic details, and caller error code overrides
 # ==============================================================================
 
 
 @pytest.mark.regression
 def test_database_error_custom_parameters_binding() -> None:
-    """Verify callers can pass custom diagnostic messages, error codes, and details."""
+    """Verify callers can pass custom diagnostic messages, error codes, details, and exit_code."""
     custom_msg = "Corrupted header on database partition"
     custom_code = "ERR_DB_CORRUPTED_PARTITION"
     custom_details = {"partition": "main", "sector": 4096}
 
-    err = DatabaseError(message=custom_msg, error_code=custom_code, details=custom_details)
+    err = DatabaseError(
+        message=custom_msg,
+        error_code=custom_code,
+        details=custom_details,
+        exit_code=2,
+    )
 
     assert err.message == custom_msg
     assert err.error_code == custom_code
     assert err.details == custom_details
+    assert err.exit_code == 2
     assert str(err) == custom_msg
 
 
 @pytest.mark.regression
 def test_constraint_violation_error_contextual_details() -> None:
-    """Verify ConstraintViolationError accepts structured relational violation details."""
-    details = {
-        "table": "facts",
-        "constraint": "fk_facts_individual_id",
-        "rejected_id": "IND-9999",
-    }
+    """Verify ConstraintViolationError accepts table and column violation metadata."""
+    details = {"table": "locations", "column": "canonical_urn", "value": "urn:gda:loc:us"}
     err = ConstraintViolationError(
-        message="Foreign key constraint failure on facts table.",
+        message="Duplicate canonical_urn encountered.",
         details=details,
     )
 
     assert err.error_code == "ERR_DB_CONSTRAINT"
-    assert err.details["table"] == "facts"
-    assert err.details["rejected_id"] == "IND-9999"
+    assert err.details["table"] == "locations"
+    assert err.details["column"] == "canonical_urn"
 
 
 # ==============================================================================
-# GROUP 4: SERIALIZATION & AUDIT CONTRACT (to_dict)
-# Note: Verify serialized dictionary adheres strictly to system contract
+# GROUP 4: SERIALIZATION & LOGGING PAYLOAD CONTRACTS
 # ==============================================================================
 
 
 @pytest.mark.unit
-def test_database_exception_serialization_to_dict() -> None:
-    """Verify to_dict returns compliant dictionary payload matching core error schema."""
-    details = {"table": "individuals", "primary_key": "IND-0001"}
-    err = RecordNotFoundError(
-        message="Individual IND-0001 does not exist.",
-        details=details,
-    )
-
+@pytest.mark.parametrize(
+    "exception_cls",
+    [
+        DatabaseError,
+        DatabaseConnectionError,
+        ConnectionTimeoutError,
+        TransactionError,
+        ConstraintViolationError,
+        RecordNotFoundError,
+        SchemaMigrationError,
+        DatabaseOperationalError,
+        EntityMappingError,
+        DirtyStateError,
+    ],
+)
+def test_database_exceptions_to_dict_contract(
+    exception_cls: type[DatabaseError],
+) -> None:
+    """Verify to_dict() returns a structured dictionary suitable for JSON logging."""
+    err = exception_cls(details={"attempt": 1})
     payload = err.to_dict()
 
-    assert payload["error_code"] == "ERR_DB_RECORD_NOT_FOUND"
-    assert payload["message"] == "Individual IND-0001 does not exist."
-    assert payload["details"] == details
-    assert isinstance(payload["timestamp"], str)
-    assert payload["timestamp"].endswith("Z")
+    assert isinstance(payload, dict)
+    assert set(payload.keys()) == {
+        "error_code",
+        "message",
+        "details",
+        "timestamp",
+        "exit_code",
+    }
+    assert payload["error_code"] == err.error_code
+    assert payload["message"] == err.message
+    assert payload["details"] == {"attempt": 1}
+    assert payload["timestamp"] == err.timestamp
+    assert payload["exit_code"] == 1

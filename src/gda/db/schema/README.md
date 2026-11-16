@@ -1,23 +1,23 @@
-# Database Relational DDL & Migrations (src/gda/db/schema)
+# Schema Migration Coordinator & DDL Engine (src/gda/db/schema)
 
 ## Architectural Role
-Versioned SQLite schema migration runners, table definitions, index initializers, and schema lifecycle managers.
+Governs SQLite schema version discovery, idempotent migration execution, and atomic DDL bootstrap via SchemaManager.
 
 ## Quality Gate & Verification Status
-- **Quality Gate:** >= 95.0% Statement & Branch Coverage
-- **Verification Suite:** `tests/test_gda/test_db/`
+- **Quality Gate:** 100.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_gda/test_db/test_schema/`
 - **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
 ## Subpackages
-- **`migrations/`**: Migration registry and automated script discovery for GDA DB schema.
+- **[migrations/](migrations/README.md)**: Migration registry and automated script discovery for GDA DB schema.
 
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `manager.py` | `1.0.0+build.4` | Schema migration engine and DDL execution coordinator for GDA DB. |
+| `manager.py` | `1.0.0+build.5` | Schema migration engine and DDL execution coordinator for GDA DB. |
 
 ## Public Exports & Consumption Contract
 Exports: `MIGRATION_REGISTRY`, `Migration`, `SchemaManager`.
 
 ---
-Generated dynamically by `src/system/gen_readme.py`.
+Generated dynamically by `src/system/gen_readme/gen_readme.py`.
