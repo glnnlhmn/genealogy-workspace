@@ -4,7 +4,7 @@ Unit and integration test suite for create_dev_database utility.
 
 Operational Role:
     Verifies pyproject.toml environment resolution via AppConfig.for_environment(),
-    end-to-end SQLite database initialization across v001..v005 migrations,
+    end-to-end SQLite database initialization across all registered migrations,
     --reset file recreation, WAL pragma configuration, missing file/key error
     boundaries, and CLI argument parsing achieving 100.00% statement and branch coverage.
 """
@@ -22,13 +22,14 @@ import pytest
 
 import system.gen_db as gen_db_pkg
 import system.gen_db.create_dev_database as create_db_mod
+from gda.db.schema.migrations import MIGRATION_REGISTRY
 from system.gen_db.create_dev_database import (
     create_environment_database,
     main,
     parse_args,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 
 # ==============================================================================
@@ -66,10 +67,13 @@ timeout_seconds = 15.0
     assert db_path == (tmp_path / "data" / "db" / "gda_dev.db").resolve()
     assert db_path.exists()
 
+    expected_versions = [m.version for m in MIGRATION_REGISTRY]
+    latest_version = expected_versions[-1]
+
     captured = capsys.readouterr()
     assert "[DEV] Successfully initialized" in captured.out
-    assert "[1, 2, 3, 4, 5]" in captured.out
-    assert "schema version: v5" in captured.out
+    assert f"{expected_versions}" in captured.out
+    assert f"schema version: v{latest_version}" in captured.out
 
     # Verify all 6 core entity tables exist and explicitly close the handle for Windows
     with closing(sqlite3.connect(db_path)) as conn:
@@ -77,15 +81,15 @@ timeout_seconds = 15.0
             r[0]
             for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
         }
-        assert {
-            "schema_migrations",
-            "locations",
-            "sites",
-            "organizations",
-            "individuals",
-            "families",
-            "facts",
-        }.issubset(tables)
+    assert {
+        "schema_migrations",
+        "locations",
+        "sites",
+        "organizations",
+        "individuals",
+        "families",
+        "facts",
+    }.issubset(tables)
 
     # Create a dummy -wal sidecar and re-run with reset=True to verify clean recreation
     wal_sidecar = Path(f"{db_path}-wal")

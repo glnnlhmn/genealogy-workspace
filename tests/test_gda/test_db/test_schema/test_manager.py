@@ -18,10 +18,10 @@ import pytest
 import gda.db.schema.manager as manager_mod
 from gda.db.exceptions import DatabaseOperationalError
 from gda.db.schema.manager import SchemaManager
-from gda.db.schema.migrations import Migration
+from gda.db.schema.migrations import MIGRATION_REGISTRY, Migration
 from gda.db.session import DatabaseSessionManager
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 @pytest.mark.unit
@@ -46,18 +46,21 @@ def test_schema_manager_dunder_all_and_initialization() -> None:
 
 @pytest.mark.integration
 def test_schema_manager_migrate_and_idempotency(tmp_path: Path) -> None:
-    """Verify init_db and migrate apply all 5 migrations once and skip on re-run."""
+    """Verify init_db and migrate apply all registered migrations once and skip on re-run."""
     db_file = tmp_path / "manager_migrate.db"
     session = DatabaseSessionManager(db_path=db_file)
     manager = SchemaManager(session_manager=session)
 
+    expected_versions = [m.version for m in MIGRATION_REGISTRY]
+    latest_version = expected_versions[-1]
+
     applied_first = manager.init_db()
-    assert applied_first == [1, 2, 3, 4, 5]
-    assert manager.get_current_version() == 5
+    assert applied_first == expected_versions
+    assert manager.get_current_version() == latest_version
 
     applied_second = manager.migrate()
     assert applied_second == []
-    assert manager.get_current_version() == 5
+    assert manager.get_current_version() == latest_version
 
 
 @pytest.mark.regression
@@ -82,4 +85,4 @@ def test_schema_manager_migration_failure_raises_operational_error(
         assert "Migration 99 ('bad_migration') failed" in exc_info.value.message
         assert exc_info.value.details["version"] == 99
 
-    assert manager.get_current_version() == 0
+        assert manager.get_current_version() == 0

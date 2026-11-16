@@ -25,6 +25,8 @@ from gda.db.schema.migrations import (
     v003_personas,
     v004_facts,
     v005_indexes,
+    v006_sources_vital_cemetery,
+    v007_sources_enumerated_publications,
 )
 from gda.db.session import DatabaseSessionManager
 
@@ -42,9 +44,11 @@ def test_migrations_package_and_module_exports() -> None:
         "v003_personas",
         "v004_facts",
         "v005_indexes",
+        "v006_sources_vital_cemetery",
+        "v007_sources_enumerated_publications",
     ]
     assert migrations_pkg.__all__ == sorted(migrations_pkg.__all__)
-    assert [m.version for m in MIGRATION_REGISTRY] == [1, 2, 3, 4, 5]
+    assert [m.version for m in MIGRATION_REGISTRY] == [1, 2, 3, 4, 5, 6, 7]
 
     for mod, expected_ver in (
         (v001_places, 1),
@@ -52,6 +56,8 @@ def test_migrations_package_and_module_exports() -> None:
         (v003_personas, 3),
         (v004_facts, 4),
         (v005_indexes, 5),
+        (v006_sources_vital_cemetery, 6),
+        (v007_sources_enumerated_publications, 7),
     ):
         assert mod.__all__ == ["NAME", "UP_SQL", "VERSION"]
         assert mod.VERSION == expected_ver
@@ -85,6 +91,20 @@ def test_migrations_provision_flattened_analytical_columns_and_indexes(
                 "individuals",
                 "families",
                 "facts",
+                "vital_baptisms",
+                "vital_births",
+                "vital_deaths",
+                "vital_divorces",
+                "vital_marriages",
+                "cemetery_markers",
+                "cemetery_registries",
+                "enumerated_population_schedules",
+                "enumerated_supplemental_schedules",
+                "enumerated_directories",
+                "enumerated_tax_assessments",
+                "publications_catalog",
+                "publications_newspaper_clips",
+                "publications_periodical_articles",
             }
 
             loc_cols = {
