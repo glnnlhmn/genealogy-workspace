@@ -11,20 +11,21 @@ from __future__ import annotations
 
 import pytest
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.core import AssociatedRole, FactType
 from gda.engine.fact_resolver import FactParticipantResolver
-from gda.enums.core import AssociatedRole, FactType
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FactID, IndividualID
 from gda.model.base.audit import AuditStamp
 from gda.model.entity.fact import Fact, FactParticipant
 from gda.model.xref.fact_participant_xref import FactParticipantXRef
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 def _make_audit() -> AuditStamp:
     """Helper creating a valid AuditStamp."""
-    now = IsoTimestamp.now_utc()
+    now = IsoTimestamp(utc_now_iso())
     return AuditStamp(created_at=now, updated_at=now)
 
 
@@ -56,12 +57,13 @@ def test_resolver_from_facts_smoke() -> None:
     audit = _make_audit()
     ind_witness = IndividualID("IND-000002")
     subject = IndividualID("IND-000001")
-    fact = Fact(
-        id=FactID("FID-000001"),
+    fact = Fact.create(
+        fact_id=FactID("FID-000001"),
         canonical_urn="urn:gda:fact:marriage_event",
         fact_type=FactType.MARRIAGE,
         title="Marriage Ceremony",
         primary_subject_id=subject,
+        date="1865-06-15",
         participants=[FactParticipant(individual_id=ind_witness, role=AssociatedRole.WITNESS)],
         audit=audit,
     )
@@ -76,13 +78,11 @@ def test_resolver_from_facts_smoke() -> None:
 def test_resolver_from_xrefs() -> None:
     """Verify bulk instantiation from an iterable of FactParticipantXRef edges."""
     witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
     fact = FactID("FID-000001")
-    edge = FactParticipantXRef(
-        xref_id="E1",
-        associated_ind_id=witness,
+    edge = FactParticipantXRef.create(
         fact_id=fact,
-        primary_subject_id=subject,
+        individual_id=witness,
+        fact_type=FactType.BIRTH,
         role=AssociatedRole.INFORMANT,
     )
 
@@ -101,26 +101,23 @@ def test_resolver_from_xrefs() -> None:
 def test_get_facts_as_participant_all_and_filtered_by_role() -> None:
     """Verify querying facts with and without specific AssociatedRole filters."""
     witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
     f1 = FactID("FID-000001")
     f2 = FactID("FID-000002")
 
     resolver = FactParticipantResolver()
     resolver.add_xref(
-        FactParticipantXRef(
-            xref_id="E1",
-            associated_ind_id=witness,
+        FactParticipantXRef.create(
             fact_id=f1,
-            primary_subject_id=subject,
+            individual_id=witness,
+            fact_type=FactType.MARRIAGE,
             role=AssociatedRole.WITNESS,
         )
     )
     resolver.add_xref(
-        FactParticipantXRef(
-            xref_id="E2",
-            associated_ind_id=witness,
+        FactParticipantXRef.create(
             fact_id=f2,
-            primary_subject_id=subject,
+            individual_id=witness,
+            fact_type=FactType.DEATH,
             role=AssociatedRole.INFORMANT,
         )
     )
@@ -135,23 +132,20 @@ def test_get_facts_as_participant_all_and_filtered_by_role() -> None:
 def test_get_roles_for_individual() -> None:
     """Verify returning all unique roles an individual served in."""
     witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
     resolver = FactParticipantResolver()
     resolver.add_xref(
-        FactParticipantXRef(
-            xref_id="E1",
-            associated_ind_id=witness,
+        FactParticipantXRef.create(
             fact_id=FactID("FID-000001"),
-            primary_subject_id=subject,
+            individual_id=witness,
+            fact_type=FactType.MARRIAGE,
             role=AssociatedRole.WITNESS,
         )
     )
     resolver.add_xref(
-        FactParticipantXRef(
-            xref_id="E2",
-            associated_ind_id=witness,
+        FactParticipantXRef.create(
             fact_id=FactID("FID-000002"),
-            primary_subject_id=subject,
+            individual_id=witness,
+            fact_type=FactType.DEATH,
             role=AssociatedRole.INFORMANT,
         )
     )
@@ -175,32 +169,20 @@ def test_traversal_fallbacks_unlinked() -> None:
 
 @pytest.mark.regression
 def test_add_duplicate_xref_idempotent() -> None:
-    """Verify re-adding an edge with the same xref_id or participant entry is idempotent."""
+    """Verify re-adding an edge with the same xref_key is idempotent."""
     witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
     fact = FactID("FID-000001")
-    edge1 = FactParticipantXRef(
-        xref_id="E1",
-        associated_ind_id=witness,
+    edge1 = FactParticipantXRef.create(
         fact_id=fact,
-        primary_subject_id=subject,
-        role=AssociatedRole.WITNESS,
-    )
-    edge2 = FactParticipantXRef(
-        xref_id="E2",
-        associated_ind_id=witness,
-        fact_id=fact,
-        primary_subject_id=subject,
+        individual_id=witness,
+        fact_type=FactType.MARRIAGE,
         role=AssociatedRole.WITNESS,
     )
 
     resolver = FactParticipantResolver()
     resolver.add_xref(edge1)
-    resolver.add_xref(edge1)  # Exact edge idempotency
+    resolver.add_xref(edge1)
     assert resolver.edge_count == 1
-
-    resolver.add_xref(edge2)  # Duplicate entry deduplication in _fact_to_participants
-    assert resolver.edge_count == 2
     assert len(resolver.get_participants_for_fact(fact)) == 1
 
 
@@ -214,25 +196,22 @@ def test_evict_individual_purges_all_references() -> None:
     """Verify evicting an individual safely purges participation maps and fact links."""
     witness1 = IndividualID("IND-000002")
     witness2 = IndividualID("IND-000003")
-    subject = IndividualID("IND-000001")
     fact = FactID("FID-000001")
 
     resolver = FactParticipantResolver()
     resolver.add_xref(
-        FactParticipantXRef(
-            xref_id="E1",
-            associated_ind_id=witness1,
+        FactParticipantXRef.create(
             fact_id=fact,
-            primary_subject_id=subject,
+            individual_id=witness1,
+            fact_type=FactType.MARRIAGE,
             role=AssociatedRole.WITNESS,
         )
     )
     resolver.add_xref(
-        FactParticipantXRef(
-            xref_id="E2",
-            associated_ind_id=witness2,
+        FactParticipantXRef.create(
             fact_id=fact,
-            primary_subject_id=subject,
+            individual_id=witness2,
+            fact_type=FactType.MARRIAGE,
             role=AssociatedRole.INFORMANT,
         )
     )
@@ -248,16 +227,14 @@ def test_evict_individual_purges_all_references() -> None:
 def test_evict_fact_purges_all_references() -> None:
     """Verify evicting a fact purges participant mappings for associated individuals."""
     witness = IndividualID("IND-000002")
-    subject = IndividualID("IND-000001")
     fact = FactID("FID-000001")
 
     resolver = FactParticipantResolver()
     resolver.add_xref(
-        FactParticipantXRef(
-            xref_id="E1",
-            associated_ind_id=witness,
+        FactParticipantXRef.create(
             fact_id=fact,
-            primary_subject_id=subject,
+            individual_id=witness,
+            fact_type=FactType.MARRIAGE,
             role=AssociatedRole.WITNESS,
         )
     )

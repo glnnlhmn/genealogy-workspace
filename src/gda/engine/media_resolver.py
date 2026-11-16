@@ -5,7 +5,7 @@ Active in-memory media graph indexer and bidirectional resolver.
 Operational Role:
     Provides in-memory graph resolution infrastructure for digital media assets.
     'MediaXRefResolver' manages bidirectional mappings between domain entities
-    and media UUIDs, enabling O(1) lookups, dynamic indexing, and safe evictions.
+    and MediaIDs, enabling O(1) lookups, dynamic indexing, and safe evictions.
 """
 
 from __future__ import annotations
@@ -14,17 +14,25 @@ from collections import defaultdict
 from collections.abc import Iterable
 from uuid import UUID
 
+from gda.core.dates import utc_now_iso
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
 from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.id import AtomID
-from gda.model.xref.media_xref import MediaXRef
+from gda.model.atom.id import MediaID
+from gda.model.xref.media_xref import MediaTargetID, MediaXRef
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = ["MediaXRefResolver"]
 
 _logger = GDALogger(__name__)
+
+
+def _normalize_media_id(media_id: MediaID | UUID | str) -> MediaID:
+    """Coerce MediaID, UUID, or string into a canonical MediaID."""
+    if isinstance(media_id, MediaID):
+        return media_id
+    return MediaID(str(media_id).strip().lower())
 
 
 class MediaXRefResolver(IntrospectableMixin):
@@ -32,11 +40,11 @@ class MediaXRefResolver(IntrospectableMixin):
 
     def __init__(self) -> None:
         """Initialize empty graph index tables and compilation timestamp."""
-        self._last_compiled: IsoTimestamp = IsoTimestamp.now_utc()
-        self._edges: dict[UUID, MediaXRef] = {}
+        self._last_compiled: IsoTimestamp = IsoTimestamp(utc_now_iso())
+        self._edges: dict[str, MediaXRef] = {}
 
-        self._entity_to_media: dict[AtomID, set[UUID]] = defaultdict(set)
-        self._media_to_entities: dict[UUID, set[AtomID]] = defaultdict(set)
+        self._entity_to_media: dict[MediaTargetID, set[MediaID]] = defaultdict(set)
+        self._media_to_entities: dict[MediaID, set[MediaTargetID]] = defaultdict(set)
 
     @property
     def last_compiled(self) -> IsoTimestamp:
@@ -50,7 +58,7 @@ class MediaXRefResolver(IntrospectableMixin):
 
     def _mark_updated(self) -> None:
         """Advance the index compilation timestamp."""
-        self._last_compiled = IsoTimestamp.now_utc()
+        self._last_compiled = IsoTimestamp(utc_now_iso())
 
     @classmethod
     def from_xrefs(cls, xrefs: Iterable[MediaXRef]) -> MediaXRefResolver:
@@ -62,18 +70,19 @@ class MediaXRefResolver(IntrospectableMixin):
 
     def add_xref(self, edge: MediaXRef) -> None:
         """Add a single pre-formed MediaXRef edge into index tables."""
-        if edge.xref_id in self._edges:
+        key = edge.xref_key
+        if key in self._edges:
             return
 
-        self._edges[edge.xref_id] = edge
-        self._entity_to_media[edge.entity_id].add(edge.media_id)
-        self._media_to_entities[edge.media_id].add(edge.entity_id)
+        self._edges[key] = edge
+        self._entity_to_media[edge.target_id].add(edge.media_id)
+        self._media_to_entities[edge.media_id].add(edge.target_id)
 
         self._mark_updated()
 
-    def evict_entity(self, entity_id: AtomID) -> None:
+    def evict_entity(self, entity_id: MediaTargetID) -> None:
         """Safely remove all media cross-reference edges and index mappings for an entity."""
-        keys_to_delete = [k for k, edge in self._edges.items() if edge.entity_id == entity_id]
+        keys_to_delete = [k for k, edge in self._edges.items() if edge.target_id == entity_id]
 
         if not keys_to_delete:
             return
@@ -87,9 +96,10 @@ class MediaXRefResolver(IntrospectableMixin):
 
         self._mark_updated()
 
-    def evict_media(self, media_id: UUID) -> None:
+    def evict_media(self, media_id: MediaID | UUID | str) -> None:
         """Safely remove all cross-reference edges and index mappings for a media asset."""
-        keys_to_delete = [k for k, edge in self._edges.items() if edge.media_id == media_id]
+        norm_mid = _normalize_media_id(media_id)
+        keys_to_delete = [k for k, edge in self._edges.items() if edge.media_id == norm_mid]
 
         if not keys_to_delete:
             return
@@ -97,19 +107,20 @@ class MediaXRefResolver(IntrospectableMixin):
         for k in keys_to_delete:
             del self._edges[k]
 
-        associated_entities = self._media_to_entities.pop(media_id, set())
+        associated_entities = self._media_to_entities.pop(norm_mid, set())
         for eid in associated_entities:
-            self._entity_to_media[eid].discard(media_id)
+            self._entity_to_media[eid].discard(norm_mid)
 
         self._mark_updated()
 
-    def get_media_for_entity(self, entity_id: AtomID) -> tuple[UUID, ...]:
+    def get_media_for_entity(self, entity_id: MediaTargetID) -> tuple[MediaID, ...]:
         """Return tuple of all MediaIDs attached to a domain entity."""
         return tuple(sorted(self._entity_to_media.get(entity_id, set())))
 
-    def get_entities_for_media(self, media_id: UUID) -> tuple[AtomID, ...]:
+    def get_entities_for_media(self, media_id: MediaID | UUID | str) -> tuple[MediaTargetID, ...]:
         """Return tuple of all entity identifiers linked to a media asset."""
-        return tuple(sorted(self._media_to_entities.get(media_id, set())))
+        norm_mid = _normalize_media_id(media_id)
+        return tuple(sorted(self._media_to_entities.get(norm_mid, set())))
 
     def export_xrefs(self) -> list[MediaXRef]:
         """Export all current indexed edges as a list of MediaXRef objects."""

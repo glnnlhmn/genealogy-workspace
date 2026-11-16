@@ -2,27 +2,31 @@
 
 Operational CLI command for bulk loading baseline setup data into an environment database.
 
-Reads partitioned JSON intake envelopes for locations, sites, or both from the
-canonical setup root (data/setup/<env>/<entity>), verifies schema compliance,
-and commits records into the target database via gda.db session managers.
+Delegates location and site loading directly to authoritative domain collection facades
+(Locations and Sites) and their utility persistence pipelines, ensuring complete 19-column
+location and 16-column site record serialization via RowMappers on a unified session.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
 import tomllib
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from gda.core.config import DatabaseConfig
 from gda.core.introspectable import IntrospectableMixin
 from gda.db.session import DatabaseSessionManager
+from gda.entity.locations.collection import Locations
+from gda.entity.locations.util import import_file as import_locations_file
+from gda.entity.locations.util import save_to_db as save_locations_to_db
+from gda.entity.sites.collection import Sites
+from gda.entity.sites.util import import_file as import_sites_file
+from gda.entity.sites.util import save_to_db as save_sites_to_db
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.5"
 
 logger = logging.getLogger("gda.cli.load_setup")
 
@@ -87,68 +91,6 @@ class SetupLoader(IntrospectableMixin):
             return self.root_dir / "data" / "setup" / env_slug / entity_type
         raise ValueError(f"Unsupported entity type: {entity_type}")
 
-    def validate_file_structure(self, file_path: Path, entity_type: str) -> dict[str, Any]:
-        """Validate an intake JSON file against envelope and item invariants."""
-        with open(file_path, encoding="utf-8") as fh:
-            data = json.load(fh)
-
-        required_envelope_keys = {
-            "schema_version",
-            "record_type",
-            "created_at",
-            "total_count",
-            entity_type,
-        }
-        missing_envelope = required_envelope_keys - set(data.keys())
-        if missing_envelope:
-            raise ValueError(
-                f"File {file_path.name} missing envelope fields: {sorted(missing_envelope)}"
-            )
-
-        expected_record_type = "LOCATION_IMPORT" if entity_type == "locations" else "SITE_IMPORT"
-        if data["record_type"] != expected_record_type:
-            raise ValueError(
-                f"File {file_path.name} has invalid record_type: '{data['record_type']}' "
-                f"(expected '{expected_record_type}')"
-            )
-
-        items = data.get(entity_type, [])
-        if len(items) != data["total_count"]:
-            raise ValueError(
-                f"File {file_path.name} total_count ({data['total_count']}) does not "
-                f"match {entity_type} array length ({len(items)})"
-            )
-
-        if entity_type == "locations":
-            required_item_keys = {
-                "id",
-                "name",
-                "category",
-                "canonical_urn",
-                "parent_id",
-                "is_primary_local_authority",
-                "is_unincorporated",
-            }
-        else:
-            required_item_keys = {
-                "id",
-                "name",
-                "category",
-                "canonical_urn",
-                "location_id",
-                "is_active",
-            }
-
-        for idx, item in enumerate(items):
-            missing_item = required_item_keys - set(item.keys())
-            if missing_item:
-                raise ValueError(
-                    f"File {file_path.name} {entity_type} at index {idx} "
-                    f"missing required fields: {sorted(missing_item)}"
-                )
-
-        return data
-
     def discover_and_sort_files(self, source_dir: Path) -> list[Path]:
         """Scan directory and sort partition files lexicographically."""
         if not source_dir.is_dir():
@@ -164,118 +106,46 @@ class SetupLoader(IntrospectableMixin):
         return json_files
 
     def load_locations(self, source_dir: Path | None = None) -> int:
-        """Load baseline location partitions into target database."""
-        assert self._session_manager is not None
+        """Load baseline location partitions using the authoritative Locations collection facade."""
         target_dir = source_dir or self.get_default_setup_dir("locations")
         files = self.discover_and_sort_files(target_dir)
 
-        now_utc = datetime.now(UTC).isoformat()
-        total_records = 0
-
         logger.info(
-            "Loading setup locations for [%s]: %d files discovered in %s",
+            "Loading setup locations for [%s] via Locations facade: %d files in %s",
             self.env_name,
             len(files),
             target_dir,
         )
 
-        with self._session_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            for file_path in files:
-                envelope = self.validate_file_structure(file_path, "locations")
-                locations = envelope["locations"]
-                envelope_created_at = envelope.get("created_at", now_utc)
+        collection = Locations()
+        for file_path in files:
+            count = import_locations_file(collection, file_path)
+            logger.info("Imported %s (%d location entities)", file_path.name, count)
 
-                for loc in locations:
-                    name_val = (
-                        loc["name"]["canonical"]
-                        if isinstance(loc["name"], dict)
-                        else str(loc["name"])
-                    )
-                    cursor.execute(
-                        """
-                        INSERT OR REPLACE INTO locations (
-                            id, name, category, canonical_urn, parent_id,
-                            is_primary_local_authority, is_unincorporated,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            loc["id"],
-                            name_val,
-                            loc["category"],
-                            loc["canonical_urn"],
-                            loc["parent_id"],
-                            1 if loc["is_primary_local_authority"] else 0,
-                            1 if loc["is_unincorporated"] else 0,
-                            envelope_created_at,
-                            now_utc,
-                        ),
-                    )
-
-                count = len(locations)
-                total_records += count
-                logger.info("Processed location partition %s (%d records)", file_path.name, count)
-
-            conn.commit()
-
-        return total_records
+        written = save_locations_to_db(collection, session_manager=self._session_manager)
+        logger.info("Persisted %d total location records via LocationRowMapper.", written)
+        return written
 
     def load_sites(self, source_dir: Path | None = None) -> int:
-        """Load baseline site partitions into target database."""
-        assert self._session_manager is not None
+        """Load baseline site partitions using the authoritative Sites collection facade."""
         target_dir = source_dir or self.get_default_setup_dir("sites")
         files = self.discover_and_sort_files(target_dir)
 
-        now_utc = datetime.now(UTC).isoformat()
-        total_records = 0
-
         logger.info(
-            "Loading setup sites for [%s]: %d files discovered in %s",
+            "Loading setup sites for [%s] via Sites facade: %d files discovered in %s",
             self.env_name,
             len(files),
             target_dir,
         )
 
-        with self._session_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            for file_path in files:
-                envelope = self.validate_file_structure(file_path, "sites")
-                sites = envelope["sites"]
-                envelope_created_at = envelope.get("created_at", now_utc)
+        collection = Sites()
+        for file_path in files:
+            count = import_sites_file(collection, file_path)
+            logger.info("Imported %s (%d site entities)", file_path.name, count)
 
-                for site in sites:
-                    name_val = (
-                        site["name"]["canonical"]
-                        if isinstance(site["name"], dict)
-                        else str(site["name"])
-                    )
-                    cursor.execute(
-                        """
-                        INSERT OR REPLACE INTO sites (
-                            id, name, category, canonical_urn, location_id,
-                            is_active, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            site["id"],
-                            name_val,
-                            site["category"],
-                            site["canonical_urn"],
-                            site["location_id"],
-                            1 if site["is_active"] else 0,
-                            envelope_created_at,
-                            now_utc,
-                        ),
-                    )
-
-                count = len(sites)
-                total_records += count
-                logger.info("Processed site partition %s (%d records)", file_path.name, count)
-
-            conn.commit()
-
-        return total_records
+        written = save_sites_to_db(collection, session_manager=self._session_manager)
+        logger.info("Persisted %d total site records via SiteRowMapper.", written)
+        return written
 
     def run_setup(
         self,

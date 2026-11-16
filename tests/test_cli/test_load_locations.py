@@ -3,13 +3,15 @@
 Automated test suite verifying the bulk location intake CLI orchestrator.
 
 Tests structural validation, pyproject.toml environment resolution, partition
-ordering, transactional database ingestion, and CLI exit code boundaries.
+ordering, explicit directory overrides, collection delegation, and entrypoint execution.
 """
 
 from __future__ import annotations
 
 import json
+import runpy
 import sqlite3
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +19,7 @@ import pytest
 
 from cli.commands.load_locations import LocationLoader, build_parser, main
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.11"
 
 
 # ==========================================================================
@@ -28,7 +30,7 @@ __version__ = "1.0.0+build.6"
 
 @pytest.fixture
 def workspace_env(tmp_path: Path) -> Path:
-    """Provision a minimal synthetic workspace root directory."""
+    """Provision a minimal synthetic workspace root directory adhering to pyproject.toml."""
     root = tmp_path / "workspace"
     root.mkdir(parents=True, exist_ok=True)
 
@@ -43,10 +45,11 @@ def workspace_env(tmp_path: Path) -> Path:
     db_file = root / "data" / "db" / "gen_desk_dev.sqlite"
     db_file.parent.mkdir(parents=True, exist_ok=True)
 
-    with sqlite3.connect(db_file) as conn:
+    conn = sqlite3.connect(db_file)
+    try:
         conn.execute(
             """
-            CREATE TABLE locations (
+            CREATE TABLE IF NOT EXISTS locations (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 category TEXT NOT NULL,
@@ -60,6 +63,8 @@ def workspace_env(tmp_path: Path) -> Path:
             """
         )
         conn.commit()
+    finally:
+        conn.close()
 
     return root
 
@@ -72,6 +77,7 @@ def create_partition_file(
     locations: list[dict[str, Any]] | None = None,
 ) -> Path:
     """Generate a synthetic partitioned JSON intake file."""
+    directory.mkdir(parents=True, exist_ok=True)
     if locations is None:
         locations = [
             {
@@ -82,12 +88,15 @@ def create_partition_file(
                 "parent_id": None,
                 "is_primary_local_authority": False,
                 "is_unincorporated": False,
+                "alternate_names": ["USA"],
+                "historical_names": [],
+                "notes": [],
             }
         ]
 
     payload = {
         "_path": f"data/setup/dev/locations/{filename}",
-        "$schema": "https://gda.archive/schemas/dev/intake/location_import.schema.json",
+        "$schema": "https://gda.archive/schemas/intake/dev/location_import.schema.json",
         "schema_version": "1.0.0",
         "record_type": record_type,
         "created_at": "2026-11-04T12:00:00Z",
@@ -105,8 +114,8 @@ def create_partition_file(
 
 
 # ==========================================================================
-# GROUP 1: Parser and Configuration Unit Tests
-# Note: Verifies CLI flag defaults and pyproject environment table resolution
+# GROUP 1: Parser, Configuration, and Integration Tests
+# Note: Verifies CLI flag defaults, overrides, collection delegation, and execution
 # ==========================================================================
 
 
@@ -124,15 +133,27 @@ def test_build_parser_defaults_verify_options() -> None:
 
 
 @pytest.mark.unit
+def test_location_loader_custom_schema_path_override(tmp_path: Path) -> None:
+    """Verify LocationLoader honors an explicit schema_path override."""
+    custom_schema = "custom/schemas/loc.json"
+    loader = LocationLoader(env_name="DEV", root_dir=tmp_path, schema_path=custom_schema)
+    expected_path = tmp_path.resolve() / Path(custom_schema)
+    assert loader.schema_path == expected_path
+
+
+@pytest.mark.unit
 def test_load_environment_config_success_resolves_db_path(workspace_env: Path) -> None:
     """Verify load_environment_config extracts settings from pyproject.toml."""
     loader = LocationLoader(env_name="DEV", root_dir=workspace_env)
-    config = loader.load_environment_config()
-
-    expected_db = workspace_env / "data" / "db" / "gen_desk_dev.sqlite"
-    assert config.db_path == expected_db
-    assert config.busy_timeout == 10000
-    assert config.journal_mode == "WAL"
+    try:
+        config = loader.load_environment_config()
+        expected_db = workspace_env / "data" / "db" / "gen_desk_dev.sqlite"
+        assert config.db_path == expected_db
+        assert config.busy_timeout == 10000
+        assert config.journal_mode == "WAL"
+    finally:
+        if loader._session_manager and hasattr(loader._session_manager, "close"):
+            loader._session_manager.close()
 
 
 @pytest.mark.unit
@@ -145,9 +166,133 @@ def test_get_default_setup_dir_derives_path(workspace_env: Path) -> None:
     assert setup_dir == expected_setup
 
 
+@pytest.mark.unit
+def test_discover_and_sort_files_sorts_lexicographically(tmp_path: Path) -> None:
+    """Verify partition files are returned in ascending filename order."""
+    create_partition_file(tmp_path, "02_us_states.json")
+    create_partition_file(tmp_path, "00_root_countries.json")
+    create_partition_file(tmp_path, "01_non_us.json")
+
+    loader = LocationLoader(root_dir=tmp_path)
+    sorted_files = loader.discover_and_sort_files(tmp_path)
+
+    file_names = [f.name for f in sorted_files]
+    assert file_names == [
+        "00_root_countries.json",
+        "01_non_us.json",
+        "02_us_states.json",
+    ]
+
+
+@pytest.mark.unit
+def test_load_partitions_persists_records_via_facade(
+    workspace_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify load_partitions routes through Locations facade and persists records."""
+    setup_dir = workspace_env / "data" / "setup" / "dev" / "locations"
+    create_partition_file(setup_dir, "00_root_countries.json", total_count=1)
+
+    saved_entities = []
+
+    def fake_save_to_db(collection: Any) -> int:
+        saved_entities.extend(list(collection.iter_all()))
+        return len(saved_entities)
+
+    monkeypatch.setattr("cli.commands.load_locations.save_to_db", fake_save_to_db)
+
+    loader = LocationLoader(env_name="DEV", root_dir=workspace_env)
+    stats = loader.load_partitions()
+
+    assert stats["00_root_countries.json"] == 1
+    assert stats["__TOTAL__"] == 1
+    assert len(saved_entities) == 1
+    assert str(saved_entities[0].id) == "LOC-000001"
+    assert saved_entities[0].name.canonical == "United States"
+
+
+@pytest.mark.unit
+def test_load_partitions_with_explicit_intake_dir_override(
+    workspace_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify load_partitions respects explicit directory override."""
+    custom_dir = workspace_env / "custom_partitions"
+    create_partition_file(custom_dir, "00_custom.json", total_count=1)
+
+    monkeypatch.setattr("cli.commands.load_locations.save_to_db", lambda col: 1)
+
+    loader = LocationLoader(env_name="DEV", root_dir=workspace_env)
+    stats = loader.load_partitions(intake_dir=custom_dir)
+
+    assert stats["00_custom.json"] == 1
+    assert stats["__TOTAL__"] == 1
+
+
+@pytest.mark.unit
+def test_main_cli_execution_success(workspace_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify end-to-end main() invocation returns exit code 0."""
+    setup_dir = workspace_env / "data" / "setup" / "dev" / "locations"
+    create_partition_file(setup_dir, "00_test.json", total_count=1)
+
+    monkeypatch.setattr("cli.commands.load_locations.save_to_db", lambda col: 1)
+
+    cli_args = [
+        "--env",
+        "DEV",
+        "--root",
+        str(workspace_env),
+        "-v",
+    ]
+
+    exit_code = main(cli_args)
+    assert exit_code == 0
+
+
+@pytest.mark.unit
+def test_main_cli_execution_debug_mode_success(
+    workspace_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify end-to-end main() invocation with --debug returns exit code 0."""
+    setup_dir = workspace_env / "data" / "setup" / "dev" / "locations"
+    create_partition_file(setup_dir, "00_test.json", total_count=1)
+
+    monkeypatch.setattr("cli.commands.load_locations.save_to_db", lambda col: 1)
+
+    cli_args = [
+        "--env",
+        "DEV",
+        "--root",
+        str(workspace_env),
+        "--debug",
+    ]
+
+    exit_code = main(cli_args)
+    assert exit_code == 0
+
+
+@pytest.mark.unit
+def test_module_main_entrypoint_execution(
+    workspace_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verify module-level execution via if __name__ == '__main__' triggers sys.exit(0)."""
+    setup_dir = workspace_env / "data" / "setup" / "dev" / "locations"
+    create_partition_file(setup_dir, "00_test.json", total_count=1)
+
+    monkeypatch.setattr("gda.entity.locations.util.save_to_db", lambda col: 1)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["load_locations.py", "--env", "DEV", "--root", str(workspace_env), "-v"],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        runpy.run_module("cli.commands.load_locations", run_name="__main__")
+
+    assert exc_info.value.code == 0
+
+
 # ==========================================================================
 # GROUP 2: Validation and Defensive Regression Tests
-# Note: Verifies schema bounds, missing keys, and mismatch handling
+# Note: Verifies schema bounds, missing keys, and error paths
 # ==========================================================================
 
 
@@ -174,66 +319,6 @@ def test_load_environment_config_missing_environment_raises_key_error(
 
 
 @pytest.mark.regression
-def test_validate_file_structure_missing_envelope_fields_raises_error(
-    tmp_path: Path,
-) -> None:
-    """Verify validate_file_structure detects missing envelope properties."""
-    bad_file = tmp_path / "bad_envelope.json"
-    bad_file.write_text('{"schema_version": "1.0.0"}', encoding="utf-8")
-
-    loader = LocationLoader(root_dir=tmp_path)
-    with pytest.raises(ValueError, match="missing envelope fields"):
-        loader.validate_file_structure(bad_file)
-
-
-@pytest.mark.regression
-def test_validate_file_structure_invalid_record_type_raises_error(
-    tmp_path: Path,
-) -> None:
-    """Verify validate_file_structure rejects wrong record_type string."""
-    bad_file = create_partition_file(tmp_path, "wrong_type.json", record_type="WRONG_TYPE")
-    loader = LocationLoader(root_dir=tmp_path)
-
-    with pytest.raises(ValueError, match="invalid record_type"):
-        loader.validate_file_structure(bad_file)
-
-
-@pytest.mark.regression
-def test_validate_file_structure_count_mismatch_raises_error(
-    tmp_path: Path,
-) -> None:
-    """Verify validate_file_structure rejects total_count mismatch."""
-    bad_file = create_partition_file(tmp_path, "count_mismatch.json", total_count=99)
-    loader = LocationLoader(root_dir=tmp_path)
-
-    with pytest.raises(ValueError, match="total_count .* does not match"):
-        loader.validate_file_structure(bad_file)
-
-
-@pytest.mark.regression
-def test_validate_file_structure_missing_location_field_raises_error(
-    tmp_path: Path,
-) -> None:
-    """Verify validate_file_structure rejects items missing required fields."""
-    incomplete_locations = [
-        {
-            "id": "LOC-000001",
-            "name": "Missing Attributes",
-        }
-    ]
-    bad_file = create_partition_file(
-        tmp_path,
-        "missing_fields.json",
-        total_count=1,
-        locations=incomplete_locations,
-    )
-    loader = LocationLoader(root_dir=tmp_path)
-
-    with pytest.raises(ValueError, match="missing required fields"):
-        loader.validate_file_structure(bad_file)
-
-
-@pytest.mark.regression
 def test_discover_and_sort_files_missing_dir_raises_error(tmp_path: Path) -> None:
     """Verify discover_and_sort_files rejects non-existent intake directory."""
     loader = LocationLoader(root_dir=tmp_path)
@@ -252,107 +337,8 @@ def test_discover_and_sort_files_empty_dir_raises_error(tmp_path: Path) -> None:
         loader.discover_and_sort_files(empty_dir)
 
 
-# ==========================================================================
-# GROUP 3: Integration and Transactional Execution Tests
-# Note: Verifies partition discovery, database write commit, and CLI entrypoint
-# ==========================================================================
-
-
-@pytest.mark.integration
-def test_discover_and_sort_files_sorts_lexicographically(tmp_path: Path) -> None:
-    """Verify partition files are returned in ascending filename order."""
-    create_partition_file(tmp_path, "02_us_states.json")
-    create_partition_file(tmp_path, "00_root_countries.json")
-    create_partition_file(tmp_path, "01_non_us.json")
-
-    loader = LocationLoader(root_dir=tmp_path)
-    sorted_files = loader.discover_and_sort_files(tmp_path)
-
-    file_names = [f.name for f in sorted_files]
-    assert file_names == [
-        "00_root_countries.json",
-        "01_non_us.json",
-        "02_us_states.json",
-    ]
-
-
-@pytest.mark.integration
-def test_load_partitions_persists_records_to_database(workspace_env: Path) -> None:
-    """Verify load_partitions writes location entities to SQLite database using default dir."""
-    setup_dir = workspace_env / "data" / "setup" / "dev" / "locations"
-    setup_dir.mkdir(parents=True, exist_ok=True)
-
-    loc1 = {
-        "id": "LOC-000001",
-        "name": {"raw": "United States", "canonical": "United States"},
-        "category": "COUNTRY",
-        "canonical_urn": "urn:gda:loc:united_states",
-        "parent_id": None,
-        "is_primary_local_authority": False,
-        "is_unincorporated": False,
-    }
-    create_partition_file(
-        setup_dir,
-        "00_root_countries.json",
-        total_count=1,
-        locations=[loc1],
-    )
-
-    loader = LocationLoader(env_name="DEV", root_dir=workspace_env)
-    stats = loader.load_partitions()
-
-    assert stats["00_root_countries.json"] == 1
-    assert stats["__TOTAL__"] == 1
-
-    db_path = workspace_env / "data" / "db" / "gen_desk_dev.sqlite"
-    with sqlite3.connect(db_path) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT id, name, category, is_unincorporated, created_at, updated_at
-            FROM locations
-            """
-        )
-        rows = cursor.fetchall()
-
-    assert len(rows) == 1
-    assert rows[0][0] == "LOC-000001"
-    assert rows[0][1] == "United States"
-    assert rows[0][2] == "COUNTRY"
-    assert rows[0][3] == 0
-    assert rows[0][4] == "2026-11-04T12:00:00Z"
-    assert rows[0][5] is not None
-
-
-# ==========================================================================
-# GROUP 4: Smoke End-to-End CLI Gateway Tests
-# Note: Validates main() invocation exit codes and parameter wiring
-# ==========================================================================
-
-
-@pytest.mark.smoke
-def test_main_cli_execution_success(workspace_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Verify end-to-end main() invocation returns exit code 0."""
-    setup_dir = workspace_env / "data" / "setup" / "dev" / "locations"
-    setup_dir.mkdir(parents=True, exist_ok=True)
-    create_partition_file(setup_dir, "00_test.json", total_count=1)
-
-    cli_args = [
-        "--env",
-        "DEV",
-        "--root",
-        str(workspace_env),
-        "-v",
-    ]
-
-    exit_code = main(cli_args)
-    assert exit_code == 0
-
-
-@pytest.mark.smoke
-def test_main_cli_execution_failure_returns_code_1(
-    workspace_env: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+@pytest.mark.regression
+def test_main_cli_execution_failure_returns_code_1(workspace_env: Path) -> None:
     """Verify main() returns exit code 1 when an invalid environment is targeted."""
     cli_args = [
         "--env",

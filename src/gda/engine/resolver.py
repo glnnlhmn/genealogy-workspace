@@ -14,17 +14,17 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 
+from gda.core.dates import utc_now_iso
+from gda.core.enums.vital import PedigreeType
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.logging import GDALogger
-from gda.enums.core import AssociatedRole
-from gda.enums.vital import PedigreeType
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FamilyID, IndividualID
 from gda.model.entity.family import Family
 from gda.model.entity.individual import Individual
 from gda.model.xref.individual_family_xref import IndividualFamilyXRef
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = ["IndividualFamilyResolver"]
 
@@ -36,8 +36,9 @@ class IndividualFamilyResolver(IntrospectableMixin):
 
     def __init__(self) -> None:
         """Initialize empty graph index tables and compilation timestamp."""
-        self._last_compiled: IsoTimestamp = IsoTimestamp.now_utc()
+        self._last_compiled: IsoTimestamp = IsoTimestamp(utc_now_iso())
         self._edges: dict[str, IndividualFamilyXRef] = {}
+        self._individuals: set[IndividualID] = set()
 
         self._ind_to_fam_partner: dict[IndividualID, set[FamilyID]] = defaultdict(set)
         self._ind_to_fam_child: dict[IndividualID, set[FamilyID]] = defaultdict(set)
@@ -58,7 +59,7 @@ class IndividualFamilyResolver(IntrospectableMixin):
 
     def _mark_updated(self) -> None:
         """Advance the index compilation timestamp."""
-        self._last_compiled = IsoTimestamp.now_utc()
+        self._last_compiled = IsoTimestamp(utc_now_iso())
 
     @classmethod
     def from_collections(
@@ -84,64 +85,50 @@ class IndividualFamilyResolver(IntrospectableMixin):
 
     def add_xref(self, edge: IndividualFamilyXRef) -> None:
         """Add a single pre-formed IndividualFamilyXRef edge into index tables."""
-        if edge.xref_id in self._edges:
+        key = edge.xref_key
+        if key in self._edges:
             return
 
-        self._edges[edge.xref_id] = edge
-        rel = edge.relation_type
-
-        if rel == "PARTNER" and isinstance(edge.target_id, FamilyID):
-            self._ind_to_fam_partner[edge.subject_id].add(edge.target_id)
-            if edge.subject_id not in self._fam_to_partners[edge.target_id]:
-                self._fam_to_partners[edge.target_id].append(edge.subject_id)
-
-        elif rel == "CHILD" and isinstance(edge.target_id, FamilyID):
-            pedigree = edge.role if isinstance(edge.role, PedigreeType) else PedigreeType.BIRTH
-            self._ind_to_fam_child[edge.subject_id].add(edge.target_id)
-            entry = (edge.subject_id, pedigree)
-            if entry not in self._fam_to_children[edge.target_id]:
-                self._fam_to_children[edge.target_id].append(entry)
+        self._edges[key] = edge
+        if edge.is_partner:
+            self._ind_to_fam_partner[edge.individual_id].add(edge.family_id)
+            if edge.individual_id not in self._fam_to_partners[edge.family_id]:
+                self._fam_to_partners[edge.family_id].append(edge.individual_id)
+        else:
+            pedigree = edge.pedigree if edge.pedigree is not None else PedigreeType.BIRTH
+            self._ind_to_fam_child[edge.individual_id].add(edge.family_id)
+            entry = (edge.individual_id, pedigree)
+            if entry not in self._fam_to_children[edge.family_id]:
+                self._fam_to_children[edge.family_id].append(entry)
 
         self._mark_updated()
 
     def index_individual(self, individual: Individual) -> None:
-        """Index an Individual domain entity identity edge."""
-        ind_id = individual.id
-        key = IndividualFamilyXRef.create_key(ind_id, "IDENTITY", ind_id)
-        edge = IndividualFamilyXRef(
-            xref_id=key,
-            subject_id=ind_id,
-            target_id=ind_id,
-            relation_type="IDENTITY",
-            display_label=individual.full_name,
-        )
-        self.add_xref(edge)
+        """Register an Individual domain entity in the resolver."""
+        self._individuals.add(individual.id)
+        self._mark_updated()
 
     def index_family(self, family: Family) -> None:
         """Index a Family entity, domestic partners, and children links."""
         fam_id = family.id
 
         for partner_id in family.partner_ids:
-            key = IndividualFamilyXRef.create_key(partner_id, "PARTNER", fam_id)
             edge = IndividualFamilyXRef(
-                xref_id=key,
-                subject_id=partner_id,
-                target_id=fam_id,
-                relation_type="PARTNER",
-                role=AssociatedRole.SPOUSE,
+                family_id=fam_id,
+                individual_id=partner_id,
+                is_partner=True,
             )
             self.add_xref(edge)
 
-        for child_link in family.children:
+        for idx, child_link in enumerate(family.children, start=1):
             child_id = child_link.child_id
             pedigree = child_link.pedigree or PedigreeType.BIRTH
-            key = IndividualFamilyXRef.create_key(child_id, "CHILD", fam_id, pedigree)
             edge = IndividualFamilyXRef(
-                xref_id=key,
-                subject_id=child_id,
-                target_id=fam_id,
-                relation_type="CHILD",
-                role=pedigree,
+                family_id=fam_id,
+                individual_id=child_id,
+                is_partner=False,
+                pedigree=pedigree,
+                child_order=idx,
             )
             self.add_xref(edge)
 
@@ -150,7 +137,7 @@ class IndividualFamilyResolver(IntrospectableMixin):
         keys_to_delete = [
             k
             for k, edge in self._edges.items()
-            if edge.subject_id == entity_id or edge.target_id == entity_id
+            if edge.individual_id == entity_id or edge.family_id == entity_id
         ]
 
         if not keys_to_delete:
@@ -160,6 +147,7 @@ class IndividualFamilyResolver(IntrospectableMixin):
             del self._edges[k]
 
         if isinstance(entity_id, IndividualID):
+            self._individuals.discard(entity_id)
             self._ind_to_fam_partner.pop(entity_id, None)
             self._ind_to_fam_child.pop(entity_id, None)
 
