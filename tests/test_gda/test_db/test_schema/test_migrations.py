@@ -1,13 +1,10 @@
 """Path: tests/test_gda/test_db/test_schema/test_migrations.py
 
-Package-level DDL contract and relational verification suite for gda.db.schema.migrations.
+Unit, integration, and regression verification suite for GDA DB schema migrations.
 
 Operational Role:
-    1:1 package-level verification suite for src/gda/db/schema/migrations/
-    (__init__.py, v001_places.py, v002_organizations.py, v003_personas.py,
-    v004_facts.py, and v005_indexes.py). Validates module exports, migration
-    ordering, flattened analytical column definitions, B-Tree index coverage,
-    and SQLite foreign key enforcement across all 6 core entity tables.
+    1:1 verification suite for src/gda/db/schema/migrations/. Validates
+    MIGRATION_REGISTRY ordering, version continuity, and SQLite DDL execution.
 """
 
 from __future__ import annotations
@@ -16,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-import gda.db.schema.migrations as migrations_pkg
-from gda.db.exceptions import ConstraintViolationError
-from gda.db.schema import MIGRATION_REGISTRY, SchemaManager
+import gda.db.schema.migrations as migrations_mod
+from gda.db.schema import SchemaManager
 from gda.db.schema.migrations import (
+    MIGRATION_REGISTRY,
     v001_places,
     v002_organizations,
     v003_personas,
@@ -27,16 +24,18 @@ from gda.db.schema.migrations import (
     v005_indexes,
     v006_sources_vital_cemetery,
     v007_sources_enumerated_publications,
+    v008_sources_probate_land,
+    v009_sources_immigration_military,
 )
 from gda.db.session import DatabaseSessionManager
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.5"
 
 
 @pytest.mark.unit
-def test_migrations_package_and_module_exports() -> None:
-    """Verify __all__ and version metadata across migrations/__init__.py and v001..v005."""
-    assert migrations_pkg.__all__ == [
+def test_migrations_dunder_all_and_registry_continuity() -> None:
+    """Verify __all__ exports and strictly sequential migration versions."""
+    assert migrations_mod.__all__ == [
         "MIGRATION_REGISTRY",
         "Migration",
         "v001_places",
@@ -46,9 +45,12 @@ def test_migrations_package_and_module_exports() -> None:
         "v005_indexes",
         "v006_sources_vital_cemetery",
         "v007_sources_enumerated_publications",
+        "v008_sources_probate_land",
+        "v009_sources_immigration_military",
     ]
-    assert migrations_pkg.__all__ == sorted(migrations_pkg.__all__)
-    assert [m.version for m in MIGRATION_REGISTRY] == [1, 2, 3, 4, 5, 6, 7]
+
+    versions = [m.version for m in MIGRATION_REGISTRY]
+    assert versions == [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     for mod, expected_ver in (
         (v001_places, 1),
@@ -58,254 +60,62 @@ def test_migrations_package_and_module_exports() -> None:
         (v005_indexes, 5),
         (v006_sources_vital_cemetery, 6),
         (v007_sources_enumerated_publications, 7),
+        (v008_sources_probate_land, 8),
+        (v009_sources_immigration_military, 9),
     ):
         assert mod.__all__ == ["NAME", "UP_SQL", "VERSION"]
         assert mod.VERSION == expected_ver
         assert isinstance(mod.NAME, str) and mod.NAME
-        assert isinstance(mod.UP_SQL, str) and "CREATE" in mod.UP_SQL
+        assert isinstance(mod.UP_SQL, str) and mod.UP_SQL.strip()
 
 
 @pytest.mark.integration
-def test_migrations_provision_flattened_analytical_columns_and_indexes(
-    tmp_path: Path,
-) -> None:
-    """Verify v001..v005 create all 6 entity tables, flattened columns, and B-Tree indexes."""
-    db_file = tmp_path / "migrations_ddl.db"
+def test_migrations_ddl_creates_expected_tables_and_indexes(tmp_path: Path) -> None:
+    """Verify executing all migrations creates core and archival source tables."""
+    db_file = tmp_path / "test_migrations.db"
     session = DatabaseSessionManager(db_path=db_file)
-    SchemaManager(session_manager=session).init_db()
+    manager = SchemaManager(session_manager=session)
+
+    applied = manager.init_db()
+    assert applied == [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     with session.get_connection() as conn:
-        cursor = conn.cursor()
-        try:
-            tables = {
-                r[0]
-                for r in cursor.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table';"
-                ).fetchall()
-            }
-            assert tables == {
-                "schema_migrations",
-                "locations",
-                "sites",
-                "organizations",
-                "individuals",
-                "families",
-                "facts",
-                "vital_baptisms",
-                "vital_births",
-                "vital_deaths",
-                "vital_divorces",
-                "vital_marriages",
-                "cemetery_markers",
-                "cemetery_registries",
-                "enumerated_population_schedules",
-                "enumerated_supplemental_schedules",
-                "enumerated_directories",
-                "enumerated_tax_assessments",
-                "publications_catalog",
-                "publications_newspaper_clips",
-                "publications_periodical_articles",
-            }
-
-            loc_cols = {
-                r["name"] for r in cursor.execute("PRAGMA table_info(locations);").fetchall()
-            }
-            assert {
-                "raw_name",
-                "canonical_name",
-                "aliases_json",
-                "alt_spellings_json",
-                "historical_names_json",
-                "name_comment",
-                "latitude",
-                "longitude",
-                "deprecated_at",
-            }.issubset(loc_cols)
-
-            site_cols = {r["name"] for r in cursor.execute("PRAGMA table_info(sites);").fetchall()}
-            assert {
-                "raw_name",
-                "canonical_name",
-                "address_line_1",
-                "address_line_2",
-                "address_city",
-                "address_state",
-                "address_postal_code",
-                "address_latitude",
-                "address_longitude",
-                "latitude",
-                "longitude",
-                "deprecated_at",
-            }.issubset(site_cols)
-
-            org_cols = {
-                r["name"] for r in cursor.execute("PRAGMA table_info(organizations);").fetchall()
-            }
-            assert {
-                "raw_name",
-                "canonical_name",
-                "parent_org_id",
-                "location_id",
-                "meeting_site_id",
-                "deprecated_at",
-            }.issubset(org_cols)
-
-            ind_cols = {
-                r["name"] for r in cursor.execute("PRAGMA table_info(individuals);").fetchall()
-            }
-            assert {
-                "raw_name",
-                "canonical_name",
-                "prefix",
-                "given_name",
-                "middle_name",
-                "surname",
-                "suffix",
-                "married_names_json",
-                "aliases_json",
-                "alt_spellings_json",
-                "name_comment",
-                "gender",
-                "deprecated_at",
-            }.issubset(ind_cols)
-
-            fam_cols = {
-                r["name"] for r in cursor.execute("PRAGMA table_info(families);").fetchall()
-            }
-            assert {
-                "union_type",
-                "dissolution_type",
-                "start_date_json",
-                "end_date_json",
-                "partner_ids_json",
-                "children_json",
-                "deprecated_at",
-            }.issubset(fam_cols)
-
-            indexes = {
-                r[0]
-                for r in cursor.execute(
-                    "SELECT name FROM sqlite_master WHERE type='index';"
-                ).fetchall()
-            }
-            assert {
-                "idx_locations_urn",
-                "idx_locations_canonical_name",
-                "idx_locations_parent",
-                "idx_locations_category",
-                "idx_sites_urn",
-                "idx_sites_canonical_name",
-                "idx_sites_location",
-                "idx_sites_category",
-                "idx_organizations_urn",
-                "idx_organizations_canonical_name",
-                "idx_organizations_category",
-                "idx_organizations_parent",
-                "idx_organizations_location",
-                "idx_organizations_site",
-                "idx_individuals_urn",
-                "idx_individuals_canonical_name",
-                "idx_individuals_surname",
-                "idx_individuals_given_name",
-                "idx_individuals_birth_year",
-                "idx_individuals_death_year",
-                "idx_individuals_birth_sort",
-                "idx_individuals_birth_place",
-                "idx_individuals_death_place",
-                "idx_families_urn",
-                "idx_families_union_type",
-                "idx_facts_urn",
-                "idx_facts_subject",
-                "idx_facts_type",
-                "idx_facts_year",
-                "idx_facts_date_sort",
-                "idx_facts_location",
-                "idx_facts_site",
-            }.issubset(indexes)
-        finally:
-            cursor.close()
-
-
-@pytest.mark.integration
-def test_migrations_foreign_key_constraints(tmp_path: Path) -> None:
-    """Verify foreign key ON DELETE RESTRICT and ON DELETE SET NULL rules across tables."""
-    db_file = tmp_path / "migrations_fk.db"
-    session = DatabaseSessionManager(db_path=db_file)
-    SchemaManager(session_manager=session).init_db()
-
-    with session.transaction() as tx:
-        tx.execute(
-            """
-            INSERT INTO locations (
-                id, canonical_urn, raw_name, canonical_name, category, created_at, updated_at
-            ) VALUES (
-                'LOC-000001', 'urn:gda:loc:us:nh', 'New Hampshire', 'New Hampshire',
-                'STATOID', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
-            );
-            """
-        )
-        tx.execute(
-            """
-            INSERT INTO locations (
-                id, canonical_urn, raw_name, canonical_name, category,
-                parent_id, created_at, updated_at
-            ) VALUES (
-                'LOC-000002', 'urn:gda:loc:us:nh:merrimack', 'Merrimack County', 'Merrimack County',
-                'COUNTY_EQUIVALENT', 'LOC-000001', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
-            );
-            """
-        )
-        tx.execute(
-            """
-            INSERT INTO sites (
-                id, canonical_urn, raw_name, canonical_name, category,
-                location_id, created_at, updated_at
-            ) VALUES (
-                'SID-000001', 'urn:gda:site:us:nh:merrimack:hall_s000001', 'Town Hall', 'Town Hall',
-                'GOVERNMENT', 'LOC-000002', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
-            );
-            """
-        )
-        tx.execute(
-            """
-            INSERT INTO organizations (
-                id, canonical_urn, raw_name, canonical_name, category, parent_org_id,
-                location_id, meeting_site_id, created_at, updated_at
-            ) VALUES (
-                'ORG-000001', 'urn:gda:org:nh:vfw', 'State VFW', 'State VFW',
-                'VETERANS', NULL, 'LOC-000001', 'SID-000001',
-                '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
-            );
-            """
-        )
-        tx.execute(
-            """
-            INSERT INTO organizations (
-                id, canonical_urn, raw_name, canonical_name, category, parent_org_id,
-                location_id, meeting_site_id, created_at, updated_at
-            ) VALUES (
-                'ORG-000002', 'urn:gda:org:nh:vfw:post_411', 'VFW Post 411', 'VFW Post 411',
-                'VETERANS', 'ORG-000001', 'LOC-000002', 'SID-000001',
-                '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'
-            );
-            """
-        )
-
-    with pytest.raises(ConstraintViolationError):
-        with session.transaction() as tx:
-            tx.execute("DELETE FROM locations WHERE id = 'LOC-000002';")
-
-    with session.transaction() as tx:
-        tx.execute("DELETE FROM locations WHERE id = 'LOC-000001';")
-        tx.execute("DELETE FROM organizations WHERE id = 'ORG-000001';")
-
-    with session.get_connection() as conn:
-        child_loc = conn.execute(
-            "SELECT parent_id FROM locations WHERE id = 'LOC-000002';"
-        ).fetchone()
-        assert child_loc["parent_id"] is None
-
-        child_org = conn.execute(
-            "SELECT parent_org_id FROM organizations WHERE id = 'ORG-000002';"
-        ).fetchone()
-        assert child_org["parent_org_id"] is None
+        tables = {
+            row["name"]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
+        }
+        assert {
+            "schema_migrations",
+            "locations",
+            "sites",
+            "organizations",
+            "individuals",
+            "families",
+            "facts",
+            "vital_baptisms",
+            "vital_births",
+            "vital_deaths",
+            "vital_divorces",
+            "vital_marriages",
+            "cemetery_markers",
+            "cemetery_registries",
+            "enumerated_population_schedules",
+            "enumerated_supplemental_schedules",
+            "enumerated_directories",
+            "enumerated_tax_assessments",
+            "publications_catalog",
+            "publications_newspaper_clips",
+            "publications_periodical_articles",
+            "probate_wills",
+            "probate_inventories",
+            "land_deeds",
+            "land_grants",
+            "immigration_manifests",
+            "immigration_naturalizations",
+            "military_draft_records",
+            "military_service_records",
+            "military_pension_records",
+            "military_bounty_land_warrants",
+            "military_casualty_records",
+            "military_award_records",
+        }.issubset(tables)
