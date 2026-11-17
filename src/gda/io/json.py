@@ -16,11 +16,11 @@ from pathlib import Path
 from typing import Any
 
 from gda.core.introspectable import IntrospectableMixin
-from gda.io.atomic import atomic_write
+from gda.io.atomic import atomic_write_text
 from gda.io.backup import GDABackupManager
 from gda.io.errors import FileReadError, SerializationError
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "GDAJsonIO",
@@ -47,6 +47,7 @@ class GDAJsonIO(IntrospectableMixin):
             SerializationError: If the file contents are malformed JSON.
         """
         target = Path(file_path).resolve()
+        # Verify target file exists and is not a directory prior to reading
         if not target.exists():
             raise FileReadError(f"Target JSON file '{target}' does not exist.")
         if target.is_dir():
@@ -96,6 +97,7 @@ class GDAJsonIO(IntrospectableMixin):
         """
         target = Path(file_path).resolve()
 
+        # --- Step 1: Deterministic Serialization ---
         try:
             serialized = (
                 json.dumps(
@@ -111,10 +113,9 @@ class GDAJsonIO(IntrospectableMixin):
                 f"Failed to serialize data to JSON for '{target}': {err}"
             ) from err
 
+        # --- Step 2: Optional Pre-Write Safe Backup ---
         if create_backup and target.exists():
             GDABackupManager.create_backup(target_path=target, backup_dir=backup_dir)
 
-        with atomic_write(target, mode="w", encoding="utf-8") as stream:
-            stream.write(serialized)
-
-        return target
+        # --- Step 3: Atomic Disk Commit ---
+        return atomic_write_text(target, serialized, encoding="utf-8")

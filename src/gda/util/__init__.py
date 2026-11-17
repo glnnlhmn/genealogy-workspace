@@ -1,46 +1,58 @@
 """Path: src/gda/util/__init__.py
 
-Domain-specific helper utilities for identifiers, text sanitization, and phonetics.
+Stateless utility functions for identifier management, enum coercion, and text processing.
 
 Operational Role:
-    Public export facade for high-level utility helpers:
-    sequential smartID and UUIDv4 minting, identifier normalization,
-    decomposition, high-water mark sequence extraction, Unicode/ASCII
-    sanitization, slugging, and historical phonetic encodings.
+    Public package facade for gda.util, re-exporting pure helper functions from
+    gda.util.enums, gda.util.ids, and gda.util.text.
 """
 
 from __future__ import annotations
 
+from gda.util.enums import coerce_enum
 from gda.util.ids import (
     extract_max_smart_id,
     mint_smart_id,
     mint_uuid,
     normalize_id,
     parse_smart_id,
+    resolve_polymorphic_id,
+    unwrap_bool_int,
+    unwrap_int,
+    unwrap_value,
     verify_id,
 )
 from gda.util.text import (
     clean_string,
+    clean_unique_strings,
     clean_whitespace,
     normalize_ascii,
     phonetic_nysiis,
     phonetic_soundex,
+    require_non_empty,
     slugify,
 )
 
 __version__ = "1.0.0+build.5"
 
 __all__ = [
-    "clean_string",  # text.py
-    "clean_whitespace",  # text.py
-    "extract_max_smart_id",  # ids.py
-    "mint_smart_id",  # ids.py
-    "mint_uuid",  # ids.py
-    "normalize_ascii",  # text.py
-    "normalize_id",  # ids.py
-    "parse_smart_id",  # ids.py
-    "phonetic_nysiis",  # text.py
-    "phonetic_soundex",  # text.py
-    "slugify",  # text.py
-    "verify_id",  # ids.py
+    "clean_string",
+    "clean_unique_strings",
+    "clean_whitespace",
+    "coerce_enum",
+    "extract_max_smart_id",
+    "mint_smart_id",
+    "mint_uuid",
+    "normalize_ascii",
+    "normalize_id",
+    "parse_smart_id",
+    "phonetic_nysiis",
+    "phonetic_soundex",
+    "require_non_empty",
+    "resolve_polymorphic_id",
+    "slugify",
+    "unwrap_bool_int",
+    "unwrap_int",
+    "unwrap_value",
+    "verify_id",
 ]

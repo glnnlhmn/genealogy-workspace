@@ -4,8 +4,9 @@ Comprehensive unit test suite for gda.core.types.
 
 Operational Role:
     Verifies declarative regex patterns, compiled regular expressions, ISO
-    format directives, entity URN patterns, archival URN patterns, and domain
-    scalar invariants against canonical examples and invalid boundary strings.
+    format directives, entity URN patterns, archival URN patterns, SQL identifier
+    patterns, and domain scalar invariants against canonical examples and invalid
+    boundary strings.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract mapping.
@@ -21,7 +22,7 @@ import pytest
 
 import gda.core.types as prim
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.6"
 
 
 # ==============================================================================
@@ -152,7 +153,7 @@ def test_entity_urn_patterns_cover_all_master_entities() -> None:
 
 
 # ==============================================================================
-# GROUP 5: SHA-256 HASH PATTERN CONTRACTS
+# GROUP 5: SHA-256 HASH & SQL IDENTIFIER PATTERN CONTRACTS
 # ==============================================================================
 
 
@@ -171,6 +172,15 @@ def test_sha256_regex_rejects_uppercase_and_non_hex() -> None:
     assert prim.SHA256_REGEX.match("z" * 64) is None
     assert prim.SHA256_REGEX.match("a" * 63) is None
     assert prim.SHA256_REGEX.match("a" * 65) is None
+
+
+@pytest.mark.unit
+def test_sql_identifier_regex_accepts_valid_and_rejects_injection() -> None:
+    """Verify SQL_IDENTIFIER_REGEX accepts valid SQLite identifiers and rejects SQL injection."""
+    assert prim.SQL_IDENTIFIER_REGEX.match("vital_births") is not None
+    assert prim.SQL_IDENTIFIER_REGEX.match("_private_col_1") is not None
+    assert prim.SQL_IDENTIFIER_REGEX.match("1_leading_digit") is None
+    assert prim.SQL_IDENTIFIER_REGEX.match("users; DROP TABLE") is None
 
 
 # ==============================================================================
@@ -228,8 +238,9 @@ def test_enumerated_schedule_bounds_and_era_year_sets() -> None:
 def test_centralized_urn_and_scalar_regexes() -> None:
     """Verify ATOM_ID_REGEX, PUB_CODE_REGEX, NEWS_CATEGORY_REGEX, and all 14 URN_REGEXES."""
     assert prim.ATOM_ID_REGEX.match("IND-000001") is not None
+    assert prim.ATOM_ID_REGEX.match("ABC-000001") is not None
     assert prim.ATOM_ID_REGEX.match("IND-0000001") is None
-    assert prim.PUB_CODE_REGEX.match("US_CENSUS") is not None
+    assert prim.PUB_CODE_REGEX.match("PA-CARL-HERALD") is not None
     assert prim.NEWS_CATEGORY_REGEX.match("OBIT") is not None
     expected_nids = {
         "SRC",
@@ -249,5 +260,6 @@ def test_centralized_urn_and_scalar_regexes() -> None:
     }
     assert set(prim.URN_REGEXES.keys()) == expected_nids
     assert prim.URN_REGEXES["SRC"].match("URN:SRC:1917:NH_MERRIMACK:DOC_001") is not None
+    assert prim.URN_REGEXES["CEM"].match("URN:CEM:NH_BLOSSOM_HILL:SEC_A_LOT_12_G1") is not None
     assert prim.URN_REGEXES["LAND"].match("URN:LAND:1850:NH_MERRIMACK:DEED_12") is not None
     assert prim.URN_REGEXES["WILL"].match("URN:WILL:1880:NH_MERRIMACK:PROB_04") is not None

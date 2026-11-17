@@ -3,7 +3,8 @@
 Comprehensive unit test suite for pure stateless text utilities.
 
 Operational Role:
-    Verifies string sanitization, whitespace cleansing, ASCII transliteration,
+    Verifies string sanitization, required non-empty validation, ordered string
+    list deduplication, whitespace cleansing, ASCII transliteration,
     filesystem/URI slugging, American Soundex, and canonical Taft (1970) NYSIIS
     phonetic algorithms with 100% statement and branch coverage.
 
@@ -18,8 +19,9 @@ from __future__ import annotations
 import pytest
 
 import gda.util.text as utext
+from gda.core.errors import ModelFormatError
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 
 # ==============================================================================
@@ -34,7 +36,7 @@ def test_clean_string_valid_strings_stripped_and_normalized() -> None:
     assert utext.clean_string("  @#*John Doe*#@  ") == "John Doe"
     assert utext.clean_string("<<Jane_Doe>>") == "Jane Doe"
     assert utext.clean_string("Alice?Bob~Charlie") == "Alice Bob Charlie"
-    assert utext.clean_string("   Clean Text   ") == "Clean Text"
+    assert utext.clean_string("Clean Text") == "Clean Text"
 
 
 @pytest.mark.regression
@@ -44,9 +46,40 @@ def test_clean_string_non_string_or_empty_returns_none() -> None:
     assert utext.clean_string(12345) is None
     assert utext.clean_string([]) is None
     assert utext.clean_string("") is None
-    assert utext.clean_string("     ") is None
+    assert utext.clean_string("   ") is None
     assert utext.clean_string("@#*\"'<>") is None
     assert utext.clean_string("___***???") is None
+
+
+# ==============================================================================
+# GROUP 1B: REQUIRED STRINGS & UNIQUE STRING LISTS (require_non_empty, clean_unique_strings)
+# ==============================================================================
+
+
+@pytest.mark.unit
+def test_require_non_empty_returns_trimmed_string_and_rejects_blanks() -> None:
+    """Verify require_non_empty trims valid strings and raises ModelFormatError on blanks."""
+    assert utext.require_non_empty("  Concord  ", "city") == "Concord"
+
+    with pytest.raises(ModelFormatError, match="city"):
+        utext.require_non_empty("   ", "city")
+
+    with pytest.raises(ModelFormatError, match="value"):
+        utext.require_non_empty(None)
+
+
+@pytest.mark.unit
+def test_clean_unique_strings_deduplicates_preserving_order() -> None:
+    """Verify clean_unique_strings trims, drops blanks/Nones, and deduplicates in order."""
+    assert utext.clean_unique_strings(None) == []
+    assert utext.clean_unique_strings(["  Alpha ", "", "Beta", "Alpha", None, "  ", "Gamma"]) == [
+        "Alpha",
+        "Beta",
+        "Gamma",
+    ]
+
+    with pytest.raises(ModelFormatError, match="Expected str"):
+        utext.clean_unique_strings(["Valid", 123])  # type: ignore[list-item]
 
 
 # ==============================================================================
@@ -65,7 +98,7 @@ def test_clean_whitespace_collapses_horizontal_whitespace() -> None:
 @pytest.mark.unit
 def test_clean_whitespace_normalizes_crlf_and_cr_linebreaks() -> None:
     """Verify clean_whitespace normalizes Windows CRLF and classic Mac CR linebreaks."""
-    raw = "Line 1   with   spaces\r\n\r\nLine 2\t\twith tabs\rLine 3\n"
+    raw = "Line 1  with spaces\r\n\r\nLine 2\t\twith tabs\rLine 3\n"
     expected = "Line 1 with spaces\n\nLine 2 with tabs\nLine 3"
     assert utext.clean_whitespace(raw) == expected
 
@@ -73,7 +106,7 @@ def test_clean_whitespace_normalizes_crlf_and_cr_linebreaks() -> None:
 @pytest.mark.unit
 def test_clean_whitespace_empty_or_pure_whitespace_returns_empty() -> None:
     """Verify clean_whitespace returns empty string for blank text."""
-    assert utext.clean_whitespace("   \t\n\r   ") == ""
+    assert utext.clean_whitespace("   \t\n\r  ") == ""
     assert utext.clean_whitespace("") == ""
 
 

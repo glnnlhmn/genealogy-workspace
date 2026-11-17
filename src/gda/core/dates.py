@@ -10,7 +10,7 @@ Operational Role:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from gda.core.errors import ModelFormatError, ModelRangeError
@@ -20,7 +20,7 @@ from gda.core.types import (
     ISO_TIMESTAMP_REGEX,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "calculate_age_years",
@@ -37,15 +37,31 @@ __all__ = [
 def validate_iso_date(value: str) -> bool:
     """Validate whether a string matches canonical ISO-8601 partial or full date patterns.
 
+    Enforces both structural regex syntax ('YYYY', 'YYYY-MM', 'YYYY-MM-DD') and
+    real Gregorian calendar day bounds (rejecting impossible dates such as
+    February 30 or April 31).
+
     Args:
         value: Date string candidate to validate.
 
     Returns:
-        True if string matches canonical ISO date format; False otherwise.
+        True if string matches canonical ISO date format and calendar bounds; False otherwise.
     """
     if not isinstance(value, str):
         return False
-    return ISO_DATE_REGEX.match(value.strip()) is not None
+
+    cleaned = value.strip()
+    if ISO_DATE_REGEX.match(cleaned) is None:
+        return False
+
+    parts = cleaned.split("-")
+    if len(parts) == 3:
+        try:
+            date(int(parts[0]), int(parts[1]), int(parts[2]))
+        except ValueError:
+            return False
+
+    return True
 
 
 def validate_iso_timestamp(value: str) -> bool:
@@ -145,18 +161,36 @@ def parse_iso_date_parts(value: str) -> tuple[int, int | None, int | None]:
     return year, month, day
 
 
+def _coerce_date_components(
+    value: Any,
+    field_label: str,
+) -> tuple[int, int | None, int | None]:
+    """Unwrap and parse a date representation into (year, month, day) components."""
+    raw = value.value if hasattr(value, "value") and not isinstance(value, int) else value
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        return int(raw), None, None
+    if isinstance(raw, str):
+        return parse_iso_date_parts(raw)
+    raise ModelFormatError(
+        f"Unsupported {field_label} type: {type(value).__name__}",
+        error_code="ERR_MODEL_FORMAT",
+        details={field_label.replace(" ", "_"): str(value)},
+    )
+
+
 def calculate_age_years(
     birth_date: Any,
     target_date: Any,
 ) -> int:
     """Calculate elapsed integer age in full completed years between birth and target date.
 
-    Supports ISO date strings ('YYYY', 'YYYY-MM', 'YYYY-MM-DD'), integer calendar years,
-    or atomic year/date representations exposing an integer or value attribute.
+    Supports ISO date strings ('YYYY', 'YYYY-MM', 'YYYY-MM-DD'), integer calendar years
+    (including IntEnum members), or atomic year/date representations exposing a .value
+    attribute.
 
     Args:
-        birth_date: Birth date representation (str, int, or atom).
-        target_date: Death or event date representation (str, int, or atom).
+        birth_date: Birth date representation (str, int, IntEnum, or atom).
+        target_date: Death or event date representation (str, int, IntEnum, or atom).
 
     Returns:
         Completed integer years of age.
@@ -165,47 +199,21 @@ def calculate_age_years(
         ModelFormatError: If either date format cannot be resolved or parsed.
         ModelRangeError: If target_date chronologically precedes birth_date.
     """
-    # Extract raw value if an atom was passed
-    b_raw = birth_date.value if hasattr(birth_date, "value") else birth_date
-    t_raw = target_date.value if hasattr(target_date, "value") else target_date
+    b_year, b_month, b_day = _coerce_date_components(birth_date, "birth date")
+    d_year, d_month, d_day = _coerce_date_components(target_date, "target date")
 
-    # Resolve birthdate components
-    if type(b_raw) is int:
-        b_year, b_month, b_day = b_raw, None, None
-    elif isinstance(b_raw, str):
-        b_year, b_month, b_day = parse_iso_date_parts(b_raw)
-    else:
-        raise ModelFormatError(
-            f"Unsupported birth date type: expected int or ISO str, got {type(b_raw).__name__}.",
-            error_code="ERR_MODEL_FORMAT",
-            details={"birth_date": str(birth_date)},
-        )
+    age = d_year - b_year
+    if b_month is not None and d_month is not None:
+        if (d_month < b_month) or (
+            d_month == b_month and b_day is not None and d_day is not None and d_day < b_day
+        ):
+            age -= 1
 
-    # Resolve target date components
-    if type(t_raw) is int:
-        t_year, t_month, t_day = t_raw, None, None
-    elif isinstance(t_raw, str):
-        t_year, t_month, t_day = parse_iso_date_parts(t_raw)
-    else:
-        raise ModelFormatError(
-            f"Unsupported target date type: expected int or ISO str, got {type(t_raw).__name__}.",
-            error_code="ERR_MODEL_FORMAT",
-            details={"target_date": str(target_date)},
-        )
-
-    age = t_year - b_year
     if age < 0:
         raise ModelRangeError(
-            f"Target date '{target_date}' cannot chronologically precede birth date '{birth_date}'.",
+            f"Target date '{target_date}' precedes birth date '{birth_date}'.",
             error_code="ERR_MODEL_RANGE",
             details={"birth_date": str(birth_date), "target_date": str(target_date)},
         )
-
-    # If both dates define months, check if the birthday anniversary has occurred yet
-    if b_month is not None and t_month is not None:
-        b_day_eff = b_day if b_day is not None else 1
-        t_day_eff = t_day if t_day is not None else 1
-        if (t_month, t_day_eff) < (b_month, b_day_eff):
-            age -= 1
 
     return age

@@ -6,7 +6,7 @@ Operational Role:
     Provides canonical UTF-8 reading and writing for textual documents,
     narratives, markdown files, and transcripts within the digital archive.
     Integrates with GDABackupManager for pre-write Safe Backups and utilizes
-    atomic_write to ensure failure-resilient filesystem commits.
+    atomic_write_text to ensure failure-resilient filesystem commits.
 """
 
 from __future__ import annotations
@@ -14,11 +14,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from gda.core.introspectable import IntrospectableMixin
-from gda.io.atomic import atomic_write
+from gda.io.atomic import atomic_write_text
 from gda.io.backup import GDABackupManager
 from gda.io.errors import FileReadError
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "GDATextIO",
@@ -45,6 +45,7 @@ class GDATextIO(IntrospectableMixin):
             FileReadError: If file is missing, points to a directory, or decode fails.
         """
         target = Path(file_path).resolve()
+        # Guard against missing files or directory paths
         if not target.exists():
             raise FileReadError(f"Target text file '{target}' does not exist.")
         if target.is_dir():
@@ -82,10 +83,8 @@ class GDATextIO(IntrospectableMixin):
         """
         target = Path(file_path).resolve()
 
+        # Create pre-write snapshot if requested and target already exists on disk
         if create_backup and target.exists():
             GDABackupManager.create_backup(target_path=target, backup_dir=backup_dir)
 
-        with atomic_write(target, mode="w", encoding=encoding) as stream:
-            stream.write(content)
-
-        return target
+        return atomic_write_text(target, content, encoding=encoding)

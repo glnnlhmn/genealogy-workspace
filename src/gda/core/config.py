@@ -7,7 +7,8 @@ Operational Role:
     configuration. Supports multi-engine database connection strings (SQLite file/memory
     and client-server RDBMS engines with host, port, username, password, and db_name)
     and resolves environment-specific database targets (DEV, TEST, STAGING, PROD)
-    from pyproject.toml, custom TOML files, environment variables, and runtime overrides.
+    from pyproject.toml, gda_config.toml, custom TOML files, environment variables,
+    and runtime overrides.
 
 Classes:
     DatabaseConfig: Multi-engine connection parameters, credentials, and SQLite PRAGMA settings.
@@ -24,11 +25,11 @@ from pathlib import Path
 from typing import Any, Literal, Self
 from urllib.parse import quote_plus
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from gda.core.errors import ConfigParseError, ConfigValidationError
 
-__version__ = "1.0.0+build.15"
+__version__ = "1.0.0+build.19"
 
 __all__ = [
     "AppConfig",
@@ -103,23 +104,25 @@ class DatabaseConfig(ImmutableBaseModel):
     @classmethod
     def synchronize_db_name_and_path(cls, data: Any) -> Any:
         """Derive db_path from db_name when db_name is given without an explicit db_path."""
-        if isinstance(data, Mapping):
-            mutable = dict(data)
-            if "timeout_seconds" in mutable and "busy_timeout" not in mutable:
-                sec = float(mutable.pop("timeout_seconds"))
-                mutable["busy_timeout"] = int(sec * 1000)
-            else:
-                mutable.pop("timeout_seconds", None)
+        if not isinstance(data, Mapping):
+            return data
 
-            db_name_val = mutable.get("db_name")
-            if isinstance(db_name_val, str) and db_name_val.strip() and "db_path" not in mutable:
-                clean_name = db_name_val.strip()
-                if clean_name in (":memory:", "file::memory:"):
-                    mutable["db_path"] = clean_name
-                else:
-                    mutable["db_path"] = Path("data") / clean_name
-            return mutable
-        return data
+        mutable = dict(data)
+        if "timeout_seconds" in mutable and "busy_timeout" not in mutable:
+            sec = float(mutable.pop("timeout_seconds"))
+            mutable["busy_timeout"] = int(sec * 1000)
+        else:
+            mutable.pop("timeout_seconds", None)
+
+        db_name_val = mutable.get("db_name")
+        if isinstance(db_name_val, str) and db_name_val.strip() and "db_path" not in mutable:
+            clean_name = db_name_val.strip()
+            mutable["db_path"] = (
+                clean_name
+                if clean_name in (":memory:", "file::memory:")
+                else Path("data") / clean_name
+            )
+        return mutable
 
     @property
     def is_in_memory(self) -> bool:
@@ -146,18 +149,19 @@ class DatabaseConfig(ImmutableBaseModel):
                 return f"{self.engine}:///:memory:"
             return f"{self.engine}:///{Path(self.db_path).as_posix()}"
 
-        auth_segment = ""
-        if self.username:
-            user_enc = quote_plus(self.username)
-            if self.password is not None:
-                pw_enc = quote_plus(self.password)
-                auth_segment = f"{user_enc}:{pw_enc}@"
-            else:
-                auth_segment = f"{user_enc}@"
-
+        auth_segment = self._format_auth_segment()
         host_str = self.host or "localhost"
         host_segment = f"{host_str}:{self.port}" if self.port is not None else host_str
         return f"{self.engine}://{auth_segment}{host_segment}/{self.resolved_db_name}"
+
+    def _format_auth_segment(self) -> str:
+        """Format URL-encoded user[:password]@ segment for client-server URIs."""
+        if not self.username:
+            return ""
+        user_enc = quote_plus(self.username)
+        if self.password is not None:
+            return f"{user_enc}:{quote_plus(self.password)}@"
+        return f"{user_enc}@"
 
 
 class LoggingConfig(ImmutableBaseModel):
@@ -261,12 +265,100 @@ class AppConfig(ImmutableBaseModel):
             return {}
 
         if isinstance(env_entry.get("database"), Mapping):
-            db_sec = dict(env_entry["database"])
-        else:
-            db_fields = set(DatabaseConfig.model_fields.keys()) | {"timeout_seconds"}
-            db_sec = {k: v for k, v in env_entry.items() if k in db_fields}
+            return dict(env_entry["database"])
 
-        return db_sec
+        db_fields = set(DatabaseConfig.model_fields.keys()) | {"timeout_seconds"}
+        return {k: v for k, v in env_entry.items() if k in db_fields}
+
+    @staticmethod
+    def _resolve_config_file(
+        config_path: str | Path | None,
+        resolved_root: Path,
+        env_source: Mapping[str, str],
+        env_prefix: str,
+    ) -> Path | None:
+        """Locate the active TOML configuration file from explicit path, env var, or root_path."""
+        explicit_target = config_path or env_source.get(f"{env_prefix}CONFIG_PATH")
+        if explicit_target is not None:
+            candidate = Path(explicit_target)
+            if not candidate.exists():
+                raise ConfigParseError(
+                    f"Configuration file not found: {candidate}",
+                    error_code="ERR_CONFIG_FILE_NOT_FOUND",
+                    details={"config_path": str(candidate)},
+                )
+            return candidate
+
+        for default_name in ("gda_config.toml", "pyproject.toml"):
+            candidate = resolved_root / default_name
+            if candidate.exists():
+                return candidate
+        return None
+
+    @classmethod
+    def _read_toml_file(cls, file_to_load: Path) -> dict[str, Any]:
+        """Read and parse a TOML configuration file into a raw dictionary."""
+        try:
+            with file_to_load.open("rb") as f:
+                raw_toml = tomllib.load(f)
+        except tomllib.TOMLDecodeError as exc:
+            raise ConfigParseError(
+                f"Malformed TOML in {file_to_load}: {exc}",
+                error_code="ERR_CONFIG_TOML_PARSE",
+                details={"path": str(file_to_load)},
+            ) from exc
+
+        if file_to_load.name == "pyproject.toml":
+            return dict(raw_toml.get("tool", {}).get("gda", {}))
+        return dict(raw_toml.get("tool", {}).get("gda", raw_toml))
+
+    @classmethod
+    def _apply_toml_section(
+        cls,
+        merged: dict[str, Any],
+        gda_section: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """Merge [tool.gda] scalar, database, logging, and environment sections."""
+        for key in ("app_name", "environment", "debug", "root_path"):
+            if key in gda_section:
+                merged[key] = gda_section[key]
+        if isinstance(gda_section.get("database"), Mapping):
+            merged["database"].update(gda_section["database"])
+        if isinstance(gda_section.get("logging"), Mapping):
+            merged["logging"].update(gda_section["logging"])
+
+        environments_table = gda_section.get("environments")
+        if isinstance(environments_table, Mapping):
+            return dict(environments_table)
+        return {}
+
+    @classmethod
+    def _apply_env_vars(
+        cls,
+        merged: dict[str, Any],
+        env_source: Mapping[str, str],
+        env_prefix: str,
+    ) -> None:
+        """Overlay prefixed environment variables onto the merged configuration dict."""
+        config_path_key = f"{env_prefix}CONFIG_PATH"
+        for key, raw_val in env_source.items():
+            if not key.startswith(env_prefix) or key == config_path_key:
+                continue
+            parts = key[len(env_prefix) :].lower().split("__")
+            coerced = cls._coerce_env_val(raw_val)
+            if len(parts) == 1 and parts[0] in ("app_name", "environment", "debug", "root_path"):
+                merged[parts[0]] = coerced
+            elif parts[0] in ("database", "logging") and len(parts) == 2:
+                merged[parts[0]][parts[1]] = coerced
+
+    @staticmethod
+    def _apply_overrides(merged: dict[str, Any], overrides: Mapping[str, Any]) -> None:
+        """Apply explicit dictionary overrides onto the merged configuration payload."""
+        for k, v in overrides.items():
+            if k in ("database", "logging") and isinstance(v, Mapping):
+                merged[k].update(v)
+            else:
+                merged[k] = v
 
     @classmethod
     def for_environment(
@@ -294,140 +386,78 @@ class AppConfig(ImmutableBaseModel):
         env_vars: Mapping[str, str] | None = None,
         overrides: dict[str, Any] | None = None,
     ) -> Self:
-        """Load and merge configuration across precedence tiers.
+        """Load and validate configuration across TOML, environment variables, and overrides.
+
+        Precedence (lowest to highest):
+            1. Schema defaults
+            2. gda_config.toml, pyproject.toml [tool.gda], or explicit TOML file
+            3. [tool.gda.environments.<ENV>] overlay (when env_name or environment matches)
+            4. Environment variables (GDA_*, GDA_DATABASE__*, GDA_LOGGING__*)
+            5. Explicit dictionary overrides
 
         Args:
-            config_path: Explicit path to custom TOML config file.
-            root_path: Base workspace directory anchor.
-            env_name: Optional target environment ('DEV', 'TEST', 'STAGING', 'PROD')
-                to resolve from [tool.gda.environments.<ENV>].
-            env_prefix: Prefix for environment variable overrides.
+            config_path: Optional explicit TOML configuration file path.
+            root_path: Optional workspace root directory override.
+            env_name: Optional target environment name or code (DEV, TEST, STAGING, PROD).
+            env_prefix: Prefix for environment variable scanning (defaults to 'GDA_').
             env_vars: Optional mapping of environment variables (defaults to os.environ).
-            overrides: Direct runtime override dictionary.
+            overrides: Optional highest-precedence dictionary overrides.
 
         Returns:
-            Instantiated and validated AppConfig instance.
+            Validated, immutable AppConfig instance.
 
         Raises:
-            ConfigParseError: If TOML file cannot be read or parsed.
-            ConfigValidationError: If merged values fail validation constraints.
+            ConfigParseError: If an explicit config_path is missing or TOML syntax fails.
+            ConfigValidationError: If merged settings fail Pydantic schema validation.
         """
-        payload: dict[str, Any] = {}
-        active_env = os.environ if env_vars is None else env_vars
-        environments_table: Mapping[str, Any] = {}
-
+        merged: dict[str, Any] = {"database": {}, "logging": {}}
         if root_path is not None:
-            payload["root_path"] = root_path
+            merged["root_path"] = root_path
 
-        file_to_load: Path | None = None
-        is_pyproject = False
+        resolved_root = Path(root_path) if root_path is not None else Path.cwd()
+        env_source = env_vars if env_vars is not None else os.environ
 
-        if config_path is not None:
-            file_to_load = Path(config_path)
-            if not file_to_load.exists():
-                raise ConfigParseError(
-                    f"Config file not found: {file_to_load}",
-                    error_code="ERR_CONFIG_FILE_NOT_FOUND",
-                    details={"path": str(file_to_load)},
-                )
-            if file_to_load.name == "pyproject.toml":
-                is_pyproject = True
-        elif "GDA_CONFIG_PATH" in active_env:
-            env_cfg = Path(active_env["GDA_CONFIG_PATH"])
-            if not env_cfg.exists():
-                raise ConfigParseError(
-                    f"GDA_CONFIG_PATH target not found: {env_cfg}",
-                    error_code="ERR_CONFIG_FILE_NOT_FOUND",
-                    details={"path": str(env_cfg)},
-                )
-            file_to_load = env_cfg
-            if file_to_load.name == "pyproject.toml":
-                is_pyproject = True
-        else:
-            base = Path(root_path) if root_path else Path.cwd()
-            dedicated_cfg = base / "gda_config.toml"
-            pyproject_cfg = base / "pyproject.toml"
-
-            if dedicated_cfg.exists():
-                file_to_load = dedicated_cfg
-            elif pyproject_cfg.exists():
-                file_to_load = pyproject_cfg
-                is_pyproject = True
-
+        # --- Layer 1: Discover and Parse TOML File ---
+        file_to_load = cls._resolve_config_file(config_path, resolved_root, env_source, env_prefix)
+        environments_table: dict[str, Any] = {}
         if file_to_load is not None:
-            try:
-                with open(file_to_load, "rb") as fh:
-                    raw_toml = tomllib.load(fh)
-                if is_pyproject or "tool" in raw_toml:
-                    gda_section = raw_toml.get("tool", {}).get("gda", {})
-                    if isinstance(gda_section.get("environments"), Mapping):
-                        environments_table = gda_section["environments"]
-                    valid_keys = cls.model_fields.keys()
-                    filtered = {k: v for k, v in gda_section.items() if k in valid_keys}
-                    payload.update(filtered)
-                else:
-                    if isinstance(raw_toml.get("environments"), Mapping):
-                        environments_table = dict(raw_toml["environments"])
-                    raw_copy = {k: v for k, v in raw_toml.items() if k != "environments"}
-                    payload.update(raw_copy)
-            except tomllib.TOMLDecodeError as err:
-                raise ConfigParseError(
-                    f"Malformed TOML syntax in {file_to_load}: {err}",
-                    error_code="ERR_CONFIG_TOML_PARSE",
-                    details={"path": str(file_to_load), "syntax_error": str(err)},
-                ) from err
+            gda_section = cls._read_toml_file(file_to_load)
+            environments_table = cls._apply_toml_section(merged, gda_section)
 
+        # --- Layer 2: [tool.gda.environments.<ENV>] Overlay & Environment Variables ---
         if env_name is not None:
-            payload["environment"] = env_name
+            merged["environment"] = env_name
 
-        # Resolve [tool.gda.environments.<ENV>] when env_name is explicitly requested
-        # or when [tool.gda.database] was not explicitly set in pyproject.toml
-        if environments_table and (env_name is not None or "database" in environments_table):
-            target_env = str(env_name or payload.get("environment", "development"))
-            env_db = cls._extract_env_db_settings(environments_table, target_env)
-            if env_db:
-                base_db = payload.get("database")
-                if isinstance(base_db, Mapping):
-                    payload["database"] = {**base_db, **env_db}
-                else:
-                    payload["database"] = env_db
+        if environments_table and (env_name is not None or "environment" in merged):
+            target_env_key = str(
+                env_source.get(f"{env_prefix}ENVIRONMENT") or merged["environment"]
+            )
+            merged["database"].update(
+                cls._extract_env_db_settings(environments_table, target_env_key)
+            )
 
-        prefix_len = len(env_prefix)
-        for env_key, env_val in active_env.items():
-            if env_key.startswith(env_prefix) and env_key != "GDA_CONFIG_PATH":
-                key = env_key[prefix_len:].lower()
-                if "__" in key:
-                    sec, sub = key.split("__", 1)
-                    sec_dict = payload.setdefault(sec, {})
-                    if isinstance(sec_dict, dict):
-                        sec_dict[sub] = cls._coerce_env_val(env_val)
-                else:
-                    payload[key] = cls._coerce_env_val(env_val)
+        cls._apply_env_vars(merged, env_source, env_prefix)
 
+        # --- Layer 3: Explicit Runtime Overrides & Validation ---
         if overrides:
-            for k, v in overrides.items():
-                if isinstance(v, dict) and isinstance(payload.get(k), dict):
-                    payload[k] = {**payload[k], **v}
-                else:
-                    payload[k] = v
+            cls._apply_overrides(merged, overrides)
 
         try:
-            return cls.model_validate(payload)
-        except Exception as err:
+            return cls(**merged)
+        except ValidationError as exc:
             raise ConfigValidationError(
-                f"Configuration validation failed: {err}",
-                error_code="ERR_CONFIG_VALIDATION",
-                details={"cause": str(err)},
-            ) from err
+                f"Configuration validation failed: {exc}",
+                details={"errors": exc.errors()},
+            ) from exc
 
     @staticmethod
-    def _coerce_env_val(val: str) -> Any:
-        """Coerce environment string values to boolean, integer, or original string."""
-        if val.lower() in ("true", "1", "yes"):
+    def _coerce_env_val(val: str) -> bool | int | str:
+        """Coerce raw environment variable string to boolean, integer, or string."""
+        lower = val.strip().lower()
+        if lower in ("true", "1", "yes"):
             return True
-        if val.lower() in ("false", "0", "no"):
+        if lower in ("false", "0", "no"):
             return False
-        try:
-            return int(val)
-        except ValueError:
-            return val
+        if val.strip().isdigit():
+            return int(val.strip())
+        return val
