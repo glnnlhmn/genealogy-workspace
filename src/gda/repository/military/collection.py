@@ -12,17 +12,10 @@ Operational Role:
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
 from typing import Any
 
-from gda.db.mapper.immigration_military import (
-    deserialize_military_record,
-    serialize_military_record,
-)
 from gda.db.session import DatabaseSessionManager
-from gda.io.json import GDAJsonIO
 from gda.model.atom.id import IndividualID, LocationID, SourceID
-from gda.model.base.source import SourceRecord
 from gda.model.source.military import (
     BountyLandWarrantRecord,
     CivilWarDraftRecord,
@@ -43,7 +36,7 @@ from gda.model.source.military import (
     WwiDraftCardRecord,
     WwiiDraftCardRecord,
 )
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.military.repository import (
     BountyLandWarrantRepository,
@@ -54,7 +47,7 @@ from gda.repository.military.repository import (
     MilitaryServiceRepository,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "BountyLandWarrantCollection",
@@ -66,40 +59,7 @@ __all__ = [
 ]
 
 
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
-
-
-class _BaseMilitaryCollection[
-    TModel: SourceRecord,
-    TRepo: BaseSQLiteRepository[Any, SourceID],
-](BaseSourceCollection[TModel, TRepo]):
-    """Shared base collection for Military records supporting full field export."""
-
-    def export_file(
-        self,
-        path: Path | str,
-        *,
-        include_graveyard: bool = True,
-    ) -> int:
-        """Export military collection records with all subclass fields to JSON."""
-        records = list(self.iter_all() if include_graveyard else self)
-        serialized = [serialize_military_record(rec) for rec in records]
-        payload = {
-            "schema_version": "1.0.0",
-            "table_name": self.table_name,
-            "total_count": len(serialized),
-            "records": serialized,
-        }
-        dest = Path(path)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        GDAJsonIO.write(dest, payload)
-        return len(serialized)
-
-
-class MilitaryDraftCollection(
-    _BaseMilitaryCollection[MilitaryDraftRecord, MilitaryDraftRepository]
-):
+class MilitaryDraftCollection(BaseSourceCollection[MilitaryDraftRecord, MilitaryDraftRepository]):
     """In-memory collection for MilitaryDraftRecord and era-specific subclasses."""
 
     def __init__(
@@ -119,16 +79,16 @@ class MilitaryDraftCollection(
 
     def _deserialize_record(self, data: dict[str, Any]) -> MilitaryDraftRecord:
         if "colony_or_state_raw" in data:
-            return deserialize_military_record(ColonialMilitiaRecord, data)
+            return ColonialMilitiaRecord.from_dict(data)
         if "enrollment_class" in data:
-            return deserialize_military_record(CivilWarDraftRecord, data)
+            return CivilWarDraftRecord.from_dict(data)
         if "citizenship" in data:
-            return deserialize_military_record(WwiDraftCardRecord, data)
+            return WwiDraftCardRecord.from_dict(data)
         if "draft_wave" in data:
-            return deserialize_military_record(WwiiDraftCardRecord, data)
+            return WwiiDraftCardRecord.from_dict(data)
         if "draft_era" in data:
-            return deserialize_military_record(ModernSelectiveServiceRecord, data)
-        return deserialize_military_record(MilitaryDraftRecord, data)
+            return ModernSelectiveServiceRecord.from_dict(data)
+        return MilitaryDraftRecord.from_dict(data)
 
     def _index_domain_fields(self, record: MilitaryDraftRecord) -> None:
         self._by_registrant[record.registrant_id.value].add(record.source_id)
@@ -145,24 +105,20 @@ class MilitaryDraftCollection(
         registrant_id: IndividualID | str,
     ) -> list[MilitaryDraftRecord]:
         """Return active draft records for a registrant IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_registrant.get(_normalize_id(registrant_id), set()),
-        )
+        return self._records_for_ids(self._by_registrant.get(_normalize_id(registrant_id), set()))
 
     def find_by_board_location(
         self,
         board_location_id: LocationID | str,
     ) -> list[MilitaryDraftRecord]:
         """Return active draft records for a local board LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_board_location.get(_normalize_id(board_location_id), set()),
+        return self._records_for_ids(
+            self._by_board_location.get(_normalize_id(board_location_id), set())
         )
 
 
 class MilitaryServiceCollection(
-    _BaseMilitaryCollection[MilitaryServiceRecord, MilitaryServiceRepository]
+    BaseSourceCollection[MilitaryServiceRecord, MilitaryServiceRepository]
 ):
     """In-memory collection for MilitaryServiceRecord and subclasses."""
 
@@ -183,10 +139,10 @@ class MilitaryServiceCollection(
 
     def _deserialize_record(self, data: dict[str, Any]) -> MilitaryServiceRecord:
         if "roll_type" in data:
-            return deserialize_military_record(EnlistmentMusterRecord, data)
+            return EnlistmentMusterRecord.from_dict(data)
         if "form_type" in data:
-            return deserialize_military_record(SeparationDischargeRecord, data)
-        return deserialize_military_record(MilitaryServiceRecord, data)
+            return SeparationDischargeRecord.from_dict(data)
+        return MilitaryServiceRecord.from_dict(data)
 
     def _index_domain_fields(self, record: MilitaryServiceRecord) -> None:
         self._by_veteran[record.veteran_id.value].add(record.source_id)
@@ -203,24 +159,18 @@ class MilitaryServiceCollection(
         veteran_id: IndividualID | str,
     ) -> list[MilitaryServiceRecord]:
         """Return active service records for a veteran IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_veteran.get(_normalize_id(veteran_id), set()),
-        )
+        return self._records_for_ids(self._by_veteran.get(_normalize_id(veteran_id), set()))
 
     def find_by_enlistment_location(
         self,
         location_id: LocationID | str,
     ) -> list[MilitaryServiceRecord]:
         """Return active service records for an enlistment LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
 class MilitaryPensionCollection(
-    _BaseMilitaryCollection[MilitaryPensionRecord, MilitaryPensionRepository]
+    BaseSourceCollection[MilitaryPensionRecord, MilitaryPensionRepository]
 ):
     """In-memory collection for MilitaryPensionRecord and subclasses."""
 
@@ -241,10 +191,10 @@ class MilitaryPensionCollection(
 
     def _deserialize_record(self, data: dict[str, Any]) -> MilitaryPensionRecord:
         if "disability_description_raw" in data or "examining_surgeon_raw" in data:
-            return deserialize_military_record(PensionVeteranClaimRecord, data)
+            return PensionVeteranClaimRecord.from_dict(data)
         if "veteran_death_year" in data or "minor_children_count" in data:
-            return deserialize_military_record(PensionWidowDependentRecord, data)
-        return deserialize_military_record(MilitaryPensionRecord, data)
+            return PensionWidowDependentRecord.from_dict(data)
+        return MilitaryPensionRecord.from_dict(data)
 
     def _index_domain_fields(self, record: MilitaryPensionRecord) -> None:
         self._by_veteran[record.veteran_id.value].add(record.source_id)
@@ -261,24 +211,18 @@ class MilitaryPensionCollection(
         veteran_id: IndividualID | str,
     ) -> list[MilitaryPensionRecord]:
         """Return active pension records for a veteran IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_veteran.get(_normalize_id(veteran_id), set()),
-        )
+        return self._records_for_ids(self._by_veteran.get(_normalize_id(veteran_id), set()))
 
     def find_by_application_location(
         self,
         location_id: LocationID | str,
     ) -> list[MilitaryPensionRecord]:
         """Return active pension records for an application LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
 class BountyLandWarrantCollection(
-    _BaseMilitaryCollection[BountyLandWarrantRecord, BountyLandWarrantRepository]
+    BaseSourceCollection[BountyLandWarrantRecord, BountyLandWarrantRepository]
 ):
     """In-memory collection for BountyLandWarrantRecord sources."""
 
@@ -301,7 +245,7 @@ class BountyLandWarrantCollection(
         self,
         data: dict[str, Any],
     ) -> BountyLandWarrantRecord:
-        return deserialize_military_record(BountyLandWarrantRecord, data)
+        return BountyLandWarrantRecord.from_dict(data)
 
     def _index_domain_fields(self, record: BountyLandWarrantRecord) -> None:
         self._by_veteran[record.veteran_id.value].add(record.source_id)
@@ -318,24 +262,20 @@ class BountyLandWarrantCollection(
         veteran_id: IndividualID | str,
     ) -> list[BountyLandWarrantRecord]:
         """Return active bounty land warrants for a veteran IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_veteran.get(_normalize_id(veteran_id), set()),
-        )
+        return self._records_for_ids(self._by_veteran.get(_normalize_id(veteran_id), set()))
 
     def find_by_patent_location(
         self,
         location_id: LocationID | str,
     ) -> list[BountyLandWarrantRecord]:
         """Return active bounty land warrants for a patent LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_patent_location.get(_normalize_id(location_id), set()),
+        return self._records_for_ids(
+            self._by_patent_location.get(_normalize_id(location_id), set())
         )
 
 
 class MilitaryCasualtyCollection(
-    _BaseMilitaryCollection[MilitaryCasualtyRecord, MilitaryCasualtyRepository]
+    BaseSourceCollection[MilitaryCasualtyRecord, MilitaryCasualtyRepository]
 ):
     """In-memory collection for MilitaryCasualtyRecord and subclasses."""
 
@@ -359,12 +299,12 @@ class MilitaryCasualtyCollection(
         data: dict[str, Any],
     ) -> MilitaryCasualtyRecord:
         if "cemetery_type" in data:
-            return deserialize_military_record(MilitaryBurialRecord, data)
+            return MilitaryBurialRecord.from_dict(data)
         if "camp_type" in data:
-            return deserialize_military_record(PrisonerOfWarRecord, data)
+            return PrisonerOfWarRecord.from_dict(data)
         if "engagement_name_raw" in data or "died_of_wounds_year" in data:
-            return deserialize_military_record(CombatCasualtyRecord, data)
-        return deserialize_military_record(MilitaryCasualtyRecord, data)
+            return CombatCasualtyRecord.from_dict(data)
+        return MilitaryCasualtyRecord.from_dict(data)
 
     def _index_domain_fields(self, record: MilitaryCasualtyRecord) -> None:
         self._by_servicemember[record.servicemember_id.value].add(record.source_id)
@@ -381,9 +321,8 @@ class MilitaryCasualtyCollection(
         servicemember_id: IndividualID | str,
     ) -> list[MilitaryCasualtyRecord]:
         """Return active casualty records for a servicemember IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_servicemember.get(_normalize_id(servicemember_id), set()),
+        return self._records_for_ids(
+            self._by_servicemember.get(_normalize_id(servicemember_id), set())
         )
 
     def find_by_location(
@@ -391,15 +330,10 @@ class MilitaryCasualtyCollection(
         location_id: LocationID | str,
     ) -> list[MilitaryCasualtyRecord]:
         """Return active casualty records for a casualty LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
-class MilitaryAwardCollection(
-    _BaseMilitaryCollection[MilitaryAwardRecord, MilitaryAwardRepository]
-):
+class MilitaryAwardCollection(BaseSourceCollection[MilitaryAwardRecord, MilitaryAwardRepository]):
     """In-memory collection for MilitaryAwardRecord sources."""
 
     def __init__(
@@ -418,7 +352,7 @@ class MilitaryAwardCollection(
         return MilitaryAwardRepository(session_manager=session_manager)
 
     def _deserialize_record(self, data: dict[str, Any]) -> MilitaryAwardRecord:
-        return deserialize_military_record(MilitaryAwardRecord, data)
+        return MilitaryAwardRecord.from_dict(data)
 
     def _index_domain_fields(self, record: MilitaryAwardRecord) -> None:
         self._by_recipient[record.recipient_id.value].add(record.source_id)
@@ -435,17 +369,11 @@ class MilitaryAwardCollection(
         recipient_id: IndividualID | str,
     ) -> list[MilitaryAwardRecord]:
         """Return active military awards for a recipient IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_recipient.get(_normalize_id(recipient_id), set()),
-        )
+        return self._records_for_ids(self._by_recipient.get(_normalize_id(recipient_id), set()))
 
     def find_by_action_location(
         self,
         location_id: LocationID | str,
     ) -> list[MilitaryAwardRecord]:
         """Return active military awards for an action LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))

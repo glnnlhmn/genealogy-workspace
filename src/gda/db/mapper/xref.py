@@ -15,9 +15,7 @@ import sqlite3
 from typing import Any
 
 from gda.db.exceptions import EntityMappingError
-from gda.db.mapper.base import BaseRowMapper
-from gda.db.mapper.immigration_military import _opt_year
-from gda.db.mapper.vital_cemetery import _opt_val
+from gda.db.mapper.base import BaseRowMapper, _opt_val, _opt_year
 from gda.model.xref import (
     FactParticipantXRef,
     IndividualFamilyXRef,
@@ -30,7 +28,7 @@ from gda.model.xref import (
     SurnameXRef,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "FactParticipantXRefMapper",

@@ -4,8 +4,9 @@ Domain-specific helper utilities for identifiers, text sanitization, and phoneti
 
 Operational Role:
     Public export facade for high-level utility helpers:
-    sequential smartID and UUIDv4 minting, decomposition, high-water mark sequence
-    extraction, Unicode/ASCII sanitization, slugging, and historical phonetic encodings.
+    sequential smartID and UUIDv4 minting, identifier normalization,
+    decomposition, high-water mark sequence extraction, Unicode/ASCII
+    sanitization, slugging, and historical phonetic encodings.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from gda.util.ids import (
     extract_max_smart_id,
     mint_smart_id,
     mint_uuid,
+    normalize_id,
     parse_smart_id,
     verify_id,
 )
@@ -26,7 +28,7 @@ from gda.util.text import (
     slugify,
 )
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "clean_string",  # text.py
@@ -35,6 +37,7 @@ __all__ = [
     "mint_smart_id",  # ids.py
     "mint_uuid",  # ids.py
     "normalize_ascii",  # text.py
+    "normalize_id",  # ids.py
     "parse_smart_id",  # ids.py
     "phonetic_nysiis",  # text.py
     "phonetic_soundex",  # text.py

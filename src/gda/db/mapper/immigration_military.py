@@ -4,69 +4,28 @@ Bidirectional and polymorphic SQLite row mappers for Immigration and Military so
 
 Operational Role:
     Flattens analytical, foreign-key, and temporal columns for SQLite indexing
-    while supporting full dataclass reflection serialization and polymorphic
-    subclass hydration for Immigration and Military source records.
+    while leveraging native SourceRecord.to_dict() and SourceRecord.from_dict()
+    reflection and polymorphic subclass hydration for Immigration and Military
+    archival source records.
 """
 
 from __future__ import annotations
 
-import dataclasses
 import json
 import sqlite3
-from enum import Enum
 from typing import Any
 
-from gda.core.enums.military import (
-    AwardScope,
-    BountyLandAct,
-    CasualtyCategory,
-    CivilWarConscriptionAllegiance,
-    CivilWarEnrollmentClass,
-    ColonialMilitiaClass,
-    ColonialWarPeriod,
-    DraftCardTier,
-    IntermentCemeteryType,
-    MilitaryAwardTier,
-    MilitaryBranch,
-    ModernDraftEra,
-    MusterRollType,
-    PensionClaimantRole,
-    PensionPaymentAuthority,
-    PowCampType,
-    SeparationCharacter,
-    SeparationFormType,
-    ServiceComponent,
-    SssClassification,
-    WwiCitizenshipStatus,
-    WwiiDraftWave,
-)
-from gda.core.enums.sources import SourceRecordCategory
 from gda.db.exceptions import EntityMappingError
-from gda.db.mapper.base import BaseRowMapper
-from gda.db.mapper.vital_cemetery import (
+from gda.db.mapper.base import (
+    BaseRowMapper,
     _base_source_columns,
     _date_sort,
     _date_year,
     _hydrate_from_payload,
     _opt_val,
+    _opt_year,
 )
-from gda.model.atom.date import IsoTimestamp
-from gda.model.atom.id import (
-    DraftRecordID,
-    IndividualID,
-    LocationID,
-    MediaID,
-    RepositoryID,
-    ServiceRecordID,
-    SourceID,
-    TranscriptID,
-)
-from gda.model.atom.urn import ArchivalURN, MilitaryDraftUrn, SourceURN
-from gda.model.atom.year import HistoricalYear
-from gda.model.base.association import AssociatedIndividual
-from gda.model.base.audit import AuditStamp
 from gda.model.base.source import SourceRecord
-from gda.model.base.tombstone import Tombstone
 from gda.model.source.immigration.manifest import ImmigrationManifestRecord
 from gda.model.source.immigration.naturalization import NaturalizationRecord
 from gda.model.source.military import (
@@ -88,11 +47,9 @@ from gda.model.source.military import (
     SeparationDischargeRecord,
     WwiDraftCardRecord,
     WwiiDraftCardRecord,
-    WwiiPhysicalMetrics,
-    WwiPhysicalDescription,
 )
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.8"
 
 __all__ = [
     "BountyLandWarrantRecordMapper",
@@ -139,152 +96,20 @@ _CASUALTY_RECORD_REGISTRY: dict[str, type[MilitaryCasualtyRecord]] = {
     "PrisonerOfWarRecord": PrisonerOfWarRecord,
 }
 
-_MILITARY_ENUM_MAP: dict[str, type[Enum]] = {
-    "AwardScope": AwardScope,
-    "BountyLandAct": BountyLandAct,
-    "CasualtyCategory": CasualtyCategory,
-    "CivilWarConscriptionAllegiance": CivilWarConscriptionAllegiance,
-    "CivilWarEnrollmentClass": CivilWarEnrollmentClass,
-    "ColonialMilitiaClass": ColonialMilitiaClass,
-    "ColonialWarPeriod": ColonialWarPeriod,
-    "DraftCardTier": DraftCardTier,
-    "IntermentCemeteryType": IntermentCemeteryType,
-    "MilitaryAwardTier": MilitaryAwardTier,
-    "MilitaryBranch": MilitaryBranch,
-    "ModernDraftEra": ModernDraftEra,
-    "MusterRollType": MusterRollType,
-    "PensionClaimantRole": PensionClaimantRole,
-    "PensionPaymentAuthority": PensionPaymentAuthority,
-    "PowCampType": PowCampType,
-    "SeparationCharacter": SeparationCharacter,
-    "SeparationFormType": SeparationFormType,
-    "ServiceComponent": ServiceComponent,
-    "SourceRecordCategory": SourceRecordCategory,
-    "SssClassification": SssClassification,
-    "WwiCitizenshipStatus": WwiCitizenshipStatus,
-    "WwiiDraftWave": WwiiDraftWave,
-}
-
-_MILITARY_ATOM_MAP: dict[str, type[Any]] = {
-    "DraftRecordID": DraftRecordID,
-    "IndividualID": IndividualID,
-    "LocationID": LocationID,
-    "RepositoryID": RepositoryID,
-    "ServiceRecordID": ServiceRecordID,
-    "SourceID": SourceID,
-    "TranscriptID": TranscriptID,
-}
-
-_MILITARY_NESTED_MAP: dict[str, type[Any]] = {
-    "WwiPhysicalDescription": WwiPhysicalDescription,
-    "WwiiPhysicalMetrics": WwiiPhysicalMetrics,
-}
-
-
-def _opt_year(val: Any) -> int | None:
-    """Extract optional integer year from a HistoricalYear or None."""
-    if val is None:
-        return None
-    return int(val.value)
-
-
-def _serialize_field(val: Any) -> Any:
-    """Convert a military dataclass field value into a JSON-serializable primitive."""
-    if hasattr(val, "value"):
-        return val.value
-    if val is None or isinstance(val, (bool, int, float, str)):
-        return val
-    if dataclasses.is_dataclass(val) and not isinstance(val, type):
-        return {f.name: _serialize_field(getattr(val, f.name)) for f in dataclasses.fields(val)}
-    return val
-
 
 def serialize_military_record(entity: SourceRecord) -> dict[str, Any]:
-    """Serialize any Military SourceRecord subclass and all its dataclass fields."""
+    """Serialize any Military SourceRecord subclass via native to_dict() reflection."""
     data = entity.to_dict()
-    base_keys = set(data.keys())
-    for f in dataclasses.fields(entity):
-        if f.name not in base_keys:
-            data[f.name] = _serialize_field(getattr(entity, f.name))
     data["record_class"] = type(entity).__name__
     return data
-
-
-def _coerce_military_field(type_str: str, raw: Any) -> Any:
-    """Coerce a JSON-deserialized primitive into the target Military field type."""
-    if raw is None:
-        return None
-    clean = type_str.replace(" | None", "").replace("Optional[", "").rstrip("]").strip()
-    if clean in _MILITARY_ATOM_MAP:
-        atom_cls = _MILITARY_ATOM_MAP[clean]
-        return raw if isinstance(raw, atom_cls) else atom_cls(str(raw))
-    if clean == "HistoricalYear":
-        return raw if isinstance(raw, HistoricalYear) else HistoricalYear(int(raw))
-    if clean in _MILITARY_ENUM_MAP:
-        enum_cls = _MILITARY_ENUM_MAP[clean]
-        return raw if isinstance(raw, enum_cls) else enum_cls(str(raw))
-    if clean in _MILITARY_NESTED_MAP:
-        return _MILITARY_NESTED_MAP[clean](**raw)
-    return raw
 
 
 def deserialize_military_record[TModel: SourceRecord](
     target_cls: type[TModel],
     data: dict[str, Any],
 ) -> TModel:
-    """Hydrate a concrete Military SourceRecord subclass from a serialized dictionary."""
-    urn_str = str(data["source_urn"])
-    urn_obj: ArchivalURN = (
-        MilitaryDraftUrn(urn_str) if urn_str.startswith("URN:DRAFT:") else SourceURN(urn_str)
-    )
-    audit_raw = data["audit"]
-    audit_obj = AuditStamp(
-        created_at=IsoTimestamp(audit_raw["created_at"]),
-        updated_at=IsoTimestamp(audit_raw["updated_at"]),
-    )
-    tomb_raw = data.get("tombstone")
-    tomb_obj: Tombstone[SourceID] | None = None
-    if isinstance(tomb_raw, dict):
-        sup = tomb_raw.get("superseded_by")
-        tomb_obj = Tombstone[SourceID](
-            is_deprecated=bool(tomb_raw.get("is_deprecated", False)),
-            deprecated_at=(
-                IsoTimestamp(tomb_raw["deprecated_at"]) if tomb_raw.get("deprecated_at") else None
-            ),
-            superseded_by=SourceID(str(sup)) if sup else None,
-        )
-
-    kwargs: dict[str, Any] = {
-        "source_id": SourceID(str(data["source_id"])),
-        "source_urn": urn_obj,
-        "record_category": SourceRecordCategory(str(data["record_category"])),
-        "description": str(data["description"]),
-        "repository_id": RepositoryID(str(data["repository_id"])),
-        "audit": audit_obj,
-        "media_ids": [MediaID(str(m)) for m in data.get("media_ids", [])],
-        "associated_people": [
-            AssociatedIndividual.from_dict(p) for p in data.get("associated_people", [])
-        ],
-        "tombstone": tomb_obj,
-    }
-    base_keys = set(kwargs.keys())
-    for f in dataclasses.fields(target_cls):
-        if f.name not in base_keys:
-            kwargs[f.name] = _coerce_military_field(
-                str(f.type),
-                data.get(f.name),
-            )
-    return target_cls(**kwargs)
-
-
-def _military_base_columns(entity: SourceRecord) -> dict[str, Any]:
-    """Build base SQLite columns for a Military record with full payload_json."""
-    row = _base_source_columns(entity)
-    row["payload_json"] = json.dumps(
-        serialize_military_record(entity),
-        sort_keys=True,
-    )
-    return row
+    """Hydrate a concrete Military SourceRecord subclass via native from_dict()."""
+    return target_cls.from_dict(data)
 
 
 def _hydrate_polymorphic_record[TModel: SourceRecord](
@@ -303,29 +128,11 @@ def _hydrate_polymorphic_record[TModel: SourceRecord](
         if not raw_json or not isinstance(raw_json, str):
             raise EntityMappingError(f"Missing or invalid 'payload_json' for {cls_name}.")
         payload = json.loads(raw_json)
-        return deserialize_military_record(target_cls, payload)
+        return target_cls.from_dict(payload)
     except EntityMappingError:
         raise
     except Exception as err:
         raise EntityMappingError(f"Failed to hydrate {domain_label} from row: {err}") from err
-
-
-def _hydrate_single_military_record[TModel: SourceRecord](
-    row: sqlite3.Row | dict[str, Any],
-    model_cls: type[TModel],
-) -> TModel:
-    """Hydrate a non-polymorphic military record from its row payload_json."""
-    try:
-        data = dict(row)
-        raw_json = data.get("payload_json")
-        if not raw_json or not isinstance(raw_json, str):
-            raise EntityMappingError(f"Missing or invalid 'payload_json' for {model_cls.__name__}.")
-        payload = json.loads(raw_json)
-        return deserialize_military_record(model_cls, payload)
-    except EntityMappingError:
-        raise
-    except Exception as err:
-        raise EntityMappingError(f"Failed to hydrate {model_cls.__name__} from row: {err}") from err
 
 
 class ImmigrationManifestRecordMapper(BaseRowMapper[ImmigrationManifestRecord]):
@@ -412,7 +219,7 @@ class MilitaryDraftRecordMapper(BaseRowMapper[MilitaryDraftRecord]):
     def to_row(self, entity: MilitaryDraftRecord) -> dict[str, Any]:
         """Serialize MilitaryDraftRecord or subclass into military_draft_records columns."""
         try:
-            row = _military_base_columns(entity)
+            row = _base_source_columns(entity)
             row.update(
                 {
                     "record_class": type(entity).__name__,
@@ -448,7 +255,7 @@ class MilitaryServiceRecordMapper(BaseRowMapper[MilitaryServiceRecord]):
     def to_row(self, entity: MilitaryServiceRecord) -> dict[str, Any]:
         """Serialize MilitaryServiceRecord into military_service_records columns."""
         try:
-            row = _military_base_columns(entity)
+            row = _base_source_columns(entity)
             row.update(
                 {
                     "record_class": type(entity).__name__,
@@ -492,7 +299,7 @@ class MilitaryPensionRecordMapper(BaseRowMapper[MilitaryPensionRecord]):
     def to_row(self, entity: MilitaryPensionRecord) -> dict[str, Any]:
         """Serialize MilitaryPensionRecord into military_pension_records columns."""
         try:
-            row = _military_base_columns(entity)
+            row = _base_source_columns(entity)
             row.update(
                 {
                     "record_class": type(entity).__name__,
@@ -534,7 +341,7 @@ class BountyLandWarrantRecordMapper(BaseRowMapper[BountyLandWarrantRecord]):
     def to_row(self, entity: BountyLandWarrantRecord) -> dict[str, Any]:
         """Serialize BountyLandWarrantRecord into military_bounty_land_warrants columns."""
         try:
-            row = _military_base_columns(entity)
+            row = _base_source_columns(entity)
             row.update(
                 {
                     "veteran_id": str(entity.veteran_id.value),
@@ -561,7 +368,7 @@ class BountyLandWarrantRecordMapper(BaseRowMapper[BountyLandWarrantRecord]):
         row: sqlite3.Row | dict[str, Any],
     ) -> BountyLandWarrantRecord:
         """Hydrate BountyLandWarrantRecord from SQLite row."""
-        return _hydrate_single_military_record(row, BountyLandWarrantRecord)
+        return _hydrate_from_payload(row, BountyLandWarrantRecord)
 
 
 class MilitaryCasualtyRecordMapper(BaseRowMapper[MilitaryCasualtyRecord]):
@@ -574,7 +381,7 @@ class MilitaryCasualtyRecordMapper(BaseRowMapper[MilitaryCasualtyRecord]):
     def to_row(self, entity: MilitaryCasualtyRecord) -> dict[str, Any]:
         """Serialize MilitaryCasualtyRecord into military_casualty_records columns."""
         try:
-            row = _military_base_columns(entity)
+            row = _base_source_columns(entity)
             row.update(
                 {
                     "record_class": type(entity).__name__,
@@ -614,7 +421,7 @@ class MilitaryAwardRecordMapper(BaseRowMapper[MilitaryAwardRecord]):
     def to_row(self, entity: MilitaryAwardRecord) -> dict[str, Any]:
         """Serialize MilitaryAwardRecord into military_award_records columns."""
         try:
-            row = _military_base_columns(entity)
+            row = _base_source_columns(entity)
             row.update(
                 {
                     "recipient_id": str(entity.recipient_id.value),
@@ -635,4 +442,4 @@ class MilitaryAwardRecordMapper(BaseRowMapper[MilitaryAwardRecord]):
 
     def from_row(self, row: sqlite3.Row | dict[str, Any]) -> MilitaryAwardRecord:
         """Hydrate MilitaryAwardRecord from SQLite row."""
-        return _hydrate_single_military_record(row, MilitaryAwardRecord)
+        return _hydrate_from_payload(row, MilitaryAwardRecord)

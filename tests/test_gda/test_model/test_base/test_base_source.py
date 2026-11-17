@@ -5,8 +5,8 @@ Comprehensive test suite verifying SourceReference, RecordMetadata, and SourceRe
 Operational Role:
     Verifies evidentiary source composites, citation references, metadata headers,
     factory instantiation, copy-on-write mutators, dictionary/JSON serialization
-    round trips, defensive error handling, and frozen immutability with 100%
-    statement and branch coverage.
+    round trips (including subclass reflection), defensive error handling, and
+    frozen immutability with 100% statement and branch coverage.
 """
 
 from __future__ import annotations
@@ -17,17 +17,40 @@ import pytest
 from pydantic import ValidationError
 
 from gda.core.enums.core import AssociatedRole
+from gda.core.enums.military import DraftCardTier
 from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.model.atom.id import RepositoryID, SourceID
+from gda.model.atom.id import (
+    DraftRecordID,
+    IndividualID,
+    LocationID,
+    MediaID,
+    RepositoryID,
+    SourceID,
+)
 from gda.model.atom.scalar import ConfidenceScore, QuayScore
-from gda.model.atom.urn import SourceURN
+from gda.model.atom.urn import (
+    CensusUrn,
+    MilitaryDraftUrn,
+    SourceURN,
+    VitalCertificateUrn,
+)
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.association import AssociatedIndividual
 from gda.model.base.audit import AuditStamp
-from gda.model.base.source import RecordMetadata, SourceRecord, SourceReference
+from gda.model.base.source import (
+    RecordMetadata,
+    SourceRecord,
+    SourceReference,
+    _coerce_subclass_field,
+    _resolve_archival_urn,
+    _resolve_field_type,
+    _serialize_subclass_field,
+)
 from gda.model.base.tombstone import Tombstone
+from gda.model.source.military import WwiDraftCardRecord, WwiPhysicalDescription
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 
 # ==============================================================================
@@ -203,7 +226,7 @@ def test_record_metadata_defensive_errors(golden_guid: str) -> None:
     with pytest.raises(ModelFormatError, match="source_urn.*cannot be empty"):
         RecordMetadata(
             source_id=sid,
-            source_urn="  ",
+            source_urn="   ",
             record_category="TEST",
             record_type="TEST",
         )
@@ -219,7 +242,7 @@ def test_record_metadata_defensive_errors(golden_guid: str) -> None:
 
 
 # ==============================================================================
-# GROUP 3: SOURCERECORD COMPOSITE TESTS
+# GROUP 3: SOURCERECORD COMPOSITE & SUBCLASS REFLECTION TESTS
 # ==============================================================================
 
 
@@ -286,7 +309,6 @@ def test_source_record_serialization_round_trip(
     assert restored == record
     assert SourceRecord.from_json(record.to_json()) == record
 
-    # AuditStamp object intake in from_dict + omitted tombstone
     no_tombstone = SourceRecord.create(
         source_id=golden_guid,
         source_urn=sample_source_urn,
@@ -298,6 +320,72 @@ def test_source_record_serialization_round_trip(
     assert "tombstone" not in no_tomb_data
     no_tomb_data["audit"] = no_tombstone.audit
     assert SourceRecord.from_dict(no_tomb_data) == no_tombstone
+
+
+@pytest.mark.unit
+def test_source_record_subclass_reflection_and_urn_helpers(
+    golden_guid: str,
+    golden_audit: AuditStamp,
+) -> None:
+    """Verify SourceRecord subclass reflection serialization/deserialization and helper branches."""
+    assert isinstance(
+        _resolve_archival_urn("URN:CENSUS:1880:US_PA:ED1_SH1"),
+        CensusUrn,
+    )
+    assert isinstance(
+        _resolve_archival_urn("URN:VITAL:BIRTH:1900:US_PA:BIR_001"),
+        VitalCertificateUrn,
+    )
+    assert _serialize_subclass_field({1: "one"}) == {1: "one"}
+    assert _resolve_field_type(WwiDraftCardRecord, "NonExistentSymbol") is None
+    assert _coerce_subclass_field(WwiDraftCardRecord, "str", None) is None
+    assert _coerce_subclass_field(WwiDraftCardRecord, "str", "plain") == "plain"
+    assert _coerce_subclass_field(WwiDraftCardRecord, "UnknownType", "val") == "val"
+    assert _coerce_subclass_field(WwiDraftCardRecord, "int", "not-an-int") == "not-an-int"
+    assert (
+        _coerce_subclass_field(
+            WwiDraftCardRecord,
+            "DraftCardTier",
+            DraftCardTier.WWI_FIRST,
+        )
+        is DraftCardTier.WWI_FIRST
+    )
+
+    draft = WwiDraftCardRecord(
+        source_id=SourceID(golden_guid),
+        source_urn=MilitaryDraftUrn("URN:DRAFT:1917:US_PA:DRF_001"),
+        record_category=SourceRecordCategory.MILITARY,
+        description="WWI Draft Registration Card",
+        repository_id=RepositoryID("REP-000001"),
+        audit=golden_audit,
+        media_ids=[MediaID("f0000000-0000-4000-8000-000000000001")],
+        associated_people=[
+            AssociatedIndividual.create(
+                individual_id="IND-000002",
+                role=AssociatedRole.NEXT_OF_KIN,
+            )
+        ],
+        draft_record_id=DraftRecordID("DRF-000001"),
+        registrant_id=IndividualID("IND-000001"),
+        registrant_name_raw="John Lehman",
+        draft_year=HistoricalYear(1917),
+        board_jurisdiction_raw="Cumberland County Board No. 1",
+        card_tier=DraftCardTier.WWI_FIRST,
+        board_location_id=LocationID("LOC-000001"),
+        occupation_verbatim="Blacksmith",
+        physical_description=WwiPhysicalDescription(
+            height_description="Tall",
+            build_description="Medium",
+            eye_color="Blue",
+            hair_color="Brown",
+        ),
+    )
+
+    payload = draft.to_dict()
+    assert payload["draft_record_id"] == "DRF-000001"
+    assert payload["physical_description"]["eye_color"] == "Blue"
+    assert WwiDraftCardRecord.from_dict(payload) == draft
+    assert WwiDraftCardRecord.from_json(draft.to_json()) == draft
 
 
 @pytest.mark.unit

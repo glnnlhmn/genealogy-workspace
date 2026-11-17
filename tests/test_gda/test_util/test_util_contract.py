@@ -18,14 +18,15 @@ import gda.util
 import gda.util.ids as util_ids
 import gda.util.text as util_text
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 AUTHORITATIVE_UTIL_EXPORTS: frozenset[str] = frozenset(
     {
-        # ids.py (5)
+        # ids.py (6)
         "extract_max_smart_id",
         "mint_smart_id",
         "mint_uuid",
+        "normalize_id",
         "parse_smart_id",
         "verify_id",
         # text.py (6)
@@ -43,9 +44,9 @@ AUTHORITATIVE_UTIL_EXPORTS: frozenset[str] = frozenset(
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_util_exports_exact_authoritative_symbols() -> None:
-    """Verify gda.util exports the exact 11 authoritative symbols with zero drift."""
+    """Verify gda.util exports the exact 12 authoritative symbols with zero drift."""
     assert frozenset(gda.util.__all__) == AUTHORITATIVE_UTIL_EXPORTS
-    assert len(gda.util.__all__) == 11
+    assert len(gda.util.__all__) == 12
     for symbol in AUTHORITATIVE_UTIL_EXPORTS:
         fn = getattr(gda.util, symbol, None)
         assert callable(fn), f"Symbol {symbol} in gda.util must be callable"
@@ -67,6 +68,7 @@ def test_util_all_and_submodule_alls_are_sorted_alphabetically() -> None:
 @pytest.mark.unit
 def test_util_callable_signatures_contract() -> None:
     """Verify parameter signatures of all public functions in gda.util."""
+    assert list(inspect.signature(gda.util.normalize_id).parameters) == ["val"]
     assert list(inspect.signature(gda.util.verify_id).parameters) == [
         "val",
         "id_type",

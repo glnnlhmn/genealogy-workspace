@@ -20,15 +20,11 @@ from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.other.repository import OtherMiscellaneousRepository
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "OtherMiscellaneousCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class OtherMiscellaneousCollection(
@@ -72,7 +68,4 @@ class OtherMiscellaneousCollection(
         location_id: LocationID | str,
     ) -> list[OtherMiscellaneousRecord]:
         """Return active miscellaneous records for a LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))

@@ -19,15 +19,11 @@ from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.education.repository import AcademicCredentialRepository
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "AcademicCredentialCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class AcademicCredentialCollection(
@@ -73,17 +69,11 @@ class AcademicCredentialCollection(
         subject_id: IndividualID | str,
     ) -> list[AcademicCredentialRecord]:
         """Return active academic credentials for a subject IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_subject.get(_normalize_id(subject_id), set()),
-        )
+        return self._records_for_ids(self._by_subject.get(_normalize_id(subject_id), set()))
 
     def find_by_institution_location(
         self,
         location_id: LocationID | str,
     ) -> list[AcademicCredentialRecord]:
         """Return active academic credentials for an institution LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))

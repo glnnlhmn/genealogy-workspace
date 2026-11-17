@@ -23,17 +23,13 @@ from gda.repository.publications.repository import (
     PublicationRepository,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "NewspaperClipCollection",
     "PeriodicalArticleCollection",
     "PublicationCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class PublicationCollection(BaseSourceCollection[Publication, PublicationRepository]):
@@ -71,10 +67,7 @@ class PublicationCollection(BaseSourceCollection[Publication, PublicationReposit
 
     def find_by_location(self, location_id: LocationID | str) -> list[Publication]:
         """Return active Publications for a geographic LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
 class NewspaperClipCollection(BaseSourceCollection[NewspaperClipRecord, NewspaperClipRepository]):
@@ -109,17 +102,14 @@ class NewspaperClipCollection(BaseSourceCollection[NewspaperClipRecord, Newspape
 
     def find_by_pub_code(self, pub_code: str) -> list[NewspaperClipRecord]:
         """Return active newspaper clippings for a publication code."""
-        return _sorted_records(self._registry, self._by_pub_code.get(pub_code, set()))
+        return self._records_for_ids(self._by_pub_code.get(pub_code, set()))
 
     def find_by_parent_source(
         self,
         parent_source_id: SourceID | str,
     ) -> list[NewspaperClipRecord]:
         """Return active newspaper clippings linked to a parent Publication SourceID."""
-        return _sorted_records(
-            self._registry,
-            self._by_parent.get(_normalize_id(parent_source_id), set()),
-        )
+        return self._records_for_ids(self._by_parent.get(_normalize_id(parent_source_id), set()))
 
 
 class PeriodicalArticleCollection(
@@ -159,14 +149,11 @@ class PeriodicalArticleCollection(
 
     def find_by_pub_code(self, pub_code: str) -> list[PeriodicalArticleRecord]:
         """Return active periodical articles for a publication code."""
-        return _sorted_records(self._registry, self._by_pub_code.get(pub_code, set()))
+        return self._records_for_ids(self._by_pub_code.get(pub_code, set()))
 
     def find_by_institution_org(
         self,
         org_id: OrganizationID | str,
     ) -> list[PeriodicalArticleRecord]:
         """Return active periodical articles for a publishing institution OrganizationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_org.get(_normalize_id(org_id), set()),
-        )
+        return self._records_for_ids(self._by_org.get(_normalize_id(org_id), set()))

@@ -24,16 +24,12 @@ from gda.repository.manuscripts.repository import (
     NarrativeManuscriptRepository,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "FamilyBibleCollection",
     "NarrativeManuscriptCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class FamilyBibleCollection(BaseSourceCollection[FamilyBibleRecord, FamilyBibleRepository]):
@@ -72,20 +68,14 @@ class FamilyBibleCollection(BaseSourceCollection[FamilyBibleRecord, FamilyBibleR
         family_surname: str,
     ) -> list[FamilyBibleRecord]:
         """Return active family Bible records for a surname."""
-        return _sorted_records(
-            self._registry,
-            self._by_surname.get(family_surname, set()),
-        )
+        return self._records_for_ids(self._by_surname.get(family_surname, set()))
 
     def find_by_original_owner(
         self,
         original_owner_id: IndividualID | str,
     ) -> list[FamilyBibleRecord]:
         """Return active family Bible records for an original owner IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_owner.get(_normalize_id(original_owner_id), set()),
-        )
+        return self._records_for_ids(self._by_owner.get(_normalize_id(original_owner_id), set()))
 
 
 class NarrativeManuscriptCollection(
@@ -134,17 +124,11 @@ class NarrativeManuscriptCollection(
         author_id: IndividualID | str,
     ) -> list[NarrativeManuscriptRecord]:
         """Return active narrative manuscripts for an author IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_author.get(_normalize_id(author_id), set()),
-        )
+        return self._records_for_ids(self._by_author.get(_normalize_id(author_id), set()))
 
     def find_by_origin_place(
         self,
         location_id: LocationID | str,
     ) -> list[NarrativeManuscriptRecord]:
         """Return active narrative manuscripts for an origin LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_origin.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_origin.get(_normalize_id(location_id), set()))

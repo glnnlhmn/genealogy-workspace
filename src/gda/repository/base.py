@@ -34,17 +34,16 @@ from gda.repository.query import (
     build_upsert_sql,
     validate_sql_identifier,
 )
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "BaseSQLiteRepository",
+    "_normalize_id",
 ]
 
-
-def _normalize_id(identifier: Any) -> str:
-    """Extract canonical string value from typed ID atoms or strings."""
-    return str(identifier.value) if hasattr(identifier, "value") else str(identifier)
+_normalize_id = normalize_id
 
 
 class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
@@ -55,13 +54,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         mapper: BaseRowMapper[TModel],
         session_manager: DatabaseSessionManager | None = None,
     ) -> None:
-        """Initialize repository with a row mapper and session manager.
-
-        Args:
-            mapper: Bidirectional row mapper for TModel.
-            session_manager: Optional DatabaseSessionManager instance. Defaults
-                to a new DatabaseSessionManager() if omitted.
-        """
+        """Initialize repository with a row mapper and session manager."""
         validate_sql_identifier(self.table_name)
         validate_sql_identifier(self.primary_key)
         self._mapper = mapper
@@ -88,42 +81,18 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         return self._session
 
     def query(self, columns: tuple[str, ...] | None = None) -> QueryBuilder:
-        """Create a new QueryBuilder scoped to this repository's table.
-
-        Args:
-            columns: Optional tuple of column names to project.
-
-        Returns:
-            Configured QueryBuilder instance.
-        """
+        """Create a new QueryBuilder scoped to this repository's table."""
         return QueryBuilder(self.table_name, columns=columns)
 
     def get(self, record_id: TID | str) -> TModel | None:
-        """Retrieve a single domain record by primary key, or None if missing.
-
-        Args:
-            record_id: Typed ID atom or string identifier.
-
-        Returns:
-            Hydrated TModel instance or None.
-        """
+        """Retrieve a single domain record by primary key, or None if missing."""
         id_str = _normalize_id(record_id)
         qb = self.query().where(self.primary_key, id_str).limit(1)
         results = self.find_where(qb)
         return results[0] if results else None
 
     def get_or_raise(self, record_id: TID | str) -> TModel:
-        """Retrieve a single domain record by primary key or raise RecordNotFoundError.
-
-        Args:
-            record_id: Typed ID atom or string identifier.
-
-        Returns:
-            Hydrated TModel instance.
-
-        Raises:
-            RecordNotFoundError: If no matching row exists.
-        """
+        """Retrieve a single domain record by primary key or raise RecordNotFoundError."""
         record = self.get(record_id)
         if record is None:
             raise RecordNotFoundError(
@@ -134,27 +103,13 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         return record
 
     def get_by_urn(self, canonical_urn: str) -> TModel | None:
-        """Retrieve a single domain record by its canonical_urn column.
-
-        Args:
-            canonical_urn: Canonical URN string.
-
-        Returns:
-            Hydrated TModel instance or None.
-        """
+        """Retrieve a single domain record by its canonical_urn column."""
         qb = self.query().where("canonical_urn", canonical_urn).limit(1)
         results = self.find_where(qb)
         return results[0] if results else None
 
     def exists(self, record_id: TID | str) -> bool:
-        """Check whether a record with the given primary key exists.
-
-        Args:
-            record_id: Typed ID atom or string identifier.
-
-        Returns:
-            True if present, False otherwise.
-        """
+        """Check whether a record with the given primary key exists."""
         id_str = _normalize_id(record_id)
         qb = self.query().where(self.primary_key, id_str)
         return self.count(qb) > 0
@@ -163,18 +118,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         self,
         filters: QueryBuilder | Mapping[str, Any] | None = None,
     ) -> int:
-        """Count rows matching optional filters or a QueryBuilder.
-
-        Args:
-            filters: Optional QueryBuilder, column-to-value equality mapping,
-                or None to count all rows in the table.
-
-        Returns:
-            Total integer row count.
-
-        Raises:
-            RepositoryError: On underlying database query failure.
-        """
+        """Count rows matching optional filters or a QueryBuilder."""
         if isinstance(filters, QueryBuilder):
             qb = filters
         else:
@@ -202,17 +146,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         order_by: str | None = None,
         sort_order: SortOrder | str = SortOrder.ASC,
     ) -> list[TModel]:
-        """List records from the table with optional sorting and pagination.
-
-        Args:
-            limit: Optional maximum rows to return.
-            offset: Optional number of rows to skip (requires limit).
-            order_by: Optional column name to sort by (defaults to primary_key).
-            sort_order: Sort direction (ASC or DESC).
-
-        Returns:
-            List of hydrated TModel records.
-        """
+        """List records from the table with optional sorting and pagination."""
         qb = self.query()
         sort_col = order_by if order_by is not None else self.primary_key
         qb.order_by(sort_col, sort_order)
@@ -223,14 +157,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         return self.find_where(qb)
 
     def find_by(self, **filters: Any) -> list[TModel]:
-        """Find all records matching simple column equality filters.
-
-        Args:
-            **filters: Column name and expected value keyword arguments.
-
-        Returns:
-            List of matching hydrated TModel records ordered by primary_key.
-        """
+        """Find all records matching simple column equality filters."""
         qb = self.query()
         for col, val in filters.items():
             qb.where(col, val)
@@ -238,17 +165,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         return self.find_where(qb)
 
     def find_where(self, query_builder: QueryBuilder) -> list[TModel]:
-        """Execute a configured QueryBuilder SELECT and hydrate domain models.
-
-        Args:
-            query_builder: Configured QueryBuilder instance.
-
-        Returns:
-            List of hydrated TModel records.
-
-        Raises:
-            RepositoryError: On SQLite execution or row hydration failure.
-        """
+        """Execute a configured QueryBuilder SELECT and hydrate domain models."""
         sql, params = query_builder.build_select()
         try:
             with self._session.get_connection() as conn:
@@ -261,18 +178,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
             ) from err
 
     def insert(self, entity: TModel) -> TModel:
-        """Strictly insert a new record, raising DuplicateRecordError on conflict.
-
-        Args:
-            entity: Domain model instance to persist.
-
-        Returns:
-            The persisted domain model instance.
-
-        Raises:
-            DuplicateRecordError: If primary key or unique constraint is violated.
-            RepositoryError: On mapping or operational database failure.
-        """
+        """Strictly insert a new record, raising DuplicateRecordError on conflict."""
         try:
             row_dict = self._mapper.to_row(entity)
             sql = build_insert_sql(self.table_name, tuple(row_dict.keys()))
@@ -293,32 +199,12 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
             ) from err
 
     def upsert(self, entity: TModel) -> TModel:
-        """Insert or update a single domain record atomically.
-
-        Args:
-            entity: Domain model instance to upsert.
-
-        Returns:
-            The persisted domain model instance.
-
-        Raises:
-            RepositoryError: On mapping or database failure.
-        """
+        """Insert or update a single domain record atomically."""
         self.upsert_many([entity])
         return entity
 
     def upsert_many(self, entities: Iterable[TModel]) -> int:
-        """Atomically insert or update a batch of domain records.
-
-        Args:
-            entities: Iterable of domain model instances.
-
-        Returns:
-            Number of records upserted.
-
-        Raises:
-            RepositoryError: On mapping or database failure.
-        """
+        """Atomically insert or update a batch of domain records."""
         entity_list = list(entities)
         if not entity_list:
             return 0
@@ -341,17 +227,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
             ) from err
 
     def delete(self, record_id: TID | str) -> bool:
-        """Delete a record by primary key.
-
-        Args:
-            record_id: Typed ID atom or string identifier.
-
-        Returns:
-            True if a row was deleted, False if no matching row existed.
-
-        Raises:
-            RepositoryError: On database execution failure.
-        """
+        """Delete a record by primary key."""
         id_str = _normalize_id(record_id)
         qb = self.query().where(self.primary_key, id_str)
         sql, params = qb.build_delete()
@@ -363,4 +239,17 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
             raise RepositoryError(
                 f"Failed to delete record from '{self.table_name}': {err.message}",
                 details={"table_name": self.table_name, "identifier": id_str},
+            ) from err
+
+    def delete_where(self, query_builder: QueryBuilder) -> int:
+        """Delete all rows matching a QueryBuilder predicate."""
+        sql, params = query_builder.build_delete()
+        try:
+            with self._session.transaction() as conn:
+                cursor = conn.execute(sql, params)
+                return int(cursor.rowcount)
+        except DatabaseError as err:
+            raise RepositoryError(
+                f"Failed to delete records from '{self.table_name}': {err.message}",
+                details={"table_name": self.table_name, "sql": sql},
             ) from err

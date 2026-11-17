@@ -5,7 +5,7 @@ graveyard lifecycle, and SQLite/JSON synchronization.
 
 Operational Role:
     Provides the shared collection ergonomics of gda.entity (O(1) ID/URN lookup,
-    in-memory editing via dataclasses.replace, tombstone/restore lifecycle,
+    in-memory editing via dataclasses.replace, tombstone/undelete lifecycle,
     supersession chain resolution, dirty tracking, and repository/JSON I/O)
     for all SourceRecord domain collections.
 """
@@ -14,11 +14,12 @@ from __future__ import annotations
 
 import dataclasses
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any, Self
 
 from gda.core.dates import utc_now_iso
+from gda.core.enums import IDType
 from gda.core.introspectable import IntrospectableMixin
 from gda.db.session import DatabaseSessionManager
 from gda.io.json import GDAJsonIO
@@ -33,8 +34,9 @@ from gda.repository.errors import (
     RecordNotFoundError,
     RepositoryError,
 )
+from gda.util.ids import verify_id
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "BaseSourceCollection",
@@ -76,6 +78,14 @@ class BaseSourceCollection[
     def _unindex_domain_fields(self, record: TModel) -> None:  # noqa: B027
         """Hook for subclasses to remove record from domain-specific buckets."""
 
+    def _records_for_ids(self, sids: Iterable[SourceID]) -> list[TModel]:
+        """Return active records for a set of SourceIDs sorted deterministically by ID."""
+        return [
+            self._registry[sid]
+            for sid in sorted(sids, key=lambda s: s.value)
+            if sid in self._registry
+        ]
+
     @property
     def repository(self) -> TRepo:
         """Return the bound SQLite repository."""
@@ -93,7 +103,11 @@ class BaseSourceCollection[
 
     def dirty_records(self) -> list[TModel]:
         """Return all modified or newly added records awaiting database persistence."""
-        return [self._registry[sid] for sid in sorted(self._dirty_ids, key=lambda x: x.value)]
+        return self._records_for_ids(self._dirty_ids)
+
+    def dirty_entities(self) -> list[TModel]:
+        """Return all modified or newly added records (gda.entity interface parity)."""
+        return self.dirty_records()
 
     def mark_clean(self) -> None:
         """Clear all dirty-tracking flags after synchronization."""
@@ -137,15 +151,12 @@ class BaseSourceCollection[
         if key_str in self._urn_index:
             return self._urn_index[key_str]
 
-        try:
-            sid: SourceID | None = SourceID(key_str)
-        except Exception:
-            sid = None
-
-        if sid is not None and sid in self._registry:
-            rec = self._registry[sid]
-            if include_graveyard or not self._is_deprecated(rec):
-                return sid
+        if verify_id(key_str, id_type=IDType.UUID):
+            sid = SourceID(key_str)
+            if sid in self._registry:
+                rec = self._registry[sid]
+                if include_graveyard or not self._is_deprecated(rec):
+                    return sid
             return None
 
         if include_graveyard:
@@ -167,12 +178,20 @@ class BaseSourceCollection[
             raise RecordNotFoundError(self.table_name, key)
         return self._registry[sid]
 
-    def get(self, key: SourceID | str, default: TModel | None = None) -> TModel | None:
+    def get(
+        self,
+        key: SourceID | str,
+        default: TModel | None = None,
+    ) -> TModel | None:
         """Retrieve an active record by SourceID or URN, or return default."""
         sid = self._resolve_lookup_id(key, include_graveyard=False)
         return self._registry[sid] if sid is not None else default
 
-    def get_any(self, key: SourceID | str, default: TModel | None = None) -> TModel | None:
+    def get_any(
+        self,
+        key: SourceID | str,
+        default: TModel | None = None,
+    ) -> TModel | None:
         """Retrieve a record by SourceID or URN including tombstoned records."""
         sid = self._resolve_lookup_id(key, include_graveyard=True)
         return self._registry[sid] if sid is not None else default
@@ -259,30 +278,48 @@ class BaseSourceCollection[
         if superseded_by is not None:
             rep_id = _to_source_id(superseded_by)
             if rep_id == sid:
-                return False, f"Replacement source '{rep_id}' cannot be the record itself."
+                return (
+                    False,
+                    f"Replacement source '{rep_id}' cannot be the record itself.",
+                )
             rep = self._registry.get(rep_id)
             if rep is None:
-                return False, f"Replacement source '{rep_id}' does not exist in collection."
+                return (
+                    False,
+                    f"Replacement source '{rep_id}' does not exist in collection.",
+                )
             if self._is_deprecated(rep):
-                return False, f"Replacement source '{rep_id}' is itself tombstoned."
+                return (
+                    False,
+                    f"Replacement source '{rep_id}' is itself tombstoned.",
+                )
 
         return True, None
 
     def soft_delete(
         self,
         source_id: SourceID | str,
+        reason: str | None = None,
         *,
         superseded_by: SourceID | str | None = None,
-        deprecated_at: IsoTimestamp | None = None,
+        deprecated_at: IsoTimestamp | str | None = None,
     ) -> TModel:
         """Tombstone an active source record and remove it from active lookup buckets."""
+        if reason is not None and not reason.strip():
+            raise RepositoryError("Tombstone reason cannot be empty or whitespace.")
+
         ok, err_msg = self.can_tombstone(source_id, superseded_by=superseded_by)
         if not ok:
             raise RepositoryError(err_msg or "Cannot tombstone source record.")
 
         sid = _to_source_id(source_id)
         rep_id = _to_source_id(superseded_by) if superseded_by is not None else None
-        ts = deprecated_at or IsoTimestamp(utc_now_iso())
+        if deprecated_at is None:
+            ts = IsoTimestamp(utc_now_iso())
+        elif isinstance(deprecated_at, IsoTimestamp):
+            ts = deprecated_at
+        else:
+            ts = IsoTimestamp(str(deprecated_at))
 
         tomb = Tombstone[SourceID](
             is_deprecated=True,
@@ -301,10 +338,13 @@ class BaseSourceCollection[
             return False, f"Source record '{sid}' is not tombstoned."
         urn_str = str(target.source_urn.value)
         if urn_str in self._urn_index:
-            return False, f"Active URN '{urn_str}' is already claimed by another record."
+            return (
+                False,
+                f"Active URN '{urn_str}' is already claimed by another record.",
+            )
         return True, None
 
-    def restore(self, source_id: SourceID | str) -> TModel:
+    def undelete(self, source_id: SourceID | str) -> TModel:
         """Restore a tombstoned source record back to active status."""
         ok, err_msg = self.can_undelete(source_id)
         if not ok:
@@ -317,6 +357,10 @@ class BaseSourceCollection[
             superseded_by=None,
         )
         return self.edit(sid, tombstone=active_tomb)
+
+    def restore(self, source_id: SourceID | str) -> TModel:
+        """Alias for undelete() restoring a tombstoned source record."""
+        return self.undelete(source_id)
 
     def find_tombstoned(self) -> list[TModel]:
         """Return all deprecated/tombstoned records in the collection."""
@@ -368,6 +412,13 @@ class BaseSourceCollection[
         self.mark_clean()
         return len(records)
 
+    def refresh(
+        self,
+        session_manager: DatabaseSessionManager | None = None,
+    ) -> int:
+        """Clear in-memory state and reload all records from the SQLite database."""
+        return self.load_from_db(session_manager=session_manager)
+
     def save_to_db(
         self,
         session_manager: DatabaseSessionManager | None = None,
@@ -402,8 +453,10 @@ class BaseSourceCollection[
         path: Path | str,
         *,
         include_graveyard: bool = True,
+        create_backup: bool = False,
+        backup_dir: Path | str | None = None,
     ) -> int:
-        """Export collection records to a formatted JSON file."""
+        """Export collection records to a formatted JSON file via GDAJsonIO."""
         records = list(self.iter_all() if include_graveyard else self)
         serialized = [rec.to_dict() for rec in records]
         payload = {
@@ -412,9 +465,12 @@ class BaseSourceCollection[
             "total_count": len(serialized),
             "records": serialized,
         }
-        dest = Path(path)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        GDAJsonIO.write(dest, payload)
+        GDAJsonIO.write(
+            Path(path),
+            payload,
+            create_backup=create_backup,
+            backup_dir=backup_dir,
+        )
         return len(serialized)
 
     def import_file(self, path: Path | str, *, mark_dirty: bool = True) -> int:

@@ -24,16 +24,12 @@ from gda.repository.orgs.repository import (
     OrganizationRosterRepository,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "OrganizationMembershipCollection",
     "OrganizationRosterCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class OrganizationMembershipCollection(
@@ -86,20 +82,14 @@ class OrganizationMembershipCollection(
         individual_id: IndividualID | str,
     ) -> list[OrganizationMembershipRecord]:
         """Return active membership records for an IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_individual.get(_normalize_id(individual_id), set()),
-        )
+        return self._records_for_ids(self._by_individual.get(_normalize_id(individual_id), set()))
 
     def find_by_organization(
         self,
         org_id: OrganizationID | str,
     ) -> list[OrganizationMembershipRecord]:
         """Return active membership records for an OrganizationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_org.get(_normalize_id(org_id), set()),
-        )
+        return self._records_for_ids(self._by_org.get(_normalize_id(org_id), set()))
 
 
 class OrganizationRosterCollection(
@@ -145,17 +135,13 @@ class OrganizationRosterCollection(
         org_id: OrganizationID | str,
     ) -> list[OrganizationRosterRecord]:
         """Return active roster records for an OrganizationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_org.get(_normalize_id(org_id), set()),
-        )
+        return self._records_for_ids(self._by_org.get(_normalize_id(org_id), set()))
 
     def find_by_jurisdiction(
         self,
         jurisdiction_id: LocationID | str,
     ) -> list[OrganizationRosterRecord]:
         """Return active roster records for a jurisdiction LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set()),
+        return self._records_for_ids(
+            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
         )

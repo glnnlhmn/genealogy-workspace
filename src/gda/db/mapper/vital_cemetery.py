@@ -11,15 +11,18 @@ Operational Role:
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from typing import Any
 
-from gda.core.dates import parse_iso_date_parts
 from gda.db.exceptions import EntityMappingError
-from gda.db.mapper.base import BaseRowMapper
-from gda.model.base.date import EventDate
-from gda.model.base.source import SourceRecord
+from gda.db.mapper.base import (
+    BaseRowMapper,
+    _base_source_columns,
+    _date_sort,
+    _date_year,
+    _hydrate_from_payload,
+    _opt_val,
+)
 from gda.model.source.cemetery.marker import CemeteryMarkerRecord
 from gda.model.source.cemetery.registry import CemeteryRegistryRecord
 from gda.model.source.vital.baptism import BaptismRecord
@@ -28,7 +31,7 @@ from gda.model.source.vital.death import DeathRecord
 from gda.model.source.vital.divorce import DivorceRecord
 from gda.model.source.vital.marriage import MarriageRecord
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "BaptismRecordMapper",
@@ -39,66 +42,6 @@ __all__ = [
     "DivorceRecordMapper",
     "MarriageRecordMapper",
 ]
-
-
-def _opt_val(val: Any) -> str | None:
-    """Extract string value from an optional atom/enum or return None."""
-    if val is None:
-        return None
-    return str(val.value) if hasattr(val, "value") else str(val)
-
-
-def _date_year(ev_date: EventDate | None) -> int | None:
-    """Extract integer year from an optional EventDate using parse_iso_date_parts."""
-    if ev_date is None:
-        return None
-    year, _, _ = parse_iso_date_parts(ev_date.date.value)
-    return year
-
-
-def _date_sort(ev_date: EventDate | None) -> str | None:
-    """Extract sortable ISO date string from an optional EventDate."""
-    if ev_date is None:
-        return None
-    return str(ev_date.date.value)
-
-
-def _base_source_columns(entity: SourceRecord) -> dict[str, Any]:
-    """Extract shared SourceRecord envelope columns."""
-    deprecated_at: str | None = None
-    if entity.tombstone is not None and entity.tombstone.deprecated_at is not None:
-        deprecated_at = str(entity.tombstone.deprecated_at.value)
-    rec_type = _opt_val(getattr(entity, "record_type", None)) or str(entity.record_category.value)
-    return {
-        "id": entity.source_id.value,
-        "canonical_urn": str(entity.source_urn.value),
-        "record_category": str(entity.record_category.value),
-        "record_type": rec_type,
-        "repository_id": entity.repository_id.value,
-        "description": entity.description,
-        "created_at": str(entity.audit.created_at.value),
-        "updated_at": str(entity.audit.updated_at.value),
-        "deprecated_at": deprecated_at,
-        "payload_json": json.dumps(entity.to_dict(), sort_keys=True),
-    }
-
-
-def _hydrate_from_payload[TSource: SourceRecord](
-    row: sqlite3.Row | dict[str, Any],
-    model_cls: type[TSource],
-) -> TSource:
-    """Hydrate a SourceRecord subclass from its row payload_json."""
-    try:
-        data = dict(row)
-        raw_json = data.get("payload_json")
-        if not raw_json or not isinstance(raw_json, str):
-            raise EntityMappingError(f"Missing or invalid 'payload_json' for {model_cls.__name__}.")
-        payload = json.loads(raw_json)
-        return model_cls.from_dict(payload)
-    except EntityMappingError:
-        raise
-    except Exception as err:
-        raise EntityMappingError(f"Failed to hydrate {model_cls.__name__} from row: {err}") from err
 
 
 class BaptismRecordMapper(BaseRowMapper[BaptismRecord]):

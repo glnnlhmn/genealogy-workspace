@@ -19,16 +19,12 @@ from gda.repository.cemetery.repository import (
 )
 from gda.repository.collection import BaseSourceCollection
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "CemeteryMarkerCollection",
     "CemeteryRegistryCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class CemeteryMarkerCollection(
@@ -68,20 +64,14 @@ class CemeteryMarkerCollection(
         cemetery_site_id: SiteID | str,
     ) -> list[CemeteryMarkerRecord]:
         """Return active marker records for a cemetery SiteID."""
-        return _sorted_records(
-            self._registry,
-            self._by_site.get(_normalize_id(cemetery_site_id), set()),
-        )
+        return self._records_for_ids(self._by_site.get(_normalize_id(cemetery_site_id), set()))
 
     def find_by_location(
         self,
         location_id: LocationID | str,
     ) -> list[CemeteryMarkerRecord]:
         """Return active marker records for a geographic LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
 class CemeteryRegistryCollection(
@@ -119,17 +109,11 @@ class CemeteryRegistryCollection(
         cemetery_site_id: SiteID | str,
     ) -> list[CemeteryRegistryRecord]:
         """Return active plot registry records for a cemetery SiteID."""
-        return _sorted_records(
-            self._registry,
-            self._by_site.get(_normalize_id(cemetery_site_id), set()),
-        )
+        return self._records_for_ids(self._by_site.get(_normalize_id(cemetery_site_id), set()))
 
     def find_by_location(
         self,
         location_id: LocationID | str,
     ) -> list[CemeteryRegistryRecord]:
         """Return active plot registry records for a geographic LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))

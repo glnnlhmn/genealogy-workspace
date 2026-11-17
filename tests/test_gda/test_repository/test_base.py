@@ -147,7 +147,7 @@ def test_insert_get_get_or_raise_and_duplicate_detection(
 
 
 def test_upsert_and_upsert_many_and_delete(repo: DummyRecordRepository) -> None:
-    """Verify upsert, upsert_many (including empty batch), and delete operations."""
+    """Verify upsert, upsert_many (including empty batch), delete, and delete_where."""
     assert repo.upsert_many([]) == 0
 
     r1 = _make_record(1, title="Original", year=1870)
@@ -171,6 +171,10 @@ def test_upsert_and_upsert_many_and_delete(repo: DummyRecordRepository) -> None:
     assert repo.delete(r2.id) is True
     assert repo.delete(r2.id) is False
     assert repo.count() == 2
+
+    deleted_count = repo.delete_where(repo.query().where("year", 1890))
+    assert deleted_count == 1
+    assert repo.count() == 1
 
 
 def test_count_list_all_and_find_by(repo: DummyRecordRepository) -> None:
@@ -236,6 +240,9 @@ def test_repository_error_translation(
 
     with pytest.raises(RepositoryError, match="Failed to delete record"):
         broken_repo.delete("SID-000001")
+
+    with pytest.raises(RepositoryError, match="Failed to delete records"):
+        broken_repo.delete_where(broken_repo.query().where("year", 1900))
 
 
 def test_count_handles_empty_fetchone_gracefully(

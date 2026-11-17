@@ -63,7 +63,7 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
     seeded_session: DatabaseSessionManager,
     tmp_path: Path,
 ) -> None:
-    """Verify BaseSourceCollection add, edit, update, tombstone, restore, resolve_active, DB, and JSON I/O."""
+    """Verify BaseSourceCollection add, edit, update, tombstone, undelete, resolve_active, DB, and JSON I/O."""
 
     class _BoundBirthCollection(BirthCollection):
         def _create_default_repository(self, session_manager=None):
@@ -87,7 +87,9 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
     assert len(list(coll)) == 3
     assert coll.is_dirty is True
     assert len(coll.dirty_records()) == 3
+    assert coll.dirty_entities() == coll.dirty_records()
     assert len(coll.find_by_child("IND-000001")) == 2
+    assert len(coll._records_for_ids([b1.source_id])) == 1
 
     # Lookup by SourceID, UUID string, URN, and non-matching types
     assert b1.source_id in coll
@@ -147,7 +149,15 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
     )
     assert not ok and "does not exist" in (msg or "")
 
-    retired_b1 = coll.soft_delete(b1.source_id, superseded_by=b2.source_id)
+    with pytest.raises(RepositoryError, match="reason cannot be empty"):
+        coll.soft_delete(b1.source_id, reason="   ")
+
+    retired_b1 = coll.soft_delete(
+        b1.source_id,
+        reason="Superseded by cleaner scan",
+        superseded_by=b2.source_id,
+        deprecated_at="2026-02-01T00:00:00Z",
+    )
     assert retired_b1.tombstone is not None and retired_b1.tombstone.is_deprecated
     assert len(coll) == 2
     assert len(list(coll)) == 2
@@ -171,7 +181,10 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
     assert not ok and "itself tombstoned" in (msg or "")
 
     # Tombstone without replacement & test resolve_active error branches
-    coll.soft_delete(b3_minimal.source_id)
+    coll.soft_delete(
+        b3_minimal.source_id,
+        deprecated_at=IsoTimestamp("2026-02-01T00:00:00Z"),
+    )
     with pytest.raises(RepositoryError, match="without a replacement"):
         coll.resolve_active(b3_minimal.source_id)
     with pytest.raises(RecordNotFoundError):
@@ -190,7 +203,7 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
     # Undelete / restore checks
     ok, msg = coll.can_undelete("00000000-0000-4000-8000-999999999999")
     assert not ok
-    coll.restore(b2.source_id)
+    coll.undelete(b2.source_id)
     with pytest.raises(RepositoryError, match="not tombstoned"):
         coll.restore(b2.source_id)
 
@@ -198,7 +211,7 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
     b_dup_urn = _make_birth(4, urn_suffix="BIR001")
     coll.add(b_dup_urn)
     with pytest.raises(RepositoryError, match="already claimed"):
-        coll.restore(b1.source_id)
+        coll.undelete(b1.source_id)
     coll.edit(b_dup_urn.source_id, source_urn=SourceURN("URN:SRC:1852:US_PA:BIR004"))
     coll.soft_delete(b_dup_urn.source_id)
     restored_b1 = coll.restore(b1.source_id)
@@ -214,7 +227,7 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
     )
     coll.add(b5_tomb)
 
-    # Save to DB (dirty_only and full) & reload
+    # Save to DB (dirty_only and full) & reload / refresh
     written = coll.save_to_db(session_manager=seeded_session, dirty_only=True)
     assert written == 5
     assert coll.is_dirty is False
@@ -222,14 +235,21 @@ def test_base_source_collection_lifecycle_edit_graveyard_and_io(
 
     reloaded = BirthCollection.from_database(session_manager=seeded_session)
     assert reloaded.load_from_db(session_manager=seeded_session) == 5
-    assert reloaded.load_from_db() == 5
+    assert reloaded.refresh() == 5
 
     # Export and import JSON file (5 total: 2 active + 3 tombstoned)
     json_path = tmp_path / "births_export.json"
     exported_count = reloaded.export_file(json_path, include_graveyard=True)
     assert exported_count == 5
     active_only_path = tmp_path / "births_active.json"
-    assert reloaded.export_file(active_only_path, include_graveyard=False) == 2
+    assert (
+        reloaded.export_file(
+            active_only_path,
+            include_graveyard=False,
+            create_backup=False,
+        )
+        == 2
+    )
 
     fresh_coll = BirthCollection(repository=reloaded.repository)
     assert fresh_coll.import_file(json_path, mark_dirty=False) == 5

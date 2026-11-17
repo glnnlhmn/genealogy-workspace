@@ -24,16 +24,12 @@ from gda.repository.land.repository import (
     LandGrantRepository,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "LandDeedCollection",
     "LandGrantCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class LandDeedCollection(BaseSourceCollection[LandDeedRecord, LandDeedRepository]):
@@ -73,19 +69,15 @@ class LandDeedCollection(BaseSourceCollection[LandDeedRecord, LandDeedRepository
         individual_id: IndividualID | str,
     ) -> list[LandDeedRecord]:
         """Return active deeds involving a grantor or grantee IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_party.get(_normalize_id(individual_id), set()),
-        )
+        return self._records_for_ids(self._by_party.get(_normalize_id(individual_id), set()))
 
     def find_by_parcel_location(
         self,
         location_id: LocationID | str,
     ) -> list[LandDeedRecord]:
         """Return active deeds for a parcel LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_parcel_location.get(_normalize_id(location_id), set()),
+        return self._records_for_ids(
+            self._by_parcel_location.get(_normalize_id(location_id), set())
         )
 
 
@@ -124,17 +116,13 @@ class LandGrantCollection(BaseSourceCollection[LandGrantRecord, LandGrantReposit
         patentee_id: IndividualID | str,
     ) -> list[LandGrantRecord]:
         """Return active land grants for a patentee IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_patentee.get(_normalize_id(patentee_id), set()),
-        )
+        return self._records_for_ids(self._by_patentee.get(_normalize_id(patentee_id), set()))
 
     def find_by_parcel_location(
         self,
         location_id: LocationID | str,
     ) -> list[LandGrantRecord]:
         """Return active land grants for a parcel LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_parcel_location.get(_normalize_id(location_id), set()),
+        return self._records_for_ids(
+            self._by_parcel_location.get(_normalize_id(location_id), set())
         )

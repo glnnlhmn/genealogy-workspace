@@ -24,16 +24,12 @@ from gda.repository.immigration.repository import (
     NaturalizationRepository,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "ImmigrationManifestCollection",
     "NaturalizationCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class ImmigrationManifestCollection(
@@ -81,20 +77,14 @@ class ImmigrationManifestCollection(
         individual_id: IndividualID | str,
     ) -> list[ImmigrationManifestRecord]:
         """Return active manifests containing a linked passenger IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_passenger.get(_normalize_id(individual_id), set()),
-        )
+        return self._records_for_ids(self._by_passenger.get(_normalize_id(individual_id), set()))
 
     def find_by_port_of_arrival(
         self,
         port_of_arrival_id: LocationID | str,
     ) -> list[ImmigrationManifestRecord]:
         """Return active manifests for a port of arrival LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_port.get(_normalize_id(port_of_arrival_id), set()),
-        )
+        return self._records_for_ids(self._by_port.get(_normalize_id(port_of_arrival_id), set()))
 
 
 class NaturalizationCollection(
@@ -137,17 +127,13 @@ class NaturalizationCollection(
         applicant_id: IndividualID | str,
     ) -> list[NaturalizationRecord]:
         """Return active naturalization records for an applicant IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_applicant.get(_normalize_id(applicant_id), set()),
-        )
+        return self._records_for_ids(self._by_applicant.get(_normalize_id(applicant_id), set()))
 
     def find_by_court_location(
         self,
         court_location_id: LocationID | str,
     ) -> list[NaturalizationRecord]:
         """Return active naturalization records for a court LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_court_location.get(_normalize_id(court_location_id), set()),
+        return self._records_for_ids(
+            self._by_court_location.get(_normalize_id(court_location_id), set())
         )

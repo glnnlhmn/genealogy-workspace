@@ -4,8 +4,9 @@ Stateless identifier minting, parsing, formatting, and validation helpers.
 
 Operational Role:
     Provides deterministic RFC 4122 UUIDv4 minting alongside canonical
-    sequential smartID minting, validation, decomposition, and high-water
-    mark sequence extraction decoupled from high-level domain models.
+    sequential smartID minting, validation, decomposition, high-water
+    mark sequence extraction, and universal identifier string unwrapping
+    decoupled from high-level domain models.
 """
 
 from __future__ import annotations
@@ -17,17 +18,47 @@ from typing import Any
 from gda.core.enums import IDType, SmartIDPrefix
 from gda.core.types import ATOM_ID_REGEX, UUID_V4_REGEX
 
-__version__ = "1.0.0+build.13"
+__version__ = "1.0.0+build.14"
 
 __all__ = [
     "extract_max_smart_id",
     "mint_smart_id",
     "mint_uuid",
+    "normalize_id",
     "parse_smart_id",
     "verify_id",
 ]
 
 _SMART_ID_PATTERN = ATOM_ID_REGEX
+
+
+def normalize_id(val: Any) -> str:
+    """Extract a canonical trimmed string identifier from a string, dict, or value atom.
+
+    Args:
+        val: Candidate string, dictionary with a 'value' key, or domain atom
+            exposing a '.value' attribute.
+
+    Returns:
+        Trimmed canonical identifier string.
+
+    Raises:
+        ValueError: If val is None or resolves to an empty/whitespace string.
+    """
+    if val is None:
+        raise ValueError("Cannot normalize identifier from None.")
+
+    if isinstance(val, dict):
+        raw = val.get("value", "")
+    elif hasattr(val, "value"):
+        raw = val.value
+    else:
+        raw = val
+
+    text = str(raw).strip()
+    if not text:
+        raise ValueError("Normalized identifier cannot be empty or whitespace.")
+    return text
 
 
 def verify_id(

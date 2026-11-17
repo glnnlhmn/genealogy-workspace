@@ -17,8 +17,8 @@ import sqlite3
 from typing import Any
 
 from gda.db.exceptions import EntityMappingError
-from gda.db.mapper.base import BaseRowMapper
-from gda.db.mapper.vital_cemetery import (
+from gda.db.mapper.base import (
+    BaseRowMapper,
     _base_source_columns,
     _date_sort,
     _date_year,
@@ -32,7 +32,7 @@ from gda.model.source.orgs.membership import OrganizationMembershipRecord
 from gda.model.source.orgs.roster import OrganizationRosterRecord
 from gda.model.source.other.miscellaneous import OtherMiscellaneousRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "AcademicCredentialRecordMapper",

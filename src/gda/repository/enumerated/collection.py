@@ -31,7 +31,7 @@ from gda.repository.enumerated.repository import (
     TaxAssessmentRepository,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "DirectoryRollCollection",
@@ -39,10 +39,6 @@ __all__ = [
     "SupplementalScheduleCollection",
     "TaxAssessmentCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class PopulationScheduleCollection(
@@ -111,16 +107,15 @@ class PopulationScheduleCollection(
         enumeration_year: int,
     ) -> list[PopulationScheduleRecord[Any]]:
         """Return active population schedules for a census year."""
-        return _sorted_records(self._registry, self._by_year.get(enumeration_year, set()))
+        return self._records_for_ids(self._by_year.get(enumeration_year, set()))
 
     def find_by_jurisdiction(
         self,
         jurisdiction_id: LocationID | str,
     ) -> list[PopulationScheduleRecord[Any]]:
         """Return active population schedules for a jurisdiction LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set()),
+        return self._records_for_ids(
+            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
         )
 
 
@@ -168,16 +163,15 @@ class SupplementalScheduleCollection(
 
     def find_by_year(self, enumeration_year: int) -> list[CensusScheduleRecord[Any]]:
         """Return active supplemental schedules for a census year."""
-        return _sorted_records(self._registry, self._by_year.get(enumeration_year, set()))
+        return self._records_for_ids(self._by_year.get(enumeration_year, set()))
 
     def find_by_jurisdiction(
         self,
         jurisdiction_id: LocationID | str,
     ) -> list[CensusScheduleRecord[Any]]:
         """Return active supplemental schedules for a jurisdiction LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set()),
+        return self._records_for_ids(
+            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
         )
 
 
@@ -211,16 +205,15 @@ class DirectoryRollCollection(BaseSourceCollection[DirectoryRollRecord, Director
 
     def find_by_year(self, enumeration_year: int) -> list[DirectoryRollRecord]:
         """Return active directory roll records for a publication year."""
-        return _sorted_records(self._registry, self._by_year.get(enumeration_year, set()))
+        return self._records_for_ids(self._by_year.get(enumeration_year, set()))
 
     def find_by_jurisdiction(
         self,
         jurisdiction_id: LocationID | str,
     ) -> list[DirectoryRollRecord]:
         """Return active directory roll records for a jurisdiction LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set()),
+        return self._records_for_ids(
+            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
         )
 
 
@@ -256,14 +249,11 @@ class TaxAssessmentCollection(BaseSourceCollection[TaxAssessmentRecord, TaxAsses
 
     def find_by_year(self, enumeration_year: int) -> list[TaxAssessmentRecord]:
         """Return active tax assessment records for an assessment year."""
-        return _sorted_records(self._registry, self._by_year.get(enumeration_year, set()))
+        return self._records_for_ids(self._by_year.get(enumeration_year, set()))
 
     def find_by_taxpayer(
         self,
         taxpayer_id: IndividualID | str,
     ) -> list[TaxAssessmentRecord]:
         """Return active tax assessment records for a taxpayer IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_taxpayer.get(_normalize_id(taxpayer_id), set()),
-        )
+        return self._records_for_ids(self._by_taxpayer.get(_normalize_id(taxpayer_id), set()))

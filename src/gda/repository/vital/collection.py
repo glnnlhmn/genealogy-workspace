@@ -30,7 +30,7 @@ from gda.repository.vital.repository import (
     MarriageRepository,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "BaptismCollection",
@@ -39,10 +39,6 @@ __all__ = [
     "DivorceCollection",
     "MarriageCollection",
 ]
-
-
-def _sorted_records[T](registry: dict[SourceID, T], sids: set[SourceID]) -> list[T]:
-    return [registry[sid] for sid in sorted(sids, key=lambda s: s.value)]
 
 
 class BaptismCollection(BaseSourceCollection[BaptismRecord, BaptismRepository]):
@@ -77,17 +73,11 @@ class BaptismCollection(BaseSourceCollection[BaptismRecord, BaptismRepository]):
 
     def find_by_individual(self, individual_id: IndividualID | str) -> list[BaptismRecord]:
         """Return active baptism records for an individual from in-memory index."""
-        return _sorted_records(
-            self._registry,
-            self._by_individual.get(_normalize_id(individual_id), set()),
-        )
+        return self._records_for_ids(self._by_individual.get(_normalize_id(individual_id), set()))
 
     def find_by_location(self, location_id: LocationID | str) -> list[BaptismRecord]:
         """Return active baptism records for a location from in-memory index."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
 class BirthCollection(BaseSourceCollection[BirthRecord, BirthRepository]):
@@ -122,17 +112,11 @@ class BirthCollection(BaseSourceCollection[BirthRecord, BirthRepository]):
 
     def find_by_child(self, child_id: IndividualID | str) -> list[BirthRecord]:
         """Return active birth records for a child IndividualID from in-memory index."""
-        return _sorted_records(
-            self._registry,
-            self._by_child.get(_normalize_id(child_id), set()),
-        )
+        return self._records_for_ids(self._by_child.get(_normalize_id(child_id), set()))
 
     def find_by_location(self, location_id: LocationID | str) -> list[BirthRecord]:
         """Return active birth records for a place_of_birth_id from in-memory index."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
 class DeathCollection(BaseSourceCollection[DeathRecord, DeathRepository]):
@@ -167,17 +151,11 @@ class DeathCollection(BaseSourceCollection[DeathRecord, DeathRepository]):
 
     def find_by_decedent(self, decedent_id: IndividualID | str) -> list[DeathRecord]:
         """Return active death records for a decedent IndividualID from in-memory index."""
-        return _sorted_records(
-            self._registry,
-            self._by_decedent.get(_normalize_id(decedent_id), set()),
-        )
+        return self._records_for_ids(self._by_decedent.get(_normalize_id(decedent_id), set()))
 
     def find_by_location(self, location_id: LocationID | str) -> list[DeathRecord]:
         """Return active death records for a place_of_death_id from in-memory index."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
 
 
 class DivorceCollection(BaseSourceCollection[DivorceRecord, DivorceRepository]):
@@ -216,19 +194,15 @@ class DivorceCollection(BaseSourceCollection[DivorceRecord, DivorceRepository]):
 
     def find_by_spouse(self, spouse_id: IndividualID | str) -> list[DivorceRecord]:
         """Return active divorce records involving a husband or wife IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_spouse.get(_normalize_id(spouse_id), set()),
-        )
+        return self._records_for_ids(self._by_spouse.get(_normalize_id(spouse_id), set()))
 
     def find_by_jurisdiction(
         self,
         jurisdiction_id: LocationID | str,
     ) -> list[DivorceRecord]:
         """Return active divorce records for a court jurisdiction LocationID."""
-        return _sorted_records(
-            self._registry,
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set()),
+        return self._records_for_ids(
+            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
         )
 
 
@@ -268,14 +242,8 @@ class MarriageCollection(BaseSourceCollection[MarriageRecord, MarriageRepository
 
     def find_by_spouse(self, spouse_id: IndividualID | str) -> list[MarriageRecord]:
         """Return active marriage records involving a groom or bride IndividualID."""
-        return _sorted_records(
-            self._registry,
-            self._by_spouse.get(_normalize_id(spouse_id), set()),
-        )
+        return self._records_for_ids(self._by_spouse.get(_normalize_id(spouse_id), set()))
 
     def find_by_location(self, location_id: LocationID | str) -> list[MarriageRecord]:
         """Return active marriage records for a place_of_marriage_id."""
-        return _sorted_records(
-            self._registry,
-            self._by_location.get(_normalize_id(location_id), set()),
-        )
+        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))

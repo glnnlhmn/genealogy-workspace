@@ -1,6 +1,6 @@
 """Path: src/gda/db/mapper/probate_land.py
 
-Bidirectional SQLite row mappers for Probate and Land archival sources.
+Bidirectional SQLite row mappers for Probate and Land archival source records.
 
 Operational Role:
     Flattens analytical, foreign-key, and temporal columns for SQLite indexing
@@ -14,12 +14,13 @@ import sqlite3
 from typing import Any
 
 from gda.db.exceptions import EntityMappingError
-from gda.db.mapper.base import BaseRowMapper
-from gda.db.mapper.vital_cemetery import (
+from gda.db.mapper.base import (
+    BaseRowMapper,
     _base_source_columns,
     _date_sort,
     _date_year,
     _hydrate_from_payload,
+    _opt_bool_int,
     _opt_val,
 )
 from gda.model.source.land.deed import LandDeedRecord
@@ -27,25 +28,19 @@ from gda.model.source.land.grant import LandGrantRecord
 from gda.model.source.probate.inventory import EstateInventoryRecord
 from gda.model.source.probate.will import ProbateRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "EstateInventoryRecordMapper",
     "LandDeedRecordMapper",
     "LandGrantRecordMapper",
     "ProbateRecordMapper",
+    "_opt_bool_int",
 ]
 
 
-def _opt_bool_int(val: bool | None) -> int | None:
-    """Convert an optional boolean into SQLite integer (1, 0, or None)."""
-    if val is None:
-        return None
-    return 1 if val else 0
-
-
 class ProbateRecordMapper(BaseRowMapper[ProbateRecord]):
-    """Bidirectional SQLite row mapper for ProbateRecord (wills and letters)."""
+    """Bidirectional SQLite row mapper for ProbateRecord (wills & estates)."""
 
     def __init__(self) -> None:
         """Initialize ProbateRecordMapper."""
@@ -105,7 +100,7 @@ class EstateInventoryRecordMapper(BaseRowMapper[EstateInventoryRecord]):
                     "parent_probate_source_id": _opt_val(entity.parent_probate_source_id),
                     "appraised_year": _date_year(entity.date_appraised_or_accounted),
                     "appraised_date_sort": _date_sort(entity.date_appraised_or_accounted),
-                    "total_appraised_value_numeric": entity.total_appraised_value_numeric,
+                    "total_appraised_value_numeric": (entity.total_appraised_value_numeric),
                     "currency_code": entity.currency_code,
                     "item_count": len(entity.items),
                     "ledger_entry_count": len(entity.ledger_entries),
@@ -115,7 +110,10 @@ class EstateInventoryRecordMapper(BaseRowMapper[EstateInventoryRecord]):
         except Exception as err:
             raise EntityMappingError(f"Failed to map EstateInventoryRecord to row: {err}") from err
 
-    def from_row(self, row: sqlite3.Row | dict[str, Any]) -> EstateInventoryRecord:
+    def from_row(
+        self,
+        row: sqlite3.Row | dict[str, Any],
+    ) -> EstateInventoryRecord:
         """Hydrate EstateInventoryRecord from SQLite row."""
         return _hydrate_from_payload(row, EstateInventoryRecord)
 
@@ -184,7 +182,7 @@ class LandGrantRecordMapper(BaseRowMapper[LandGrantRecord]):
                     "office_location_id": _opt_val(entity.office_location_id),
                     "parcel_location_id": _opt_val(entity.parcel.location_id),
                     "patent_or_warrant_number": entity.patent_or_warrant_number,
-                    "certificate_or_entry_number": entity.certificate_or_entry_number,
+                    "certificate_or_entry_number": (entity.certificate_or_entry_number),
                     "grant_basis": _opt_val(entity.grant_basis),
                     "patentee_id": _opt_val(entity.patentee_id),
                     "assignee_id": _opt_val(entity.assignee_id),

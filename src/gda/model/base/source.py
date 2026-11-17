@@ -6,13 +6,17 @@ Operational Role:
     Defines foundational evidentiary document and citation structures across the archive:
     - SourceReference: Citation pointer attaching archival sources to facts and assertions.
     - RecordMetadata: Administrative header envelope linking source UUIDs, URNs, and repositories.
-    - SourceRecord: Canonical composite representing a primary archival document.
+    - SourceRecord: Canonical composite representing a primary archival document with
+      reflection-based subclass to_dict() and from_dict() serialization.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import json
+import sys
 from dataclasses import replace
+from enum import Enum
 from typing import Any, Self
 
 from pydantic import ConfigDict, Field
@@ -25,16 +29,94 @@ from gda.core.logging import GDALogger
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import MediaID, RepositoryID, SourceID
 from gda.model.atom.scalar import ConfidenceScore, QuayScore
-from gda.model.atom.urn import ArchivalURN, SourceURN
+from gda.model.atom.urn import (
+    ArchivalURN,
+    CensusUrn,
+    MilitaryDraftUrn,
+    SourceURN,
+    VitalCertificateUrn,
+)
+from gda.model.atom.year import HistoricalYear
 from gda.model.base.association import AssociatedIndividual
 from gda.model.base.audit import AuditStamp
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = ["RecordMetadata", "SourceRecord", "SourceReference"]
 
 _logger = GDALogger(__name__)
+
+_BASE_SOURCE_FIELD_NAMES: frozenset[str] = frozenset(
+    {
+        "source_id",
+        "source_urn",
+        "record_category",
+        "description",
+        "repository_id",
+        "audit",
+        "media_ids",
+        "associated_people",
+        "tombstone",
+    }
+)
+
+
+def _resolve_archival_urn(urn_input: ArchivalURN | str) -> ArchivalURN:
+    """Resolve an ArchivalURN instance or URN string into its specialized URN atom."""
+    if isinstance(urn_input, ArchivalURN):
+        return urn_input
+    text = str(urn_input).strip()
+    if text.startswith("URN:DRAFT:"):
+        return MilitaryDraftUrn(text)
+    if text.startswith("URN:CENSUS:"):
+        return CensusUrn(text)
+    if text.startswith("URN:VITAL:"):
+        return VitalCertificateUrn(text)
+    return SourceURN(text)
+
+
+def _serialize_subclass_field(val: Any) -> Any:
+    """Convert a subclass dataclass field value into a JSON-serializable primitive."""
+    if hasattr(val, "value"):
+        return val.value
+    if isinstance(val, (bool, int, float, str)):
+        return val
+    if dataclasses.is_dataclass(val) and not isinstance(val, type):
+        return {
+            f.name: _serialize_subclass_field(getattr(val, f.name))
+            for f in dataclasses.fields(val)
+            if getattr(val, f.name) is not None
+        }
+    return val
+
+
+def _resolve_field_type(cls: type[Any], type_name: str) -> Any:
+    """Look up a type annotation symbol across the class hierarchy's module namespaces."""
+    for base in cls.__mro__:
+        mod = sys.modules.get(base.__module__)
+        if mod is not None and hasattr(mod, type_name):
+            return getattr(mod, type_name)
+    return None
+
+
+def _coerce_subclass_field(cls: type[Any], type_str: str, raw: Any) -> Any:
+    """Coerce a JSON-deserialized primitive into the target dataclass field type."""
+    if raw is None:
+        return None
+    clean = type_str.replace(" | None", "").replace("Optional[", "").rstrip("]").strip()
+    target_type = _resolve_field_type(cls, clean)
+    if target_type is None or not isinstance(target_type, type):
+        return raw
+    if isinstance(raw, target_type):
+        return raw
+    if issubclass(target_type, HistoricalYear):
+        return target_type(int(raw))
+    if isinstance(raw, dict):
+        return target_type(**raw)
+    if issubclass(target_type, Enum) or hasattr(target_type, "__dataclass_fields__"):
+        return target_type(str(raw))
+    return raw
 
 
 @dataclass(repr=False, config=ConfigDict(frozen=True, extra="forbid", strict=True))
@@ -384,9 +466,7 @@ class SourceRecord(IntrospectableMixin):
                 f"Invalid SourceRecordCategory type: {type(record_category).__name__}."
             )
 
-        resolved_urn = (
-            source_urn if isinstance(source_urn, ArchivalURN) else SourceURN(str(source_urn))
-        )
+        resolved_urn = _resolve_archival_urn(source_urn)
         resolved_audit = audit if audit is not None else AuditStamp.now()
         resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
         return cls(
@@ -402,7 +482,7 @@ class SourceRecord(IntrospectableMixin):
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize SourceRecord to a dictionary."""
+        """Serialize SourceRecord and (when not overridden) non-None subclass fields."""
         data: dict[str, Any] = {
             "source_id": str(self.source_id),
             "source_urn": str(self.source_urn),
@@ -426,11 +506,17 @@ class SourceRecord(IntrospectableMixin):
                 if self.tombstone.superseded_by
                 else None,
             }
+        if type(self).to_dict is SourceRecord.to_dict:
+            for f in dataclasses.fields(self):
+                if f.name not in _BASE_SOURCE_FIELD_NAMES:
+                    val = getattr(self, f.name)
+                    if val is not None:
+                        data[f.name] = _serialize_subclass_field(val)
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SourceRecord:
-        """Deserialize a dictionary payload into an immutable SourceRecord."""
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        """Deserialize a dictionary payload into an immutable SourceRecord or subclass."""
         if not isinstance(data, dict):
             raise ModelFormatError("SourceRecord payload must be a dictionary.")
 
@@ -475,26 +561,56 @@ class SourceRecord(IntrospectableMixin):
                 superseded_by=sup_id,
             )
 
-        return cls.create(
-            source_id=str(sid),
-            source_urn=str(raw_urn),
-            record_category=str(cat),
-            description=str(desc),
-            repository_id=str(rep),
-            audit=audit_obj,
-            media_ids=data.get("media_ids", []),
-            associated_people=[
-                AssociatedIndividual.from_dict(p) for p in data.get("associated_people", [])
+        if cls is SourceRecord:
+            return cls.create(  # type: ignore[return-value]
+                source_id=str(sid),
+                source_urn=str(raw_urn),
+                record_category=str(cat),
+                description=str(desc),
+                repository_id=str(rep),
+                audit=audit_obj,
+                media_ids=data.get("media_ids", []),
+                associated_people=[
+                    AssociatedIndividual.from_dict(p) for p in data.get("associated_people", [])
+                ],
+                tombstone=tombstone_obj,
+            )
+
+        kwargs: dict[str, Any] = {
+            "source_id": sid if isinstance(sid, SourceID) else SourceID(str(sid)),
+            "source_urn": _resolve_archival_urn(raw_urn),
+            "record_category": (
+                cat
+                if isinstance(cat, SourceRecordCategory)
+                else SourceRecordCategory(str(cat).strip().upper())
+            ),
+            "description": str(desc).strip(),
+            "repository_id": (rep if isinstance(rep, RepositoryID) else RepositoryID(str(rep))),
+            "audit": audit_obj,
+            "media_ids": [
+                m if isinstance(m, MediaID) else MediaID(str(m)) for m in data.get("media_ids", [])
             ],
-            tombstone=tombstone_obj,
-        )
+            "associated_people": [
+                p if isinstance(p, AssociatedIndividual) else AssociatedIndividual.from_dict(p)
+                for p in data.get("associated_people", [])
+            ],
+            "tombstone": tombstone_obj,
+        }
+        for f in dataclasses.fields(cls):
+            if f.name not in _BASE_SOURCE_FIELD_NAMES and f.name in data:
+                kwargs[f.name] = _coerce_subclass_field(
+                    cls,
+                    str(f.type),
+                    data[f.name],
+                )
+        return cls(**kwargs)
 
     def to_json(self) -> str:
         """Serialize SourceRecord to a JSON formatted string."""
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
     @classmethod
-    def from_json(cls, payload: str) -> SourceRecord:
+    def from_json(cls, payload: str) -> Self:
         """Deserialize a JSON string directly into a SourceRecord instance."""
         try:
             data = json.loads(payload)
