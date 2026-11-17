@@ -29,7 +29,7 @@ from gda.model.base.name import (
     NameThing,
 )
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 
 # ==============================================================================
@@ -54,22 +54,22 @@ def test_name_base_blank_raw_and_canonical_raise_error(blank_text: str) -> None:
 def test_name_base_and_person_list_invariants() -> None:
     """Verify NameBase/NamePerson reject blank/duplicate list entries and blank comments."""
     with pytest.raises(ModelFormatError, match="aliases cannot contain empty"):
-        NameBase(raw="John", canonical="John", aliases=["   "])
+        NameBase(raw="John", canonical="John", aliases=[" "])
 
     with pytest.raises(ModelFormatError, match="Duplicate entries found in aliases"):
         NamePerson(raw="John", canonical="John", aliases=["Jack", "Jack"])
 
     with pytest.raises(ModelFormatError, match="alt_spellings cannot contain empty"):
-        NameBase(raw="John", canonical="John", alt_spellings=["   "])
+        NameBase(raw="John", canonical="John", alt_spellings=[" "])
 
     with pytest.raises(ModelFormatError, match="Duplicate entries found in alt_spellings"):
         NamePerson(raw="John", canonical="John", alt_spellings=["Jhon", "Jhon"])
 
     with pytest.raises(ModelFormatError, match="'comment' cannot be blank"):
-        NameBase(raw="John", canonical="John", comment="   ")
+        NameBase(raw="John", canonical="John", comment=" ")
 
     with pytest.raises(ModelFormatError, match="married cannot contain empty"):
-        NamePerson(raw="Mary Smith", canonical="Mary Smith", married=["   "])
+        NamePerson(raw="Mary Smith", canonical="Mary Smith", married=[" "])
 
     with pytest.raises(ModelFormatError, match="Duplicate entries found in married"):
         NamePerson(raw="Mary Smith", canonical="Mary Smith", married=["Jones", "Jones"])
@@ -117,7 +117,7 @@ def test_name_person_factory_auto_computes_canonical() -> None:
     assert mononym.full_name == "Aristotle"
 
     with pytest.raises(ModelFormatError, match="NamePerson 'raw' cannot be empty"):
-        NamePerson.create(raw="   ")
+        NamePerson.create(raw=" ")
 
 
 @pytest.mark.unit
@@ -126,20 +126,20 @@ def test_name_person_create_fallback_and_deduplication() -> None:
     """Verify NamePerson.create falls back to raw on blank parts and deduplicates lists."""
     person = NamePerson.create(
         raw="Socrates",
-        prefix="   ",
-        given="   ",
-        middle="   ",
-        surname="   ",
-        suffix="   ",
+        prefix=" ",
+        given=" ",
+        middle=" ",
+        surname=" ",
+        suffix=" ",
     )
     assert person.canonical == "Socrates"
     assert person.full_name == "Socrates"
 
     deduped = NamePerson.create(
         raw="Mary Smith",
-        married=["Jones", "  Jones  ", "Smith-Jones", "", "   "],
-        aliases=["Molly", "  Molly  ", "Polly", ""],
-        alt_spellings=["Smyth", "  Smyth  ", "Smythe", ""],
+        married=["Jones", " Jones ", "Smith-Jones", "", " "],
+        aliases=["Molly", " Molly ", "Polly", ""],
+        alt_spellings=["Smyth", " Smyth ", "Smythe", ""],
     )
     assert deduped.married == ["Jones", "Smith-Jones"]
     assert deduped.aliases == ["Molly", "Polly"]
@@ -151,31 +151,27 @@ def test_name_person_copy_on_write_mutators(sample_name_person: NamePerson) -> N
     """Verify NamePerson mutators return distinct immutable copies and support clearing parts."""
     original = sample_name_person
 
-    # update_raw & idempotency
     updated_raw = original.update_raw("President J. Q. Adams")
     assert updated_raw is not original
     assert updated_raw.raw == "President J. Q. Adams"
     assert updated_raw.update_raw("President J. Q. Adams") is updated_raw
 
-    # update_canonical & idempotency
     updated_can = original.update_canonical("John Adams Jr.")
     assert updated_can is not original
     assert updated_can.canonical == "John Adams Jr."
     assert updated_can.update_canonical("John Adams Jr.") is updated_can
 
-    # update_parts (partial update + explicit clearing via None or blank string)
     updated_parts = original.update_parts(prefix="Hon.", suffix="Esq.")
     assert updated_parts is not original
     assert updated_parts.prefix == "Hon."
     assert updated_parts.suffix == "Esq."
     assert updated_parts.full_name == "Hon. John Quincy Adams Esq."
 
-    cleared_parts = updated_parts.update_parts(prefix=None, middle="   ")
+    cleared_parts = updated_parts.update_parts(prefix=None, middle=" ")
     assert cleared_parts.prefix is None
     assert cleared_parts.middle is None
     assert cleared_parts.given == "John"
 
-    # add_married & remove_married
     with_married = original.add_married("Adams-Lee")
     assert with_married is not original
     assert "Adams-Lee" in with_married.married
@@ -185,9 +181,8 @@ def test_name_person_copy_on_write_mutators(sample_name_person: NamePerson) -> N
     assert with_removed_married is not with_married
     assert "Adams-Smith" not in with_removed_married.married
     assert with_removed_married.remove_married("NONEXISTENT") is with_removed_married
-    assert with_removed_married.remove_married("   ") is with_removed_married
+    assert with_removed_married.remove_married(" ") is with_removed_married
 
-    # add_alias & remove_alias
     with_alias = original.add_alias("Diplomat")
     assert with_alias is not original
     assert "Diplomat" in with_alias.aliases
@@ -198,7 +193,6 @@ def test_name_person_copy_on_write_mutators(sample_name_person: NamePerson) -> N
     assert "Old Man Eloquent" not in with_removed_alias.aliases
     assert with_removed_alias.remove_alias("NONEXISTENT") is with_removed_alias
 
-    # add_spelling & remove_spelling
     with_spelling = original.add_spelling("Adames")
     assert with_spelling is not original
     assert "Adames" in with_spelling.alt_spellings
@@ -209,7 +203,6 @@ def test_name_person_copy_on_write_mutators(sample_name_person: NamePerson) -> N
     assert "Addams" not in with_removed_spelling.alt_spellings
     assert with_removed_spelling.remove_spelling("NONEXISTENT") is with_removed_spelling
 
-    # update_comment & idempotency + clearing to None
     with_comment = original.update_comment("Revised biographical comment.")
     assert with_comment is not original
     assert with_comment.comment == "Revised biographical comment."
@@ -348,16 +341,16 @@ def test_historic_variant_creation_validation_and_serialization(
     assert with_period_obj.valid_period == golden_time_period
 
     with pytest.raises(ModelFormatError, match="'raw' cannot be empty"):
-        HistoricVariant(raw="   ", name="Valid Name")
+        HistoricVariant(raw=" ", name="Valid Name")
     with pytest.raises(ModelFormatError, match="'name' cannot be empty"):
-        HistoricVariant(raw="Valid Raw", name="   ")
+        HistoricVariant(raw="Valid Raw", name=" ")
     with pytest.raises(ModelFormatError, match="'comment' cannot be blank"):
-        HistoricVariant(raw="Valid Raw", name="Valid Name", comment="   ")
+        HistoricVariant(raw="Valid Raw", name="Valid Name", comment=" ")
     with pytest.raises(ModelFormatError, match="'raw' cannot be empty"):
-        HistoricVariant.create(raw="   ")
-    with pytest.raises(ModelFormatError, match="Invalid HistoricNameType value"):
+        HistoricVariant.create(raw=" ")
+    with pytest.raises(ModelFormatError, match="Invalid HistoricNameType"):
         HistoricVariant.create(raw="Bow", historic_name_type="BAD_TYPE")
-    with pytest.raises(ModelFormatError, match="Invalid HistoricNameType type"):
+    with pytest.raises(ModelFormatError, match="Invalid HistoricNameType"):
         HistoricVariant.create(raw="Bow", historic_name_type=123)  # type: ignore[arg-type]
 
 
@@ -378,19 +371,18 @@ def test_name_thing_creation_mutators_and_serialization(
         "NameBase(raw='Base', canonical='Base', aliases=[], alt_spellings=[], comment=None)"
     )
 
-    assert NameThing.create(raw="Penacook", canonical="   ").canonical == "Penacook"
+    assert NameThing.create(raw="Penacook", canonical=" ").canonical == "Penacook"
     with pytest.raises(ModelFormatError, match="NameThing 'raw' cannot be empty"):
-        NameThing.create(raw="   ")
+        NameThing.create(raw=" ")
 
     deduped = NameThing.create(
         raw="Bow",
-        aliases=["Bow Town", "  Bow Town  ", "Bow Center", ""],
-        alt_spellings=["Bowe", "  Bowe  ", "Bow Mills", ""],
+        aliases=["Bow Town", " Bow Town ", "Bow Center", ""],
+        alt_spellings=["Bowe", " Bowe ", "Bow Mills", ""],
     )
     assert deduped.aliases == ["Bow Town", "Bow Center"]
     assert deduped.alt_spellings == ["Bowe", "Bow Mills"]
 
-    # add_historic_variant (new + idempotent duplicate)
     with_added = thing.add_historic_variant(
         raw="Amoskeag",
         name="Amoskeag Village",
@@ -413,9 +405,8 @@ def test_name_thing_creation_mutators_and_serialization(
     with_removed = with_added.remove_historic_variant("Derryfield")
     assert len(with_removed.historic) == 1
     assert with_removed.remove_historic_variant("NONEXISTENT") is with_removed
-    assert with_removed.remove_historic_variant("   ") is with_removed
+    assert with_removed.remove_historic_variant(" ") is with_removed
 
-    # Serialization round-trip & legacy keys
     payload = thing.to_dict()
     assert NameThing.from_dict(payload) == thing
 

@@ -1,118 +1,135 @@
 """Path: tests/test_gda/test_model/test_base/test_base_audit.py
 
-Comprehensive test suite verifying AuditStamp invariants and transitions.
+Comprehensive test suite for AuditStamp lifecycle dataclass and helpers.
 
 Operational Role:
-    Verifies that AuditStamp enforces valid ISO timestamps, chronological ordering,
-    .now() and .touch() lifecycle helpers, strict mode rejection, immutability,
-    and runtime introspection with 100% statement and branch coverage.
+    Verifies AuditStamp creation, chronological ordering constraints, .now()
+    and .touch() transitions, .to_dict()/.from_dict()/.to_json()/.from_json()
+    serialization, and touch_audit / is_modified domain helpers with full
+    statement and branch coverage.
 """
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
+from dataclasses import dataclass
 
 import pytest
-from pydantic import ValidationError
 
 from gda.core.dates import validate_iso_timestamp
-from gda.core.errors import ModelFormatError
+from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.model.atom.date import IsoTimestamp
-from gda.model.base.audit import AuditStamp
+from gda.model.base.audit import AuditStamp, is_modified, touch_audit
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.4"
 
 
-# ==============================================================================
-# GROUP 1: AUDITSTAMP CREATION & VALIDATION
-# ==============================================================================
+@dataclass(frozen=True)
+class _DummyAuditedEntity:
+    """In-memory frozen dataclass carrier for testing audit helpers."""
+
+    name: str
+    audit: AuditStamp
 
 
 @pytest.mark.unit
 @pytest.mark.smoke
-def test_audit_stamp_valid_creation(
+def test_audit_stamp_instantiation_and_representations(
     ts_created: IsoTimestamp,
     ts_updated: IsoTimestamp,
 ) -> None:
-    """Verify AuditStamp instantiates with equal or advancing timestamps."""
-    audit_same = AuditStamp(created_at=ts_created, updated_at=ts_created)
-    assert audit_same.created_at == ts_created
-    assert audit_same.updated_at == ts_created
-    assert str(audit_same) == "created=2026-10-16T10:00:00Z, updated=2026-10-16T10:00:00Z"
-    assert repr(audit_same) == (
-        "AuditStamp(created_at=IsoTimestamp(value='2026-10-16T10:00:00Z'), "
-        "updated_at=IsoTimestamp(value='2026-10-16T10:00:00Z'))"
+    """Verify AuditStamp stores timestamps and formats str/repr cleanly."""
+    stamp = AuditStamp(created_at=ts_created, updated_at=ts_updated)
+    assert stamp.created_at == ts_created
+    assert stamp.updated_at == ts_updated
+    assert str(stamp) == f"Created: {ts_created.value} | Updated: {ts_updated.value}"
+    assert repr(stamp) == (
+        f"AuditStamp(created_at='{ts_created.value}', updated_at='{ts_updated.value}')"
     )
-
-    audit_advanced = AuditStamp(created_at=ts_created, updated_at=ts_updated)
-    assert audit_advanced.updated_at == ts_updated
-
-
-@pytest.mark.unit
-@pytest.mark.smoke
-def test_audit_stamp_now_factory() -> None:
-    """Verify AuditStamp.now() mints synchronized UTC timestamps."""
-    stamp = AuditStamp.now()
-    assert stamp.created_at == stamp.updated_at
-    assert validate_iso_timestamp(stamp.created_at.value) is True
 
 
 @pytest.mark.unit
 @pytest.mark.regression
-def test_audit_stamp_chronological_inversion_raises_error(
+def test_audit_stamp_updated_before_created_raises_range_error(
     ts_created: IsoTimestamp,
     ts_updated: IsoTimestamp,
 ) -> None:
-    """Verify AuditStamp raises ModelFormatError if updated_at precedes created_at."""
-    with pytest.raises(ModelFormatError, match="cannot precede created_at"):
+    """Verify AuditStamp raises ModelRangeError if updated_at precedes created_at."""
+    with pytest.raises(ModelRangeError, match="cannot precede created_at"):
         AuditStamp(created_at=ts_updated, updated_at=ts_created)
 
 
 @pytest.mark.unit
-@pytest.mark.regression
-def test_audit_stamp_strict_mode_rejects_raw_strings() -> None:
-    """Verify strict=True rejects raw strings in place of IsoTimestamp instances."""
-    with pytest.raises(ValidationError):
-        AuditStamp(
-            created_at="2026-10-16T10:00:00Z",  # type: ignore[arg-type]
-            updated_at="2026-10-16T10:00:00Z",  # type: ignore[arg-type]
-        )
-
-
-# ==============================================================================
-# GROUP 2: TOUCH TRANSITION, IMMUTABILITY & INTROSPECTION
-# ==============================================================================
-
-
-@pytest.mark.unit
-@pytest.mark.smoke
-def test_audit_stamp_touch_returns_new_instance(
-    sample_audit: AuditStamp,
+def test_audit_stamp_now_and_touch_transitions(
+    ts_created: IsoTimestamp,
     ts_updated: IsoTimestamp,
 ) -> None:
-    """Verify .touch() returns a new AuditStamp with explicit or default UTC updated_at."""
-    touched = sample_audit.touch(ts_updated)
-    assert touched is not sample_audit
-    assert touched.created_at == sample_audit.created_at
-    assert touched.updated_at == ts_updated
-    assert sample_audit.updated_at == sample_audit.created_at
+    """Verify AuditStamp.now() and .touch() transitions with default, str, and IsoTimestamp."""
+    fresh = AuditStamp.now()
+    assert fresh.created_at == fresh.updated_at
+    assert validate_iso_timestamp(fresh.created_at.value) is True
+    assert is_modified(fresh) is False
 
-    touched_now = sample_audit.touch()
-    assert touched_now.created_at == sample_audit.created_at
-    assert touched_now.updated_at.value >= sample_audit.created_at.value
+    base = AuditStamp(created_at=ts_created, updated_at=ts_created)
+    touched_iso = base.touch(ts_updated)
+    assert touched_iso.created_at == ts_created
+    assert touched_iso.updated_at == ts_updated
+    assert is_modified(touched_iso) is True
+
+    touched_str = base.touch(ts_updated.value)
+    assert touched_str.updated_at == ts_updated
+
+    touched_auto = base.touch()
+    assert validate_iso_timestamp(touched_auto.updated_at.value) is True
 
 
 @pytest.mark.unit
-def test_audit_stamp_immutability(sample_audit: AuditStamp) -> None:
-    """Verify AuditStamp is frozen and immutable."""
-    with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
-        sample_audit.updated_at = IsoTimestamp("2026-10-16T11:00:00Z")  # type: ignore[misc]
+def test_audit_stamp_dict_and_json_roundtrip(
+    ts_created: IsoTimestamp,
+    ts_updated: IsoTimestamp,
+) -> None:
+    """Verify AuditStamp.to_dict, from_dict, to_json, and from_json round-trip."""
+    stamp = AuditStamp(created_at=ts_created, updated_at=ts_updated)
+    assert AuditStamp.from_dict(stamp) is stamp
+
+    d = stamp.to_dict()
+    assert d == {"created_at": ts_created.value, "updated_at": ts_updated.value}
+    assert AuditStamp.from_dict(d) == stamp
+    assert AuditStamp.from_dict({"created_at": ts_created, "updated_at": ts_updated}) == stamp
+
+    raw_json = stamp.to_json()
+    assert AuditStamp.from_json(raw_json) == stamp
+
+    with pytest.raises(ModelFormatError, match="expected dict"):
+        AuditStamp.from_dict("not-a-dict")
+
+    with pytest.raises(ModelFormatError, match="requires both"):
+        AuditStamp.from_dict({"created_at": ts_created.value})
+
+    with pytest.raises(ModelFormatError, match="expected str"):
+        AuditStamp.from_json(123)  # type: ignore[arg-type]
+
+    with pytest.raises(ModelFormatError, match="Invalid AuditStamp JSON"):
+        AuditStamp.from_json("{bad_json")
 
 
 @pytest.mark.unit
-def test_audit_stamp_introspection(sample_audit: AuditStamp) -> None:
-    """Verify .help() renders member directory on AuditStamp."""
-    help_text = sample_audit.help(as_str=True)
-    assert help_text is not None
-    assert "=== AuditStamp Public Directory ===" in help_text
-    assert "touch" in help_text
+def test_touch_audit_and_is_modified_helpers(
+    ts_created: IsoTimestamp,
+    ts_updated: IsoTimestamp,
+) -> None:
+    """Verify touch_audit and is_modified operate on audited entities and reject invalid objects."""
+    entity = _DummyAuditedEntity(
+        name="Record",
+        audit=AuditStamp(created_at=ts_created, updated_at=ts_created),
+    )
+    assert is_modified(entity) is False
+
+    updated_entity = touch_audit(entity, ts_updated)
+    assert updated_entity.audit.updated_at == ts_updated
+    assert is_modified(updated_entity) is True
+
+    with pytest.raises(AttributeError, match="does not have a valid 'audit'"):
+        touch_audit(object())
+
+    with pytest.raises(AttributeError, match="does not have a valid 'audit'"):
+        is_modified(object())

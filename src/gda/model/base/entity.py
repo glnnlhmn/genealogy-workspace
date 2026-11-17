@@ -5,8 +5,9 @@ Foundational base entity schemas and lifecycle mixin for domain entities and ass
 Operational Role:
     Defines EntityLifecycleMixin providing unified audit management, tombstone
     deprecation, and copy-on-write container operations for embedded Note value
-    objects. Defines generic BaseEntity parameterized by AtomID subclasses for canonical
-    domain entities, and BaseEntityGUID for primary source, media, and citation assets.
+    objects. Defines generic BaseEntity parameterized by AtomID subclasses for
+    canonical domain entities, and BaseEntityGUID for primary source, media, and
+    citation assets.
 
 Classes:
     EntityLifecycleMixin: Reusable lifecycle and embedded note manager mixin.
@@ -18,7 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
-from typing import Any, Literal, Self
+from typing import Any, Literal, Self, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -34,11 +35,16 @@ from gda.model.atom.id import AtomID, NoteID, SourceID
 from gda.model.base.audit import AuditStamp
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 from gda.util.ids import extract_max_smart_id, mint_smart_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.7"
 
-__all__ = ["BaseEntity", "BaseEntityGUID", "EntityLifecycleMixin"]
+__all__ = [
+    "BaseEntity",
+    "BaseEntityGUID",
+    "EntityLifecycleMixin",
+]
 
 _logger = GDALogger(__name__)
 
@@ -75,13 +81,20 @@ class EntityLifecycleMixin(IntrospectableMixin):
         return self.audit.updated_at.value > self.audit.created_at.value
 
     def touch(self, timestamp: IsoTimestamp | None = None) -> Self:
-        """Return a copy with refreshed updated_at timestamp on the audit stamp."""
+        """Return a copy with refreshed updated_at timestamp on the audit stamp.
+
+        Args:
+            timestamp: Optional explicit IsoTimestamp; defaults to current UTC time.
+
+        Returns:
+            Updated entity copy with refreshed audit timestamp.
+        """
         new_ts = timestamp if timestamp is not None else IsoTimestamp(utc_now_iso())
         _logger.debug(
             "Touching entity lifecycle timestamp",
             details={"entity_id": str(self.id), "timestamp": str(new_ts)},
         )
-        return replace(self, audit=self.audit.touch(new_ts))
+        return cast(Self, replace(cast(Any, self), audit=self.audit.touch(new_ts)))
 
     # ==========================================================================
     # SECTION 2: TOMBSTONE ATTRIBUTE HELPERS
@@ -90,7 +103,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
     @property
     def is_deprecated(self) -> bool:
         """Expose deprecation status from tombstone."""
-        return self.tombstone.is_deprecated
+        return bool(self.tombstone.is_deprecated)
 
     @property
     def superseded_by(self) -> Any:
@@ -102,22 +115,55 @@ class EntityLifecycleMixin(IntrospectableMixin):
         superseded_by: Any = None,
         timestamp: IsoTimestamp | None = None,
     ) -> Self:
-        """Return a copy marked as deprecated with optional successor reference."""
+        """Return a copy marked as deprecated with optional successor reference.
+
+        Args:
+            superseded_by: Optional identifier of the superseding entity.
+            timestamp: Optional explicit IsoTimestamp; defaults to current UTC time.
+
+        Returns:
+            Deprecated entity copy with updated tombstone and audit stamp.
+        """
         now_ts = timestamp if timestamp is not None else IsoTimestamp(utc_now_iso())
         _logger.debug(
             "Deprecating entity",
             details={"entity_id": str(self.id), "superseded_by": str(superseded_by)},
         )
         new_tombstone = self.tombstone.retire(timestamp=now_ts, superseded_by=superseded_by)
-        return replace(self, audit=self.audit.touch(now_ts), tombstone=new_tombstone)
+        return cast(
+            Self,
+            replace(
+                cast(Any, self),
+                audit=self.audit.touch(now_ts),
+                tombstone=new_tombstone,
+            ),
+        )
 
     def restore(self, timestamp: IsoTimestamp | None = None) -> Self:
-        """Return a copy with tombstone restored to active state."""
+        """Return a copy with tombstone restored to active state.
+
+        Args:
+            timestamp: Optional explicit IsoTimestamp; defaults to current UTC time.
+
+        Returns:
+            Restored active entity copy with refreshed audit stamp.
+        """
         now_ts = timestamp if timestamp is not None else IsoTimestamp(utc_now_iso())
         _logger.debug("Restoring deprecated entity", details={"entity_id": str(self.id)})
         target_tombstone_cls = type(self.tombstone)
-        restored_tombstone = target_tombstone_cls(is_deprecated=False, superseded_by=None)
-        return replace(self, audit=self.audit.touch(now_ts), tombstone=restored_tombstone)
+        restored_tombstone = target_tombstone_cls(
+            is_deprecated=False,
+            deprecated_at=None,
+            superseded_by=None,
+        )
+        return cast(
+            Self,
+            replace(
+                cast(Any, self),
+                audit=self.audit.touch(now_ts),
+                tombstone=restored_tombstone,
+            ),
+        )
 
     # ==========================================================================
     # SECTION 3: EMBEDDED NOTE CONTAINER HELPERS
@@ -141,8 +187,20 @@ class EntityLifecycleMixin(IntrospectableMixin):
         sources: list[SourceID | str] | None = None,
         tags: list[str] | None = None,
     ) -> Self:
-        """Return a copy with an embedded note appended and refreshed audit."""
-        max_seq = extract_max_smart_id(self.notes, prefix=SmartIDPrefix.NOT)
+        """Return a copy with an embedded note appended and refreshed audit.
+
+        Args:
+            text: Primary research note body text.
+            note_type: Note classification (defaults to NoteType.GENERAL).
+            title: Optional short summary title for the note.
+            sources: Optional list of supporting SourceID references.
+            tags: Optional list of search/categorization tags.
+
+        Returns:
+            Updated entity copy with the newly minted Note appended.
+        """
+        existing_ids = [n.note_id for n in self.notes]
+        max_seq = extract_max_smart_id(existing_ids, prefix=SmartIDPrefix.NOT)
         next_note_id = NoteID(mint_smart_id(SmartIDPrefix.NOT, max_seq + 1, padding=6))
 
         _logger.debug(
@@ -162,60 +220,77 @@ class EntityLifecycleMixin(IntrospectableMixin):
             sources=sources,
             tags=tags,
         )
-        return replace(
-            self,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            notes=[*self.notes, new_note],
+        return cast(
+            Self,
+            replace(
+                cast(Any, self),
+                audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
+                notes=[*self.notes, new_note],
+            ),
         )
 
     def update_note(
         self,
         note_id: NoteID | str,
+        *,
         text: str | None = None,
         title: str | None = None,
         note_type: NoteType | str | None = None,
         tags: list[str] | None = None,
     ) -> Self:
-        """Return a copy with the targeted embedded note updated in place."""
-        target_str = str(note_id)
-        found = False
-        new_notes: list[Note] = []
+        """Update an existing embedded note by NoteID, or return self if not found.
+
+        Args:
+            note_id: Target NoteID or string identifier.
+            text: Optional replacement body text.
+            title: Optional replacement title.
+            note_type: Optional replacement NoteType or string token.
+            tags: Optional replacement list of tags.
+
+        Returns:
+            Updated entity copy, or self if note_id is not present.
+        """
+        target_str = str(note_id).strip()
+        updated_list: list[Note] = []
+        modified = False
 
         for n in self.notes:
             if str(n.note_id) == target_str:
-                found = True
-                updated_n = n
+                cur = n
                 if text is not None:
-                    updated_n = updated_n.update_text(text)
+                    cur = cur.update_text(text)
                 if title is not None:
-                    updated_n = updated_n.update_title(title)
+                    cur = cur.update_title(title)
                 if note_type is not None:
-                    updated_n = updated_n.update_type(note_type)
+                    cur = cur.update_type(note_type)
                 if tags is not None:
-                    updated_n = updated_n.update_tags(tags)
-                new_notes.append(updated_n)
+                    cur = cur.update_tags(tags)
+                updated_list.append(cur)
+                modified = True
             else:
-                new_notes.append(n)
+                updated_list.append(n)
 
-        if not found:
-            _logger.debug(
-                "Update note no-op: note not found",
-                details={"entity_id": str(self.id), "target_note_id": target_str},
-            )
+        if not modified:
             return self
 
-        _logger.debug(
-            "Updating embedded note on entity",
-            details={"entity_id": str(self.id), "updated_note_id": target_str},
-        )
-        return replace(
-            self,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            notes=new_notes,
+        return cast(
+            Self,
+            replace(
+                cast(Any, self),
+                audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
+                notes=updated_list,
+            ),
         )
 
     def delete_note(self, note_id: NoteID | str) -> Self:
-        """Return a copy removing target note without compacting sibling IDs."""
+        """Return a copy removing target note without compacting sibling IDs.
+
+        Args:
+            note_id: Target NoteID or string identifier to remove.
+
+        Returns:
+            Updated entity copy without the deleted note, or self if not found.
+        """
         target_str = str(note_id)
         filtered = [n for n in self.notes if str(n.note_id) != target_str]
         if len(filtered) == len(self.notes):
@@ -229,14 +304,24 @@ class EntityLifecycleMixin(IntrospectableMixin):
             "Deleting embedded note from entity",
             details={"entity_id": str(self.id), "deleted_note_id": target_str},
         )
-        return replace(
-            self,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            notes=filtered,
+        return cast(
+            Self,
+            replace(
+                cast(Any, self),
+                audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
+                notes=filtered,
+            ),
         )
 
     def get_note(self, note_id: NoteID | str) -> Note | None:
-        """Retrieve a specific embedded note by NoteID or string identifier."""
+        """Retrieve a specific embedded note by NoteID or string identifier.
+
+        Args:
+            note_id: Target NoteID or string identifier.
+
+        Returns:
+            Matching Note instance if found; None otherwise.
+        """
         target_str = str(note_id)
         for n in self.notes:
             if str(n.note_id) == target_str:
@@ -251,17 +336,32 @@ class EntityLifecycleMixin(IntrospectableMixin):
         sort_by: Literal["id", "note_type", "updated_at", "title"] | None = None,
         reverse: bool = False,
     ) -> list[Note]:
-        """Filter and sort embedded notes by text, note_type, tag, or field."""
+        """Filter and sort embedded notes by text, note_type, tag, or field.
+
+        Args:
+            text: Case-insensitive substring filter applied to note text and title.
+            note_type: Optional NoteType enum or string token filter.
+            tag: Optional case-insensitive tag match filter.
+            sort_by: Optional sort key ('id', 'note_type', 'updated_at', 'title').
+            reverse: If True, sorts in descending order.
+
+        Returns:
+            Filtered and sorted list of matching Note instances.
+
+        Raises:
+            ModelFormatError: If note_type is not a valid NoteType value.
+        """
         results = list(self.notes)
 
         if note_type is not None:
-            if isinstance(note_type, NoteType):
-                resolved_type = note_type
-            else:
-                try:
-                    resolved_type = NoteType(note_type.strip().upper())
-                except ValueError as exc:
-                    raise ModelFormatError(f"Invalid NoteType value: '{note_type}'.") from exc
+            try:
+                resolved_type = coerce_enum(NoteType, note_type, field_name="note_type")
+            except ModelFormatError as err:
+                raise ModelFormatError(
+                    f"Invalid NoteType value: '{note_type}'.",
+                    error_code="ERR_MODEL_FORMAT",
+                    details={"note_type": str(note_type)},
+                ) from err
             results = [n for n in results if n.note_type == resolved_type]
 
         if tag is not None:
@@ -295,10 +395,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
         """Serialize entity lifecycle properties and embedded notes to a dictionary."""
         return {
             "id": str(self.id),
-            "audit": {
-                "created_at": str(self.audit.created_at),
-                "updated_at": str(self.audit.updated_at),
-            },
+            "audit": self.audit.to_dict(),
             "tombstone": {
                 "is_deprecated": self.tombstone.is_deprecated,
                 "deprecated_at": (
@@ -322,8 +419,7 @@ class EntityLifecycleMixin(IntrospectableMixin):
 
 
 @dataclass(
-    repr=False,
-    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
     kw_only=True,
 )
 class BaseEntity[ID_T: AtomID](EntityLifecycleMixin):
@@ -342,12 +438,13 @@ class BaseEntity[ID_T: AtomID](EntityLifecycleMixin):
 
     def __post_init__(self) -> None:
         """Enforce identity and supersession type alignment."""
-        if self.tombstone.superseded_by is not None:
-            if not isinstance(self.tombstone.superseded_by, type(self.id)):
-                raise TypeError(
-                    f"superseded_by type mismatch: expected {type(self.id).__name__}, "
-                    f"got {type(self.tombstone.superseded_by).__name__}."
-                )
+        if self.tombstone.superseded_by is not None and not isinstance(
+            self.tombstone.superseded_by, type(self.id)
+        ):
+            raise TypeError(
+                f"superseded_by type mismatch: expected {type(self.id).__name__}, "
+                f"got {type(self.tombstone.superseded_by).__name__}."
+            )
 
     def __repr__(self) -> str:
         return (
@@ -357,8 +454,7 @@ class BaseEntity[ID_T: AtomID](EntityLifecycleMixin):
 
 
 @dataclass(
-    repr=False,
-    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True),
     kw_only=True,
 )
 class BaseEntityGUID(EntityLifecycleMixin):
@@ -366,7 +462,7 @@ class BaseEntityGUID(EntityLifecycleMixin):
 
     id: str = Field(..., description="Canonical UUIDv4 surrogate identifier.")
     audit: AuditStamp = Field(..., description="Lifecycle audit metadata.")
-    tombstone: Tombstone[str] = Field(
+    tombstone: Tombstone[Any] = Field(
         default_factory=Tombstone,
         description="Lifecycle deprecation and supersession status.",
     )
@@ -377,14 +473,18 @@ class BaseEntityGUID(EntityLifecycleMixin):
 
     def __post_init__(self) -> None:
         """Enforce string-based identity and supersession type alignment."""
-        if not self.id.strip():
-            raise ModelFormatError("BaseEntityGUID 'id' cannot be empty or whitespace.")
-        if self.tombstone.superseded_by is not None:
-            if not isinstance(self.tombstone.superseded_by, str):
-                raise TypeError(
-                    f"superseded_by type mismatch: expected str, "
-                    f"got {type(self.tombstone.superseded_by).__name__}."
-                )
+        if not isinstance(self.id, str) or not self.id.strip():
+            raise ModelFormatError(
+                "BaseEntityGUID 'id' cannot be empty or whitespace.",
+                error_code="ERR_MODEL_FORMAT",
+            )
+        if self.tombstone.superseded_by is not None and not isinstance(
+            self.tombstone.superseded_by, str
+        ):
+            raise TypeError(
+                f"superseded_by type mismatch: expected str, "
+                f"got {type(self.tombstone.superseded_by).__name__}."
+            )
 
     def __repr__(self) -> str:
         return (

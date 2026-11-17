@@ -160,6 +160,10 @@ indent-style = "space"
 line-ending = "lf"
 docstring-code-format = true
 
+[tool.ruff.lint.mccabe]
+# Set the maximum acceptable cyclomatic complexity (default is often 10)
+max-complexity = 10
+
 # ------------------------------------------------------------------------------
 # 8. MYPY STATIC TYPE CHECKING & PYDANTIC PLUGIN
 # ------------------------------------------------------------------------------
