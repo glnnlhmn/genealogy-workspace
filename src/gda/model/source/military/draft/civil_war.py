@@ -25,7 +25,7 @@ from gda.core.types import CIVIL_WAR_DRAFT_YEARS
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "CivilWarConscriptionAllegiance",
@@ -36,7 +36,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class CivilWarDraftRecord(MilitaryDraftRecord):
     """Evidentiary draft enrollment record from the American Civil War (1862-1865)."""

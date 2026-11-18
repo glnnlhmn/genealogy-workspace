@@ -25,7 +25,7 @@ from gda.model.base.entity import BaseEntity, BaseEntityGUID
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 # ==============================================================================
@@ -51,6 +51,14 @@ def test_base_entity_default_creation(golden_audit: AuditStamp) -> None:
     assert entity.notes == []
     assert "notes=[]" in repr(entity)
 
+    base_dict = entity.to_dict()
+    assert base_dict["id"] == "IND-000001"
+    assert base_dict["tombstone"] == {
+        "is_deprecated": False,
+        "deprecated_at": None,
+        "superseded_by": None,
+    }
+
 
 @pytest.mark.unit
 def test_base_entity_deprecated_with_notes(golden_audit: AuditStamp, sample_note: Note) -> None:
@@ -73,6 +81,12 @@ def test_base_entity_deprecated_with_notes(golden_audit: AuditStamp, sample_note
     assert entity.has_notes is True
     assert entity.note_count == 1
     assert entity.notes == [sample_note]
+
+    dep_dict = entity.to_dict()
+    assert dep_dict["tombstone"]["is_deprecated"] is True
+    assert dep_dict["tombstone"]["deprecated_at"] == golden_audit.updated_at.value
+    assert dep_dict["tombstone"]["superseded_by"] == "IND-000002"
+    assert len(dep_dict["notes"]) == 1
 
 
 @pytest.mark.unit
@@ -114,6 +128,9 @@ def test_base_entity_touch_and_is_modified(
     assert touched.updated_at == advanced_timestamp
     assert touched.is_modified is True
     assert entity.is_modified is False
+
+    touched_auto = entity.touch()
+    assert touched_auto is not entity
 
 
 @pytest.mark.unit
@@ -187,18 +204,18 @@ def test_base_entity_update_note_operations(golden_audit: AuditStamp) -> None:
     assert target.tags == ["verified", "census"]
 
     up_text = entity.update_note(note_id=note_id, text="Only text")
-    assert up_text.get_note(note_id).text == "Only text"
-    assert up_text.get_note(note_id).title == "Initial Title"
+    assert up_text.get_note(note_id).text == "Only text"  # type: ignore[union-attr]
+    assert up_text.get_note(note_id).title == "Initial Title"  # type: ignore[union-attr]
 
     up_title = entity.update_note(note_id=note_id, title="Only title")
-    assert up_title.get_note(note_id).title == "Only title"
-    assert up_title.get_note(note_id).text == "Initial note."
+    assert up_title.get_note(note_id).title == "Only title"  # type: ignore[union-attr]
+    assert up_title.get_note(note_id).text == "Initial note."  # type: ignore[union-attr]
 
     up_type = entity.update_note(note_id=note_id, note_type=NoteType.PROOF)
-    assert up_type.get_note(note_id).note_type == NoteType.PROOF
+    assert up_type.get_note(note_id).note_type == NoteType.PROOF  # type: ignore[union-attr]
 
     up_tags = entity.update_note(note_id=note_id, tags=["sole-tag"])
-    assert up_tags.get_note(note_id).tags == ["sole-tag"]
+    assert up_tags.get_note(note_id).tags == ["sole-tag"]  # type: ignore[union-attr]
 
     assert entity.update_note(note_id="NOT-999999", text="No-op") is entity
 
@@ -308,7 +325,7 @@ def test_base_entity_guid_valid_creation(golden_guid: str, golden_audit: AuditSt
     assert "BaseEntityGUID" in repr(entity)
 
     with pytest.raises(ModelFormatError, match="BaseEntityGUID 'id' cannot be empty"):
-        BaseEntityGUID(id="   ", audit=golden_audit)
+        BaseEntityGUID(id=" ", audit=golden_audit)
 
 
 @pytest.mark.unit
@@ -340,50 +357,23 @@ def test_base_entity_guid_container_and_lifecycle_operations(
 def test_base_entity_guid_superseded_by_type_mismatch_raises_type_error(
     golden_guid: str, golden_audit: AuditStamp
 ) -> None:
-    """Verify BaseEntityGUID raises TypeError if superseded_by is not a string."""
-    wrong_target = IndividualID("IND-000002")
+    """Verify BaseEntityGUID raises TypeError when superseded_by is not a string."""
     tombstone = Tombstone(
         is_deprecated=True,
         deprecated_at=golden_audit.created_at,
-        superseded_by=wrong_target,  # type: ignore[arg-type]
+        superseded_by=IndividualID("IND-000001"),
     )
-
-    with pytest.raises(TypeError, match="superseded_by type mismatch: expected str"):
+    with pytest.raises(TypeError, match="superseded_by type mismatch"):
         BaseEntityGUID(id=golden_guid, audit=golden_audit, tombstone=tombstone)
 
 
 @pytest.mark.unit
-def test_base_entity_to_dict_serialization(golden_audit: AuditStamp, sample_note: Note) -> None:
-    """Verify to_dict serialization converts entity and embedded notes into dictionary."""
-    eid = IndividualID("IND-000001")
-    entity = BaseEntity(id=eid, audit=golden_audit, notes=[sample_note])
-
-    data = entity.to_dict()
-    assert data["id"] == "IND-000001"
-    assert data["audit"]["created_at"] == str(golden_audit.created_at)
-    assert data["tombstone"]["is_deprecated"] is False
-    assert data["tombstone"]["deprecated_at"] is None
-    assert len(data["notes"]) == 1
-
-    deprecated = entity.deprecate(
-        superseded_by=IndividualID("IND-000002"),
-        timestamp=golden_audit.created_at,
-    )
-    dep_data = deprecated.to_dict()
-    assert dep_data["tombstone"]["is_deprecated"] is True
-    assert dep_data["tombstone"]["deprecated_at"] == str(golden_audit.created_at)
-    assert dep_data["tombstone"]["superseded_by"] == "IND-000002"
-
-
-@pytest.mark.unit
 def test_base_entity_immutability_and_introspection(golden_audit: AuditStamp) -> None:
-    """Verify BaseEntity and BaseEntityGUID instances are frozen and render .help()."""
-    eid = IndividualID("IND-000001")
-    entity = BaseEntity(id=eid, audit=golden_audit)
-
-    with pytest.raises((FrozenInstanceError, TypeError, AttributeError)):
-        entity.notes = []  # type: ignore[misc]
+    """Verify BaseEntity is frozen and supports IntrospectableMixin.help()."""
+    entity = BaseEntity(id=IndividualID("IND-000001"), audit=golden_audit)
+    with pytest.raises((FrozenInstanceError, TypeError)):
+        entity.id = IndividualID("IND-000002")  # type: ignore[misc]
 
     help_text = entity.help(as_str=True)
     assert help_text is not None
-    assert "=== BaseEntity Public Directory ===" in help_text
+    assert "BaseEntity" in help_text

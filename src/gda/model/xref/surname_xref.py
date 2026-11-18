@@ -22,8 +22,10 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.vital import HistoricNameType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
+from gda.util.enums import coerce_enum
+from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "SurnameXRef",
@@ -31,8 +33,8 @@ __all__ = [
 
 
 def _normalize_surname(raw: str, field_name: str) -> str:
-    """Normalize a surname token to stripped uppercase and reject empty values."""
-    clean = str(raw).strip().upper() if raw is not None else ""
+    """Normalize a surname token to stripped uppercase via clean_string and reject empty values."""
+    clean = (clean_string(str(raw)) or "").upper()
     if not clean:
         raise ModelFormatError(f"SurnameXRef '{field_name}' cannot be empty or whitespace.")
     return clean
@@ -40,17 +42,18 @@ def _normalize_surname(raw: str, field_name: str) -> str:
 
 def _parse_historic_name_type(raw: HistoricNameType | str) -> HistoricNameType:
     """Resolve HistoricNameType by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, HistoricNameType):
-        return raw
-    token = str(raw).strip().upper()
-    for member in HistoricNameType:
-        if token in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid HistoricNameType value: '{raw}'.")
+    try:
+        return coerce_enum(HistoricNameType, raw, field_name="variant_name_type")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid HistoricNameType value: '{raw}'.") from err
 
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class SurnameXRef(IntrospectableMixin):
     """Immutable index row mapping a canonical surname to an orthographic or historical variant."""
 

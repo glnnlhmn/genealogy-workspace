@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any, ClassVar, Self
 
@@ -35,12 +36,32 @@ from gda.model.base.family import ChildLink, FamilyUnion
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = ["Family"]
 
 _FAMILY_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["FAM"]
 _FAMILY_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["FAM"]
+
+
+def _resolve_children_payload(
+    children: Sequence[ChildLink | tuple[IndividualID | str, PedigreeType | str] | dict[str, Any]]
+    | None,
+) -> list[ChildLink]:
+    """Resolve a sequence of ChildLink, (child_id, pedigree) tuples, or dicts."""
+    if children is None:
+        return []
+    resolved: list[ChildLink] = []
+    for item in children:
+        if isinstance(item, ChildLink):
+            resolved.append(item)
+        elif isinstance(item, tuple) and len(item) == 2:
+            resolved.append(ChildLink.create(item[0], item[1]))
+        elif isinstance(item, dict):
+            resolved.append(ChildLink.from_dict(item))
+        else:
+            raise TypeError(f"Cannot resolve child link from payload: {item!r}")
+    return resolved
 
 
 @dataclass(
@@ -186,34 +207,25 @@ class Family(BaseEntity[FamilyID]):
         cls,
         family_id: FamilyID | str,
         canonical_urn: str,
-        partner_ids: list[IndividualID | str] | None = None,
-        children: list[ChildLink | tuple[IndividualID | str, PedigreeType | str] | dict[str, Any]]
+        partner_ids: Sequence[IndividualID | str] | None = None,
+        children: Sequence[
+            ChildLink | tuple[IndividualID | str, PedigreeType | str] | dict[str, Any]
+        ]
         | None = None,
         union: FamilyUnion | dict[str, Any] | None = None,
         audit: AuditStamp | None = None,
         tombstone: Tombstone[FamilyID] | None = None,
-        notes: list[Note] | None = None,
+        notes: Sequence[Note] | None = None,
     ) -> Family:
         """Factory constructor instantiating a validated Family entity."""
         resolved_id = family_id if isinstance(family_id, FamilyID) else FamilyID(family_id)
 
-        resolved_partners: list[IndividualID] = []
-        if partner_ids is not None:
-            resolved_partners = [
-                pid if isinstance(pid, IndividualID) else IndividualID(pid) for pid in partner_ids
-            ]
-
-        resolved_children: list[ChildLink] = []
-        if children is not None:
-            for item in children:
-                if isinstance(item, ChildLink):
-                    resolved_children.append(item)
-                elif isinstance(item, tuple) and len(item) == 2:
-                    resolved_children.append(ChildLink.create(item[0], item[1]))
-                elif isinstance(item, dict):
-                    resolved_children.append(ChildLink.from_dict(item))
-                else:
-                    raise TypeError(f"Cannot resolve child link from payload: {item!r}")
+        resolved_partners = (
+            [pid if isinstance(pid, IndividualID) else IndividualID(pid) for pid in partner_ids]
+            if partner_ids is not None
+            else []
+        )
+        resolved_children = _resolve_children_payload(children)
 
         if isinstance(union, FamilyUnion):
             resolved_union = union
@@ -222,10 +234,7 @@ class Family(BaseEntity[FamilyID]):
         else:
             resolved_union = FamilyUnion.create()
 
-        now_ts = IsoTimestamp(utc_now_iso())
-        resolved_audit = (
-            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
-        )
+        resolved_audit = audit if audit is not None else AuditStamp.now()
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[FamilyID]()
         resolved_notes = list(notes) if notes is not None else []
 
@@ -479,23 +488,8 @@ class Family(BaseEntity[FamilyID]):
             "partner_ids": [pid.value for pid in self.partner_ids],
             "children": [c.to_dict() for c in self.children],
             "union": self.union.to_dict(),
-            "audit": {
-                "created_at": str(self.audit.created_at),
-                "updated_at": str(self.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": self.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(self.tombstone.deprecated_at)
-                    if self.tombstone.deprecated_at is not None
-                    else None
-                ),
-                "superseded_by": (
-                    str(self.tombstone.superseded_by)
-                    if self.tombstone.superseded_by is not None
-                    else None
-                ),
-            },
+            "audit": self.audit.to_dict(),
+            "tombstone": self.tombstone.to_dict(),
             "notes": [n.to_dict() for n in self.notes],
         }
 
@@ -525,29 +519,14 @@ class Family(BaseEntity[FamilyID]):
         ]
 
         audit_payload = data.get("audit")
-        audit_obj: AuditStamp | None = None
-        if isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
+        audit_obj = AuditStamp.from_dict(audit_payload) if isinstance(audit_payload, dict) else None
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[FamilyID] | None = None
-        if isinstance(tombstone_payload, dict):
-            tombstone_obj = Tombstone[FamilyID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    FamilyID(tombstone_payload["superseded_by"])
-                    if tombstone_payload.get("superseded_by")
-                    else None
-                ),
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=FamilyID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         notes_payload = data.get("notes", [])
         notes_list = [Note.from_dict(n) for n in notes_payload if isinstance(n, dict)]

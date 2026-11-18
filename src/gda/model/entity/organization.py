@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any, ClassVar, Self
 
@@ -40,7 +41,7 @@ from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "Organization",
@@ -49,6 +50,44 @@ __all__ = [
 
 _ORG_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["ORG"]
 _ORG_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["ORG"]
+
+
+def _resolve_org_name(name: NameThing | str) -> NameThing:
+    """Resolve NameThing instance or non-blank string into NameThing."""
+    if isinstance(name, NameThing):
+        return name
+    if isinstance(name, str):
+        clean_str = name.strip()
+        if not clean_str:
+            raise ModelFormatError("Organization 'name' cannot be empty or whitespace.")
+        return NameThing.create(raw=clean_str, canonical=clean_str)
+    raise TypeError(
+        f"Organization 'name' must be an instance of NameThing or str, got {type(name).__name__}."
+    )
+
+
+def _resolve_org_category(category: OrganizationCategory | str) -> OrganizationCategory:
+    """Resolve OrganizationCategory enum or string token."""
+    if isinstance(category, OrganizationCategory):
+        return category
+    if isinstance(category, str):
+        try:
+            return OrganizationCategory(category.strip().upper())
+        except ValueError as exc:
+            raise ModelFormatError(f"Invalid OrganizationCategory value: '{category}'.") from exc
+    raise TypeError(
+        f"Organization 'category' must be OrganizationCategory or str, "
+        f"got {type(category).__name__}."
+    )
+
+
+def _resolve_org_id_list(
+    items: Sequence[OrganizationID | str] | None,
+) -> list[OrganizationID]:
+    """Coerce an optional sequence of OrganizationID or string tokens into a list of OrganizationID."""
+    if items is None:
+        return []
+    return [item if isinstance(item, OrganizationID) else OrganizationID(item) for item in items]
 
 
 @dataclass(
@@ -202,67 +241,25 @@ class Organization(BaseEntity[OrganizationID]):
         category: OrganizationCategory | str,
         canonical_urn: str,
         parent_org_id: OrganizationID | str | None = None,
-        predecessor_ids: list[OrganizationID | str] | None = None,
-        successor_ids: list[OrganizationID | str] | None = None,
+        predecessor_ids: Sequence[OrganizationID | str] | None = None,
+        successor_ids: Sequence[OrganizationID | str] | None = None,
         location_id: LocationID | str | None = None,
         meeting_site_id: SiteID | str | None = None,
         audit: AuditStamp | None = None,
         tombstone: Tombstone[OrganizationID] | None = None,
-        notes: list[Note] | None = None,
+        notes: Sequence[Note] | None = None,
         period: TimePeriod | None = None,
         is_active: bool = True,
     ) -> Organization:
         """Factory constructor instantiating a validated Organization entity."""
         resolved_id = org_id if isinstance(org_id, OrganizationID) else OrganizationID(org_id)
-
-        if isinstance(name, NameThing):
-            resolved_name = name
-        elif isinstance(name, str):
-            clean_str = name.strip()
-            if not clean_str:
-                raise ModelFormatError("Organization 'name' cannot be empty or whitespace.")
-            resolved_name = NameThing.create(raw=clean_str, canonical=clean_str)
-        else:
-            raise TypeError(
-                f"Organization 'name' must be an instance of NameThing or str, "
-                f"got {type(name).__name__}."
-            )
-
-        if isinstance(category, OrganizationCategory):
-            resolved_cat = category
-        elif isinstance(category, str):
-            try:
-                resolved_cat = OrganizationCategory(category.strip().upper())
-            except ValueError as exc:
-                raise ModelFormatError(
-                    f"Invalid OrganizationCategory value: '{category}'."
-                ) from exc
-        else:
-            raise TypeError(
-                f"Organization 'category' must be OrganizationCategory or str, "
-                f"got {type(category).__name__}."
-            )
+        resolved_name = _resolve_org_name(name)
+        resolved_cat = _resolve_org_category(category)
 
         resolved_parent = (
             parent_org_id
             if (parent_org_id is None or isinstance(parent_org_id, OrganizationID))
             else OrganizationID(parent_org_id)
-        )
-        resolved_preds = (
-            [
-                pid if isinstance(pid, OrganizationID) else OrganizationID(pid)
-                for pid in predecessor_ids
-            ]
-            if predecessor_ids is not None
-            else []
-        )
-        resolved_succs = (
-            [
-                sid if isinstance(sid, OrganizationID) else OrganizationID(sid)
-                for sid in successor_ids
-            ]
-            if successor_ids is not None
-            else []
         )
         resolved_loc = (
             location_id
@@ -275,10 +272,7 @@ class Organization(BaseEntity[OrganizationID]):
             else SiteID(meeting_site_id)
         )
 
-        now_ts = IsoTimestamp(utc_now_iso())
-        resolved_audit = (
-            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
-        )
+        resolved_audit = audit if audit is not None else AuditStamp.now()
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[OrganizationID]()
         resolved_notes = list(notes) if notes is not None else []
 
@@ -288,8 +282,8 @@ class Organization(BaseEntity[OrganizationID]):
             category=resolved_cat,
             canonical_urn=canonical_urn.strip() if canonical_urn else "",
             parent_org_id=resolved_parent,
-            predecessor_ids=resolved_preds,
-            successor_ids=resolved_succs,
+            predecessor_ids=_resolve_org_id_list(predecessor_ids),
+            successor_ids=_resolve_org_id_list(successor_ids),
             location_id=resolved_loc,
             meeting_site_id=resolved_site,
             audit=resolved_audit,
@@ -373,18 +367,7 @@ class Organization(BaseEntity[OrganizationID]):
 
     def update_name(self, name: NameThing | str) -> Self:
         """Return a new immutable copy with updated naming value object."""
-        if isinstance(name, NameThing):
-            new_name = name
-        elif isinstance(name, str):
-            clean_str = name.strip()
-            if not clean_str:
-                raise ModelFormatError("Organization 'name' cannot be empty or whitespace.")
-            new_name = NameThing.create(raw=clean_str, canonical=clean_str)
-        else:
-            raise TypeError(
-                f"Organization 'name' must be an instance of NameThing or str, "
-                f"got {type(name).__name__}."
-            )
+        new_name = _resolve_org_name(name)
         if new_name == self.name:
             return self
         return replace(
@@ -396,20 +379,7 @@ class Organization(BaseEntity[OrganizationID]):
 
     def update_category(self, category: OrganizationCategory | str) -> Self:
         """Return a new immutable copy with updated organization classification."""
-        if isinstance(category, OrganizationCategory):
-            res_cat = category
-        elif isinstance(category, str):
-            try:
-                res_cat = OrganizationCategory(category.strip().upper())
-            except ValueError as exc:
-                raise ModelFormatError(
-                    f"Invalid OrganizationCategory value: '{category}'."
-                ) from exc
-        else:
-            raise TypeError(
-                f"Organization 'category' must be OrganizationCategory or str, "
-                f"got {type(category).__name__}."
-            )
+        res_cat = _resolve_org_category(category)
         if res_cat == self.category:
             return self
         return replace(
@@ -612,23 +582,8 @@ class Organization(BaseEntity[OrganizationID]):
             "predecessor_ids": [pid.value for pid in self.predecessor_ids],
             "successor_ids": [sid.value for sid in self.successor_ids],
             "is_active": self.is_active,
-            "audit": {
-                "created_at": str(self.audit.created_at),
-                "updated_at": str(self.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": self.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(self.tombstone.deprecated_at)
-                    if self.tombstone.deprecated_at is not None
-                    else None
-                ),
-                "superseded_by": (
-                    str(self.tombstone.superseded_by)
-                    if self.tombstone.superseded_by is not None
-                    else None
-                ),
-            },
+            "audit": self.audit.to_dict(),
+            "tombstone": self.tombstone.to_dict(),
             "notes": [n.to_dict() for n in self.notes],
         }
         if self.parent_org_id is not None:
@@ -673,29 +628,14 @@ class Organization(BaseEntity[OrganizationID]):
             resolved_period = TimePeriod.from_dict(raw_period)
 
         audit_payload = data.get("audit")
-        audit_obj: AuditStamp | None = None
-        if isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
+        audit_obj = AuditStamp.from_dict(audit_payload) if isinstance(audit_payload, dict) else None
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[OrganizationID] | None = None
-        if isinstance(tombstone_payload, dict):
-            tombstone_obj = Tombstone[OrganizationID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    OrganizationID(tombstone_payload["superseded_by"])
-                    if tombstone_payload.get("superseded_by")
-                    else None
-                ),
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=OrganizationID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         notes_payload = data.get("notes", [])
         notes_list = [Note.from_dict(n) for n in notes_payload if isinstance(n, dict)]

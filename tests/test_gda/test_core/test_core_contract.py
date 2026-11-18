@@ -39,11 +39,11 @@ from gda.core import (
     ModelRangeError,
 )
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.0.0+build.11"
 
 # ==============================================================================
 # AUTHORITATIVE CONTRACT SPECIFICATION
-# Note: Defines the strict, immutable contract for gda.core exports (95 symbols)
+# Note: Defines the strict, immutable contract for gda.core exports (100 symbols)
 # ==============================================================================
 
 AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
@@ -62,6 +62,8 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "utc_today_iso",
         "validate_iso_date",
         "validate_iso_timestamp",
+        # enums/ (1)
+        "enums",
         # errors.py (8)
         "ConfigError",
         "ConfigParseError",
@@ -82,7 +84,7 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "ConsoleFormatter",
         "GDALogger",
         "JsonFormatter",
-        # types.py (67)
+        # types.py (71)
         "ATOM_ID_PATTERN",
         "ATOM_ID_REGEX",
         "CENSUS_SHEET_SIDES",
@@ -93,6 +95,8 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "ENTITY_ID_REGEXES",
         "ENTITY_URN_PATTERNS",
         "ENTITY_URN_REGEXES",
+        "ENUM_KEY_SEPARATOR_PATTERN",
+        "ENUM_KEY_SEPARATOR_REGEX",
         "GENDER_CODES",
         "ISO_DATE_FMT",
         "ISO_DATE_PATTERN",
@@ -132,6 +136,8 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "PUB_CODE_REGEX",
         "SHA256_PATTERN",
         "SHA256_REGEX",
+        "SQL_IDENTIFIER_PATTERN",
+        "SQL_IDENTIFIER_REGEX",
         "TAX_ASSESSMENT_MIN_YEAR",
         "URN_BASE_PATTERN",
         "URN_BASE_REGEX",
@@ -166,7 +172,7 @@ def test_core_exports_exact_authoritative_symbols() -> None:
     """Verify gda.core exports exactly the authoritative symbol set with zero drift (CTR-001)."""
     actual_symbols = frozenset(gda.core.__all__)
     assert actual_symbols == AUTHORITATIVE_EXPORTS
-    assert len(gda.core.__all__) == 95
+    assert len(gda.core.__all__) == 100
 
 
 @pytest.mark.integrity

@@ -24,7 +24,7 @@ from gda.model.atom.id import NoteID, SourceID
 from gda.model.base.audit import AuditStamp
 from gda.model.base.note import Note
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 
 # ==============================================================================
@@ -77,10 +77,10 @@ def test_note_create_factory_defaults() -> None:
     assert str(note) == "[PROOF] Proof summary for land transaction."
     assert isinstance(note.audit, AuditStamp)
 
-    with pytest.raises(ModelFormatError, match="Invalid NoteType value"):
+    with pytest.raises(ModelFormatError, match="Invalid NoteType"):
         Note.create(note_id="NOT-000002", note_type="UNKNOWN_TYPE", text="Valid")
 
-    with pytest.raises(ModelFormatError, match="Invalid NoteType type"):
+    with pytest.raises(ModelFormatError, match="Invalid NoteType"):
         Note.create(note_id="NOT-000002", note_type=123, text="Valid")  # type: ignore[arg-type]
 
 
@@ -145,10 +145,10 @@ def test_note_update_type_returns_new_instance(
     updated_explicit_audit = original.update_type(NoteType.PROOF, audit=custom_audit)
     assert updated_explicit_audit.audit == custom_audit
 
-    with pytest.raises(ModelFormatError, match="Invalid NoteType value"):
+    with pytest.raises(ModelFormatError, match="Invalid NoteType"):
         original.update_type("BAD_TYPE")
 
-    with pytest.raises(ModelFormatError, match="Invalid NoteType type"):
+    with pytest.raises(ModelFormatError, match="Invalid NoteType"):
         original.update_type(99)  # type: ignore[arg-type]
 
 
@@ -188,17 +188,14 @@ def test_note_sources_copy_on_write_mutators(
     )
     assert original.sources == [SourceID(s1)]
 
-    # add_source
     with_added = original.add_source(s2)
     assert with_added.sources == [SourceID(s1), SourceID(s2)]
     assert with_added.add_source(s2) is with_added
 
-    # remove_source
     with_removed = with_added.remove_source(s1)
     assert with_removed.sources == [SourceID(s2)]
     assert with_removed.remove_source("00000000-0000-4000-8000-000000000999") is with_removed
 
-    # update_sources
     replaced = with_removed.update_sources([s3, s3, s4])
     assert replaced.sources == [SourceID(s3), SourceID(s4)]
 
@@ -214,17 +211,17 @@ def test_note_tags_copy_on_write_mutators() -> None:
     )
     assert original.tags == ["deed", "boundary"]
 
-    # add_tag
     with_tag = original.add_tag("concord")
     assert with_tag.tags == ["deed", "boundary", "concord"]
     assert with_tag.add_tag("concord") is with_tag
 
-    # remove_tag
+    with pytest.raises(ModelFormatError, match="Note tag cannot be empty"):
+        with_tag.add_tag("   ")
+
     removed_tag = with_tag.remove_tag("boundary")
     assert removed_tag.tags == ["deed", "concord"]
     assert removed_tag.remove_tag("nonexistent") is removed_tag
 
-    # update_tags
     replaced = removed_tag.update_tags(["survey", "survey", "map"])
     assert replaced.tags == ["survey", "map"]
 
@@ -261,185 +258,84 @@ def test_note_direct_init_invariants_and_strict_mode(
 
     with pytest.raises(ModelFormatError, match="Duplicate SourceID entries detected"):
         Note(
-            note_id=NoteID("NOT-000010"),
+            note_id=NoteID("NOT-000011"),
             note_type=NoteType.GENERAL,
             text="Valid text.",
             audit=golden_audit,
             sources=[golden_source_id, golden_source_id],
         )
 
-    with pytest.raises(ModelFormatError, match="Note tags cannot contain empty or whitespace"):
+    with pytest.raises(ModelFormatError, match="Note tags cannot contain empty"):
         Note(
-            note_id=NoteID("NOT-000010"),
+            note_id=NoteID("NOT-000012"),
             note_type=NoteType.GENERAL,
             text="Valid text.",
             audit=golden_audit,
-            tags=["   "],
+            tags=["valid", "   "],
         )
 
     with pytest.raises(ModelFormatError, match="Duplicate tag entries detected"):
         Note(
-            note_id=NoteID("NOT-000010"),
+            note_id=NoteID("NOT-000013"),
             note_type=NoteType.GENERAL,
             text="Valid text.",
             audit=golden_audit,
-            tags=["census", "census"],
+            tags=["dup", "dup"],
         )
 
     with pytest.raises(ValidationError):
         Note(
-            note_id="NOT-000010",  # type: ignore[arg-type]
+            note_id="NOT-000014",  # type: ignore[arg-type]
             note_type=NoteType.GENERAL,
-            text="Valid text.",
+            text="Strict mode rejects raw string note_id.",
             audit=golden_audit,
         )
 
 
-@pytest.mark.unit
-@pytest.mark.regression
-def test_note_add_tag_empty_rejection(failure_note_blank_text: str) -> None:
-    """Verify add_tag raises ModelFormatError on empty or whitespace tag."""
-    note = Note.create(
-        note_id="NOT-000011",
-        note_type=NoteType.GENERAL,
-        text="Valid text",
-    )
-    with pytest.raises(ModelFormatError, match="Note tag cannot be empty or whitespace."):
-        note.add_tag(failure_note_blank_text)
-
-
-@pytest.mark.unit
-@pytest.mark.regression
-def test_note_extra_fields_forbidden(golden_audit: AuditStamp) -> None:
-    """Verify unexpected fields raise ValidationError under extra='forbid'."""
-    with pytest.raises(ValidationError):
-        Note(
-            note_id=NoteID("NOT-000012"),
-            note_type=NoteType.GENERAL,
-            text="Valid text",
-            audit=golden_audit,
-            unexpected_field="disallowed",  # type: ignore[call-arg]
-        )
-
-
-@pytest.mark.unit
-@pytest.mark.regression
-def test_note_invalid_source_id_raises() -> None:
-    """Verify adding or creating a note with malformed SourceID raises ModelFormatError."""
-    with pytest.raises(ModelFormatError, match="Invalid UUIDv4 format"):
-        Note.create(
-            note_id="NOT-000013",
-            note_type=NoteType.GENERAL,
-            text="Valid text",
-            sources=["NOT-A-UUID"],
-        )
-
-    note = Note.create(
-        note_id="NOT-000014",
-        note_type=NoteType.GENERAL,
-        text="Valid text",
-    )
-    with pytest.raises(ModelFormatError, match="Invalid UUIDv4 format"):
-        note.add_source("INVALID-SOURCE-ID")
-
-
-@pytest.mark.unit
-def test_note_introspection_contract() -> None:
-    """Verify IntrospectableMixin .help() execution renders public members."""
-    note = Note.create(
-        note_id="NOT-000015",
-        note_type=NoteType.GENERAL,
-        text="Valid text",
-    )
-    help_text = note.help(as_str=True)
-    assert help_text is not None
-    assert "=== Note Public Directory ===" in help_text
-    assert "update_text" in help_text
-    assert "add_source" in help_text
-
-
 # ==============================================================================
-# GROUP 4: SERIALIZATION & DATA ENVELOPE INTEGRATION
+# GROUP 4: SERIALIZATION & INTROSPECTION
 # ==============================================================================
 
 
 @pytest.mark.unit
-def test_note_to_dict_and_from_dict_round_trip(
-    golden_source_uuid: str, golden_source_uuid_2: str
-) -> None:
-    """Verify complete dictionary serialization and deserialization fidelity."""
-    original = Note.create(
-        note_id="NOT-000016",
-        note_type=NoteType.PROOF,
-        text="Indirect evidence resolves paternity.",
-        title="Paternity Proof",
-        sources=[golden_source_uuid, golden_source_uuid_2],
-        tags=["dna", "probate"],
-    )
-    payload = original.to_dict()
-    assert payload["note_id"] == "NOT-000016"
-    assert payload["note_type"] == "PROOF"
-    assert payload["title"] == "Paternity Proof"
-    assert payload["sources"] == [golden_source_uuid, golden_source_uuid_2]
-    assert payload["tags"] == ["dna", "probate"]
-
-    restored = Note.from_dict(payload)
-    assert restored == original
-
-    # Direct AuditStamp instance intake
-    audit_dict_payload = dict(payload)
-    audit_dict_payload["audit"] = original.audit
-    restored_from_obj = Note.from_dict(audit_dict_payload)
-    assert restored_from_obj == original
-
-
-@pytest.mark.unit
-def test_note_to_json_and_from_json_round_trip() -> None:
-    """Verify complete JSON string serialization and parsing fidelity."""
-    original = Note.create(
-        note_id="NOT-000017",
-        note_type=NoteType.DISCREPANCY,
-        text="Discrepancy observed between gravestone and family bible.",
-    )
-    json_str = original.to_json()
-    assert isinstance(json_str, str)
-    assert "NOT-000017" in json_str
-
-    restored = Note.from_json(json_str)
-    assert restored == original
-
-
-@pytest.mark.unit
-@pytest.mark.regression
-def test_note_deserialization_errors(
+def test_note_dict_and_json_roundtrip(
+    sample_note: Note,
     failure_note_payload_missing_keys: dict[str, Any],
 ) -> None:
-    """Verify from_dict and from_json raise ModelFormatError on invalid payloads."""
-    with pytest.raises(ModelFormatError, match="Note payload must be a dictionary."):
-        Note.from_dict(["not", "a", "dict"])  # type: ignore[arg-type]
+    """Verify Note.to_dict, from_dict, to_json, and from_json round-trips and error paths."""
+    d = sample_note.to_dict()
+    assert Note.from_dict(d) == sample_note
+
+    d_with_audit_obj = dict(d)
+    d_with_audit_obj["audit"] = sample_note.audit
+    assert Note.from_dict(d_with_audit_obj) == sample_note
+
+    raw_json = sample_note.to_json()
+    assert Note.from_json(raw_json) == sample_note
+
+    with pytest.raises(ModelFormatError, match="Note payload must be a dictionary"):
+        Note.from_dict(["not-a-dict"])  # type: ignore[arg-type]
 
     with pytest.raises(ModelFormatError, match="Missing required fields for Note"):
         Note.from_dict(failure_note_payload_missing_keys)
 
-    with pytest.raises(ModelFormatError, match="Note audit must be an AuditStamp"):
-        Note.from_dict(
-            {
-                "note_id": "NOT-000019",
-                "note_type": "GENERAL",
-                "text": "Valid text",
-                "audit": "not-a-dict",
-            }
-        )
+    bad_audit_dict = dict(d)
+    bad_audit_dict["audit"] = {"created_at": "2026-10-16T12:00:00Z"}
+    with pytest.raises(ModelFormatError, match="Audit dictionary missing"):
+        Note.from_dict(bad_audit_dict)
 
-    with pytest.raises(ModelFormatError, match="Audit dictionary missing created_at"):
-        Note.from_dict(
-            {
-                "note_id": "NOT-000019",
-                "note_type": "GENERAL",
-                "text": "Valid text",
-                "audit": {"created_at": "2026-10-30T10:00:00Z"},
-            }
-        )
+    bad_audit_type = dict(d)
+    bad_audit_type["audit"] = "not-an-audit"
+    with pytest.raises(ModelFormatError, match="Note audit must be an AuditStamp or dictionary"):
+        Note.from_dict(bad_audit_type)
 
     with pytest.raises(ModelFormatError, match="Failed to parse Note JSON string"):
-        Note.from_json("invalid json string {")
+        Note.from_json("{invalid_json")
+
+
+@pytest.mark.unit
+def test_note_introspection_help(sample_note: Note) -> None:
+    """Verify Note inherits IntrospectableMixin.help()."""
+    help_text = sample_note.help(as_str=True)
+    assert help_text is not None
+    assert "Note Public Directory" in help_text

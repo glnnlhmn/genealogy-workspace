@@ -1,8 +1,246 @@
 """Path: src/gda/repository/__init__.py
 
-Persistence repository interfaces and implementations for GDA models.
+Unified persistence, query, and in-memory collection layer for GDA.
 """
 
 from __future__ import annotations
 
-__version__ = "1.0.0+build.1"
+from gda.repository.base import BaseSQLiteRepository
+from gda.repository.cemetery import (
+    CemeteryMarkerCollection,
+    CemeteryMarkerRepository,
+    CemeteryRegistryCollection,
+    CemeteryRegistryRepository,
+)
+from gda.repository.collection import BaseSourceCollection
+from gda.repository.education import (
+    AcademicCredentialCollection,
+    AcademicCredentialRepository,
+)
+from gda.repository.entity import (
+    FactRepository,
+    FamilyRepository,
+    IndividualRepository,
+    LocationRepository,
+    OrganizationRepository,
+    SiteRepository,
+)
+from gda.repository.enumerated import (
+    DirectoryRollCollection,
+    DirectoryRollRepository,
+    PopulationScheduleCollection,
+    PopulationScheduleRepository,
+    SupplementalScheduleCollection,
+    SupplementalScheduleRepository,
+    TaxAssessmentCollection,
+    TaxAssessmentRepository,
+)
+from gda.repository.errors import (
+    DuplicateRecordError,
+    QueryValidationError,
+    RecordNotFoundError,
+    RepositoryError,
+)
+from gda.repository.immigration import (
+    ImmigrationManifestCollection,
+    ImmigrationManifestRepository,
+    NaturalizationCollection,
+    NaturalizationRepository,
+)
+from gda.repository.land import (
+    LandDeedCollection,
+    LandDeedRepository,
+    LandGrantCollection,
+    LandGrantRepository,
+)
+from gda.repository.manuscripts import (
+    FamilyBibleCollection,
+    FamilyBibleRepository,
+    NarrativeManuscriptCollection,
+    NarrativeManuscriptRepository,
+)
+from gda.repository.military import (
+    BountyLandWarrantCollection,
+    BountyLandWarrantRepository,
+    MilitaryAwardCollection,
+    MilitaryAwardRepository,
+    MilitaryCasualtyCollection,
+    MilitaryCasualtyRepository,
+    MilitaryDraftCollection,
+    MilitaryDraftRepository,
+    MilitaryPensionCollection,
+    MilitaryPensionRepository,
+    MilitaryServiceCollection,
+    MilitaryServiceRepository,
+)
+from gda.repository.orgs import (
+    OrganizationMembershipCollection,
+    OrganizationMembershipRepository,
+    OrganizationRosterCollection,
+    OrganizationRosterRepository,
+)
+from gda.repository.other import (
+    OtherMiscellaneousCollection,
+    OtherMiscellaneousRepository,
+)
+from gda.repository.probate import (
+    EstateInventoryCollection,
+    EstateInventoryRepository,
+    ProbateCollection,
+    ProbateRepository,
+)
+from gda.repository.publications import (
+    NewspaperClipCollection,
+    NewspaperClipRepository,
+    PeriodicalArticleCollection,
+    PeriodicalArticleRepository,
+    PublicationCollection,
+    PublicationRepository,
+)
+from gda.repository.query import (
+    FilterOp,
+    QueryBuilder,
+    SortOrder,
+    build_insert_sql,
+    build_upsert_sql,
+    validate_sql_identifier,
+)
+from gda.repository.vital import (
+    BaptismCollection,
+    BaptismRepository,
+    BirthCollection,
+    BirthRepository,
+    DeathCollection,
+    DeathRepository,
+    DivorceCollection,
+    DivorceRepository,
+    MarriageCollection,
+    MarriageRepository,
+)
+from gda.repository.xref import (
+    BaseXRefCollection,
+    FactParticipantXRefCollection,
+    FactParticipantXRefRepository,
+    IndividualFamilyXRefCollection,
+    IndividualFamilyXRefRepository,
+    IndividualOrganizationXRefCollection,
+    IndividualOrganizationXRefRepository,
+    IndividualSourceXRefCollection,
+    IndividualSourceXRefRepository,
+    IndividualSurnameXRefCollection,
+    IndividualSurnameXRefRepository,
+    LocationXRefCollection,
+    LocationXRefRepository,
+    MediaXRefCollection,
+    MediaXRefRepository,
+    SiteXRefCollection,
+    SiteXRefRepository,
+    SurnameXRefCollection,
+    SurnameXRefRepository,
+)
+
+__version__ = "1.0.0+build.5"
+
+__all__ = [
+    "AcademicCredentialCollection",
+    "AcademicCredentialRepository",
+    "BaptismCollection",
+    "BaptismRepository",
+    "BaseSQLiteRepository",
+    "BaseSourceCollection",
+    "BaseXRefCollection",
+    "BirthCollection",
+    "BirthRepository",
+    "BountyLandWarrantCollection",
+    "BountyLandWarrantRepository",
+    "CemeteryMarkerCollection",
+    "CemeteryMarkerRepository",
+    "CemeteryRegistryCollection",
+    "CemeteryRegistryRepository",
+    "DeathCollection",
+    "DeathRepository",
+    "DirectoryRollCollection",
+    "DirectoryRollRepository",
+    "DivorceCollection",
+    "DivorceRepository",
+    "DuplicateRecordError",
+    "EstateInventoryCollection",
+    "EstateInventoryRepository",
+    "FactParticipantXRefCollection",
+    "FactParticipantXRefRepository",
+    "FactRepository",
+    "FamilyBibleCollection",
+    "FamilyBibleRepository",
+    "FamilyRepository",
+    "FilterOp",
+    "ImmigrationManifestCollection",
+    "ImmigrationManifestRepository",
+    "IndividualFamilyXRefCollection",
+    "IndividualFamilyXRefRepository",
+    "IndividualOrganizationXRefCollection",
+    "IndividualOrganizationXRefRepository",
+    "IndividualRepository",
+    "IndividualSourceXRefCollection",
+    "IndividualSourceXRefRepository",
+    "IndividualSurnameXRefCollection",
+    "IndividualSurnameXRefRepository",
+    "LandDeedCollection",
+    "LandDeedRepository",
+    "LandGrantCollection",
+    "LandGrantRepository",
+    "LocationRepository",
+    "LocationXRefCollection",
+    "LocationXRefRepository",
+    "MarriageCollection",
+    "MarriageRepository",
+    "MediaXRefCollection",
+    "MediaXRefRepository",
+    "MilitaryAwardCollection",
+    "MilitaryAwardRepository",
+    "MilitaryCasualtyCollection",
+    "MilitaryCasualtyRepository",
+    "MilitaryDraftCollection",
+    "MilitaryDraftRepository",
+    "MilitaryPensionCollection",
+    "MilitaryPensionRepository",
+    "MilitaryServiceCollection",
+    "MilitaryServiceRepository",
+    "NarrativeManuscriptCollection",
+    "NarrativeManuscriptRepository",
+    "NaturalizationCollection",
+    "NaturalizationRepository",
+    "NewspaperClipCollection",
+    "NewspaperClipRepository",
+    "OrganizationMembershipCollection",
+    "OrganizationMembershipRepository",
+    "OrganizationRepository",
+    "OrganizationRosterCollection",
+    "OrganizationRosterRepository",
+    "OtherMiscellaneousCollection",
+    "OtherMiscellaneousRepository",
+    "PeriodicalArticleCollection",
+    "PeriodicalArticleRepository",
+    "PopulationScheduleCollection",
+    "PopulationScheduleRepository",
+    "ProbateCollection",
+    "ProbateRepository",
+    "PublicationCollection",
+    "PublicationRepository",
+    "QueryBuilder",
+    "QueryValidationError",
+    "RecordNotFoundError",
+    "RepositoryError",
+    "SiteRepository",
+    "SiteXRefCollection",
+    "SiteXRefRepository",
+    "SortOrder",
+    "SupplementalScheduleCollection",
+    "SupplementalScheduleRepository",
+    "SurnameXRefCollection",
+    "SurnameXRefRepository",
+    "TaxAssessmentCollection",
+    "TaxAssessmentRepository",
+    "build_insert_sql",
+    "build_upsert_sql",
+    "validate_sql_identifier",
+]

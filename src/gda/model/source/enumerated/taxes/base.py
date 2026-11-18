@@ -29,7 +29,7 @@ from gda.model.source.enumerated.base import (
     serialize_primitive_value,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "AssessedProperty",
@@ -60,7 +60,8 @@ _TAX_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class AssessedProperty(IntrospectableMixin):
     """Assessed acreage, livestock, industrial improvements, and tax amounts."""
@@ -128,7 +129,8 @@ class AssessedProperty(IntrospectableMixin):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class TaxAssessmentRecord(EnumeratedRollRecord):
     """Evidentiary composite for historical tax assessment and fiscal roll entries."""

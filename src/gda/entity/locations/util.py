@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from gda.db.session import DatabaseSessionManager
     from gda.entity.locations.collection import Locations
 
-__version__ = "1.0.0+build.46"
+__version__ = "1.0.0+build.49"
 
 __all__ = [
     "build_jurisdiction_hierarchy",
@@ -391,6 +391,59 @@ def save_to_db(
     return written
 
 
+def _append_historical_variant(name_obj: NameThing, h: dict[str, Any]) -> NameThing:
+    """Append a historical name variant dictionary to NameThing if not already present."""
+    h_raw = str(h.get("raw") or h.get("raw_name", ""))
+    h_canonical = str(h.get("canonical") or h.get("canonical_name") or h_raw)
+    h_type_raw = h.get("historic_name_type") or h.get("status", HistoricNameType.HISTORICAL)
+    h_type = (
+        h_type_raw if isinstance(h_type_raw, HistoricNameType) else HistoricNameType(h_type_raw)
+    )
+    existing_variants = {(v.raw, v.name, v.historic_name_type) for v in name_obj.historic}
+    if (h_raw, h_canonical, h_type) in existing_variants:
+        return name_obj
+    return name_obj.add_historic_variant(
+        raw=h_raw,
+        name=h_canonical,
+        historic_name_type=h_type,
+    )
+
+
+def _parse_imported_location_name(item: dict[str, Any]) -> NameThing:
+    """Reconstruct NameThing with aliases and historical variants from an export dict."""
+    raw_name_val = item.get("name", "")
+    if isinstance(raw_name_val, dict):
+        name_obj = NameThing.from_dict(raw_name_val)
+    else:
+        raw_clean = str(raw_name_val).strip()
+        name_obj = NameThing.create(raw=raw_clean, canonical=raw_clean)
+
+    for h in item.get("historical_names", []):
+        if isinstance(h, dict):
+            name_obj = _append_historical_variant(name_obj, h)
+
+    for alias in item.get("alternate_names") or item.get("aliases") or []:
+        clean_alias = clean_string(alias)
+        if clean_alias and clean_alias not in name_obj.aliases:
+            name_obj = name_obj.add_alias(clean_alias)
+
+    return name_obj
+
+
+def _parse_imported_notes(raw_notes: list[Any], default_audit_dict: dict[str, str]) -> list[Note]:
+    """Hydrate embedded Note list from raw JSON note items."""
+    embedded_notes: list[Note] = []
+    for n in raw_notes:
+        if isinstance(n, Note):
+            embedded_notes.append(n)
+        elif isinstance(n, dict):
+            note_dict = dict(n)
+            if "audit" not in note_dict:
+                note_dict["audit"] = default_audit_dict
+            embedded_notes.append(Note.from_dict(note_dict))
+    return embedded_notes
+
+
 def import_file(collection: Locations, path: Path | str) -> int:
     """Import locations from formatted JSON file, preserving audit and tombstone state."""
     json_path = Path(path)
@@ -401,98 +454,28 @@ def import_file(collection: Locations, path: Path | str) -> int:
     locations_list = payload.get("locations", [])
     now = IsoTimestamp(utc_now_iso())
     default_audit = AuditStamp(created_at=now, updated_at=now)
-    audit_dict = {"created_at": str(now), "updated_at": str(now)}
+    audit_dict = default_audit.to_dict()
 
     for item in locations_list:
-        loc_id = LocationID(item["id"])
-        parent_id = LocationID(item["parent_id"]) if item.get("parent_id") else None
-
-        raw_name_val = item.get("name", "")
-        if isinstance(raw_name_val, dict):
-            name_obj = NameThing.from_dict(raw_name_val)
-        else:
-            raw_clean = str(raw_name_val).strip()
-            name_obj = NameThing.create(raw=raw_clean, canonical=raw_clean)
-
-        raw_historical = item.get("historical_names", [])
-        if raw_historical:
-            existing_variants = {(h.raw, h.name, h.historic_name_type) for h in name_obj.historic}
-            for h in raw_historical:
-                if isinstance(h, dict):
-                    h_raw = h.get("raw") or h.get("raw_name", "")
-                    h_canonical = h.get("canonical") or h.get("canonical_name", h_raw)
-                    h_type_raw = h.get("historic_name_type") or h.get(
-                        "status", HistoricNameType.HISTORICAL
-                    )
-                    h_type = (
-                        h_type_raw
-                        if isinstance(h_type_raw, HistoricNameType)
-                        else HistoricNameType(h_type_raw)
-                    )
-                    if (h_raw, h_canonical, h_type) not in existing_variants:
-                        name_obj = name_obj.add_historic_variant(
-                            raw=h_raw,
-                            name=h_canonical,
-                            historic_name_type=h_type,
-                        )
-                        existing_variants.add((h_raw, h_canonical, h_type))
-
-        raw_aliases = item.get("alternate_names") or item.get("aliases") or []
-        for alias in raw_aliases:
-            clean_alias = clean_string(alias)
-            if clean_alias and clean_alias not in name_obj.aliases:
-                name_obj = name_obj.add_alias(clean_alias)
-
-        raw_notes = item.get("notes", [])
-        embedded_notes: list[Note] = []
-        for n in raw_notes:
-            if isinstance(n, Note):
-                embedded_notes.append(n)
-            elif isinstance(n, dict):
-                note_dict = dict(n)
-                if "audit" not in note_dict:
-                    note_dict["audit"] = audit_dict
-                embedded_notes.append(Note.from_dict(note_dict))
-
         raw_audit = item.get("audit")
-        resolved_audit = (
-            AuditStamp(
-                created_at=IsoTimestamp(raw_audit["created_at"]),
-                updated_at=IsoTimestamp(raw_audit["updated_at"]),
-            )
-            if isinstance(raw_audit, dict)
-            else default_audit
-        )
         raw_tomb = item.get("tombstone")
-        resolved_tomb = (
-            Tombstone[LocationID](
-                is_deprecated=bool(raw_tomb.get("is_deprecated", False)),
-                deprecated_at=(
-                    IsoTimestamp(raw_tomb["deprecated_at"])
-                    if raw_tomb.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    LocationID(str(raw_tomb["superseded_by"]))
-                    if raw_tomb.get("superseded_by")
-                    else None
-                ),
-            )
-            if isinstance(raw_tomb, dict)
-            else Tombstone[LocationID]()
-        )
-
         loc = Location.create(
-            location_id=loc_id,
-            audit=resolved_audit,
-            name=name_obj,
+            location_id=LocationID(item["id"]),
+            audit=(
+                AuditStamp.from_dict(raw_audit) if isinstance(raw_audit, dict) else default_audit
+            ),
+            name=_parse_imported_location_name(item),
             category=JurisdictionCategory(item["category"]),
             canonical_urn=item["canonical_urn"],
-            parent_id=parent_id,
+            parent_id=LocationID(item["parent_id"]) if item.get("parent_id") else None,
             is_primary_local_authority=item.get("is_primary_local_authority", False),
             is_unincorporated=item.get("is_unincorporated", False),
-            notes=embedded_notes,
-            tombstone=resolved_tomb,
+            notes=_parse_imported_notes(item.get("notes", []), audit_dict),
+            tombstone=(
+                Tombstone.from_dict(raw_tomb, id_cls=LocationID)
+                if isinstance(raw_tomb, dict)
+                else Tombstone[LocationID]()
+            ),
         )
         collection.add(loc)
 
@@ -503,6 +486,9 @@ def export_file(
     collection: Locations,
     path: Path | str,
     include_graveyard: bool = True,
+    *,
+    create_backup: bool = False,
+    backup_dir: Path | str | None = None,
 ) -> int:
     """Export location records from the collection to a formatted JSON file."""
     entities = list(collection.iter_all() if include_graveyard else collection)
@@ -530,19 +516,8 @@ def export_file(
             "alternate_names": list(e.aliases),
             "historical_names": hist_list,
             "notes": notes_list,
-            "audit": {
-                "created_at": str(e.audit.created_at),
-                "updated_at": str(e.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": e.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(e.tombstone.deprecated_at) if e.tombstone.deprecated_at else None
-                ),
-                "superseded_by": (
-                    str(e.tombstone.superseded_by) if e.tombstone.superseded_by else None
-                ),
-            },
+            "audit": e.audit.to_dict(),
+            "tombstone": e.tombstone.to_dict(),
         }
         out_list.append(item)
 
@@ -555,5 +530,10 @@ def export_file(
 
     dest = Path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    GDAJsonIO.write(dest, payload)
+    GDAJsonIO.write(
+        dest,
+        payload,
+        create_backup=create_backup,
+        backup_dir=backup_dir,
+    )
     return len(out_list)

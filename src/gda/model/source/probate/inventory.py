@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from pydantic import ConfigDict, Field
@@ -25,7 +26,6 @@ from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -33,8 +33,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "EstateInventoryRecord",
@@ -42,6 +43,7 @@ __all__ = [
     "ProbateLedgerEntry",
 ]
 
+# Allowed category and record type sets for estate inventories and accounts
 _INVENTORY_CATEGORIES: frozenset[SourceRecordCategory] = frozenset(
     {
         SourceRecordCategory.PROBATE,
@@ -58,6 +60,11 @@ _INVENTORY_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
 )
 
 _WILL_URN_PATTERN: re.Pattern[str] = URN_REGEXES["WILL"]
+
+
+# ==============================================================================
+# 1. COERCION & NORMALIZATION HELPERS
+# ==============================================================================
 
 
 def _resolve_probate_urn(raw: ArchivalURN | str) -> ArchivalURN:
@@ -84,18 +91,75 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
+
+
 def _parse_probate_enum[E](enum_cls: type[E], raw: Any, field_name: str) -> E:
     """Resolve a probate StrEnum by instance, exact value, or uppercase member name."""
-    if isinstance(raw, enum_cls):
-        return raw
-    token = str(raw).strip().upper()
-    for member in enum_cls:  # type: ignore[attr-defined]
-        if token in (member.name, member.value):
-            return member  # type: ignore[no-any-return]
-    raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.")
+    try:
+        return coerce_enum(enum_cls, raw, field_name=field_name)  # type: ignore[type-var]
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_float(val: float | int | None) -> float | None:
+    """Convert an optional numeric value to float or return None."""
+    return float(val) if val is not None else None
+
+
+def _coerce_items_tuple(
+    items: Iterable[InventoryLineItem | dict[str, Any]] | None,
+) -> tuple[InventoryLineItem, ...]:
+    """Hydrate an optional sequence of InventoryLineItem objects or dicts into a tuple."""
+    if not items:
+        return ()
+    return tuple(
+        i if isinstance(i, InventoryLineItem) else InventoryLineItem.from_dict(i) for i in items
+    )
+
+
+def _coerce_ledger_tuple(
+    entries: Iterable[ProbateLedgerEntry | dict[str, Any]] | None,
+) -> tuple[ProbateLedgerEntry, ...]:
+    """Hydrate an optional sequence of ProbateLedgerEntry objects or dicts into a tuple."""
+    if not entries:
+        return ()
+    return tuple(
+        e if isinstance(e, ProbateLedgerEntry) else ProbateLedgerEntry.from_dict(e) for e in entries
+    )
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
+
+
+# ==============================================================================
+# 2. INVENTORY LINE ITEM & LEDGER ENTRY VALUE OBJECTS
+# ==============================================================================
+
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class InventoryLineItem(IntrospectableMixin):
     """Single appraised real or personal property row in an estate inventory."""
 
@@ -161,7 +225,6 @@ class InventoryLineItem(IntrospectableMixin):
         remarks_raw: str | None = None,
     ) -> InventoryLineItem:
         """Factory constructor instantiating a validated InventoryLineItem."""
-        res_num = float(appraised_value_numeric) if appraised_value_numeric is not None else None
         return cls(
             line_number=line_number,
             item_description_raw=item_description_raw,
@@ -169,10 +232,8 @@ class InventoryLineItem(IntrospectableMixin):
                 EstatePropertyCategory, property_category, "EstatePropertyCategory"
             ),
             appraised_value_raw=appraised_value_raw,
-            appraised_value_numeric=res_num,
-            currency_code=(
-                currency_code.strip().upper() if isinstance(currency_code, str) else currency_code
-            ),
+            appraised_value_numeric=_opt_float(appraised_value_numeric),
+            currency_code=currency_code.strip().upper(),
             remarks_raw=remarks_raw,
         )
 
@@ -230,7 +291,11 @@ class InventoryLineItem(IntrospectableMixin):
         return f"Line {self.line_number}: {self.item_description_raw}"
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class ProbateLedgerEntry(IntrospectableMixin):
     """Single receipt, debt paid, expense, or heir distribution in an administration account."""
 
@@ -288,22 +353,16 @@ class ProbateLedgerEntry(IntrospectableMixin):
         amount_numeric: float | int | None = None,
     ) -> ProbateLedgerEntry:
         """Factory constructor instantiating a validated ProbateLedgerEntry."""
-        res_party = (
-            party_id
-            if (party_id is None or isinstance(party_id, IndividualID))
-            else IndividualID(party_id)
-        )
-        res_num = float(amount_numeric) if amount_numeric is not None else None
         return cls(
             line_number=line_number,
             party_name_raw=party_name_raw,
             entry_kind=_parse_probate_enum(
                 ProbateLedgerEntryKind, entry_kind, "ProbateLedgerEntryKind"
             ),
-            party_id=res_party,
+            party_id=_opt_id(party_id, IndividualID),
             purpose_raw=purpose_raw,
             amount_raw=amount_raw,
-            amount_numeric=res_num,
+            amount_numeric=_opt_float(amount_numeric),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -363,7 +422,16 @@ class ProbateLedgerEntry(IntrospectableMixin):
         return f"Line {self.line_number}: {self.party_name_raw} [{self.entry_kind.value}]"
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+# ==============================================================================
+# 3. ESTATE INVENTORY RECORD DOMAIN MODEL
+# ==============================================================================
+
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class EstateInventoryRecord(SourceRecord):
     """Collection-wide estate appraisal inventory or administration accounting record."""
 
@@ -579,122 +647,44 @@ class EstateInventoryRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> EstateInventoryRecord:
         """Factory constructor instantiating a validated EstateInventoryRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        resolved_urn = _resolve_probate_urn(source_urn)
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
-        res_court_loc = (
-            court_location_id
-            if (court_location_id is None or isinstance(court_location_id, LocationID))
-            else LocationID(court_location_id)
-        )
-        res_dec_id = (
-            decedent_id
-            if (decedent_id is None or isinstance(decedent_id, IndividualID))
-            else IndividualID(decedent_id)
-        )
-        res_parent = (
-            parent_probate_source_id
-            if (parent_probate_source_id is None or isinstance(parent_probate_source_id, SourceID))
-            else SourceID(parent_probate_source_id)
-        )
-        res_date = (
-            _deserialize_event_date(date_appraised_or_accounted, "date_appraised_or_accounted")
-            if date_appraised_or_accounted is not None
-            else None
-        )
-        res_total_num = (
-            float(total_appraised_value_numeric)
-            if total_appraised_value_numeric is not None
-            else None
-        )
-
-        resolved_items: tuple[InventoryLineItem, ...] = tuple(
-            i if isinstance(i, InventoryLineItem) else InventoryLineItem.from_dict(i)
-            for i in (items or ())
-        )
-        resolved_ledger: tuple[ProbateLedgerEntry, ...] = tuple(
-            e if isinstance(e, ProbateLedgerEntry) else ProbateLedgerEntry.from_dict(e)
-            for e in (ledger_entries or ())
-        )
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
-            source_urn=resolved_urn,
-            record_category=res_cat,
-            record_type=res_type,
-            description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            source_id=_coerce_id(source_id, SourceID),
+            source_urn=_resolve_probate_urn(source_urn),
+            record_category=coerce_enum(
+                SourceRecordCategory, record_category, field_name="record_category"
+            ),
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
+            description=description.strip(),
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             court_name=court_name,
             filing_locator=filing_locator,
             decedent_name_raw=decedent_name_raw,
-            court_location_id=res_court_loc,
+            court_location_id=_opt_id(court_location_id, LocationID),
             estate_file_number=estate_file_number,
             book_and_page=book_and_page,
-            decedent_id=res_dec_id,
-            parent_probate_source_id=res_parent,
-            date_appraised_or_accounted=res_date,
+            decedent_id=_opt_id(decedent_id, IndividualID),
+            parent_probate_source_id=_opt_id(parent_probate_source_id, SourceID),
+            date_appraised_or_accounted=_opt_event_date(
+                date_appraised_or_accounted, "date_appraised_or_accounted"
+            ),
             appraisers_or_administrators=tuple(appraisers_or_administrators or ()),
             total_appraised_value_raw=total_appraised_value_raw,
-            total_appraised_value_numeric=res_total_num,
-            currency_code=(
-                currency_code.strip().upper() if isinstance(currency_code, str) else currency_code
-            ),
-            items=resolved_items,
-            ledger_entries=resolved_ledger,
+            total_appraised_value_numeric=_opt_float(total_appraised_value_numeric),
+            currency_code=currency_code.strip().upper(),
+            items=_coerce_items_tuple(items),
+            ledger_entries=_coerce_ledger_tuple(ledger_entries),
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize EstateInventoryRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "court_name": self.court_name,
-                "filing_locator": self.filing_locator,
-                "decedent_name_raw": self.decedent_name_raw,
-                "appraisers_or_administrators": list(self.appraisers_or_administrators),
-                "currency_code": self.currency_code,
-                "items": [i.to_dict() for i in self.items],
-                "ledger_entries": [e.to_dict() for e in self.ledger_entries],
-            }
-        )
-        if self.court_location_id is not None:
-            data["court_location_id"] = str(self.court_location_id)
-        if self.estate_file_number is not None:
-            data["estate_file_number"] = self.estate_file_number
-        if self.book_and_page is not None:
-            data["book_and_page"] = self.book_and_page
-        if self.decedent_id is not None:
-            data["decedent_id"] = str(self.decedent_id)
-        if self.parent_probate_source_id is not None:
-            data["parent_probate_source_id"] = str(self.parent_probate_source_id)
-        if self.date_appraised_or_accounted is not None:
-            data["date_appraised_or_accounted"] = self.date_appraised_or_accounted.to_dict()
-        if self.total_appraised_value_raw is not None:
-            data["total_appraised_value_raw"] = self.total_appraised_value_raw
-        if self.total_appraised_value_numeric is not None:
-            data["total_appraised_value_numeric"] = self.total_appraised_value_numeric
+        data["appraisers_or_administrators"] = list(self.appraisers_or_administrators)
+        data["items"] = [i.to_dict() for i in self.items]
+        data["ledger_entries"] = [e.to_dict() for e in self.ledger_entries]
         return data
 
     @classmethod
@@ -718,36 +708,18 @@ class EstateInventoryRecord(SourceRecord):
                 "audit, court_name, filing_locator, and decedent_name_raw."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "EstateInventoryRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_items = data.get("items", [])
         if not isinstance(raw_items, (list, tuple)):

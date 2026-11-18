@@ -11,6 +11,7 @@ Operational Role:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from pydantic import ConfigDict, Field
@@ -19,7 +20,6 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.enums.vital import MaritalHistoryDissolution, MaritalStatus, UnionType
 from gda.core.errors import ModelFormatError
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN, VitalCertificateUrn
 from gda.model.base.age import Age
@@ -28,8 +28,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "MarriageRecord",
@@ -53,6 +54,11 @@ _MARRIAGE_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
 )
 
 
+# ==============================================================================
+# 1. COERCION & NORMALIZATION HELPERS
+# ==============================================================================
+
+
 def _resolve_vital_urn(raw: ArchivalURN | str) -> ArchivalURN:
     """Coerce a raw URN string into VitalCertificateUrn or SourceURN."""
     if isinstance(raw, ArchivalURN):
@@ -70,6 +76,11 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     if isinstance(raw, (dict, str)):
         return EventDate.from_dict(raw)
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
+
+
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
 
 
 def _deserialize_age(raw: Any, field_name: str) -> Age:
@@ -90,21 +101,47 @@ def _deserialize_age(raw: Any, field_name: str) -> Age:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected Age, dict, int, or str.")
 
 
-def _serialize_age(age: Age) -> dict[str, Any]:
-    """Serialize an Age value object to a dictionary."""
-    data: dict[str, Any] = {}
-    if age.raw_text is not None:
-        data["raw_text"] = age.raw_text
-    if age.years is not None:
-        data["years"] = age.years
-    if age.months is not None:
-        data["months"] = age.months
-    if age.days is not None:
-        data["days"] = age.days
-    return data
+def _opt_age(raw: Any, field_name: str) -> Age | None:
+    """Coerce an optional Age input or return None when absent."""
+    return _deserialize_age(raw, field_name) if raw is not None else None
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_enum[E](enum_cls: type[E], raw: Any, field_name: str) -> E | None:
+    """Coerce an optional StrEnum value or return None when absent."""
+    if raw is None:
+        return None
+    return coerce_enum(enum_cls, raw, field_name=field_name)  # type: ignore[type-var]
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
+
+
+# ==============================================================================
+# 2. MARRIAGE RECORD DOMAIN MODEL
+# ==============================================================================
+
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class MarriageRecord(SourceRecord):
     """Primary archival record documenting a marriage license, ceremony, bond, or register entry."""
 
@@ -234,21 +271,15 @@ class MarriageRecord(SourceRecord):
                 f"got '{self.record_type.value}'."
             )
 
-        clean_groom = self.groom_name_raw.strip()
-        if not clean_groom:
-            raise ModelFormatError(
-                f"{self.__class__.__name__} 'groom_name_raw' cannot be empty or whitespace."
-            )
-        if clean_groom != self.groom_name_raw:
-            object.__setattr__(self, "groom_name_raw", clean_groom)
-
-        clean_bride = self.bride_name_raw.strip()
-        if not clean_bride:
-            raise ModelFormatError(
-                f"{self.__class__.__name__} 'bride_name_raw' cannot be empty or whitespace."
-            )
-        if clean_bride != self.bride_name_raw:
-            object.__setattr__(self, "bride_name_raw", clean_bride)
+        for field_name in ("groom_name_raw", "bride_name_raw"):
+            raw_val = getattr(self, field_name)
+            cleaned = raw_val.strip()
+            if not cleaned:
+                raise ModelFormatError(
+                    f"{self.__class__.__name__} '{field_name}' cannot be empty or whitespace."
+                )
+            if cleaned != raw_val:
+                object.__setattr__(self, field_name, cleaned)
 
     @classmethod
     def create(  # type: ignore[override]
@@ -289,173 +320,61 @@ class MarriageRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> MarriageRecord:
         """Factory constructor instantiating a validated MarriageRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        resolved_urn = _resolve_vital_urn(source_urn)
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
-        res_union = (
-            union_type
-            if isinstance(union_type, UnionType)
-            else UnionType(str(union_type).strip().upper())
-        )
-        res_groom_id = (
-            groom_id
-            if (groom_id is None or isinstance(groom_id, IndividualID))
-            else IndividualID(groom_id)
-        )
-        res_bride_id = (
-            bride_id
-            if (bride_id is None or isinstance(bride_id, IndividualID))
-            else IndividualID(bride_id)
-        )
-        res_place_id = (
-            place_of_marriage_id
-            if (place_of_marriage_id is None or isinstance(place_of_marriage_id, LocationID))
-            else LocationID(place_of_marriage_id)
-        )
-        res_groom_ms = (
-            groom_marital_status
-            if (groom_marital_status is None or isinstance(groom_marital_status, MaritalStatus))
-            else MaritalStatus(str(groom_marital_status).strip().capitalize())
-        )
-        res_bride_ms = (
-            bride_marital_status
-            if (bride_marital_status is None or isinstance(bride_marital_status, MaritalStatus))
-            else MaritalStatus(str(bride_marital_status).strip().capitalize())
-        )
-        res_groom_dis = (
-            groom_prior_dissolution
-            if (
-                groom_prior_dissolution is None
-                or isinstance(groom_prior_dissolution, MaritalHistoryDissolution)
-            )
-            else MaritalHistoryDissolution(str(groom_prior_dissolution).strip().capitalize())
-        )
-        res_bride_dis = (
-            bride_prior_dissolution
-            if (
-                bride_prior_dissolution is None
-                or isinstance(bride_prior_dissolution, MaritalHistoryDissolution)
-            )
-            else MaritalHistoryDissolution(str(bride_prior_dissolution).strip().capitalize())
-        )
-
-        res_issued = (
-            _deserialize_event_date(date_issued, "date_issued") if date_issued is not None else None
-        )
-        res_dom = (
-            _deserialize_event_date(date_of_marriage, "date_of_marriage")
-            if date_of_marriage is not None
-            else None
-        )
-        res_groom_age = _deserialize_age(groom_age, "groom_age") if groom_age is not None else None
-        res_bride_age = _deserialize_age(bride_age, "bride_age") if bride_age is not None else None
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
-            source_urn=resolved_urn,
-            record_category=res_cat,
-            record_type=res_type,
+            source_id=_coerce_id(source_id, SourceID),
+            source_urn=_resolve_vital_urn(source_urn),
+            record_category=coerce_enum(
+                SourceRecordCategory, record_category, field_name="record_category"
+            ),
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
             description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             groom_name_raw=groom_name_raw,
             bride_name_raw=bride_name_raw,
-            union_type=res_union,
+            union_type=coerce_enum(UnionType, union_type, field_name="union_type"),
             license_number=license_number,
-            date_issued=res_issued,
+            date_issued=_opt_event_date(date_issued, "date_issued"),
             issuing_jurisdiction_raw=issuing_jurisdiction_raw,
-            groom_id=res_groom_id,
-            groom_age=res_groom_age,
-            groom_marital_status=res_groom_ms,
-            groom_prior_dissolution=res_groom_dis,
+            groom_id=_opt_id(groom_id, IndividualID),
+            groom_age=_opt_age(groom_age, "groom_age"),
+            groom_marital_status=_opt_enum(
+                MaritalStatus, groom_marital_status, "groom_marital_status"
+            ),
+            groom_prior_dissolution=_opt_enum(
+                MaritalHistoryDissolution,
+                groom_prior_dissolution,
+                "groom_prior_dissolution",
+            ),
             groom_residence_raw=groom_residence_raw,
-            bride_id=res_bride_id,
+            bride_id=_opt_id(bride_id, IndividualID),
             bride_maiden_name_raw=bride_maiden_name_raw,
-            bride_age=res_bride_age,
-            bride_marital_status=res_bride_ms,
-            bride_prior_dissolution=res_bride_dis,
+            bride_age=_opt_age(bride_age, "bride_age"),
+            bride_marital_status=_opt_enum(
+                MaritalStatus, bride_marital_status, "bride_marital_status"
+            ),
+            bride_prior_dissolution=_opt_enum(
+                MaritalHistoryDissolution,
+                bride_prior_dissolution,
+                "bride_prior_dissolution",
+            ),
             bride_residence_raw=bride_residence_raw,
-            date_of_marriage=res_dom,
+            date_of_marriage=_opt_event_date(date_of_marriage, "date_of_marriage"),
             place_of_marriage_raw=place_of_marriage_raw,
-            place_of_marriage_id=res_place_id,
+            place_of_marriage_id=_opt_id(place_of_marriage_id, LocationID),
             officiant_name_raw=officiant_name_raw,
             officiant_title_raw=officiant_title_raw,
             religious_denomination=religious_denomination,
-            witnesses=list(witnesses) if witnesses is not None else [],
+            witnesses=list(witnesses) if witnesses else [],
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize MarriageRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "groom_name_raw": self.groom_name_raw,
-                "bride_name_raw": self.bride_name_raw,
-                "union_type": self.union_type.value,
-                "witnesses": list(self.witnesses),
-            }
-        )
-        if self.license_number is not None:
-            data["license_number"] = self.license_number
-        if self.date_issued is not None:
-            data["date_issued"] = self.date_issued.to_dict()
-        if self.issuing_jurisdiction_raw is not None:
-            data["issuing_jurisdiction_raw"] = self.issuing_jurisdiction_raw
-        if self.groom_id is not None:
-            data["groom_id"] = str(self.groom_id)
-        if self.groom_age is not None:
-            data["groom_age"] = _serialize_age(self.groom_age)
-        if self.groom_marital_status is not None:
-            data["groom_marital_status"] = self.groom_marital_status.value
-        if self.groom_prior_dissolution is not None:
-            data["groom_prior_dissolution"] = self.groom_prior_dissolution.value
-        if self.groom_residence_raw is not None:
-            data["groom_residence_raw"] = self.groom_residence_raw
-        if self.bride_id is not None:
-            data["bride_id"] = str(self.bride_id)
-        if self.bride_maiden_name_raw is not None:
-            data["bride_maiden_name_raw"] = self.bride_maiden_name_raw
-        if self.bride_age is not None:
-            data["bride_age"] = _serialize_age(self.bride_age)
-        if self.bride_marital_status is not None:
-            data["bride_marital_status"] = self.bride_marital_status.value
-        if self.bride_prior_dissolution is not None:
-            data["bride_prior_dissolution"] = self.bride_prior_dissolution.value
-        if self.bride_residence_raw is not None:
-            data["bride_residence_raw"] = self.bride_residence_raw
-        if self.date_of_marriage is not None:
-            data["date_of_marriage"] = self.date_of_marriage.to_dict()
-        if self.place_of_marriage_raw is not None:
-            data["place_of_marriage_raw"] = self.place_of_marriage_raw
-        if self.place_of_marriage_id is not None:
-            data["place_of_marriage_id"] = str(self.place_of_marriage_id)
-        if self.officiant_name_raw is not None:
-            data["officiant_name_raw"] = self.officiant_name_raw
-        if self.officiant_title_raw is not None:
-            data["officiant_title_raw"] = self.officiant_title_raw
-        if self.religious_denomination is not None:
-            data["religious_denomination"] = self.religious_denomination
+        data["witnesses"] = list(self.witnesses)
         return data
 
     @classmethod
@@ -478,34 +397,16 @@ class MarriageRecord(SourceRecord):
                 "audit, groom_name_raw, and bride_name_raw."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("MarriageRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),

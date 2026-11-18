@@ -27,8 +27,9 @@ from gda.db.exceptions import (
     DatabaseOperationalError,
     TransactionError,
 )
+from gda.io.atomic import AtomicWriter
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.9"
 
 __all__ = [
     "DatabaseSessionManager",
@@ -104,7 +105,7 @@ class DatabaseSessionManager(IntrospectableMixin):
         """Ensure parent directory exists on disk for file-backed databases."""
         if not self.is_in_memory:
             target = Path(self._db_path)
-            target.parent.mkdir(parents=True, exist_ok=True)
+            AtomicWriter.ensure_directory(target.parent)
 
     def _apply_pragmas(self, conn: sqlite3.Connection) -> None:
         """Apply mandatory GDA concurrency and integrity PRAGMAs to a connection."""
@@ -177,7 +178,7 @@ class DatabaseSessionManager(IntrospectableMixin):
             return conn
         except sqlite3.Error as exc:
             self._translate_and_raise(exc, context="connection")
-        except OSError as exc:
+        except Exception as exc:
             raise DatabaseConnectionError(
                 message=f"Filesystem error preparing database at '{self._db_path}': {exc}",
                 details={"db_path": str(self._db_path), "os_error": str(exc)},

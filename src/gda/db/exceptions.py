@@ -13,7 +13,7 @@ from typing import Any
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "ConnectionTimeoutError",
@@ -192,11 +192,11 @@ class EntityMappingError(DatabaseError):
 
 
 class DirtyStateError(DatabaseError):
-    """Raised when an operation is blocked due to unpersisted dirty state conflicts."""
+    """Raised when an operation requires a clean entity state or encounters unpersisted changes."""
 
     def __init__(
         self,
-        message: str = "Operation blocked by unpersisted dirty state conflict.",
+        message: str = "Entity dirty state conflict detected.",
         error_code: str = "ERR_DB_DIRTY_STATE",
         details: dict[str, Any] | None = None,
         exit_code: int = 1,

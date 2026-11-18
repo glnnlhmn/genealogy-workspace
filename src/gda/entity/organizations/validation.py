@@ -12,11 +12,11 @@ Operational Role:
 
 from __future__ import annotations
 
-import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gda.core.enums.orgs import OrganizationCategory
+from gda.core.logging import GDALogger
 from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.organizations.errors import OrganizationValidationError
 from gda.model.atom.id import OrganizationID
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from gda.entity.organizations.collection import Organizations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "valid_collection_all",
@@ -39,7 +39,7 @@ __all__ = [
     "valid_urn",
 ]
 
-_logger = logging.getLogger(__name__)
+_logger = GDALogger(__name__)
 
 _ORG_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["ORG"]
 
@@ -133,7 +133,7 @@ def valid_collection_hierarchy(collection: Organizations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Organization Hierarchy Error: %s", err)
+            _logger.error(f"Organization Hierarchy Error: {err}")
         return False
     return True
 
@@ -169,7 +169,7 @@ def valid_collection_references(
 
     if errors:
         for err in errors:
-            _logger.error("Organization Reference Error: %s", err)
+            _logger.error(f"Organization Reference Error: {err}")
         return False
     return True
 
@@ -205,9 +205,28 @@ def valid_collection_tombstones(collection: Organizations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Organization Tombstone Verification Error: %s", err)
+            _logger.error(f"Organization Tombstone Verification Error: {err}")
         return False
     return True
+
+
+def _check_org_bucket_membership(
+    org_id: OrganizationID,
+    key: Any,
+    index_map: dict[Any, set[OrganizationID]],
+    key_label: str,
+    index_label: str,
+    errors: list[str],
+) -> None:
+    """Verify that key exists in index_map and org_id is present in its bucket."""
+    if key is None:
+        return
+    if key not in index_map:
+        errors.append(f"{key_label} '{key}' missing from {index_label} index.")
+    elif org_id not in index_map[key]:
+        errors.append(
+            f"Organization '{org_id}' missing from {index_label} index bucket for '{key}'."
+        )
 
 
 def valid_collection_indexes(collection: Organizations) -> bool:
@@ -231,38 +250,23 @@ def valid_collection_indexes(collection: Organizations) -> bool:
                     f"Organization '{org.id}' missing from alias index bucket for '{alias}'."
                 )
 
-        if org.category not in collection._category_index:
-            errors.append(f"Category '{org.category}' missing from category index.")
-        elif org.id not in collection._category_index[org.category]:
-            errors.append(
-                f"Organization '{org.id}' missing from category index bucket for '{org.category}'."
-            )
-
-        if org.location_id is not None:
-            if org.location_id not in collection._location_index:
-                errors.append(f"LocationID '{org.location_id}' missing from location index.")
-            elif org.id not in collection._location_index[org.location_id]:
-                errors.append(
-                    f"Organization '{org.id}' missing from location index bucket for '{org.location_id}'."
-                )
-
-        if org.meeting_site_id is not None:
-            if org.meeting_site_id not in collection._site_index:
-                errors.append(f"SiteID '{org.meeting_site_id}' missing from site index.")
-            elif org.id not in collection._site_index[org.meeting_site_id]:
-                errors.append(
-                    f"Organization '{org.id}' missing from site index bucket for '{org.meeting_site_id}'."
-                )
-
-        if org.parent_org_id is not None:
-            if org.parent_org_id not in collection._parent_index:
-                errors.append(
-                    f"Parent OrganizationID '{org.parent_org_id}' missing from parent index."
-                )
-            elif org.id not in collection._parent_index[org.parent_org_id]:
-                errors.append(
-                    f"Organization '{org.id}' missing from parent index bucket for '{org.parent_org_id}'."
-                )
+        _check_org_bucket_membership(
+            org.id, org.category, collection._category_index, "Category", "category", errors
+        )
+        _check_org_bucket_membership(
+            org.id, org.location_id, collection._location_index, "LocationID", "location", errors
+        )
+        _check_org_bucket_membership(
+            org.id, org.meeting_site_id, collection._site_index, "SiteID", "site", errors
+        )
+        _check_org_bucket_membership(
+            org.id,
+            org.parent_org_id,
+            collection._parent_index,
+            "Parent OrganizationID",
+            "parent",
+            errors,
+        )
 
     for org_id in collection._urn_index.values():
         if org_id not in collection._registry:
@@ -270,7 +274,7 @@ def valid_collection_indexes(collection: Organizations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Organization Index Verification Error: %s", err)
+            _logger.error(f"Organization Index Verification Error: {err}")
         return False
     return True
 

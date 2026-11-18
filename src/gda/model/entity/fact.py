@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import replace
 from functools import total_ordering
 from typing import Any, ClassVar, Self
@@ -36,50 +37,138 @@ from gda.model.base.entity import BaseEntity
 from gda.model.base.note import Note
 from gda.model.base.source import SourceReference
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.7"
 
 __all__ = ["Fact", "FactParticipant"]
 
+# Canonical regex patterns for Fact SmartID ('FID-######') and URN ('urn:gda:fact:...')
 _FACT_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["FID"]
 _FACT_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["FID"]
 
 
+# ==============================================================================
+# 1. NORMALIZATION & COERCION HELPERS
+# ==============================================================================
+
+
 def _normalize_role(role: AssociatedRole | str) -> AssociatedRole:
     """Resolve enum member or raw string token to canonical AssociatedRole."""
-    if isinstance(role, AssociatedRole):
-        return role
-    token = str(role).strip().upper()
     try:
-        return AssociatedRole(token)
-    except ValueError as exc:
+        return coerce_enum(AssociatedRole, role, field_name="role")
+    except ModelFormatError as exc:
         raise ModelFormatError(f"Cannot normalize '{role}' to a valid AssociatedRole.") from exc
 
 
 def _normalize_fact_type(fact_type: FactType | str) -> FactType:
     """Resolve enum member or raw string token to canonical FactType."""
-    if isinstance(fact_type, FactType):
-        return fact_type
-    token = str(fact_type).strip().upper()
     try:
-        return FactType(token)
-    except ValueError as exc:
+        return coerce_enum(FactType, fact_type, field_name="fact_type")
+    except ModelFormatError as exc:
         raise ModelFormatError(f"Cannot normalize '{fact_type}' to a valid FactType.") from exc
+
+
+def _opt_clean_str(val: str | None) -> str | None:
+    """Strip optional string input while preserving None when absent."""
+    return val.strip() if val is not None else None
+
+
+def _opt_location_id(val: LocationID | str | None) -> LocationID | None:
+    """Coerce an optional LocationID or string token into LocationID."""
+    if val is None or isinstance(val, LocationID):
+        return val
+    return LocationID(val)
+
+
+def _opt_site_id(val: SiteID | str | None) -> SiteID | None:
+    """Coerce an optional SiteID or string token into SiteID."""
+    if val is None or isinstance(val, SiteID):
+        return val
+    return SiteID(val)
 
 
 def _resolve_fact_date(
     date: EventDate | TimePeriod | str | dict[str, Any] | None,
 ) -> EventDate | TimePeriod | None:
     """Resolve raw date payload into canonical EventDate or TimePeriod."""
+    # Fast-path for None or already-hydrated temporal objects
     if date is None or isinstance(date, (EventDate, TimePeriod)):
         return date
     if isinstance(date, str):
         return EventDate.create(date)
+    # Distinguish bounded TimePeriod dicts from single-point EventDate dicts
     if isinstance(date, dict):
         if "start_date" in date or "end_date" in date:
             return TimePeriod.from_dict(date)
         return EventDate.from_dict(date)
     raise TypeError(f"Unsupported date payload type: {type(date).__name__}.")
+
+
+def _resolve_primary_subject(
+    primary_subject_id: IndividualID | FamilyID | str,
+) -> IndividualID | FamilyID:
+    """Resolve IndividualID, FamilyID, or prefixed string token."""
+    if isinstance(primary_subject_id, (IndividualID, FamilyID)):
+        return primary_subject_id
+    subj_str = str(primary_subject_id).strip()
+    # Route FAM- prefixes to FamilyID and all other persona tokens to IndividualID
+    return FamilyID(subj_str) if subj_str.startswith("FAM-") else IndividualID(subj_str)
+
+
+def _resolve_participants_payload(
+    participants: Sequence[FactParticipant | dict[str, Any]] | None,
+) -> list[FactParticipant]:
+    """Resolve sequence of FactParticipant instances or dict payloads."""
+    if participants is None:
+        return []
+    resolved: list[FactParticipant] = []
+    for p in participants:
+        if isinstance(p, FactParticipant):
+            resolved.append(p)
+        elif isinstance(p, dict):
+            resolved.append(FactParticipant.from_dict(p))
+        else:
+            raise TypeError(f"Cannot resolve participant from payload: {p!r}")
+    return resolved
+
+
+def _resolve_citations_payload(
+    citations: Sequence[SourceReference | dict[str, Any]] | None,
+) -> list[SourceReference]:
+    """Resolve sequence of SourceReference instances or dict payloads."""
+    if citations is None:
+        return []
+    resolved: list[SourceReference] = []
+    for c in citations:
+        if isinstance(c, SourceReference):
+            resolved.append(c)
+        elif isinstance(c, dict):
+            resolved.append(SourceReference.from_dict(c))
+        else:
+            raise TypeError(f"Cannot resolve citation from payload: {c!r}")
+    return resolved
+
+
+def _parse_dict_participants(raw_list: Sequence[Any]) -> list[FactParticipant]:
+    """Hydrate participant list from serialized dictionary or string entries."""
+    return [
+        FactParticipant.from_dict(p) if isinstance(p, dict) else FactParticipant.create(str(p))
+        for p in raw_list
+    ]
+
+
+def _parse_dict_citations(raw_list: Sequence[Any]) -> list[SourceReference]:
+    """Hydrate citation list from serialized dictionary or string entries."""
+    return [
+        SourceReference.from_dict(c) if isinstance(c, dict) else SourceReference.create(str(c))
+        for c in raw_list
+    ]
+
+
+# ==============================================================================
+# 2. FACT PARTICIPANT VALUE OBJECT
+# ==============================================================================
 
 
 @total_ordering
@@ -117,8 +206,11 @@ class FactParticipant(IntrospectableMixin):
             else IndividualID(individual_id)
         )
         resolved_role = _normalize_role(role)
-        clean_notes = notes.strip() if notes is not None else None
-        return cls(individual_id=resolved_id, role=resolved_role, notes=clean_notes)
+        return cls(
+            individual_id=resolved_id,
+            role=resolved_role,
+            notes=_opt_clean_str(notes),
+        )
 
     def update_role(self, role: AssociatedRole | str) -> Self:
         """Return a new immutable copy with updated participation role."""
@@ -129,7 +221,7 @@ class FactParticipant(IntrospectableMixin):
 
     def update_notes(self, notes: str | None) -> Self:
         """Return a new immutable copy with updated notes."""
-        clean = notes.strip() if notes is not None else None
+        clean = _opt_clean_str(notes)
         if clean == self.notes:
             return self
         return replace(self, notes=clean)
@@ -172,7 +264,6 @@ class FactParticipant(IntrospectableMixin):
         return cls.from_dict(data)
 
     def __str__(self) -> str:
-        """Render concise string representation of the participant."""
         suffix = f" ({self.notes})" if self.notes else ""
         return f"{self.individual_id.value} [{self.role.value}]{suffix}"
 
@@ -183,12 +274,74 @@ class FactParticipant(IntrospectableMixin):
         )
 
     def __lt__(self, other: Any) -> bool:
-        """Support deterministic sorting by individual_id and role."""
         if isinstance(other, FactParticipant):
             if self.individual_id != other.individual_id:
                 return self.individual_id < other.individual_id
             return self.role.value < other.role.value
         return NotImplemented
+
+
+# ==============================================================================
+# 3. FACT ENTITY INVARIANT VALIDATORS
+# ==============================================================================
+
+
+def _validate_fact_identity_and_text(fact: Fact) -> None:
+    """Validate FactID prefix, canonical URN syntax, and non-empty title."""
+    if not isinstance(fact.id, FactID):
+        raise TypeError(f"Fact 'id' must be an instance of FactID, got {type(fact.id).__name__}.")
+
+    raw_id = fact.id.value
+    if not fact._ID_PATTERN.match(raw_id):
+        raise ModelFormatError(f"Invalid FactID format: '{raw_id}'. Must match 'FID-######'.")
+
+    clean_urn = fact.canonical_urn.strip() if fact.canonical_urn else ""
+    if not clean_urn or not fact._URN_PATTERN.match(clean_urn):
+        raise ModelFormatError(
+            f"Invalid canonical_urn format: '{fact.canonical_urn}'. "
+            "Must match 'urn:gda:fact:<slug>'."
+        )
+    if clean_urn != fact.canonical_urn:
+        object.__setattr__(fact, "canonical_urn", clean_urn)
+
+    clean_title = fact.title.strip() if fact.title else ""
+    if not clean_title:
+        raise ModelFormatError("Fact 'title' cannot be empty or whitespace.")
+    if clean_title != fact.title:
+        object.__setattr__(fact, "title", clean_title)
+
+
+def _validate_fact_relationships(fact: Fact) -> None:
+    """Validate primary subject type, tombstone supersession, and participant uniqueness."""
+    if not isinstance(fact.primary_subject_id, (IndividualID, FamilyID)):
+        raise TypeError(
+            f"Fact 'primary_subject_id' must be IndividualID or FamilyID, "
+            f"got {type(fact.primary_subject_id).__name__}."
+        )
+
+    # Guard against self-referential tombstone supersession
+    if (
+        fact.tombstone.is_deprecated
+        and fact.tombstone.superseded_by is not None
+        and fact.tombstone.superseded_by.value == fact.id.value
+    ):
+        raise ModelFormatError("Fact cannot be superseded by itself.")
+
+    # Guard against duplicate or self-referential secondary participants
+    participant_ids = [p.individual_id for p in fact.participants]
+    if len(participant_ids) != len(set(participant_ids)):
+        raise ModelFormatError("Duplicate individual entries found in participants.")
+
+    if (
+        isinstance(fact.primary_subject_id, IndividualID)
+        and fact.primary_subject_id in participant_ids
+    ):
+        raise ModelFormatError("Primary subject cannot also be listed as a secondary participant.")
+
+
+# ==============================================================================
+# 4. FACT DOMAIN ENTITY
+# ==============================================================================
 
 
 @dataclass(
@@ -258,55 +411,8 @@ class Fact(BaseEntity[FactID]):
     def __post_init__(self) -> None:
         """Enforce domain invariants, participant uniqueness, and relational integrity."""
         super().__post_init__()
-
-        if not isinstance(self.id, FactID):
-            raise TypeError(
-                f"Fact 'id' must be an instance of FactID, got {type(self.id).__name__}."
-            )
-
-        raw_id = self.id.value
-        if not self._ID_PATTERN.match(raw_id):
-            raise ModelFormatError(f"Invalid FactID format: '{raw_id}'. Must match 'FID-######'.")
-
-        clean_urn = self.canonical_urn.strip() if self.canonical_urn else ""
-        if not clean_urn or not self._URN_PATTERN.match(clean_urn):
-            raise ModelFormatError(
-                f"Invalid canonical_urn format: '{self.canonical_urn}'. "
-                "Must match 'urn:gda:fact:<slug>'."
-            )
-        if clean_urn != self.canonical_urn:
-            object.__setattr__(self, "canonical_urn", clean_urn)
-
-        clean_title = self.title.strip() if self.title else ""
-        if not clean_title:
-            raise ModelFormatError("Fact 'title' cannot be empty or whitespace.")
-        if clean_title != self.title:
-            object.__setattr__(self, "title", clean_title)
-
-        if not isinstance(self.primary_subject_id, (IndividualID, FamilyID)):
-            raise TypeError(
-                f"Fact 'primary_subject_id' must be IndividualID or FamilyID, "
-                f"got {type(self.primary_subject_id).__name__}."
-            )
-
-        if (
-            self.tombstone.is_deprecated
-            and self.tombstone.superseded_by is not None
-            and self.tombstone.superseded_by.value == raw_id
-        ):
-            raise ModelFormatError("Fact cannot be superseded by itself.")
-
-        participant_ids = [p.individual_id for p in self.participants]
-        if len(participant_ids) != len(set(participant_ids)):
-            raise ModelFormatError("Duplicate individual entries found in participants.")
-
-        if (
-            isinstance(self.primary_subject_id, IndividualID)
-            and self.primary_subject_id in participant_ids
-        ):
-            raise ModelFormatError(
-                "Primary subject cannot also be listed as a secondary participant."
-            )
+        _validate_fact_identity_and_text(self)
+        _validate_fact_relationships(self)
 
     @property
     def participant_ids(self) -> list[IndividualID]:
@@ -341,8 +447,6 @@ class Fact(BaseEntity[FactID]):
     @property
     def year_lower_bound(self) -> int | None:
         """Extract earliest calendar year from date atom or time period bounds."""
-        if self.date is None:
-            return None
         if isinstance(self.date, EventDate):
             return parse_iso_date_parts(self.date.date.value)[0]
         if isinstance(self.date, TimePeriod) and self.date.start_date is not None:
@@ -369,212 +473,103 @@ class Fact(BaseEntity[FactID]):
         value: str | None = None,
         description: str | None = None,
         narrative: str | None = None,
-        participants: list[FactParticipant | dict[str, Any]] | None = None,
-        citations: list[SourceReference | dict[str, Any]] | None = None,
+        participants: Sequence[FactParticipant | dict[str, Any]] | None = None,
+        citations: Sequence[SourceReference | dict[str, Any]] | None = None,
         audit: AuditStamp | None = None,
         tombstone: Tombstone[FactID] | None = None,
-        notes: list[Note] | None = None,
+        notes: Sequence[Note] | None = None,
     ) -> Fact:
         """Factory constructor instantiating a validated Fact entity."""
         resolved_id = fact_id if isinstance(fact_id, FactID) else FactID(fact_id)
-        resolved_type = _normalize_fact_type(fact_type)
-
-        if isinstance(primary_subject_id, (IndividualID, FamilyID)):
-            resolved_subject: IndividualID | FamilyID = primary_subject_id
-        else:
-            subj_str = str(primary_subject_id).strip()
-            if subj_str.startswith("FAM-"):
-                resolved_subject = FamilyID(subj_str)
-            else:
-                resolved_subject = IndividualID(subj_str)
-
-        resolved_date = _resolve_fact_date(date)
-
-        resolved_loc = (
-            location_id
-            if (location_id is None or isinstance(location_id, LocationID))
-            else LocationID(location_id)
-        )
-        resolved_site = (
-            site_id if (site_id is None or isinstance(site_id, SiteID)) else SiteID(site_id)
-        )
-
-        resolved_participants: list[FactParticipant] = []
-        if participants is not None:
-            for p in participants:
-                if isinstance(p, FactParticipant):
-                    resolved_participants.append(p)
-                elif isinstance(p, dict):
-                    resolved_participants.append(FactParticipant.from_dict(p))
-                else:
-                    raise TypeError(f"Cannot resolve participant from payload: {p!r}")
-
-        resolved_citations: list[SourceReference] = []
-        if citations is not None:
-            for c in citations:
-                if isinstance(c, SourceReference):
-                    resolved_citations.append(c)
-                elif isinstance(c, dict):
-                    resolved_citations.append(SourceReference.from_dict(c))
-                else:
-                    raise TypeError(f"Cannot resolve citation from payload: {c!r}")
-
-        now_ts = IsoTimestamp(utc_now_iso())
-        resolved_audit = (
-            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
-        )
-        resolved_tombstone = tombstone if tombstone is not None else Tombstone[FactID]()
-        resolved_notes = list(notes) if notes is not None else []
-
         return cls(
             id=resolved_id,
-            canonical_urn=canonical_urn.strip() if canonical_urn else "",
-            fact_type=resolved_type,
-            title=title.strip() if title else "",
-            primary_subject_id=resolved_subject,
-            date=resolved_date,
-            location_id=resolved_loc,
-            site_id=resolved_site,
-            value=value.strip() if value is not None else None,
-            description=description.strip() if description is not None else None,
-            narrative=narrative.strip() if narrative is not None else None,
-            participants=resolved_participants,
-            citations=resolved_citations,
-            audit=resolved_audit,
-            tombstone=resolved_tombstone,
-            notes=resolved_notes,
+            canonical_urn=_opt_clean_str(canonical_urn) or "",
+            fact_type=_normalize_fact_type(fact_type),
+            title=_opt_clean_str(title) or "",
+            primary_subject_id=_resolve_primary_subject(primary_subject_id),
+            date=_resolve_fact_date(date),
+            location_id=_opt_location_id(location_id),
+            site_id=_opt_site_id(site_id),
+            value=_opt_clean_str(value),
+            description=_opt_clean_str(description),
+            narrative=_opt_clean_str(narrative),
+            participants=_resolve_participants_payload(participants),
+            citations=_resolve_citations_payload(citations),
+            audit=audit or AuditStamp.now(),
+            tombstone=tombstone or Tombstone[FactID](),
+            notes=list(notes) if notes is not None else [],
             _dirty=False,
+        )
+
+    # --- Lifecycle & Copy-on-Write Mutators ---
+
+    def _mutate(self, **changes: Any) -> Self:
+        """Return a touched, dirty-marked immutable copy with applied field changes."""
+        return replace(
+            self,
+            **changes,
+            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
+            _dirty=True,
         )
 
     def mark_clean(self) -> Self:
         """Return a new immutable copy marking entity as clean (persisted to storage)."""
-        if not self._dirty:
-            return self
-        return replace(self, _dirty=False)
+        return self if not self._dirty else replace(self, _dirty=False)
 
     def mark_dirty(self) -> Self:
         """Return a new immutable copy marking entity as modified in memory."""
-        if self._dirty:
-            return self
-        return replace(self, _dirty=True)
+        return self if self._dirty else replace(self, _dirty=True)
 
     def update_title(self, title: str) -> Self:
         """Return a new immutable copy with updated title summary."""
-        clean = title.strip() if title else ""
+        clean = _opt_clean_str(title) or ""
         if not clean:
             raise ModelFormatError("Fact 'title' cannot be empty or whitespace.")
-        if clean == self.title:
-            return self
-        return replace(
-            self,
-            title=clean,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self if clean == self.title else self._mutate(title=clean)
 
     def update_fact_type(self, fact_type: FactType | str) -> Self:
         """Return a new immutable copy with updated fact classification."""
         resolved = _normalize_fact_type(fact_type)
-        if resolved == self.fact_type:
-            return self
-        return replace(
-            self,
-            fact_type=resolved,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self if resolved == self.fact_type else self._mutate(fact_type=resolved)
 
     def update_date(self, date: EventDate | TimePeriod | str | dict[str, Any] | None) -> Self:
         """Return a new immutable copy with updated temporal bound."""
         resolved = _resolve_fact_date(date)
-        if resolved == self.date:
-            return self
-        return replace(
-            self,
-            date=resolved,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self if resolved == self.date else self._mutate(date=resolved)
 
     def update_location(self, location_id: LocationID | str | None) -> Self:
         """Return a new immutable copy with updated macro jurisdiction anchor."""
-        resolved = (
-            location_id
-            if (location_id is None or isinstance(location_id, LocationID))
-            else LocationID(location_id)
-        )
-        if resolved == self.location_id:
-            return self
-        return replace(
-            self,
-            location_id=resolved,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        resolved = _opt_location_id(location_id)
+        return self if resolved == self.location_id else self._mutate(location_id=resolved)
 
     def update_site(self, site_id: SiteID | str | None) -> Self:
         """Return a new immutable copy with updated micro venue anchor."""
-        resolved = site_id if (site_id is None or isinstance(site_id, SiteID)) else SiteID(site_id)
-        if resolved == self.site_id:
-            return self
-        return replace(
-            self,
-            site_id=resolved,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        resolved = _opt_site_id(site_id)
+        return self if resolved == self.site_id else self._mutate(site_id=resolved)
 
     def update_value(self, value: str | None) -> Self:
         """Return a new immutable copy with updated assertion value."""
-        clean = value.strip() if value is not None else None
-        if clean == self.value:
-            return self
-        return replace(
-            self,
-            value=clean,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        clean = _opt_clean_str(value)
+        return self if clean == self.value else self._mutate(value=clean)
 
     def update_description(self, description: str | None) -> Self:
         """Return a new immutable copy with updated structured description."""
-        clean = description.strip() if description is not None else None
-        if clean == self.description:
-            return self
-        return replace(
-            self,
-            description=clean,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        clean = _opt_clean_str(description)
+        return self if clean == self.description else self._mutate(description=clean)
 
     def update_narrative(self, narrative: str | None) -> Self:
         """Return a new immutable copy with updated prose narrative."""
-        clean = narrative.strip() if narrative is not None else None
-        if clean == self.narrative:
-            return self
-        return replace(
-            self,
-            narrative=clean,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        clean = _opt_clean_str(narrative)
+        return self if clean == self.narrative else self._mutate(narrative=clean)
 
     def update_urn(self, canonical_urn: str) -> Self:
         """Return a new immutable copy with updated canonical URN."""
-        clean_urn = canonical_urn.strip() if canonical_urn else ""
+        clean_urn = _opt_clean_str(canonical_urn) or ""
         if not clean_urn or not self._URN_PATTERN.match(clean_urn):
             raise ModelFormatError(
                 f"Invalid canonical_urn format: '{clean_urn}'. Must match 'urn:gda:fact:<slug>'."
             )
-        if clean_urn == self.canonical_urn:
-            return self
-        return replace(
-            self,
-            canonical_urn=clean_urn,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self if clean_urn == self.canonical_urn else self._mutate(canonical_urn=clean_urn)
 
     def add_participant(
         self,
@@ -602,12 +597,7 @@ class Fact(BaseEntity[FactID]):
                     "Use update_participant_role instead."
                 )
 
-        return replace(
-            self,
-            participants=[*self.participants, new_part],
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self._mutate(participants=[*self.participants, new_part])
 
     def remove_participant(self, individual_id: IndividualID | str) -> Self:
         """Return a new immutable copy with targeted secondary participant removed."""
@@ -615,12 +605,7 @@ class Fact(BaseEntity[FactID]):
         filtered = [p for p in self.participants if p.individual_id.value != target_str]
         if len(filtered) == len(self.participants):
             return self
-        return replace(
-            self,
-            participants=filtered,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self._mutate(participants=filtered)
 
     def update_participant_role(
         self,
@@ -650,12 +635,7 @@ class Fact(BaseEntity[FactID]):
         if new_participants == self.participants:
             return self
 
-        return replace(
-            self,
-            participants=new_participants,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self._mutate(participants=new_participants)
 
     def add_citation(self, citation: SourceReference | dict[str, Any]) -> Self:
         """Return a new immutable copy appending a SourceReference citation."""
@@ -666,12 +646,7 @@ class Fact(BaseEntity[FactID]):
         )
         if resolved in self.citations:
             return self
-        return replace(
-            self,
-            citations=[*self.citations, resolved],
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self._mutate(citations=[*self.citations, resolved])
 
     def remove_citation(self, citation_text: str) -> Self:
         """Return a new immutable copy with targeted citation removed by text."""
@@ -679,12 +654,7 @@ class Fact(BaseEntity[FactID]):
         filtered = [c for c in self.citations if c.citation_text != clean]
         if len(filtered) == len(self.citations):
             return self
-        return replace(
-            self,
-            citations=filtered,
-            audit=self.audit.touch(IsoTimestamp(utc_now_iso())),
-            _dirty=True,
-        )
+        return self._mutate(citations=filtered)
 
     def update_note(
         self,
@@ -702,9 +672,9 @@ class Fact(BaseEntity[FactID]):
             note_type=note_type,
             tags=tags,
         )
-        if updated is self:
-            return self
-        return replace(updated, _dirty=True)
+        return self if updated is self else replace(updated, _dirty=True)
+
+    # --- Serialization & Deserialization ---
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize Fact entity to a dictionary payload."""
@@ -716,23 +686,8 @@ class Fact(BaseEntity[FactID]):
             "primary_subject_id": self.primary_subject_id.value,
             "participants": [p.to_dict() for p in self.participants],
             "citations": [c.to_dict() for c in self.citations],
-            "audit": {
-                "created_at": str(self.audit.created_at),
-                "updated_at": str(self.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": self.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(self.tombstone.deprecated_at)
-                    if self.tombstone.deprecated_at is not None
-                    else None
-                ),
-                "superseded_by": (
-                    str(self.tombstone.superseded_by)
-                    if self.tombstone.superseded_by is not None
-                    else None
-                ),
-            },
+            "audit": self.audit.to_dict(),
+            "tombstone": self.tombstone.to_dict(),
             "notes": [n.to_dict() for n in self.notes],
         }
 
@@ -742,12 +697,10 @@ class Fact(BaseEntity[FactID]):
             data["location_id"] = self.location_id.value
         if self.site_id is not None:
             data["site_id"] = self.site_id.value
-        if self.value is not None:
-            data["value"] = self.value
-        if self.description is not None:
-            data["description"] = self.description
-        if self.narrative is not None:
-            data["narrative"] = self.narrative
+        for opt_key in ("value", "description", "narrative"):
+            opt_val = getattr(self, opt_key)
+            if opt_val is not None:
+                data[opt_key] = opt_val
 
         return data
 
@@ -761,57 +714,19 @@ class Fact(BaseEntity[FactID]):
         if not raw_id:
             raise ModelFormatError("Missing required field 'id' for Fact.")
 
-        urn = data.get("canonical_urn", "")
         fact_type = data.get("fact_type")
         title = data.get("title")
         subject = data.get("primary_subject_id")
-
         if not all((fact_type, title, subject)):
             raise ModelFormatError("Fact requires 'fact_type', 'title', and 'primary_subject_id'.")
 
-        audit_payload = data.get("audit")
-        audit_obj: AuditStamp | None = None
-        if isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-
-        tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[FactID] | None = None
-        if isinstance(tombstone_payload, dict):
-            tombstone_obj = Tombstone[FactID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    FactID(tombstone_payload["superseded_by"])
-                    if tombstone_payload.get("superseded_by")
-                    else None
-                ),
-            )
-
-        notes_payload = data.get("notes", [])
-        notes_list = [Note.from_dict(n) for n in notes_payload if isinstance(n, dict)]
-
-        participants_payload = data.get("participants", [])
-        participants_list = [
-            FactParticipant.from_dict(p) if isinstance(p, dict) else FactParticipant.create(str(p))
-            for p in participants_payload
-        ]
-
-        citations_payload = data.get("citations", [])
-        citations_list = [
-            SourceReference.from_dict(c) if isinstance(c, dict) else SourceReference.create(str(c))
-            for c in citations_payload
-        ]
+        audit_raw = data.get("audit")
+        tomb_raw = data.get("tombstone")
+        notes_raw = data.get("notes", [])
 
         return cls.create(
             fact_id=str(raw_id),
-            canonical_urn=str(urn),
+            canonical_urn=str(data.get("canonical_urn", "")),
             fact_type=str(fact_type),
             title=str(title),
             primary_subject_id=str(subject),
@@ -821,11 +736,13 @@ class Fact(BaseEntity[FactID]):
             value=data.get("value"),
             description=data.get("description"),
             narrative=data.get("narrative"),
-            participants=participants_list,
-            citations=citations_list,
-            audit=audit_obj,
-            tombstone=tombstone_obj,
-            notes=notes_list,
+            participants=_parse_dict_participants(data.get("participants", [])),
+            citations=_parse_dict_citations(data.get("citations", [])),
+            audit=AuditStamp.from_dict(audit_raw) if isinstance(audit_raw, dict) else None,
+            tombstone=(
+                Tombstone.from_dict(tomb_raw, id_cls=FactID) if isinstance(tomb_raw, dict) else None
+            ),
+            notes=[Note.from_dict(n) for n in notes_raw if isinstance(n, dict)],
         )
 
     def to_json(self) -> str:
@@ -842,7 +759,6 @@ class Fact(BaseEntity[FactID]):
         return cls.from_dict(data)
 
     def __str__(self) -> str:
-        """Render concise human-readable fact summary."""
         date_str = f" on {self.date}" if self.date else ""
         return (
             f"Fact [{self.fact_type.value}] '{self.title}' for "

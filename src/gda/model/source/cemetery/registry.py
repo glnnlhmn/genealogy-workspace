@@ -22,7 +22,6 @@ from gda.core.enums.site import MarkerCondition
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SiteID, SourceID
 from gda.model.atom.urn import ArchivalURN, CemeteryPlotUrn, SourceURN
 from gda.model.atom.year import HistoricalYear
@@ -32,7 +31,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "CemeteryPlotEntry",
@@ -79,7 +78,11 @@ def _parse_condition(raw: MarkerCondition | str) -> MarkerCondition:
     raise ModelFormatError(f"Invalid MarkerCondition value: '{raw}'.")
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class RegistryInterment(IntrospectableMixin):
     """Single burial entry recorded inside a cemetery plot ledger or survey."""
 
@@ -204,7 +207,11 @@ class RegistryInterment(IntrospectableMixin):
         return self.inscribed_name
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class CemeteryPlotEntry(IntrospectableMixin):
     """Single plot, lot, section, or tomb row in a cemetery registry or grave survey."""
 
@@ -323,7 +330,11 @@ class CemeteryPlotEntry(IntrospectableMixin):
         return f"Plot {self.plot_locator} ({len(self.interments)} interments)"
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class CemeteryRegistryRecord(SourceRecord):
     """Collection-wide cemetery plot ledger, sexton book, or grave survey container."""
 
@@ -561,36 +572,18 @@ class CemeteryRegistryRecord(SourceRecord):
         if not isinstance(raw_plots, (list, tuple)):
             raise ModelFormatError("CemeteryRegistryRecord 'plots' must be a list or tuple.")
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "CemeteryRegistryRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),

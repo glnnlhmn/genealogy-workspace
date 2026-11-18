@@ -5,8 +5,8 @@ Comprehensive unit test suite for gda.core.dates.
 Operational Role:
     Verifies pure stateless ISO calendar date and timestamp string validation
     predicates, Zulu UTC formatting, date component extraction, and age calculation
-    against valid formats, boundary errors, and non-string inputs with 100% statement
-    and branch coverage.
+    against valid formats, impossible calendar day bounds, IntEnum years, and
+    non-string inputs with 100% statement and branch coverage.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract mapping.
@@ -22,9 +22,10 @@ from types import SimpleNamespace
 import pytest
 
 import gda.core.dates as udate
+from gda.core.enums import CensusYearUS
 from gda.core.errors import ModelFormatError, ModelRangeError
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 # ==============================================================================
 # GROUP 1: Calendar Date Validation Predicates (validate_iso_date)
@@ -38,6 +39,7 @@ def test_validate_iso_date_accepts_valid_calendar_strings() -> None:
     assert udate.validate_iso_date("1880") is True
     assert udate.validate_iso_date("1880-05") is True
     assert udate.validate_iso_date("1880-05-14") is True
+    assert udate.validate_iso_date("1880-02-29") is True  # Leap year
 
 
 @pytest.mark.unit
@@ -48,19 +50,23 @@ def test_validate_iso_date_accepts_valid_strings_with_surrounding_whitespace() -
 
 
 @pytest.mark.regression
-def test_validate_iso_date_rejects_invalid_date_syntax() -> None:
-    """Verify validate_iso_date returns False for malformed calendar dates."""
+def test_validate_iso_date_rejects_invalid_date_syntax_and_impossible_calendar_days() -> None:
+    """Verify validate_iso_date returns False for malformed syntax and impossible calendar dates."""
     assert udate.validate_iso_date("1880/05/14") is False
     assert udate.validate_iso_date("May 14, 1880") is False
     assert udate.validate_iso_date("1880-5-14") is False
     assert udate.validate_iso_date("80-05-14") is False
     assert udate.validate_iso_date("1880-13-01") is False
+    # Impossible calendar days matching regex but failing Gregorian calendar bounds
+    assert udate.validate_iso_date("1880-02-30") is False
+    assert udate.validate_iso_date("1881-02-29") is False
+    assert udate.validate_iso_date("1900-04-31") is False
 
 
 @pytest.mark.regression
 def test_validate_iso_date_rejects_none_and_non_string_inputs() -> None:
     """Verify validate_iso_date returns False when passed None, empty strings, or non-strings."""
-    assert udate.validate_iso_date(None) is False
+    assert udate.validate_iso_date(None) is False  # type: ignore[arg-type]
     assert udate.validate_iso_date("") is False
     assert udate.validate_iso_date(1880) is False  # type: ignore[arg-type]
 
@@ -90,7 +96,7 @@ def test_validate_iso_timestamp_rejects_invalid_timestamp_syntax() -> None:
 @pytest.mark.regression
 def test_validate_iso_timestamp_rejects_none_and_empty_inputs() -> None:
     """Verify validate_iso_timestamp returns False for None and empty string inputs."""
-    assert udate.validate_iso_timestamp(None) is False
+    assert udate.validate_iso_timestamp(None) is False  # type: ignore[arg-type]
     assert udate.validate_iso_timestamp("") is False
     assert udate.validate_iso_timestamp("   ") is False
 
@@ -149,10 +155,13 @@ def test_parse_iso_date_parts_extracts_components() -> None:
 
 @pytest.mark.regression
 def test_parse_iso_date_parts_raises_model_format_error_on_invalid() -> None:
-    """Verify parse_iso_date_parts raises ModelFormatError on invalid date format."""
+    """Verify parse_iso_date_parts raises ModelFormatError on invalid or impossible date format."""
     with pytest.raises(ModelFormatError) as exc_info:
         udate.parse_iso_date_parts("invalid-date")
     assert exc_info.value.error_code == "ERR_MODEL_FORMAT"
+
+    with pytest.raises(ModelFormatError, match="1880-02-31"):
+        udate.parse_iso_date_parts("1880-02-31")
 
 
 @pytest.mark.unit
@@ -179,14 +188,15 @@ def test_parse_iso_timestamp_invalid_raises_model_format_error() -> None:
 
 
 @pytest.mark.unit
-def test_calculate_age_years_integer_and_atom_value_objects() -> None:
-    """Verify calculate_age_years computes differences for ints and .value atom objects."""
+def test_calculate_age_years_integer_intenum_and_atom_value_objects() -> None:
+    """Verify calculate_age_years computes differences for ints, IntEnums, and .value atoms."""
     assert udate.calculate_age_years(1880, 1950) == 70
     assert udate.calculate_age_years(1900, 1900) == 0
+    assert udate.calculate_age_years(CensusYearUS.Y1880, CensusYearUS.Y1950) == 70
     assert (
         udate.calculate_age_years(SimpleNamespace(value=1880), SimpleNamespace(value="1950-06-01"))
         == 70
-    )  # type: ignore[arg-type]
+    )
 
 
 @pytest.mark.unit
@@ -213,15 +223,21 @@ def test_calculate_age_years_raises_model_range_error_when_preceding() -> None:
 
 @pytest.mark.regression
 def test_calculate_age_years_raises_model_format_error_on_invalid_types() -> None:
-    """Verify calculate_age_years raises ModelFormatError for invalid birth or target types."""
+    """Verify calculate_age_years raises ModelFormatError for invalid birth, target, or bool types."""
     with pytest.raises(ModelFormatError) as exc_info:
         udate.calculate_age_years("invalid-date", 1950)
     assert exc_info.value.error_code == "ERR_MODEL_FORMAT"
 
     with pytest.raises(ModelFormatError, match="Unsupported birth date type") as exc_info2:
-        udate.calculate_age_years(None, 1950)  # type: ignore[arg-type]
+        udate.calculate_age_years(None, 1950)
     assert exc_info2.value.error_code == "ERR_MODEL_FORMAT"
 
+    with pytest.raises(ModelFormatError, match="Unsupported birth date type"):
+        udate.calculate_age_years(True, 1950)
+
     with pytest.raises(ModelFormatError, match="Unsupported target date type") as exc_info3:
-        udate.calculate_age_years(1880, None)  # type: ignore[arg-type]
+        udate.calculate_age_years(1880, None)
     assert exc_info3.value.error_code == "ERR_MODEL_FORMAT"
+
+    with pytest.raises(ModelFormatError, match="Unsupported target date type"):
+        udate.calculate_age_years(1880, False)

@@ -17,14 +17,15 @@ from gda.core.enums.military import PensionClaimantRole
 from gda.core.errors import ModelFormatError
 from gda.model.source.military.pension.base import MilitaryPensionRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["PensionVeteranClaimRecord"]
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class PensionVeteranClaimRecord(MilitaryPensionRecord):
     """Evidentiary invalid veteran disability or service pension claim record."""

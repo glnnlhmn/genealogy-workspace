@@ -30,8 +30,9 @@ from gda.model.source.enumerated.base import (
     coerce_field_value,
     serialize_primitive_value,
 )
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "OrganizationRosterEntry",
@@ -67,29 +68,18 @@ def _coerce_org_field(field_name: str, field_type_str: str, value: Any) -> Any:
     if field_name == "org_id":
         return value if isinstance(value, OrganizationID) else OrganizationID(str(value))
     if field_name == "org_category":
-        return (
-            value
-            if isinstance(value, OrganizationCategory)
-            else OrganizationCategory(str(value).strip().upper())
-        )
+        return coerce_enum(OrganizationCategory, value, field_name="org_category")
     if field_name == "affiliation_type":
-        return (
-            value
-            if isinstance(value, AffiliationType)
-            else AffiliationType(str(value).strip().upper())
-        )
+        return coerce_enum(AffiliationType, value, field_name="affiliation_type")
     if field_name == "membership_status":
-        return (
-            value
-            if isinstance(value, MembershipStatus)
-            else MembershipStatus(str(value).strip().upper())
-        )
+        return coerce_enum(MembershipStatus, value, field_name="membership_status")
     return coerce_field_value(field_type_str, value)
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class OrganizationRosterEntry(IntrospectableMixin):
     """Single enumerated member row on an organization roster or society directory page."""
@@ -201,7 +191,8 @@ class OrganizationRosterEntry(IntrospectableMixin):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class OrganizationRosterRecord(EnumeratedRollRecord):
     """Evidentiary composite representing a printed or manuscript organization roster page."""

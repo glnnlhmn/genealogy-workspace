@@ -24,14 +24,15 @@ from gda.core.types import (
 )
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["ModernDraftEra", "ModernSelectiveServiceRecord", "SssClassification"]
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class ModernSelectiveServiceRecord(MilitaryDraftRecord):
     """Evidentiary draft record under the modern Selective Service System (1948-present)."""

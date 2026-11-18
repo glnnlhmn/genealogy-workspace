@@ -17,7 +17,7 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.sources import SourceRecordType
 from gda.model.source.enumerated.census.base import CensusLineEntry, CensusScheduleRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "PopulationLineEntry",
@@ -28,7 +28,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class PopulationLineEntry(CensusLineEntry):
     """Base enumerated line entry for decennial population schedules."""
@@ -48,9 +49,10 @@ TPopEntry = TypeVar("TPopEntry", bound=PopulationLineEntry)
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
-class PopulationScheduleRecord(CensusScheduleRecord[TPopEntry]):
+class PopulationScheduleRecord[TEntry: PopulationLineEntry](CensusScheduleRecord[TEntry]):
     """Evidentiary composite for decennial census Population Schedules."""
 
     ALLOWED_RECORD_TYPES: ClassVar[frozenset[SourceRecordType]] = frozenset(

@@ -21,7 +21,7 @@ from gda.model.source.enumerated.census.population.base import (
     PopulationScheduleRecord,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "Population1900_1910Entry",
@@ -31,7 +31,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class Population1900_1910Entry(PopulationLineEntry):
     """Individual line entry for 1900 and 1910 U.S. Federal Population Schedules."""
@@ -114,7 +115,8 @@ class Population1900_1910Entry(PopulationLineEntry):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class PopulationSchedule1900_1910(PopulationScheduleRecord[Population1900_1910Entry]):
     """Evidentiary 1900 and 1910 U.S. Federal Population Schedules."""

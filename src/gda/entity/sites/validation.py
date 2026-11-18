@@ -10,11 +10,11 @@ Operational Role:
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING
 
 from gda.core.enums.site import SiteType
+from gda.core.logging import GDALogger
 from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.sites.errors import SiteValidationError
 from gda.model.entity.site import Site
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.9"
 
 __all__ = [
     "valid_collection_all",
@@ -35,7 +35,7 @@ __all__ = [
     "valid_urn",
 ]
 
-_logger = logging.getLogger(__name__)
+_logger = GDALogger(__name__)
 
 _SITE_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["SID"]
 
@@ -113,7 +113,7 @@ def valid_collection_locations(
 
     if errors:
         for err in errors:
-            _logger.error("Location Reference Error: %s", err)
+            _logger.error(f"Location Reference Error: {err}")
         return False
     return True
 
@@ -142,7 +142,7 @@ def valid_collection_tombstones(collection: Sites) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Site Tombstone Verification Error: %s", err)
+            _logger.error(f"Site Tombstone Verification Error: {err}")
         return False
     return True
 
@@ -185,7 +185,7 @@ def valid_collection_indexes(collection: Sites) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Site Index Verification Error: %s", err)
+            _logger.error(f"Site Index Verification Error: {err}")
         return False
     return True
 

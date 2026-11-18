@@ -19,7 +19,7 @@ from gda.core.types import MAX_ENLISTMENT_TERM_MONTHS, MIN_ENLISTMENT_TERM_MONTH
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.service.base import MilitaryServiceRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "EnlistmentMusterRecord",
@@ -29,7 +29,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class EnlistmentMusterRecord(MilitaryServiceRecord):
     """Evidentiary military enlistment or muster roll record."""

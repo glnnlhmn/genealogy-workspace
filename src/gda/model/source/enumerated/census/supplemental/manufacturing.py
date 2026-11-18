@@ -19,7 +19,7 @@ from gda.core.errors import ModelFormatError
 from gda.core.types import US_MANUFACTURING_SCHEDULE_YEARS
 from gda.model.source.enumerated.census.base import CensusLineEntry, CensusScheduleRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "ManufacturingScheduleEntry",
@@ -29,7 +29,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class ManufacturingScheduleEntry(CensusLineEntry):
     """Establishment or proprietor line entry on a Census Manufacturing Schedule."""
@@ -60,7 +61,8 @@ class ManufacturingScheduleEntry(CensusLineEntry):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class ManufacturingScheduleRecord(CensusScheduleRecord[ManufacturingScheduleEntry]):
     """Evidentiary composite for Census Manufacturing Schedules (1810-1880)."""

@@ -23,7 +23,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-__version__ = "1.0.0+build.11"
+from gda.core.types import ISO_TIMESTAMP_FMT
+
+__version__ = "1.0.0+build.13"
 
 __all__ = [
     "ConfigError",
@@ -60,7 +62,7 @@ class GenealogyDeskError(Exception):
         details: dict[str, Any] | None = None,
         exit_code: int = 1,
     ) -> None:
-        """Initialize GenealogyDeskError.
+        """Initialize GenealogyDeskError with diagnostic context and UTC timestamp.
 
         Args:
             message: Human-readable diagnostic description of the failure.
@@ -73,10 +75,10 @@ class GenealogyDeskError(Exception):
         self.error_code = error_code
         self.details = details or {}
         self.exit_code = exit_code
-        self.timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        # Format timestamp using canonical ISO_TIMESTAMP_FMT (%Y-%m-%dT%H:%M:%SZ)
+        self.timestamp = datetime.now(UTC).strftime(ISO_TIMESTAMP_FMT)
 
     def __str__(self) -> str:
-        """Render string representation matching standard exception message."""
         return self.message
 
     def to_dict(self) -> dict[str, Any]:
@@ -109,7 +111,6 @@ class ConfigError(GenealogyDeskError):
         details: dict[str, Any] | None = None,
         exit_code: int = 2,
     ) -> None:
-        """Initialize ConfigError."""
         super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
@@ -123,7 +124,6 @@ class ConfigValidationError(ConfigError):
         details: dict[str, Any] | None = None,
         exit_code: int = 2,
     ) -> None:
-        """Initialize ConfigValidationError."""
         super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
@@ -137,7 +137,6 @@ class ConfigParseError(ConfigError):
         details: dict[str, Any] | None = None,
         exit_code: int = 2,
     ) -> None:
-        """Initialize ConfigParseError."""
         super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
@@ -147,7 +146,7 @@ class ConfigParseError(ConfigError):
 
 
 class ModelError(GenealogyDeskError):
-    """Base exception for all domain model and primitive validation failures."""
+    """Root base exception for all domain model validation failures."""
 
     def __init__(
         self,
@@ -156,12 +155,11 @@ class ModelError(GenealogyDeskError):
         details: dict[str, Any] | None = None,
         exit_code: int = 3,
     ) -> None:
-        """Initialize ModelError."""
         super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ModelFormatError(ModelError):
-    """Raised when string representation, regex pattern, or syntax validation fails."""
+    """Raised when string syntax, regex patterns, or structural formats are violated."""
 
     def __init__(
         self,
@@ -170,12 +168,11 @@ class ModelFormatError(ModelError):
         details: dict[str, Any] | None = None,
         exit_code: int = 3,
     ) -> None:
-        """Initialize ModelFormatError."""
         super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ModelRangeError(ModelError):
-    """Raised when a numerical, temporal, or enumeration boundary is exceeded."""
+    """Raised when numerical, scalar, or temporal boundaries are exceeded."""
 
     def __init__(
         self,
@@ -184,12 +181,11 @@ class ModelRangeError(ModelError):
         details: dict[str, Any] | None = None,
         exit_code: int = 3,
     ) -> None:
-        """Initialize ModelRangeError."""
         super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
 
 
 class ModelPrefixMismatchError(ModelError):
-    """Raised when an identifier string contains a prefix conflicting with its type."""
+    """Raised when an entity identifier prefix does not match the target model class."""
 
     def __init__(
         self,
@@ -198,5 +194,4 @@ class ModelPrefixMismatchError(ModelError):
         details: dict[str, Any] | None = None,
         exit_code: int = 3,
     ) -> None:
-        """Initialize ModelPrefixMismatchError."""
         super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)

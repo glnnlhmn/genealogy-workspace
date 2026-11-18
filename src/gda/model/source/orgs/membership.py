@@ -19,7 +19,6 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.orgs import AffiliationType, MembershipStatus, OrganizationCategory
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, MediaID, OrganizationID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -27,8 +26,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate, TimePeriod
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "OrganizationMembershipRecord",
@@ -46,7 +46,11 @@ _ORG_SOURCE_CATEGORIES: frozenset[SourceRecordCategory] = frozenset(
 )
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class OrganizationMembershipRecord(SourceRecord):
     """Primary archival record documenting an individual's organizational affiliation."""
 
@@ -175,30 +179,12 @@ class OrganizationMembershipRecord(SourceRecord):
             else OrganizationID(org_id)
         )
 
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
-        res_org_cat = (
-            org_category
-            if isinstance(org_category, OrganizationCategory)
-            else OrganizationCategory(str(org_category).strip().upper())
-        )
-        res_aff = (
-            affiliation_type
-            if isinstance(affiliation_type, AffiliationType)
-            else AffiliationType(str(affiliation_type).strip().upper())
-        )
-        res_status = (
-            membership_status
-            if isinstance(membership_status, MembershipStatus)
-            else MembershipStatus(str(membership_status).strip().upper())
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
+        res_org_cat = coerce_enum(OrganizationCategory, org_category, field_name="org_category")
+        res_aff = coerce_enum(AffiliationType, affiliation_type, field_name="affiliation_type")
+        res_status = coerce_enum(
+            MembershipStatus, membership_status, field_name="membership_status"
         )
 
         resolved_audit = audit if audit is not None else AuditStamp.now()
@@ -272,36 +258,18 @@ class OrganizationMembershipRecord(SourceRecord):
                 "repository_id, audit, individual_id, and organization_name_raw."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "OrganizationMembershipRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_period = data.get("membership_period")
         resolved_period: TimePeriod | None = None

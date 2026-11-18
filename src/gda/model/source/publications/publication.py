@@ -12,7 +12,7 @@ Operational Role:
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -21,7 +21,6 @@ from gda.core.enums.archival import PublicationFrequency
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.types import PUB_CODE_REGEX
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -30,8 +29,9 @@ from gda.model.base.date import EventDate, TimePeriod
 from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "Publication",
@@ -50,16 +50,17 @@ _PUBLICATION_CATEGORIES: frozenset[SourceRecordCategory] = frozenset(
 
 def _parse_frequency(raw: PublicationFrequency | str) -> PublicationFrequency:
     """Resolve PublicationFrequency from enum member, value string, or member name."""
-    if isinstance(raw, PublicationFrequency):
-        return raw
-    token = str(raw).strip()
-    for member in PublicationFrequency:
-        if token.upper() in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid PublicationFrequency value: '{raw}'.")
+    try:
+        return coerce_enum(PublicationFrequency, raw, field_name="frequency")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid PublicationFrequency value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class Publication(SourceRecord):
     """Canonical top-level source container representing a serial or monograph publication."""
 
@@ -200,16 +201,8 @@ class Publication(SourceRecord):
                 f"Publication 'title' must be NameThing or str, got {type(title).__name__}."
             )
 
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_freq = _parse_frequency(frequency) if frequency is not None else None
         res_loc = (
             location_id
@@ -244,28 +237,7 @@ class Publication(SourceRecord):
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize Publication to a dictionary."""
-        data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "title": self.title.to_dict(),
-                "pub_code": self.pub_code,
-                "is_active": self.is_active,
-            }
-        )
-        if self.frequency is not None:
-            data["frequency"] = self.frequency.value
-        if self.publisher_raw is not None:
-            data["publisher_raw"] = self.publisher_raw
-        if self.place_of_publication_raw is not None:
-            data["place_of_publication_raw"] = self.place_of_publication_raw
-        if self.location_id is not None:
-            data["location_id"] = str(self.location_id)
-        if self.publication_period is not None:
-            data["publication_period"] = self.publication_period.to_dict()
-        if self.issn_or_lccn is not None:
-            data["issn_or_lccn"] = self.issn_or_lccn
-        return data
+        return super().to_dict()
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Publication:
@@ -288,37 +260,21 @@ class Publication(SourceRecord):
             )
 
         resolved_title: NameThing | str = (
-            NameThing.from_dict(raw_title) if isinstance(raw_title, dict) else raw_title
+            NameThing.from_dict(raw_title)
+            if isinstance(raw_title, dict)
+            else cast(NameThing | str, raw_title)
         )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("Publication audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_period = data.get("publication_period")
         resolved_period: TimePeriod | None = None

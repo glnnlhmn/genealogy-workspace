@@ -13,6 +13,7 @@ import json
 import sqlite3
 from typing import Any
 
+from gda.core.dates import parse_iso_date_parts
 from gda.core.enums.core import FactType
 from gda.db.exceptions import EntityMappingError
 from gda.db.mapper.base import (
@@ -20,7 +21,6 @@ from gda.db.mapper.base import (
     _deserialize_notes,
     _deserialize_tombstone,
     _extract_id_str,
-    _extract_year_from_text,
 )
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import FactID, FamilyID, IndividualID, LocationID, SiteID
@@ -29,7 +29,7 @@ from gda.model.base.date import EventDate, TimePeriod
 from gda.model.base.source import SourceReference
 from gda.model.entity.fact import Fact, FactParticipant
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "FactRowMapper",
@@ -51,7 +51,7 @@ class FactRowMapper(BaseRowMapper[Fact]):
         elif isinstance(entity.date, TimePeriod) and entity.date.start_date:
             fact_sort = entity.date.start_date.date.value
 
-        fact_year = _extract_year_from_text(fact_sort)
+        fact_year = parse_iso_date_parts(fact_sort)[0] if fact_sort is not None else None
 
         return {
             "id": entity.id.value,

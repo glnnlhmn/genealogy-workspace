@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from pydantic import ConfigDict, Field
@@ -24,7 +25,6 @@ from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -32,8 +32,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "ProbateRecord",
@@ -61,6 +62,11 @@ _PROBATE_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
 _WILL_URN_PATTERN: re.Pattern[str] = URN_REGEXES["WILL"]
 
 
+# ==============================================================================
+# 1. COERCION & NORMALIZATION HELPERS
+# ==============================================================================
+
+
 def _resolve_probate_urn(raw: ArchivalURN | str) -> ArchivalURN:
     """Coerce a raw URN string into ArchivalURN (URN:WILL:...) or SourceURN (URN:SRC:...)."""
     if isinstance(raw, ArchivalURN):
@@ -85,18 +91,57 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
+
+
 def _parse_bequest_type(raw: BequestType | str) -> BequestType:
     """Resolve BequestType by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, BequestType):
-        return raw
-    token = str(raw).strip().upper()
-    for member in BequestType:
-        if token in (member.name, member.value):
-            return member
-    raise ModelFormatError(f"Invalid BequestType value: '{raw}'.")
+    try:
+        return coerce_enum(BequestType, raw, field_name="bequest_type")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid BequestType value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _coerce_bequests_tuple(
+    bequests: Iterable[WillBequest | dict[str, Any]] | None,
+) -> tuple[WillBequest, ...]:
+    """Hydrate an optional sequence of WillBequest objects or dicts into a tuple."""
+    if not bequests:
+        return ()
+    return tuple(b if isinstance(b, WillBequest) else WillBequest.from_dict(b) for b in bequests)
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
+
+
+# ==============================================================================
+# 2. WILL BEQUEST VALUE OBJECT & PROBATE RECORD DOMAIN MODEL
+# ==============================================================================
+
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class WillBequest(IntrospectableMixin):
     """Single structured devise, legacy, or guardianship clause in a will or codicil."""
 
@@ -162,16 +207,11 @@ class WillBequest(IntrospectableMixin):
         conditions_raw: str | None = None,
     ) -> WillBequest:
         """Factory constructor instantiating a validated WillBequest."""
-        res_ben = (
-            beneficiary_id
-            if (beneficiary_id is None or isinstance(beneficiary_id, IndividualID))
-            else IndividualID(beneficiary_id)
-        )
         return cls(
             item_number=item_number,
             beneficiary_name_raw=beneficiary_name_raw,
             property_or_amount_raw=property_or_amount_raw,
-            beneficiary_id=res_ben,
+            beneficiary_id=_opt_id(beneficiary_id, IndividualID),
             relationship_raw=relationship_raw,
             bequest_type=_parse_bequest_type(bequest_type),
             conditions_raw=conditions_raw,
@@ -235,7 +275,11 @@ class WillBequest(IntrospectableMixin):
         )
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class ProbateRecord(SourceRecord):
     """Primary archival record documenting a will, codicil, letters, or probate court entry."""
 
@@ -392,129 +436,42 @@ class ProbateRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> ProbateRecord:
         """Factory constructor instantiating a validated ProbateRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        resolved_urn = _resolve_probate_urn(source_urn)
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
-        res_court_loc = (
-            court_location_id
-            if (court_location_id is None or isinstance(court_location_id, LocationID))
-            else LocationID(court_location_id)
-        )
-        res_dec_id = (
-            decedent_id
-            if (decedent_id is None or isinstance(decedent_id, IndividualID))
-            else IndividualID(decedent_id)
-        )
-        res_dec_loc = (
-            decedent_residence_id
-            if (decedent_residence_id is None or isinstance(decedent_residence_id, LocationID))
-            else LocationID(decedent_residence_id)
-        )
-        res_written = (
-            _deserialize_event_date(date_written, "date_written")
-            if date_written is not None
-            else None
-        )
-        res_probated = (
-            _deserialize_event_date(date_probated, "date_probated")
-            if date_probated is not None
-            else None
-        )
-        res_letters = (
-            _deserialize_event_date(date_letters_granted, "date_letters_granted")
-            if date_letters_granted is not None
-            else None
-        )
-
-        resolved_bequests: tuple[WillBequest, ...] = tuple(
-            b if isinstance(b, WillBequest) else WillBequest.from_dict(b) for b in (bequests or ())
-        )
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
-            source_urn=resolved_urn,
-            record_category=res_cat,
-            record_type=res_type,
-            description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            source_id=_coerce_id(source_id, SourceID),
+            source_urn=_resolve_probate_urn(source_urn),
+            record_category=coerce_enum(
+                SourceRecordCategory, record_category, field_name="record_category"
+            ),
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
+            description=description.strip(),
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             court_name=court_name,
             filing_locator=filing_locator,
             decedent_name_raw=decedent_name_raw,
-            court_location_id=res_court_loc,
+            court_location_id=_opt_id(court_location_id, LocationID),
             register_or_clerk=register_or_clerk,
             estate_file_number=estate_file_number,
             book_and_page=book_and_page,
             docket_term=docket_term,
-            decedent_id=res_dec_id,
+            decedent_id=_opt_id(decedent_id, IndividualID),
             decedent_residence_raw=decedent_residence_raw,
-            decedent_residence_id=res_dec_loc,
+            decedent_residence_id=_opt_id(decedent_residence_id, LocationID),
             decedent_condition_or_trade=decedent_condition_or_trade,
-            date_written=res_written,
-            date_probated=res_probated,
-            date_letters_granted=res_letters,
+            date_written=_opt_event_date(date_written, "date_written"),
+            date_probated=_opt_event_date(date_probated, "date_probated"),
+            date_letters_granted=_opt_event_date(date_letters_granted, "date_letters_granted"),
             provisions_summary=provisions_summary,
-            bequests=resolved_bequests,
+            bequests=_coerce_bequests_tuple(bequests),
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize ProbateRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "court_name": self.court_name,
-                "filing_locator": self.filing_locator,
-                "decedent_name_raw": self.decedent_name_raw,
-                "bequests": [b.to_dict() for b in self.bequests],
-            }
-        )
-        if self.court_location_id is not None:
-            data["court_location_id"] = str(self.court_location_id)
-        if self.register_or_clerk is not None:
-            data["register_or_clerk"] = self.register_or_clerk
-        if self.estate_file_number is not None:
-            data["estate_file_number"] = self.estate_file_number
-        if self.book_and_page is not None:
-            data["book_and_page"] = self.book_and_page
-        if self.docket_term is not None:
-            data["docket_term"] = self.docket_term
-        if self.decedent_id is not None:
-            data["decedent_id"] = str(self.decedent_id)
-        if self.decedent_residence_raw is not None:
-            data["decedent_residence_raw"] = self.decedent_residence_raw
-        if self.decedent_residence_id is not None:
-            data["decedent_residence_id"] = str(self.decedent_residence_id)
-        if self.decedent_condition_or_trade is not None:
-            data["decedent_condition_or_trade"] = self.decedent_condition_or_trade
-        if self.date_written is not None:
-            data["date_written"] = self.date_written.to_dict()
-        if self.date_probated is not None:
-            data["date_probated"] = self.date_probated.to_dict()
-        if self.date_letters_granted is not None:
-            data["date_letters_granted"] = self.date_letters_granted.to_dict()
-        if self.provisions_summary is not None:
-            data["provisions_summary"] = self.provisions_summary
+        data["bequests"] = [b.to_dict() for b in self.bequests]
         return data
 
     @classmethod
@@ -538,34 +495,16 @@ class ProbateRecord(SourceRecord):
                 "audit, court_name, filing_locator, and decedent_name_raw."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("ProbateRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_bequests = data.get("bequests", [])
         if not isinstance(raw_bequests, (list, tuple)):

@@ -17,15 +17,15 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
 from gda.core.config import LoggingConfig
+from gda.core.dates import utc_now_iso
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.9"
 
 __all__ = [
     "ConsoleFormatter",
@@ -47,16 +47,18 @@ class JsonFormatter(logging.Formatter):
             JSON-formatted string ending without newline.
         """
         payload: dict[str, Any] = {
-            "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "timestamp": utc_now_iso(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
         }
 
+        # Attach structured diagnostic details when provided by caller
         details = getattr(record, "details", None)
         if isinstance(details, dict):
             payload["details"] = details
 
+        # Serialize structured GDA exceptions or standard Python exceptions
         exc = getattr(record, "exc", None)
         if isinstance(exc, GenealogyDeskError):
             payload["error"] = exc.to_dict()
@@ -106,6 +108,9 @@ class GDALogger:
     ) -> None:
         """Initialize GDALogger with handlers governed by LoggingConfig.
 
+        Closes and detaches any pre-existing handlers on the underlying logger
+        to prevent duplicate log emissions and Windows file-handle locks.
+
         Args:
             name: Logger hierarchy namespace identifier.
             config: LoggingConfig instance. Defaults to default LoggingConfig().
@@ -115,7 +120,11 @@ class GDALogger:
         self.config = config or LoggingConfig()
         self.logger = logging.getLogger(name)
         self.logger.setLevel(getattr(logging, self.config.level, logging.INFO))
-        self.logger.handlers.clear()
+
+        # Explicitly close and remove existing handlers to release Windows file locks
+        for existing_handler in list(self.logger.handlers):
+            existing_handler.close()
+            self.logger.removeHandler(existing_handler)
         self.logger.propagate = False
 
         if self.config.log_to_console:
@@ -137,6 +146,22 @@ class GDALogger:
             )
             file_handler.setFormatter(JsonFormatter())
             self.logger.addHandler(file_handler)
+
+    def _log(
+        self,
+        level: int,
+        msg: str,
+        *,
+        details: dict[str, Any] | None = None,
+        exc: Exception | None = None,
+    ) -> None:
+        """Dispatch a log record with optional structured details and exception metadata."""
+        extra: dict[str, Any] = {}
+        if details is not None:
+            extra["details"] = details
+        if exc is not None:
+            extra["exc"] = exc
+        self.logger.log(level, msg, extra=extra)
 
     def debug(self, msg: str, *, details: dict[str, Any] | None = None) -> None:
         """Emit DEBUG level log record.
@@ -168,7 +193,7 @@ class GDALogger:
         Args:
             msg: Log message string.
             details: Optional structured contextual attributes.
-            exc: Optional exception object attached to record.
+            exc: Optional exception instance for diagnostic serialization.
         """
         self._log(logging.WARNING, msg, details=details, exc=exc)
 
@@ -184,7 +209,7 @@ class GDALogger:
         Args:
             msg: Log message string.
             details: Optional structured contextual attributes.
-            exc: Optional exception object attached to record.
+            exc: Optional exception instance for diagnostic serialization.
         """
         self._log(logging.ERROR, msg, details=details, exc=exc)
 
@@ -200,30 +225,6 @@ class GDALogger:
         Args:
             msg: Log message string.
             details: Optional structured contextual attributes.
-            exc: Optional exception object attached to record.
+            exc: Optional exception instance for diagnostic serialization.
         """
         self._log(logging.CRITICAL, msg, details=details, exc=exc)
-
-    def _log(
-        self,
-        level: int,
-        msg: str,
-        *,
-        details: dict[str, Any] | None = None,
-        exc: Exception | None = None,
-    ) -> None:
-        """Internal dispatcher attaching extra attributes.
-
-        Args:
-            level: Numeric logging level identifier.
-            msg: Log message string.
-            details: Optional structured contextual dictionary.
-            exc: Optional exception instance to attach.
-        """
-        extra: dict[str, Any] = {}
-        if details is not None:
-            extra["details"] = details
-        if exc is not None:
-            extra["exc"] = exc
-
-        self.logger.log(level, msg, extra=extra)

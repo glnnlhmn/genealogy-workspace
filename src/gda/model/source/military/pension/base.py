@@ -22,7 +22,7 @@ from gda.model.atom.id import IndividualID, LocationID, TranscriptID
 from gda.model.atom.year import HistoricalYear
 from gda.model.base.source import SourceRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "MilitaryPensionRecord",
@@ -33,7 +33,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class MilitaryPensionRecord(SourceRecord):
     """Evidentiary military pension application, certificate, or payment ledger record."""

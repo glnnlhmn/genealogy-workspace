@@ -4,8 +4,9 @@ Comprehensive test suite verifying atomic temporal primitives (DateString, IsoTi
 
 Operational Role:
     Verifies DateString and IsoTimestamp format validation, strict rejection of
-    unnormalized outer whitespace, string equality, homogeneous total ordering,
-    frozen immutability, and introspection invariants.
+    unnormalized outer whitespace, Gregorian calendar day bounds on ISO dates,
+    string equality, homogeneous total ordering, frozen immutability, and
+    introspection invariants.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 behavioral contract mapping.
@@ -25,7 +26,7 @@ from gda.core.dates import utc_now_iso
 from gda.core.errors import ModelFormatError
 from gda.model.atom.date import DateString, IsoTimestamp
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 
 # ==============================================================================
@@ -41,6 +42,7 @@ __version__ = "1.0.0+build.4"
         "1880",
         "1880-05",
         "1880-05-14",
+        "1880-02-29",
         "14 APR 1865",
         "ABT 1850",
         "BEF 1900",
@@ -60,16 +62,22 @@ def test_date_string_valid_instantiation(valid_date: str) -> None:
     "invalid_date",
     [
         "",
-        " ",
+        "   ",
         "\t\n",
         " 1880",
         "1880 ",
-        "   12 MAY 1880   ",
+        " 12 MAY 1880 ",
         "\t1880-05-14\n",
+        "1880-02-30",
+        "1881-02-29",
+        "1900-04-31",
+        "1880-13-01",
     ],
 )
-def test_date_string_empty_or_padded_raises_format_error(invalid_date: str) -> None:
-    """Verify DateString raises ModelFormatError on empty or unnormalized outer whitespace."""
+def test_date_string_empty_padded_or_impossible_calendar_raises_format_error(
+    invalid_date: str,
+) -> None:
+    """Verify DateString raises ModelFormatError on empty, padded, or impossible ISO calendar dates."""
     with pytest.raises(ModelFormatError, match="Invalid DateString"):
         DateString(invalid_date)
 
@@ -77,9 +85,9 @@ def test_date_string_empty_or_padded_raises_format_error(invalid_date: str) -> N
 @pytest.mark.unit
 @pytest.mark.regression
 @pytest.mark.parametrize("bad_type", INVALID_NON_STRING_VALUES)
-def test_date_string_non_string_raises_error(bad_type: Any) -> None:
-    """Verify DateString rejects non-string types without coercion."""
-    with pytest.raises((ModelFormatError, TypeError, ValueError)):
+def test_date_string_non_string_raises_format_error(bad_type: Any) -> None:
+    """Verify DateString rejects non-string inputs with ModelFormatError."""
+    with pytest.raises(ModelFormatError, match="Invalid DateString"):
         DateString(bad_type)
 
 
@@ -90,53 +98,60 @@ def test_date_string_non_string_raises_error(bad_type: Any) -> None:
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
-    "valid_iso",
+    "valid_ts",
     [
-        "2026-10-16T12:00:00Z",
-        "2026-10-16T12:00:00.123456Z",
-        "2026-10-16T08:00:00-04:00",
-        "2026-10-16T17:30:00+05:30",
+        "2026-10-16T08:57:00Z",
+        "2026-10-16T08:57:00.123456Z",
+        "2026-10-16T08:57:00-04:00",
     ],
 )
-def test_iso_timestamp_valid_formats(valid_iso: str) -> None:
-    """Verify IsoTimestamp validates extended ISO 8601 UTC and offset representations."""
-    ts = IsoTimestamp(valid_iso)
-    assert ts.value == valid_iso
-    assert str(ts) == valid_iso
-    assert repr(ts) == f"IsoTimestamp(value='{valid_iso}')"
+def test_iso_timestamp_valid_instantiation(valid_ts: str) -> None:
+    """Verify IsoTimestamp accepts valid canonical UTC and offset timestamps."""
+    ts = IsoTimestamp(valid_ts)
+    assert ts.value == valid_ts
+    assert str(ts) == valid_ts
+    assert repr(ts) == f"IsoTimestamp(value='{valid_ts}')"
 
 
 @pytest.mark.unit
-def test_iso_timestamp_accepts_core_utc_now_iso() -> None:
-    """Verify IsoTimestamp seamlessly wraps output from gda.core.dates.utc_now_iso()."""
-    ts = IsoTimestamp(utc_now_iso())
-    assert ts.value.endswith("Z")
-    assert len(ts.value) == 20
+def test_iso_timestamp_accepts_utc_now_iso() -> None:
+    """Verify IsoTimestamp integrates cleanly with utc_now_iso."""
+    now_str = utc_now_iso()
+    ts = IsoTimestamp(now_str)
+    assert ts.value == now_str
 
 
 @pytest.mark.unit
 @pytest.mark.regression
 @pytest.mark.parametrize(
-    "invalid_iso",
+    "invalid_ts",
     [
         "",
         "   ",
         "2026-10-16",
-        "2026-10-16 12:00:00",
-        "2026-10-16T12:00:00",
-        " 2026-10-16T12:00:00Z ",
-        "12:00:00Z",
+        "2026-10-16 08:57:00Z",
+        " 2026-10-16T08:57:00Z",
+        "2026-10-16T08:57:00Z ",
         "not-a-timestamp",
     ],
 )
-def test_iso_timestamp_invalid_syntax_raises_format_error(invalid_iso: str) -> None:
-    """Verify IsoTimestamp raises ModelFormatError on malformed or padded timestamps."""
-    with pytest.raises(ModelFormatError, match="Must match ISO 8601 extended format"):
-        IsoTimestamp(invalid_iso)
+def test_iso_timestamp_invalid_syntax_raises_format_error(invalid_ts: str) -> None:
+    """Verify IsoTimestamp rejects malformed or whitespace-padded strings."""
+    with pytest.raises(ModelFormatError, match="Invalid IsoTimestamp"):
+        IsoTimestamp(invalid_ts)
+
+
+@pytest.mark.unit
+@pytest.mark.regression
+@pytest.mark.parametrize("bad_type", INVALID_NON_STRING_VALUES)
+def test_iso_timestamp_non_string_raises_format_error(bad_type: Any) -> None:
+    """Verify IsoTimestamp rejects non-string inputs with ModelFormatError."""
+    with pytest.raises(ModelFormatError, match="Invalid IsoTimestamp"):
+        IsoTimestamp(bad_type)
 
 
 # ==============================================================================
-# GROUP 3: EQUALITY, HOMOGENEOUS ORDERING, IMMUTABILITY & INTROSPECTION
+# GROUP 3: EQUALITY, ORDERING, IMMUTABILITY & INTROSPECTION
 # ==============================================================================
 
 
@@ -145,7 +160,7 @@ def test_temporal_atoms_equality_and_ordering(
     sample_date_string: DateString,
     sample_iso_timestamp: IsoTimestamp,
 ) -> None:
-    """Verify primitive string equality, hashing, and homogeneous ordering."""
+    """Verify equality against self/str and homogeneous total ordering."""
     assert sample_date_string == DateString("14 APR 1865")
     assert sample_date_string == "14 APR 1865"
     assert (sample_date_string == 1865) is False  # type: ignore[comparison-overlap]

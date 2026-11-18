@@ -16,13 +16,14 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any, ClassVar, Self
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
-from gda.core.dates import parse_iso_date_parts, utc_now_iso
+from gda.core.dates import calculate_age_years, parse_iso_date_parts, utc_now_iso
 from gda.core.enums.archival import NoteType
 from gda.core.enums.core import Sex
 from gda.core.enums.date import DateModifier
@@ -38,7 +39,7 @@ from gda.model.base.name import NamePerson
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 __all__ = ["Individual"]
 
@@ -89,6 +90,20 @@ def _resolve_gender(gender: GenderAtom | Sex | str | None) -> GenderAtom:
         return GenderAtom(sex_member.value[0])
     except ValueError:
         return GenderAtom(token)
+
+
+def _resolve_person_name(name: NamePerson | str) -> NamePerson:
+    """Resolve NamePerson instance or non-blank string into NamePerson."""
+    if isinstance(name, NamePerson):
+        return name
+    if isinstance(name, str):
+        clean_str = name.strip()
+        if not clean_str:
+            raise ModelFormatError("Individual 'name' cannot be empty or whitespace.")
+        return NamePerson.create(raw=clean_str)
+    raise TypeError(
+        f"Individual 'name' must be an instance of NamePerson or str, got {type(name).__name__}."
+    )
 
 
 @dataclass(
@@ -256,7 +271,7 @@ class Individual(BaseEntity[IndividualID]):
         b_year = self.birth_year
         d_year = self.death_year
         if b_year is not None and d_year is not None:
-            return d_year - b_year
+            return calculate_age_years(b_year, d_year)
         return None
 
     @property
@@ -275,7 +290,7 @@ class Individual(BaseEntity[IndividualID]):
         canonical_urn: str,
         audit: AuditStamp | None = None,
         tombstone: Tombstone[IndividualID] | None = None,
-        notes: list[Note] | None = None,
+        notes: Sequence[Note] | None = None,
         gender: GenderAtom | Sex | str | None = None,
         birth_date: EventDate | str | dict[str, Any] | None = None,
         death_date: EventDate | str | dict[str, Any] | None = None,
@@ -289,19 +304,7 @@ class Individual(BaseEntity[IndividualID]):
             if isinstance(individual_id, IndividualID)
             else IndividualID(individual_id)
         )
-
-        if isinstance(name, NamePerson):
-            resolved_name = name
-        elif isinstance(name, str):
-            clean_str = name.strip()
-            if not clean_str:
-                raise ModelFormatError("Individual 'name' cannot be empty or whitespace.")
-            resolved_name = NamePerson.create(raw=clean_str)
-        else:
-            raise TypeError(
-                f"Individual 'name' must be an instance of NamePerson or str, got {type(name).__name__}."
-            )
-
+        resolved_name = _resolve_person_name(name)
         resolved_gender = _resolve_gender(gender)
         resolved_birth_date = _resolve_vital_date(birth_date)
         resolved_death_date = _resolve_vital_date(death_date)
@@ -309,10 +312,7 @@ class Individual(BaseEntity[IndividualID]):
         resolved_death_place = _resolve_place_id(death_place_id)
         resolved_deceased = is_deceased if is_deceased is not None else True
 
-        now_ts = IsoTimestamp(utc_now_iso())
-        resolved_audit = (
-            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
-        )
+        resolved_audit = audit if audit is not None else AuditStamp.now()
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[IndividualID]()
         resolved_notes = list(notes) if notes is not None else []
 
@@ -394,17 +394,7 @@ class Individual(BaseEntity[IndividualID]):
 
     def update_name(self, name: NamePerson | str) -> Self:
         """Return a new immutable copy with updated onomastic personal name."""
-        if isinstance(name, NamePerson):
-            new_name = name
-        elif isinstance(name, str):
-            clean_str = name.strip()
-            if not clean_str:
-                raise ModelFormatError("Individual 'name' cannot be empty or whitespace.")
-            new_name = NamePerson.create(raw=clean_str)
-        else:
-            raise TypeError(
-                f"Individual 'name' must be an instance of NamePerson or str, got {type(name).__name__}."
-            )
+        new_name = _resolve_person_name(name)
         if new_name == self.name:
             return self
         return replace(
@@ -522,23 +512,8 @@ class Individual(BaseEntity[IndividualID]):
             "canonical_urn": self.canonical_urn,
             "gender": self.gender.value,
             "is_deceased": self.is_deceased,
-            "audit": {
-                "created_at": str(self.audit.created_at),
-                "updated_at": str(self.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": self.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(self.tombstone.deprecated_at)
-                    if self.tombstone.deprecated_at is not None
-                    else None
-                ),
-                "superseded_by": (
-                    str(self.tombstone.superseded_by)
-                    if self.tombstone.superseded_by is not None
-                    else None
-                ),
-            },
+            "audit": self.audit.to_dict(),
+            "tombstone": self.tombstone.to_dict(),
             "notes": [n.to_dict() for n in self.notes],
         }
         if self.birth_date is not None:
@@ -571,29 +546,14 @@ class Individual(BaseEntity[IndividualID]):
         )
 
         audit_payload = data.get("audit")
-        audit_obj: AuditStamp | None = None
-        if isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
+        audit_obj = AuditStamp.from_dict(audit_payload) if isinstance(audit_payload, dict) else None
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[IndividualID] | None = None
-        if isinstance(tombstone_payload, dict):
-            tombstone_obj = Tombstone[IndividualID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    IndividualID(tombstone_payload["superseded_by"])
-                    if tombstone_payload.get("superseded_by")
-                    else None
-                ),
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=IndividualID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         notes_payload = data.get("notes", [])
         notes_list = [Note.from_dict(n) for n in notes_payload if isinstance(n, dict)]

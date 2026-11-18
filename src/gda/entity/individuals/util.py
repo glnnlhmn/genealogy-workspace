@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "can_tombstone",
@@ -256,7 +256,7 @@ def import_file(collection: Individuals, path: Path | str) -> int:
     individuals_list = payload.get("individuals", [])
     now = IsoTimestamp(utc_now_iso())
     default_audit = AuditStamp(created_at=now, updated_at=now)
-    audit_dict = {"created_at": str(now), "updated_at": str(now)}
+    audit_dict = default_audit.to_dict()
 
     for item in individuals_list:
         ind_id = IndividualID(item["id"])
@@ -294,28 +294,11 @@ def import_file(collection: Individuals, path: Path | str) -> int:
 
         raw_audit = item.get("audit")
         audit_obj = (
-            AuditStamp(
-                created_at=IsoTimestamp(raw_audit["created_at"]),
-                updated_at=IsoTimestamp(raw_audit["updated_at"]),
-            )
-            if isinstance(raw_audit, dict)
-            else default_audit
+            AuditStamp.from_dict(raw_audit) if isinstance(raw_audit, dict) else default_audit
         )
         raw_tomb = item.get("tombstone")
         tomb_obj = (
-            Tombstone[IndividualID](
-                is_deprecated=bool(raw_tomb.get("is_deprecated", False)),
-                deprecated_at=(
-                    IsoTimestamp(raw_tomb["deprecated_at"])
-                    if raw_tomb.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    IndividualID(str(raw_tomb["superseded_by"]))
-                    if raw_tomb.get("superseded_by")
-                    else None
-                ),
-            )
+            Tombstone.from_dict(raw_tomb, id_cls=IndividualID)
             if isinstance(raw_tomb, dict)
             else Tombstone[IndividualID]()
         )
@@ -343,6 +326,9 @@ def export_file(
     collection: Individuals,
     path: Path | str,
     include_graveyard: bool = True,
+    *,
+    create_backup: bool = False,
+    backup_dir: Path | str | None = None,
 ) -> int:
     """Export individual records from the collection to a formatted JSON file."""
     entities = list(collection.iter_all() if include_graveyard else collection)
@@ -357,5 +343,10 @@ def export_file(
 
     dest = Path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    GDAJsonIO.write(dest, payload)
+    GDAJsonIO.write(
+        dest,
+        payload,
+        create_backup=create_backup,
+        backup_dir=backup_dir,
+    )
     return len(out_list)

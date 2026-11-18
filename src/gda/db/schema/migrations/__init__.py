@@ -4,7 +4,7 @@ Migration registry and automated script discovery for GDA DB schema.
 
 Operational Role:
     Aggregates modular versioned DDL migration modules (v001_places through
-    v005_indexes) and exports the ordered MIGRATION_REGISTRY.
+    v011_xrefs) and exports the ordered MIGRATION_REGISTRY.
 """
 
 from __future__ import annotations
@@ -17,9 +17,15 @@ from gda.db.schema.migrations import (
     v003_personas,
     v004_facts,
     v005_indexes,
+    v006_sources_vital_cemetery,
+    v007_sources_enumerated_publications,
+    v008_sources_probate_land,
+    v009_sources_immigration_military,
+    v010_sources_education_manuscripts_orgs_other,
+    v011_xrefs,
 )
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.12"
 
 __all__ = [
     "MIGRATION_REGISTRY",
@@ -29,6 +35,12 @@ __all__ = [
     "v003_personas",
     "v004_facts",
     "v005_indexes",
+    "v006_sources_vital_cemetery",
+    "v007_sources_enumerated_publications",
+    "v008_sources_probate_land",
+    "v009_sources_immigration_military",
+    "v010_sources_education_manuscripts_orgs_other",
+    "v011_xrefs",
 ]
 
 
@@ -65,5 +77,35 @@ MIGRATION_REGISTRY: list[Migration] = [
         version=v005_indexes.VERSION,
         name=v005_indexes.NAME,
         up_sql=v005_indexes.UP_SQL,
+    ),
+    Migration(
+        version=v006_sources_vital_cemetery.VERSION,
+        name=v006_sources_vital_cemetery.NAME,
+        up_sql=v006_sources_vital_cemetery.UP_SQL,
+    ),
+    Migration(
+        version=v007_sources_enumerated_publications.VERSION,
+        name=v007_sources_enumerated_publications.NAME,
+        up_sql=v007_sources_enumerated_publications.UP_SQL,
+    ),
+    Migration(
+        version=v008_sources_probate_land.VERSION,
+        name=v008_sources_probate_land.NAME,
+        up_sql=v008_sources_probate_land.UP_SQL,
+    ),
+    Migration(
+        version=v009_sources_immigration_military.VERSION,
+        name=v009_sources_immigration_military.NAME,
+        up_sql=v009_sources_immigration_military.UP_SQL,
+    ),
+    Migration(
+        version=v010_sources_education_manuscripts_orgs_other.VERSION,
+        name=v010_sources_education_manuscripts_orgs_other.NAME,
+        up_sql=v010_sources_education_manuscripts_orgs_other.UP_SQL,
+    ),
+    Migration(
+        version=v011_xrefs.VERSION,
+        name=v011_xrefs.NAME,
+        up_sql=v011_xrefs.UP_SQL,
     ),
 ]

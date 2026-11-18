@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from gda.entity.organizations.collection import Organizations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "can_tombstone",
@@ -296,6 +296,59 @@ def save_to_db(
     return written
 
 
+def _append_org_historical_variant(name_obj: NameThing, h: dict[str, Any]) -> NameThing:
+    """Append a historical name variant dictionary to NameThing."""
+    h_raw = str(h.get("raw") or h.get("raw_name", ""))
+    h_canonical = str(h.get("canonical") or h.get("canonical_name") or h_raw)
+    h_type_raw = h.get("historic_name_type") or h.get("status", HistoricNameType.HISTORICAL)
+    h_type = (
+        h_type_raw if isinstance(h_type_raw, HistoricNameType) else HistoricNameType(h_type_raw)
+    )
+    return name_obj.add_historic_variant(
+        raw=h_raw,
+        name=h_canonical,
+        historic_name_type=h_type,
+    )
+
+
+def _parse_imported_org_name(item: dict[str, Any]) -> NameThing:
+    """Reconstruct NameThing with aliases and historical variants from an org export dict."""
+    raw_name_val = item.get("name", "")
+    if isinstance(raw_name_val, dict):
+        name_obj = NameThing.from_dict(raw_name_val)
+    else:
+        name_obj = NameThing.create(raw=str(raw_name_val), canonical=str(raw_name_val))
+
+    raw_historical = item.get("historical_names", [])
+    if raw_historical and not name_obj.historic:
+        for h in raw_historical:
+            if isinstance(h, dict):
+                name_obj = _append_org_historical_variant(name_obj, h)
+
+    for alias in item.get("alternate_names") or item.get("aliases") or []:
+        if alias not in name_obj.aliases:
+            name_obj = name_obj.add_alias(alias)
+
+    return name_obj
+
+
+def _parse_imported_org_notes(
+    raw_notes: list[Any],
+    default_audit_dict: dict[str, str],
+) -> list[Note]:
+    """Hydrate embedded Note list from raw JSON organization note items."""
+    embedded_notes: list[Note] = []
+    for n in raw_notes:
+        if isinstance(n, Note):
+            embedded_notes.append(n)
+        elif isinstance(n, dict):
+            note_dict = dict(n)
+            if "audit" not in note_dict:
+                note_dict["audit"] = default_audit_dict
+            embedded_notes.append(Note.from_dict(note_dict))
+    return embedded_notes
+
+
 def import_file(collection: Organizations, path: Path | str) -> int:
     """Import organizations from a formatted JSON file, preserving audit and tombstone state."""
     json_path = Path(path)
@@ -306,101 +359,36 @@ def import_file(collection: Organizations, path: Path | str) -> int:
     orgs_list = payload.get("organizations", [])
     now = IsoTimestamp(utc_now_iso())
     default_audit = AuditStamp(created_at=now, updated_at=now)
-    audit_dict = {"created_at": str(now), "updated_at": str(now)}
+    audit_dict = default_audit.to_dict()
 
     for item in orgs_list:
-        org_id = OrganizationID(item["id"])
-        parent_org_id = OrganizationID(item["parent_org_id"]) if item.get("parent_org_id") else None
-        location_id = LocationID(item["location_id"]) if item.get("location_id") else None
-        meeting_site_id = SiteID(item["meeting_site_id"]) if item.get("meeting_site_id") else None
-
-        raw_name_val = item.get("name", "")
-        if isinstance(raw_name_val, dict):
-            name_obj = NameThing.from_dict(raw_name_val)
-        else:
-            name_obj = NameThing.create(raw=str(raw_name_val), canonical=str(raw_name_val))
-
-        raw_historical = item.get("historical_names", [])
-        if raw_historical:
-            for h in raw_historical:
-                if isinstance(h, dict):
-                    h_raw = h.get("raw") or h.get("raw_name", "")
-                    h_canonical = h.get("canonical") or h.get("canonical_name", h_raw)
-                    h_type_raw = h.get("historic_name_type") or h.get(
-                        "status", HistoricNameType.HISTORICAL
-                    )
-                    h_type = (
-                        h_type_raw
-                        if isinstance(h_type_raw, HistoricNameType)
-                        else HistoricNameType(h_type_raw)
-                    )
-                    name_obj = name_obj.add_historic_variant(
-                        raw=h_raw,
-                        name=h_canonical,
-                        historic_name_type=h_type,
-                    )
-
-        for alias in item.get("alternate_names") or item.get("aliases") or []:
-            if alias not in name_obj.aliases:
-                name_obj = name_obj.add_alias(alias)
-
-        embedded_notes: list[Note] = []
-        for n in item.get("notes", []):
-            if isinstance(n, Note):
-                embedded_notes.append(n)
-            elif isinstance(n, dict):
-                note_dict = dict(n)
-                if "audit" not in note_dict:
-                    note_dict["audit"] = audit_dict
-                embedded_notes.append(Note.from_dict(note_dict))
-
-        period_obj = _parse_time_period(item.get("period"))
-        preds = [OrganizationID(p) for p in item.get("predecessor_ids", [])]
-        succs = [OrganizationID(s) for s in item.get("successor_ids", [])]
-
         raw_audit = item.get("audit")
-        audit_obj = (
-            AuditStamp(
-                created_at=IsoTimestamp(raw_audit["created_at"]),
-                updated_at=IsoTimestamp(raw_audit["updated_at"]),
-            )
-            if isinstance(raw_audit, dict)
-            else default_audit
-        )
         raw_tomb = item.get("tombstone")
-        tomb_obj = (
-            Tombstone[OrganizationID](
-                is_deprecated=bool(raw_tomb.get("is_deprecated", False)),
-                deprecated_at=(
-                    IsoTimestamp(raw_tomb["deprecated_at"])
-                    if raw_tomb.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    OrganizationID(str(raw_tomb["superseded_by"]))
-                    if raw_tomb.get("superseded_by")
-                    else None
-                ),
-            )
-            if isinstance(raw_tomb, dict)
-            else Tombstone[OrganizationID]()
-        )
-
         org = Organization.create(
-            org_id=org_id,
-            audit=audit_obj,
-            name=name_obj,
+            org_id=OrganizationID(item["id"]),
+            audit=(
+                AuditStamp.from_dict(raw_audit) if isinstance(raw_audit, dict) else default_audit
+            ),
+            name=_parse_imported_org_name(item),
             category=OrganizationCategory(item["category"]),
             canonical_urn=item["canonical_urn"],
-            parent_org_id=parent_org_id,
-            predecessor_ids=preds,
-            successor_ids=succs,
-            location_id=location_id,
-            meeting_site_id=meeting_site_id,
-            period=period_obj,
+            parent_org_id=(
+                OrganizationID(item["parent_org_id"]) if item.get("parent_org_id") else None
+            ),
+            predecessor_ids=[OrganizationID(p) for p in item.get("predecessor_ids", [])],
+            successor_ids=[OrganizationID(s) for s in item.get("successor_ids", [])],
+            location_id=LocationID(item["location_id"]) if item.get("location_id") else None,
+            meeting_site_id=(
+                SiteID(item["meeting_site_id"]) if item.get("meeting_site_id") else None
+            ),
+            period=_parse_time_period(item.get("period")),
             is_active=item.get("is_active", True),
-            notes=embedded_notes,
-            tombstone=tomb_obj,
+            notes=_parse_imported_org_notes(item.get("notes", []), audit_dict),
+            tombstone=(
+                Tombstone.from_dict(raw_tomb, id_cls=OrganizationID)
+                if isinstance(raw_tomb, dict)
+                else Tombstone[OrganizationID]()
+            ),
         )
         collection.add(org)
 
@@ -411,6 +399,9 @@ def export_file(
     collection: Organizations,
     path: Path | str,
     include_graveyard: bool = True,
+    *,
+    create_backup: bool = False,
+    backup_dir: Path | str | None = None,
 ) -> int:
     """Export organization records from the collection to a formatted JSON file."""
     entities = list(collection.iter_all() if include_graveyard else collection)
@@ -449,19 +440,8 @@ def export_file(
             "alternate_names": list(o.aliases),
             "historical_names": hist_list,
             "notes": notes_list,
-            "audit": {
-                "created_at": str(o.audit.created_at),
-                "updated_at": str(o.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": o.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(o.tombstone.deprecated_at) if o.tombstone.deprecated_at else None
-                ),
-                "superseded_by": (
-                    str(o.tombstone.superseded_by) if o.tombstone.superseded_by else None
-                ),
-            },
+            "audit": o.audit.to_dict(),
+            "tombstone": o.tombstone.to_dict(),
         }
         out_list.append(item)
 
@@ -474,5 +454,10 @@ def export_file(
 
     dest = Path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    GDAJsonIO.write(dest, payload)
+    GDAJsonIO.write(
+        dest,
+        payload,
+        create_backup=create_backup,
+        backup_dir=backup_dir,
+    )
     return len(out_list)

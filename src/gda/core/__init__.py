@@ -6,11 +6,12 @@ Operational Role:
     Unified public export facade for foundational framework classes:
     AppConfig, DatabaseConfig, LoggingConfig, structured exceptions,
     introspective mixins, logging services, temporal formatters, cryptographic
-    hashing, and canonical scalar type definitions.
+    hashing, controlled vocabulary enums, and canonical scalar type definitions.
 """
 
 from __future__ import annotations
 
+from gda.core import enums
 from gda.core.config import (
     AppConfig,
     DatabaseConfig,
@@ -60,6 +61,8 @@ from gda.core.types import (
     ENTITY_ID_REGEXES,
     ENTITY_URN_PATTERNS,
     ENTITY_URN_REGEXES,
+    ENUM_KEY_SEPARATOR_PATTERN,
+    ENUM_KEY_SEPARATOR_REGEX,
     GENDER_CODES,
     ISO_DATE_FMT,
     ISO_DATE_PATTERN,
@@ -99,6 +102,8 @@ from gda.core.types import (
     PUB_CODE_REGEX,
     SHA256_PATTERN,
     SHA256_REGEX,
+    SQL_IDENTIFIER_PATTERN,
+    SQL_IDENTIFIER_REGEX,
     TAX_ASSESSMENT_MIN_YEAR,
     URN_BASE_PATTERN,
     URN_BASE_REGEX,
@@ -119,7 +124,7 @@ from gda.core.types import (
     WWII_DRAFT_YEARS,
 )
 
-__version__ = "1.0.0+build.10"
+__version__ = "1.0.0+build.12"
 
 __all__ = [
     "ATOM_ID_PATTERN",  # types.py
@@ -138,6 +143,8 @@ __all__ = [
     "ENTITY_ID_REGEXES",  # types.py
     "ENTITY_URN_PATTERNS",  # types.py
     "ENTITY_URN_REGEXES",  # types.py
+    "ENUM_KEY_SEPARATOR_PATTERN",  # types.py
+    "ENUM_KEY_SEPARATOR_REGEX",  # types.py
     "GDALogger",  # logging.py
     "GENDER_CODES",  # types.py
     "GenealogyDeskError",  # errors.py
@@ -187,6 +194,8 @@ __all__ = [
     "PUB_CODE_REGEX",  # types.py
     "SHA256_PATTERN",  # types.py
     "SHA256_REGEX",  # types.py
+    "SQL_IDENTIFIER_PATTERN",  # types.py
+    "SQL_IDENTIFIER_REGEX",  # types.py
     "TAX_ASSESSMENT_MIN_YEAR",  # types.py
     "URN_BASE_PATTERN",  # types.py
     "URN_BASE_REGEX",  # types.py
@@ -206,6 +215,7 @@ __all__ = [
     "WWII_DRAFT_YEARS",  # types.py
     "WWI_DRAFT_YEARS",  # types.py
     "calculate_age_years",  # dates.py
+    "enums",  # enums/
     "format_utc_timestamp",  # dates.py
     "is_valid_sha256",  # hashes.py
     "parse_iso_date_parts",  # dates.py

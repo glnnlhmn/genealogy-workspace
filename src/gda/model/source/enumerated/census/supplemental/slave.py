@@ -20,7 +20,7 @@ from gda.core.types import US_SLAVE_SCHEDULE_YEARS
 from gda.model.atom.id import IndividualID
 from gda.model.source.enumerated.census.base import CensusLineEntry, CensusScheduleRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "SlaveScheduleEntry",
@@ -30,7 +30,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class SlaveScheduleEntry(CensusLineEntry):
     """Line entry on a 1850 or 1860 Federal Slave Schedule."""
@@ -68,7 +69,8 @@ class SlaveScheduleEntry(CensusLineEntry):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class SlaveScheduleRecord(CensusScheduleRecord[SlaveScheduleEntry]):
     """Evidentiary composite for 1850 and 1860 Federal Slave Schedules."""

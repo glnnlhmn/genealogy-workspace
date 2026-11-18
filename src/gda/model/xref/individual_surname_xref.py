@@ -23,8 +23,9 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import IndividualID
 from gda.model.atom.year import BirthYear, DeathYear
 from gda.model.entity.individual import Individual
+from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "IndividualSurnameXRef",
@@ -32,8 +33,8 @@ __all__ = [
 
 
 def _normalize_surname(raw: str) -> str:
-    """Normalize a surname token to stripped uppercase and reject empty values."""
-    clean = str(raw).strip().upper() if raw is not None else ""
+    """Normalize a surname token to stripped uppercase via clean_string and reject empty values."""
+    clean = (clean_string(str(raw)) or "").upper()
     if not clean:
         raise ModelFormatError("IndividualSurnameXRef 'surname' cannot be empty or whitespace.")
     return clean
@@ -54,7 +55,11 @@ def _resolve_death_year(raw: DeathYear | int | None) -> DeathYear | None:
 
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class IndividualSurnameXRef(IntrospectableMixin):
     """Immutable derived index row linking an uppercase surname to an IndividualID."""
 

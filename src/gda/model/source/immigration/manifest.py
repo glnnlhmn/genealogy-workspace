@@ -15,7 +15,8 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, ClassVar
+from enum import Enum
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -27,7 +28,6 @@ from gda.core.enums.vital import MaritalStatus
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -35,8 +35,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "ImmigrationManifestRecord",
@@ -88,19 +89,19 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
-def _parse_enum_token[E](enum_cls: type[E], raw: Any, field_name: str) -> E:
+def _parse_enum_token[E: Enum](enum_cls: type[E], raw: Any, field_name: str) -> E:
     """Resolve a StrEnum by instance, exact value, or case-insensitive member name/value."""
-    if isinstance(raw, enum_cls):
-        return raw
-    token = str(raw).strip()
-    upper_token = token.upper()
-    for member in enum_cls:  # type: ignore[attr-defined]
-        if token == member.value or upper_token in (member.name, str(member.value).upper()):
-            return member  # type: ignore[no-any-return]
-    raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.")
+    try:
+        return coerce_enum(enum_cls, raw, field_name=field_name)
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class ManifestPassenger(IntrospectableMixin):
     """Single passenger or crew member entry on a ship or border arrival manifest."""
 
@@ -331,7 +332,11 @@ class ManifestPassenger(IntrospectableMixin):
         return self.full_name
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class ImmigrationManifestRecord(SourceRecord):
     """Primary archival record documenting a passenger arrival manifest or border crossing."""
 
@@ -341,23 +346,23 @@ class ImmigrationManifestRecord(SourceRecord):
     )
     record_type: SourceRecordType = Field(
         default=SourceRecordType.PASSENGER_MANIFEST,
-        description="Specific manifest classification.",
+        description="Specific manifest or arrival document classification.",
     )
     port_of_arrival_raw: str = Field(
         ...,
-        description="Verbatim port of entry or border station name.",
+        description="Verbatim port of entry or border crossing station.",
     )
     arrival_date: EventDate = Field(
         ...,
-        description="Date the vessel or traveler arrived at the port of entry.",
+        description="Recorded date of vessel arrival or border inspection.",
     )
     manifest_locator: str = Field(
         ...,
-        description="Primary NARA microfilm roll, manifest ID, or archival call locator.",
+        description="Primary archival manifest call number, microfilm roll, or sheet locator.",
     )
     passengers: tuple[ManifestPassenger, ...] = Field(
         ...,
-        description="Ordered tuple of one or more passenger or crew entries on this manifest.",
+        description="Non-empty ordered tuple of enumerated passengers or crew members.",
     )
     port_of_arrival_id: LocationID | None = Field(
         default=None,
@@ -365,19 +370,19 @@ class ImmigrationManifestRecord(SourceRecord):
     )
     ship_name: str | None = Field(
         default=None,
-        description="Verbatim name of the steamship, sailing packet, or vessel.",
+        description="Verbatim name of the steamship, sailing vessel, or carrier.",
     )
     master_or_captain: str | None = Field(
         default=None,
-        description="Name of the vessel's master or captain.",
+        description="Verbatim name of the ship's master or commanding officer.",
     )
     shipping_line: str | None = Field(
         default=None,
-        description="Operating steamship line or packet company.",
+        description="Name of the steamship company or line (e.g., 'Red Star Line').",
     )
     port_of_departure_raw: str | None = Field(
         default=None,
-        description="Verbatim port of embarkation or departure.",
+        description="Verbatim foreign port of embarkation.",
     )
     port_of_departure_id: LocationID | None = Field(
         default=None,
@@ -385,7 +390,7 @@ class ImmigrationManifestRecord(SourceRecord):
     )
     list_number: str | None = Field(
         default=None,
-        description="Manifest sheet, list, or page designation.",
+        description="Manifest list or sheet number within the voyage packet.",
     )
 
     ALLOWED_CATEGORIES: ClassVar[frozenset[SourceRecordCategory]] = _MANIFEST_CATEGORIES
@@ -478,16 +483,8 @@ class ImmigrationManifestRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_arr_loc = (
             port_of_arrival_id
             if (port_of_arrival_id is None or isinstance(port_of_arrival_id, LocationID))
@@ -498,7 +495,7 @@ class ImmigrationManifestRecord(SourceRecord):
             if (port_of_departure_id is None or isinstance(port_of_departure_id, LocationID))
             else LocationID(port_of_departure_id)
         )
-        res_arrival_dt = _deserialize_event_date(arrival_date, "arrival_date")
+        res_arrival = _deserialize_event_date(arrival_date, "arrival_date")
 
         resolved_passengers: tuple[ManifestPassenger, ...] = tuple(
             p if isinstance(p, ManifestPassenger) else ManifestPassenger.from_dict(p)
@@ -520,7 +517,7 @@ class ImmigrationManifestRecord(SourceRecord):
             associated_people=associated_people or [],
             tombstone=tombstone,
             port_of_arrival_raw=port_of_arrival_raw,
-            arrival_date=res_arrival_dt,
+            arrival_date=res_arrival,
             manifest_locator=manifest_locator,
             passengers=resolved_passengers,
             port_of_arrival_id=res_arr_loc,
@@ -571,13 +568,23 @@ class ImmigrationManifestRecord(SourceRecord):
         desc = data.get("description")
         rep = data.get("repository_id")
         audit_payload = data.get("audit")
-        port = data.get("port_of_arrival_raw")
+        port_raw = data.get("port_of_arrival_raw")
         raw_arrival = data.get("arrival_date")
         locator = data.get("manifest_locator")
         raw_passengers = data.get("passengers")
 
         if not all(
-            (sid, raw_urn, desc, rep, audit_payload, port, raw_arrival, locator, raw_passengers)
+            (
+                sid,
+                raw_urn,
+                desc,
+                rep,
+                audit_payload,
+                port_raw,
+                raw_arrival,
+                locator,
+                raw_passengers,
+            )
         ):
             raise ModelFormatError(
                 "ImmigrationManifestRecord requires source_id, source_urn, description, "
@@ -590,44 +597,26 @@ class ImmigrationManifestRecord(SourceRecord):
                 "ImmigrationManifestRecord 'passengers' must be a list or tuple."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "ImmigrationManifestRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),
             source_urn=str(raw_urn),
             description=str(desc),
             repository_id=str(rep),
-            port_of_arrival_raw=str(port),
-            arrival_date=raw_arrival,
+            port_of_arrival_raw=str(port_raw),
+            arrival_date=cast(Any, raw_arrival),
             manifest_locator=str(locator),
             passengers=list(raw_passengers),
             record_category=data.get("record_category", SourceRecordCategory.IMMIGRATION),
@@ -648,8 +637,8 @@ class ImmigrationManifestRecord(SourceRecord):
         )
 
     def __str__(self) -> str:
-        vessel = f" on {self.ship_name}" if self.ship_name else ""
+        ship_part = f" on {self.ship_name}" if self.ship_name else ""
         return (
             f"ImmigrationManifestRecord [{self.record_type.value}] "
-            f"{self.port_of_arrival_raw}{vessel} ({self.manifest_locator})"
+            f"{self.port_of_arrival_raw}{ship_part} ({self.manifest_locator})"
         )

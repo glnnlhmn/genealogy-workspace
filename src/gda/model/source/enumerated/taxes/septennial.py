@@ -18,7 +18,7 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.model.source.enumerated.taxes.base import TaxAssessmentRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["SeptennialCensusRecord"]
 
@@ -33,7 +33,8 @@ _SEPTENNIAL_TYPES: frozenset[SourceRecordType] = frozenset(
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class SeptennialCensusRecord(TaxAssessmentRecord):
     """Evidentiary composite for Septennial Censuses and Census-Equivalent Tax Lists."""

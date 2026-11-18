@@ -6,7 +6,7 @@ Operational Role:
     Extends SourceRecord composite to represent systematic, tabulated archival
     rolls (census schedules, tax assessments, voter registers, and city directories).
     Enforces jurisdiction hygiene, enumeration year tracking, transcript linking,
-    and canonical dictionary/JSON serialization.
+    and canonical dictionary/JSON serialization delegated to SourceRecord.
 """
 
 from __future__ import annotations
@@ -27,23 +27,20 @@ from gda.core.enums.fiscal import (
 )
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import (
     IndividualID,
     LocationID,
-    MediaID,
     RepositoryID,
     SourceID,
     TranscriptID,
 )
 from gda.model.atom.urn import ArchivalURN, CensusUrn, SourceURN
 from gda.model.atom.year import HistoricalYear
-from gda.model.base.association import AssociatedIndividual
 from gda.model.base.audit import AuditStamp
-from gda.model.base.source import SourceRecord
-from gda.model.base.tombstone import Tombstone
+from gda.model.base.source import SourceRecord, _resolve_archival_urn
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.9"
 
 __all__ = [
     "EnumeratedRollRecord",
@@ -60,6 +57,16 @@ _ENUM_TYPES: dict[str, type[Enum]] = {
     "TaxpayerClassification": TaxpayerClassification,
 }
 
+_ATOM_WRAPPERS: dict[str, type[Any]] = {
+    "SourceID": SourceID,
+    "IndividualID": IndividualID,
+    "LocationID": LocationID,
+    "TranscriptID": TranscriptID,
+    "RepositoryID": RepositoryID,
+    "CensusUrn": CensusUrn,
+    "SourceURN": SourceURN,
+}
+
 
 def serialize_primitive_value(val: Any) -> Any:
     """Recursively convert GDA atoms, enums, and nested containers into JSON-safe primitives."""
@@ -67,8 +74,6 @@ def serialize_primitive_value(val: Any) -> Any:
         return val.value
     if val is None or isinstance(val, (bool, int, float, str)):
         return val
-    if hasattr(val, "to_dict"):
-        return val.to_dict()
     if isinstance(val, (list, tuple)):
         return [serialize_primitive_value(item) for item in val]
     return str(val)
@@ -81,37 +86,27 @@ def coerce_field_value(type_str: str, raw: Any) -> Any:
 
     clean_type = type_str.replace(" | None", "").replace("Optional[", "").rstrip("]").strip()
 
-    if clean_type == "SourceID":
-        return raw if isinstance(raw, SourceID) else SourceID(str(raw))
-    if clean_type == "IndividualID":
-        return raw if isinstance(raw, IndividualID) else IndividualID(str(raw))
-    if clean_type == "LocationID":
-        return raw if isinstance(raw, LocationID) else LocationID(str(raw))
-    if clean_type == "TranscriptID":
-        return raw if isinstance(raw, TranscriptID) else TranscriptID(str(raw))
-    if clean_type == "RepositoryID":
-        return raw if isinstance(raw, RepositoryID) else RepositoryID(str(raw))
-    if clean_type == "CensusUrn":
-        return raw if isinstance(raw, CensusUrn) else CensusUrn(str(raw))
+    atom_cls = _ATOM_WRAPPERS.get(clean_type)
+    if atom_cls is not None:
+        return raw if isinstance(raw, atom_cls) else atom_cls(str(raw))
+
     if clean_type == "ArchivalURN":
-        text = str(raw)
-        if text.startswith("URN:CENSUS:"):
-            return CensusUrn(text)
-        if text.startswith("URN:SRC:"):
-            return SourceURN(text)
-        return ArchivalURN(text)
+        return raw if isinstance(raw, ArchivalURN) else _resolve_archival_urn(str(raw))
+
     if clean_type == "HistoricalYear":
         return raw if isinstance(raw, HistoricalYear) else HistoricalYear(int(raw))
-    if clean_type in _ENUM_TYPES:
-        enum_cls = _ENUM_TYPES[clean_type]
-        return raw if isinstance(raw, enum_cls) else enum_cls(str(raw))
+
+    enum_cls = _ENUM_TYPES.get(clean_type)
+    if enum_cls is not None:
+        return coerce_enum(enum_cls, raw, field_name=clean_type)
 
     return raw
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class EnumeratedRollRecord(SourceRecord):
     """Base evidentiary composite for tabulated and enumerated archival rolls."""
@@ -163,17 +158,14 @@ class EnumeratedRollRecord(SourceRecord):
     def to_dict(self) -> dict[str, Any]:
         """Serialize EnumeratedRollRecord and subclass fields to a dictionary."""
         data = super().to_dict()
-        base_keys = set(data.keys())
         for f in dataclasses.fields(self):
-            if f.name in base_keys:
-                continue
-            val = getattr(self, f.name)
-            data[f.name] = serialize_primitive_value(val)
+            if f.name not in data:
+                data[f.name] = serialize_primitive_value(getattr(self, f.name))
         return data
 
     @classmethod
     def _parse_base_source_kwargs(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Extract and coerce canonical SourceRecord header fields from a payload dict."""
+        """Extract and coerce canonical SourceRecord header fields by delegating to SourceRecord."""
         if not isinstance(data, dict):
             raise ModelFormatError(f"{cls.__name__} payload must be a dictionary.")
 
@@ -189,67 +181,20 @@ class EnumeratedRollRecord(SourceRecord):
                 f"{cls.__name__} requires source_id, source_urn, record_category, description, repository_id, and audit."
             )
 
-        urn_str = str(raw_urn)
-        if isinstance(raw_urn, ArchivalURN):
-            urn_obj: ArchivalURN = raw_urn
-        elif urn_str.startswith("URN:CENSUS:"):
-            urn_obj = CensusUrn(urn_str)
-        elif urn_str.startswith("URN:SRC:"):
-            urn_obj = SourceURN(urn_str)
-        else:
-            urn_obj = ArchivalURN(urn_str)
-
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(f"{cls.__name__} audit must be an AuditStamp or dictionary.")
 
-        tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
-
-        cat_obj = (
-            cat
-            if isinstance(cat, SourceRecordCategory)
-            else SourceRecordCategory(str(cat).strip().upper())
+        return cls._normalize_base_kwargs(
+            source_id=sid if isinstance(sid, SourceID) else str(sid),
+            source_urn=raw_urn if isinstance(raw_urn, ArchivalURN) else str(raw_urn),
+            record_category=cat if isinstance(cat, SourceRecordCategory) else str(cat),
+            description=str(desc),
+            repository_id=rep if isinstance(rep, RepositoryID) else str(rep),
+            audit=AuditStamp.from_dict(audit_payload),
+            media_ids=data.get("media_ids"),
+            associated_people=data.get("associated_people"),
+            tombstone=data.get("tombstone"),
         )
-
-        return {
-            "source_id": sid if isinstance(sid, SourceID) else SourceID(str(sid)),
-            "source_urn": urn_obj,
-            "record_category": cat_obj,
-            "description": str(desc),
-            "repository_id": rep if isinstance(rep, RepositoryID) else RepositoryID(str(rep)),
-            "audit": audit_obj,
-            "media_ids": [
-                m if isinstance(m, MediaID) else MediaID(str(m)) for m in data.get("media_ids", [])
-            ],
-            "associated_people": [
-                p if isinstance(p, AssociatedIndividual) else AssociatedIndividual.from_dict(p)
-                for p in data.get("associated_people", [])
-            ],
-            "tombstone": tombstone_obj,
-        }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:

@@ -21,14 +21,15 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import WWI_DRAFT_YEARS
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["WwiCitizenshipStatus", "WwiDraftCardRecord", "WwiPhysicalDescription"]
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class WwiPhysicalDescription(IntrospectableMixin):
     """Registrar's physical description recorded on the reverse of the WWI card."""
@@ -68,7 +69,8 @@ class WwiPhysicalDescription(IntrospectableMixin):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class WwiDraftCardRecord(MilitaryDraftRecord):
     """Specialized evidentiary record for WWI Draft Registration Cards (1917-1918)."""

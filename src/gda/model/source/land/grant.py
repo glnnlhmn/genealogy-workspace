@@ -12,7 +12,8 @@ Operational Role:
 from __future__ import annotations
 
 import re
-from typing import Any, ClassVar
+from collections.abc import Iterable
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -21,7 +22,6 @@ from gda.core.enums.land import LandGrantBasis
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -30,8 +30,9 @@ from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 from gda.model.source.land.deed import LandParcel
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "LandGrantRecord",
@@ -81,18 +82,53 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
+
+
 def _parse_grant_basis(raw: LandGrantBasis | str) -> LandGrantBasis:
     """Resolve LandGrantBasis by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, LandGrantBasis):
-        return raw
-    token = str(raw).strip().upper()
-    for member in LandGrantBasis:
-        if token in (member.name, member.value):
-            return member
-    raise ModelFormatError(f"Invalid LandGrantBasis value: '{raw}'.")
+    try:
+        return coerce_enum(LandGrantBasis, raw, field_name="grant_basis")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid LandGrantBasis value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+def _opt_grant_basis(raw: LandGrantBasis | str | None) -> LandGrantBasis | None:
+    """Resolve optional LandGrantBasis or return None."""
+    return _parse_grant_basis(raw) if raw is not None else None
+
+
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _coerce_parcel(parcel: LandParcel | dict[str, Any]) -> LandParcel:
+    """Hydrate a LandParcel instance or dictionary."""
+    return parcel if isinstance(parcel, LandParcel) else LandParcel.from_dict(parcel)
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
+
+
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class LandGrantRecord(SourceRecord):
     """Primary archival record documenting a sovereign land patent, warrant, or survey."""
 
@@ -241,129 +277,43 @@ class LandGrantRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> LandGrantRecord:
         """Factory constructor instantiating a validated LandGrantRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        resolved_urn = _resolve_land_urn(source_urn)
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
-        res_office_loc = (
-            office_location_id
-            if (office_location_id is None or isinstance(office_location_id, LocationID))
-            else LocationID(office_location_id)
-        )
-        res_basis = _parse_grant_basis(grant_basis) if grant_basis is not None else None
-        res_pat_id = (
-            patentee_id
-            if (patentee_id is None or isinstance(patentee_id, IndividualID))
-            else IndividualID(patentee_id)
-        )
-        res_ass_id = (
-            assignee_id
-            if (assignee_id is None or isinstance(assignee_id, IndividualID))
-            else IndividualID(assignee_id)
-        )
-        res_warrant_dt = (
-            _deserialize_event_date(date_warrant_or_entry, "date_warrant_or_entry")
-            if date_warrant_or_entry is not None
-            else None
-        )
-        res_survey_dt = (
-            _deserialize_event_date(date_surveyed, "date_surveyed")
-            if date_surveyed is not None
-            else None
-        )
-        res_patent_dt = (
-            _deserialize_event_date(date_patented, "date_patented")
-            if date_patented is not None
-            else None
-        )
-        resolved_parcel = parcel if isinstance(parcel, LandParcel) else LandParcel.from_dict(parcel)
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
-            source_urn=resolved_urn,
-            record_category=res_cat,
-            record_type=res_type,
-            description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            source_id=_coerce_id(source_id, SourceID),
+            source_urn=_resolve_land_urn(source_urn),
+            record_category=coerce_enum(
+                SourceRecordCategory, record_category, field_name="record_category"
+            ),
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
+            description=description.strip(),
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             issuing_authority=issuing_authority,
             instrument_locator=instrument_locator,
             patentee_name_raw=patentee_name_raw,
-            parcel=resolved_parcel,
+            parcel=_coerce_parcel(parcel),
             land_office_raw=land_office_raw,
-            office_location_id=res_office_loc,
+            office_location_id=_opt_id(office_location_id, LocationID),
             patent_or_warrant_number=patent_or_warrant_number,
             certificate_or_entry_number=certificate_or_entry_number,
-            grant_basis=res_basis,
+            grant_basis=_opt_grant_basis(grant_basis),
             military_service_reference=military_service_reference,
-            patentee_id=res_pat_id,
+            patentee_id=_opt_id(patentee_id, IndividualID),
             assignee_name_raw=assignee_name_raw,
-            assignee_id=res_ass_id,
+            assignee_id=_opt_id(assignee_id, IndividualID),
             surveyor_or_chain_carriers=tuple(surveyor_or_chain_carriers or ()),
-            date_warrant_or_entry=res_warrant_dt,
-            date_surveyed=res_survey_dt,
-            date_patented=res_patent_dt,
+            date_warrant_or_entry=_opt_event_date(date_warrant_or_entry, "date_warrant_or_entry"),
+            date_surveyed=_opt_event_date(date_surveyed, "date_surveyed"),
+            date_patented=_opt_event_date(date_patented, "date_patented"),
             aliquot_description=aliquot_description,
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize LandGrantRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "issuing_authority": self.issuing_authority,
-                "instrument_locator": self.instrument_locator,
-                "patentee_name_raw": self.patentee_name_raw,
-                "parcel": self.parcel.to_dict(),
-                "surveyor_or_chain_carriers": list(self.surveyor_or_chain_carriers),
-            }
-        )
-        if self.land_office_raw is not None:
-            data["land_office_raw"] = self.land_office_raw
-        if self.office_location_id is not None:
-            data["office_location_id"] = str(self.office_location_id)
-        if self.patent_or_warrant_number is not None:
-            data["patent_or_warrant_number"] = self.patent_or_warrant_number
-        if self.certificate_or_entry_number is not None:
-            data["certificate_or_entry_number"] = self.certificate_or_entry_number
-        if self.grant_basis is not None:
-            data["grant_basis"] = self.grant_basis.value
-        if self.military_service_reference is not None:
-            data["military_service_reference"] = self.military_service_reference
-        if self.patentee_id is not None:
-            data["patentee_id"] = str(self.patentee_id)
-        if self.assignee_name_raw is not None:
-            data["assignee_name_raw"] = self.assignee_name_raw
-        if self.assignee_id is not None:
-            data["assignee_id"] = str(self.assignee_id)
-        if self.date_warrant_or_entry is not None:
-            data["date_warrant_or_entry"] = self.date_warrant_or_entry.to_dict()
-        if self.date_surveyed is not None:
-            data["date_surveyed"] = self.date_surveyed.to_dict()
-        if self.date_patented is not None:
-            data["date_patented"] = self.date_patented.to_dict()
-        if self.aliquot_description is not None:
-            data["aliquot_description"] = self.aliquot_description
+        data["surveyor_or_chain_carriers"] = list(self.surveyor_or_chain_carriers)
         return data
 
     @classmethod
@@ -390,34 +340,16 @@ class LandGrantRecord(SourceRecord):
                 "audit, issuing_authority, instrument_locator, patentee_name_raw, and parcel."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("LandGrantRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_surveyors = data.get("surveyor_or_chain_carriers", [])
         if not isinstance(raw_surveyors, (list, tuple)):
@@ -433,7 +365,7 @@ class LandGrantRecord(SourceRecord):
             issuing_authority=str(authority),
             instrument_locator=str(locator),
             patentee_name_raw=str(patentee),
-            parcel=raw_parcel,
+            parcel=cast(Any, raw_parcel),
             record_category=data.get("record_category", SourceRecordCategory.LAND),
             record_type=data.get("record_type", SourceRecordType.PATENT),
             land_office_raw=data.get("land_office_raw"),
