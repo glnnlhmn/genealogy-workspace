@@ -10,15 +10,15 @@ Operational Role:
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
 from gda.core.introspectable import IntrospectableMixin
+from gda.core.types import SQL_IDENTIFIER_REGEX
 from gda.repository.errors import QueryValidationError
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "FilterOp",
@@ -29,7 +29,7 @@ __all__ = [
     "validate_sql_identifier",
 ]
 
-_SQL_IDENTIFIER_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
+_SQL_IDENTIFIER_RE = SQL_IDENTIFIER_REGEX
 
 
 def validate_sql_identifier(identifier: str) -> str:
@@ -43,7 +43,7 @@ def validate_sql_identifier(identifier: str) -> str:
 
     Raises:
         QueryValidationError: If the identifier is empty, non-string, or
-             fails the strict alphanumeric/underscore pattern.
+            fails the strict alphanumeric/underscore pattern.
     """
     if not isinstance(identifier, str) or not _SQL_IDENTIFIER_RE.match(identifier):
         raise QueryValidationError(

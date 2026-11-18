@@ -11,11 +11,11 @@ Operational Role:
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING
 
 from gda.core.enums.core import FactType
+from gda.core.logging import GDALogger
 from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.facts.errors import FactValidationError
 from gda.model.atom.id import FamilyID, IndividualID
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "valid_collection_all",
@@ -39,7 +39,7 @@ __all__ = [
     "valid_urn",
 ]
 
-_logger = logging.getLogger(__name__)
+_logger = GDALogger(__name__)
 
 _FACT_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["FID"]
 
@@ -143,7 +143,7 @@ def valid_collection_references(
 
     if errors:
         for err in errors:
-            _logger.error("Fact Reference Error: %s", err)
+            _logger.error(f"Fact Reference Error: {err}")
         return False
     return True
 
@@ -172,7 +172,7 @@ def valid_collection_tombstones(collection: Facts) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Fact Tombstone Verification Error: %s", err)
+            _logger.error(f"Fact Tombstone Verification Error: {err}")
         return False
     return True
 
@@ -188,7 +188,9 @@ def valid_collection_indexes(collection: Facts) -> bool:
             errors.append(f"URN index mismatch for '{fact.canonical_urn}'.")
 
         if fact.primary_subject_id not in collection._subject_index:
-            errors.append(f"Subject '{fact.primary_subject_id}' missing from subject index.")
+            errors.append(
+                f"Primary subject '{fact.primary_subject_id}' missing from subject index."
+            )
         elif fact.id not in collection._subject_index[fact.primary_subject_id]:
             errors.append(
                 f"Fact '{fact.id}' missing from subject index bucket for '{fact.primary_subject_id}'."
@@ -217,12 +219,12 @@ def valid_collection_indexes(collection: Facts) -> bool:
                     f"Fact '{fact.id}' missing from site index bucket for '{fact.site_id}'."
                 )
 
-        for part in fact.participants:
-            if part.individual_id not in collection._participant_index:
-                errors.append(f"Participant '{part.individual_id}' missing from participant index.")
-            elif fact.id not in collection._participant_index[part.individual_id]:
+        for pid in fact.participant_ids:
+            if pid not in collection._participant_index:
+                errors.append(f"Participant '{pid}' missing from participant index.")
+            elif fact.id not in collection._participant_index[pid]:
                 errors.append(
-                    f"Fact '{fact.id}' missing from participant index bucket for '{part.individual_id}'."
+                    f"Fact '{fact.id}' missing from participant index bucket for '{pid}'."
                 )
 
     for fact_id in collection._urn_index.values():
@@ -231,7 +233,7 @@ def valid_collection_indexes(collection: Facts) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Fact Index Verification Error: %s", err)
+            _logger.error(f"Fact Index Verification Error: {err}")
         return False
     return True
 

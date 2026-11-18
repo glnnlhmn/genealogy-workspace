@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from gda.entity.organizations.collection import Organizations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "can_tombstone",
@@ -306,7 +306,7 @@ def import_file(collection: Organizations, path: Path | str) -> int:
     orgs_list = payload.get("organizations", [])
     now = IsoTimestamp(utc_now_iso())
     default_audit = AuditStamp(created_at=now, updated_at=now)
-    audit_dict = {"created_at": str(now), "updated_at": str(now)}
+    audit_dict = default_audit.to_dict()
 
     for item in orgs_list:
         org_id = OrganizationID(item["id"])
@@ -322,10 +322,13 @@ def import_file(collection: Organizations, path: Path | str) -> int:
 
         raw_historical = item.get("historical_names", [])
         if raw_historical:
+            existing_variants: set[tuple[str, str, HistoricNameType]] = {
+                (h.raw, h.name, h.historic_name_type) for h in name_obj.historic
+            }
             for h in raw_historical:
                 if isinstance(h, dict):
-                    h_raw = h.get("raw") or h.get("raw_name", "")
-                    h_canonical = h.get("canonical") or h.get("canonical_name", h_raw)
+                    h_raw = str(h.get("raw") or h.get("raw_name", ""))
+                    h_canonical = str(h.get("canonical") or h.get("canonical_name") or h_raw)
                     h_type_raw = h.get("historic_name_type") or h.get(
                         "status", HistoricNameType.HISTORICAL
                     )
@@ -334,11 +337,13 @@ def import_file(collection: Organizations, path: Path | str) -> int:
                         if isinstance(h_type_raw, HistoricNameType)
                         else HistoricNameType(h_type_raw)
                     )
-                    name_obj = name_obj.add_historic_variant(
-                        raw=h_raw,
-                        name=h_canonical,
-                        historic_name_type=h_type,
-                    )
+                    if (h_raw, h_canonical, h_type) not in existing_variants:
+                        name_obj = name_obj.add_historic_variant(
+                            raw=h_raw,
+                            name=h_canonical,
+                            historic_name_type=h_type,
+                        )
+                        existing_variants.add((h_raw, h_canonical, h_type))
 
         for alias in item.get("alternate_names") or item.get("aliases") or []:
             if alias not in name_obj.aliases:
@@ -360,28 +365,11 @@ def import_file(collection: Organizations, path: Path | str) -> int:
 
         raw_audit = item.get("audit")
         audit_obj = (
-            AuditStamp(
-                created_at=IsoTimestamp(raw_audit["created_at"]),
-                updated_at=IsoTimestamp(raw_audit["updated_at"]),
-            )
-            if isinstance(raw_audit, dict)
-            else default_audit
+            AuditStamp.from_dict(raw_audit) if isinstance(raw_audit, dict) else default_audit
         )
         raw_tomb = item.get("tombstone")
         tomb_obj = (
-            Tombstone[OrganizationID](
-                is_deprecated=bool(raw_tomb.get("is_deprecated", False)),
-                deprecated_at=(
-                    IsoTimestamp(raw_tomb["deprecated_at"])
-                    if raw_tomb.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    OrganizationID(str(raw_tomb["superseded_by"]))
-                    if raw_tomb.get("superseded_by")
-                    else None
-                ),
-            )
+            Tombstone.from_dict(raw_tomb, id_cls=OrganizationID)
             if isinstance(raw_tomb, dict)
             else Tombstone[OrganizationID]()
         )
@@ -411,6 +399,9 @@ def export_file(
     collection: Organizations,
     path: Path | str,
     include_graveyard: bool = True,
+    *,
+    create_backup: bool = False,
+    backup_dir: Path | str | None = None,
 ) -> int:
     """Export organization records from the collection to a formatted JSON file."""
     entities = list(collection.iter_all() if include_graveyard else collection)
@@ -449,19 +440,8 @@ def export_file(
             "alternate_names": list(o.aliases),
             "historical_names": hist_list,
             "notes": notes_list,
-            "audit": {
-                "created_at": str(o.audit.created_at),
-                "updated_at": str(o.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": o.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(o.tombstone.deprecated_at) if o.tombstone.deprecated_at else None
-                ),
-                "superseded_by": (
-                    str(o.tombstone.superseded_by) if o.tombstone.superseded_by else None
-                ),
-            },
+            "audit": o.audit.to_dict(),
+            "tombstone": o.tombstone.to_dict(),
         }
         out_list.append(item)
 
@@ -474,5 +454,10 @@ def export_file(
 
     dest = Path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    GDAJsonIO.write(dest, payload)
+    GDAJsonIO.write(
+        dest,
+        payload,
+        create_backup=create_backup,
+        backup_dir=backup_dir,
+    )
     return len(out_list)

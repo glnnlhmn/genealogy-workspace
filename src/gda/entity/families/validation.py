@@ -10,10 +10,10 @@ Operational Role:
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING
 
+from gda.core.logging import GDALogger
 from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.families.errors import FamilyValidationError
 from gda.model.atom.id import IndividualID
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from gda.entity.families.collection import Families
     from gda.entity.individuals.collection import Individuals
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "valid_collection_all",
@@ -35,7 +35,7 @@ __all__ = [
     "valid_urn",
 ]
 
-_logger = logging.getLogger(__name__)
+_logger = GDALogger(__name__)
 
 _FAMILY_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["FAM"]
 
@@ -125,7 +125,7 @@ def valid_collection_references(
 
     if errors:
         for err in errors:
-            _logger.error("Family Reference Error: %s", err)
+            _logger.error(f"Family Reference Error: {err}")
         return False
     return True
 
@@ -156,7 +156,7 @@ def valid_collection_tombstones(collection: Families) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Family Tombstone Verification Error: %s", err)
+            _logger.error(f"Family Tombstone Verification Error: {err}")
         return False
     return True
 
@@ -196,7 +196,7 @@ def valid_collection_indexes(collection: Families) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Family Index Verification Error: %s", err)
+            _logger.error(f"Family Index Verification Error: {err}")
         return False
     return True
 

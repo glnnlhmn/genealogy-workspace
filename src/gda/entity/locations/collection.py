@@ -16,19 +16,17 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from gda.core.dates import utc_now_iso
-from gda.core.enums.core import SmartIDPrefix
+from gda.core.enums.core import IDType, SmartIDPrefix
 from gda.core.enums.location import JurisdictionCategory
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.entity.locations.errors import LocationNotFoundError
 from gda.entity.locations.util import (
     build_jurisdiction_hierarchy,
-    clean_string,
     export_file,
     import_file,
     load_from_db,
     save_to_db,
-    slugify,
     tombstone_location,
     undelete_location,
 )
@@ -39,9 +37,10 @@ from gda.model.base.name import NameThing
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.location import Location
-from gda.util.ids import extract_max_smart_id, mint_smart_id
+from gda.util.ids import extract_max_smart_id, mint_smart_id, verify_id
+from gda.util.text import clean_string, slugify
 
-__version__ = "1.0.0+build.41"
+__version__ = "1.0.0+build.43"
 
 __all__ = [
     "Locations",
@@ -106,11 +105,12 @@ class Locations(IntrospectableMixin):
         if isinstance(item, LocationID):
             return item if item in self._registry else None
         if isinstance(item, str):
-            if item.startswith("LOC-"):
-                cand = LocationID(item)
+            token = item.strip()
+            if verify_id(token, id_type=IDType.SMART_ID, smart_id_prefix=SmartIDPrefix.LOC):
+                cand = LocationID(token)
                 return cand if cand in self._registry else None
-            cand = self._urn_index.get(item)
-            return cand if cand and cand in self._registry else None
+            urn_cand = self._urn_index.get(token)
+            return urn_cand if urn_cand and urn_cand in self._registry else None
         return None
 
     def __contains__(self, item: LocationID | str) -> bool:

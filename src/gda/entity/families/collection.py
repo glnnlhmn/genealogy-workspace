@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from gda.core.dates import utc_now_iso
-from gda.core.enums.core import SmartIDPrefix
+from gda.core.enums.core import IDType, SmartIDPrefix
 from gda.core.enums.vital import PedigreeType, UnionType
 from gda.core.introspectable import IntrospectableMixin
 from gda.entity.families.errors import FamilyNotFoundError, FamilyValidationError
@@ -36,12 +36,12 @@ from gda.model.base.family import ChildLink, FamilyUnion, _normalize_union_type
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.family import Family
-from gda.util.ids import extract_max_smart_id, mint_smart_id
+from gda.util.ids import extract_max_smart_id, mint_smart_id, verify_id
 
 if TYPE_CHECKING:
     from gda.entity.individuals.collection import Individuals
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "Families",
@@ -106,11 +106,12 @@ class Families(IntrospectableMixin):
         if isinstance(item, FamilyID):
             return item if item in self._registry else None
         if isinstance(item, str):
-            if item.startswith("FAM-"):
-                cand = FamilyID(item)
+            token = item.strip()
+            if verify_id(token, id_type=IDType.SMART_ID, smart_id_prefix=SmartIDPrefix.FAM):
+                cand = FamilyID(token)
                 return cand if cand in self._registry else None
-            cand = self._urn_index.get(item)
-            return cand if cand and cand in self._registry else None
+            urn_cand = self._urn_index.get(token)
+            return urn_cand if urn_cand and urn_cand in self._registry else None
         return None
 
     def __contains__(self, item: FamilyID | str) -> bool:

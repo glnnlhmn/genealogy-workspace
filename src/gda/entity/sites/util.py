@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.15"
+__version__ = "1.0.0+build.17"
 
 __all__ = [
     "can_tombstone",
@@ -276,7 +276,7 @@ def import_file(collection: Sites, path: Path | str) -> int:
     sites_list = payload.get("sites", [])
     now = IsoTimestamp(utc_now_iso())
     default_audit = AuditStamp(created_at=now, updated_at=now)
-    audit_dict = {"created_at": str(now), "updated_at": str(now)}
+    audit_dict = default_audit.to_dict()
 
     for item in sites_list:
         site_id = SiteID(item["id"])
@@ -289,11 +289,11 @@ def import_file(collection: Sites, path: Path | str) -> int:
             name_obj = NameThing.create(raw=str(raw_name_val), canonical=str(raw_name_val))
 
         raw_historical = item.get("historical_names", [])
-        if raw_historical:
+        if raw_historical and not name_obj.historic:
             for h in raw_historical:
                 if isinstance(h, dict):
-                    h_raw = h.get("raw") or h.get("raw_name", "")
-                    h_canonical = h.get("canonical") or h.get("canonical_name", h_raw)
+                    h_raw = str(h.get("raw") or h.get("raw_name", ""))
+                    h_canonical = str(h.get("canonical") or h.get("canonical_name") or h_raw)
                     h_type_raw = h.get("historic_name_type") or h.get(
                         "status", HistoricNameType.HISTORICAL
                     )
@@ -329,28 +329,11 @@ def import_file(collection: Sites, path: Path | str) -> int:
 
         raw_audit = item.get("audit")
         audit_obj = (
-            AuditStamp(
-                created_at=IsoTimestamp(raw_audit["created_at"]),
-                updated_at=IsoTimestamp(raw_audit["updated_at"]),
-            )
-            if isinstance(raw_audit, dict)
-            else default_audit
+            AuditStamp.from_dict(raw_audit) if isinstance(raw_audit, dict) else default_audit
         )
         raw_tomb = item.get("tombstone")
         tomb_obj = (
-            Tombstone[SiteID](
-                is_deprecated=bool(raw_tomb.get("is_deprecated", False)),
-                deprecated_at=(
-                    IsoTimestamp(raw_tomb["deprecated_at"])
-                    if raw_tomb.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    SiteID(str(raw_tomb["superseded_by"]))
-                    if raw_tomb.get("superseded_by")
-                    else None
-                ),
-            )
+            Tombstone.from_dict(raw_tomb, id_cls=SiteID)
             if isinstance(raw_tomb, dict)
             else Tombstone[SiteID]()
         )
@@ -378,6 +361,9 @@ def export_file(
     collection: Sites,
     path: Path | str,
     include_graveyard: bool = True,
+    *,
+    create_backup: bool = False,
+    backup_dir: Path | str | None = None,
 ) -> int:
     """Export site records from the collection to a formatted JSON file."""
     entities = list(collection.iter_all() if include_graveyard else collection)
@@ -414,19 +400,8 @@ def export_file(
             "alternate_names": list(s.aliases),
             "historical_names": hist_list,
             "notes": notes_list,
-            "audit": {
-                "created_at": str(s.audit.created_at),
-                "updated_at": str(s.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": s.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(s.tombstone.deprecated_at) if s.tombstone.deprecated_at else None
-                ),
-                "superseded_by": (
-                    str(s.tombstone.superseded_by) if s.tombstone.superseded_by else None
-                ),
-            },
+            "audit": s.audit.to_dict(),
+            "tombstone": s.tombstone.to_dict(),
         }
         out_list.append(item)
 
@@ -439,5 +414,10 @@ def export_file(
 
     dest = Path(path)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    GDAJsonIO.write(dest, payload)
+    GDAJsonIO.write(
+        dest,
+        payload,
+        create_backup=create_backup,
+        backup_dir=backup_dir,
+    )
     return len(out_list)

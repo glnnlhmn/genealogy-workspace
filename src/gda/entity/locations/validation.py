@@ -11,21 +11,21 @@ Operational Role:
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING
 
 from gda.core.enums.location import JurisdictionCategory
 from gda.core.errors import ModelFormatError
+from gda.core.logging import GDALogger
 from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.locations.errors import LocationHierarchyError
-from gda.entity.locations.util import clean_string
 from gda.model.atom.id import LocationID
+from gda.util.text import clean_string
 
 if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
 
-__version__ = "1.0.0+build.24"
+__version__ = "1.0.0+build.26"
 
 __all__ = [
     "valid_collection_all",
@@ -40,7 +40,7 @@ __all__ = [
     "validate_urn_tier_sequence",
 ]
 
-_logger = logging.getLogger(__name__)
+_logger = GDALogger(__name__)
 
 _LOCATION_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["LOC"]
 
@@ -323,7 +323,7 @@ def valid_collection_cycles(collection: Locations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Hierarchy Cycle Error: %s", err)
+            _logger.error(f"Hierarchy Cycle Error: {err}")
         return False
     return True
 
@@ -358,7 +358,7 @@ def valid_collection_roots(collection: Locations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Root Anchoring Error: %s", err)
+            _logger.error(f"Root Anchoring Error: {err}")
         return False
     return True
 
@@ -392,7 +392,7 @@ def valid_collection_patterns(collection: Locations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Pattern Compliance Error: %s", err)
+            _logger.error(f"Pattern Compliance Error: {err}")
         return False
     return True
 
@@ -434,7 +434,7 @@ def valid_collection_tombstones(collection: Locations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Tombstone Boundary Error: %s", err)
+            _logger.error(f"Tombstone Boundary Error: {err}")
         return False
     return True
 
@@ -473,7 +473,7 @@ def valid_collection_indexes(collection: Locations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Index Verification Error: %s", err)
+            _logger.error(f"Index Verification Error: {err}")
         return False
     return True
 

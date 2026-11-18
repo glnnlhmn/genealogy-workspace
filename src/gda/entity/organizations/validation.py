@@ -12,11 +12,11 @@ Operational Role:
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING
 
 from gda.core.enums.orgs import OrganizationCategory
+from gda.core.logging import GDALogger
 from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.organizations.errors import OrganizationValidationError
 from gda.model.atom.id import OrganizationID
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from gda.entity.organizations.collection import Organizations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "valid_collection_all",
@@ -39,7 +39,7 @@ __all__ = [
     "valid_urn",
 ]
 
-_logger = logging.getLogger(__name__)
+_logger = GDALogger(__name__)
 
 _ORG_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["ORG"]
 
@@ -133,7 +133,7 @@ def valid_collection_hierarchy(collection: Organizations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Organization Hierarchy Error: %s", err)
+            _logger.error(f"Organization Hierarchy Error: {err}")
         return False
     return True
 
@@ -169,7 +169,7 @@ def valid_collection_references(
 
     if errors:
         for err in errors:
-            _logger.error("Organization Reference Error: %s", err)
+            _logger.error(f"Organization Reference Error: {err}")
         return False
     return True
 
@@ -205,7 +205,7 @@ def valid_collection_tombstones(collection: Organizations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Organization Tombstone Verification Error: %s", err)
+            _logger.error(f"Organization Tombstone Verification Error: {err}")
         return False
     return True
 
@@ -270,7 +270,7 @@ def valid_collection_indexes(collection: Organizations) -> bool:
 
     if errors:
         for err in errors:
-            _logger.error("Organization Index Verification Error: %s", err)
+            _logger.error(f"Organization Index Verification Error: {err}")
         return False
     return True
 

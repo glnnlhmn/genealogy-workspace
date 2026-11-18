@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from gda.core.dates import utc_now_iso
-from gda.core.enums.core import FactType, SmartIDPrefix
+from gda.core.enums.core import FactType, IDType, SmartIDPrefix
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.entity.facts.errors import FactNotFoundError, FactValidationError
@@ -39,7 +39,7 @@ from gda.model.base.note import Note
 from gda.model.base.source import SourceReference
 from gda.model.base.tombstone import Tombstone
 from gda.model.entity.fact import Fact, FactParticipant
-from gda.util.ids import extract_max_smart_id, mint_smart_id
+from gda.util.ids import extract_max_smart_id, mint_smart_id, verify_id
 from gda.util.text import clean_string, slugify
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "Facts",
@@ -115,11 +115,12 @@ class Facts(IntrospectableMixin):
         if isinstance(item, FactID):
             return item if item in self._registry else None
         if isinstance(item, str):
-            if item.startswith("FID-"):
-                cand = FactID(item)
+            token = item.strip()
+            if verify_id(token, id_type=IDType.SMART_ID, smart_id_prefix=SmartIDPrefix.FID):
+                cand = FactID(token)
                 return cand if cand in self._registry else None
-            cand = self._urn_index.get(item)
-            return cand if cand and cand in self._registry else None
+            urn_cand = self._urn_index.get(token)
+            return urn_cand if urn_cand and urn_cand in self._registry else None
         return None
 
     def __contains__(self, item: FactID | str) -> bool:
