@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.17"
+__version__ = "1.0.0+build.18"
 
 __all__ = [
     "can_tombstone",
@@ -266,6 +266,59 @@ def save_to_db(
     return written
 
 
+def _append_site_historical_variant(name_obj: NameThing, h: dict[str, Any]) -> NameThing:
+    """Append a historical name variant dictionary to NameThing."""
+    h_raw = str(h.get("raw") or h.get("raw_name", ""))
+    h_canonical = str(h.get("canonical") or h.get("canonical_name") or h_raw)
+    h_type_raw = h.get("historic_name_type") or h.get("status", HistoricNameType.HISTORICAL)
+    h_type = (
+        h_type_raw if isinstance(h_type_raw, HistoricNameType) else HistoricNameType(h_type_raw)
+    )
+    return name_obj.add_historic_variant(
+        raw=h_raw,
+        name=h_canonical,
+        historic_name_type=h_type,
+    )
+
+
+def _parse_imported_site_name(item: dict[str, Any]) -> NameThing:
+    """Reconstruct NameThing with aliases and historical variants from a site export dict."""
+    raw_name_val = item.get("name", "")
+    if isinstance(raw_name_val, dict):
+        name_obj = NameThing.from_dict(raw_name_val)
+    else:
+        name_obj = NameThing.create(raw=str(raw_name_val), canonical=str(raw_name_val))
+
+    raw_historical = item.get("historical_names", [])
+    if raw_historical and not name_obj.historic:
+        for h in raw_historical:
+            if isinstance(h, dict):
+                name_obj = _append_site_historical_variant(name_obj, h)
+
+    for alias in item.get("alternate_names") or item.get("aliases") or []:
+        if alias not in name_obj.aliases:
+            name_obj = name_obj.add_alias(alias)
+
+    return name_obj
+
+
+def _parse_imported_site_notes(
+    raw_notes: list[Any],
+    default_audit_dict: dict[str, str],
+) -> list[Note]:
+    """Hydrate embedded Note list from raw JSON site note items."""
+    embedded_notes: list[Note] = []
+    for n in raw_notes:
+        if isinstance(n, Note):
+            embedded_notes.append(n)
+        elif isinstance(n, dict):
+            note_dict = dict(n)
+            if "audit" not in note_dict:
+                note_dict["audit"] = default_audit_dict
+            embedded_notes.append(Note.from_dict(note_dict))
+    return embedded_notes
+
+
 def import_file(collection: Sites, path: Path | str) -> int:
     """Import sites from a formatted JSON file, preserving audit and tombstone state."""
     json_path = Path(path)
@@ -279,78 +332,29 @@ def import_file(collection: Sites, path: Path | str) -> int:
     audit_dict = default_audit.to_dict()
 
     for item in sites_list:
-        site_id = SiteID(item["id"])
-        location_id = LocationID(item["location_id"])
-
-        raw_name_val = item.get("name", "")
-        if isinstance(raw_name_val, dict):
-            name_obj = NameThing.from_dict(raw_name_val)
-        else:
-            name_obj = NameThing.create(raw=str(raw_name_val), canonical=str(raw_name_val))
-
-        raw_historical = item.get("historical_names", [])
-        if raw_historical and not name_obj.historic:
-            for h in raw_historical:
-                if isinstance(h, dict):
-                    h_raw = str(h.get("raw") or h.get("raw_name", ""))
-                    h_canonical = str(h.get("canonical") or h.get("canonical_name") or h_raw)
-                    h_type_raw = h.get("historic_name_type") or h.get(
-                        "status", HistoricNameType.HISTORICAL
-                    )
-                    h_type = (
-                        h_type_raw
-                        if isinstance(h_type_raw, HistoricNameType)
-                        else HistoricNameType(h_type_raw)
-                    )
-                    name_obj = name_obj.add_historic_variant(
-                        raw=h_raw,
-                        name=h_canonical,
-                        historic_name_type=h_type,
-                    )
-
-        for alias in item.get("alternate_names") or item.get("aliases") or []:
-            if alias not in name_obj.aliases:
-                name_obj = name_obj.add_alias(alias)
-
-        embedded_notes: list[Note] = []
-        for n in item.get("notes", []):
-            if isinstance(n, Note):
-                embedded_notes.append(n)
-            elif isinstance(n, dict):
-                note_dict = dict(n)
-                if "audit" not in note_dict:
-                    note_dict["audit"] = audit_dict
-                embedded_notes.append(Note.from_dict(note_dict))
-
         raw_addr = item.get("address")
-        addr_obj = Address.from_dict(raw_addr) if isinstance(raw_addr, dict) else None
-        period_obj = _parse_time_period(item.get("period"))
-        coordinates_obj = _parse_coordinates(item.get("coordinates"))
-
         raw_audit = item.get("audit")
-        audit_obj = (
-            AuditStamp.from_dict(raw_audit) if isinstance(raw_audit, dict) else default_audit
-        )
         raw_tomb = item.get("tombstone")
-        tomb_obj = (
-            Tombstone.from_dict(raw_tomb, id_cls=SiteID)
-            if isinstance(raw_tomb, dict)
-            else Tombstone[SiteID]()
-        )
 
         site = Site.create(
-            site_id=site_id,
-            audit=audit_obj,
-            name=name_obj,
+            site_id=SiteID(item["id"]),
+            audit=(
+                AuditStamp.from_dict(raw_audit) if isinstance(raw_audit, dict) else default_audit
+            ),
+            name=_parse_imported_site_name(item),
             category=SiteType(item["category"]),
             canonical_urn=item["canonical_urn"],
-            location_id=location_id,
-            address=addr_obj,
-            coordinates=coordinates_obj,
-            period=period_obj,
+            location_id=LocationID(item["location_id"]),
+            address=Address.from_dict(raw_addr) if isinstance(raw_addr, dict) else None,
+            coordinates=_parse_coordinates(item.get("coordinates")),
+            period=_parse_time_period(item.get("period")),
             is_active=item.get("is_active", True),
-            notes=embedded_notes,
-            tombstone=tomb_obj,
+            notes=_parse_imported_site_notes(item.get("notes", []), audit_dict),
+            tombstone=(
+                Tombstone.from_dict(raw_tomb, id_cls=SiteID)
+                if isinstance(raw_tomb, dict)
+                else Tombstone[SiteID]()
+            ),
         )
         collection.add(site)
 

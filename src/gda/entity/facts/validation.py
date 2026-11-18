@@ -12,13 +12,13 @@ Operational Role:
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from gda.core.enums.core import FactType
 from gda.core.logging import GDALogger
 from gda.core.types import ENTITY_URN_REGEXES
 from gda.entity.facts.errors import FactValidationError
-from gda.model.atom.id import FamilyID, IndividualID
+from gda.model.atom.id import FactID, FamilyID, IndividualID
 from gda.model.entity.fact import Fact
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "valid_collection_all",
@@ -91,6 +91,61 @@ def valid_fact(fact: Fact) -> bool:
     return True
 
 
+def _check_fact_subject_and_participants(
+    fact: Fact,
+    individuals_collection: Individuals | None,
+    families_collection: Families | None,
+    errors: list[str],
+) -> None:
+    """Verify primary_subject_id and participant_ids against active persona collections."""
+    subj = fact.primary_subject_id
+    if isinstance(subj, IndividualID):
+        if individuals_collection is not None and subj not in individuals_collection:
+            errors.append(
+                f"Fact '{fact.id}' references missing or tombstoned primary subject Individual '{subj}'."
+            )
+    elif isinstance(subj, FamilyID):
+        if families_collection is not None and subj not in families_collection:
+            errors.append(
+                f"Fact '{fact.id}' references missing or tombstoned primary subject Family '{subj}'."
+            )
+    else:
+        errors.append(f"Fact '{fact.id}' has invalid primary_subject_id reference: '{subj}'.")
+
+    if individuals_collection is not None:
+        for pid in fact.participant_ids:
+            if pid not in individuals_collection:
+                errors.append(
+                    f"Fact '{fact.id}' references missing or tombstoned participant Individual '{pid}'."
+                )
+
+
+def _check_fact_place_references(
+    fact: Fact,
+    locations_collection: Locations | None,
+    sites_collection: Sites | None,
+    errors: list[str],
+) -> None:
+    """Verify optional LocationID and SiteID references on a Fact."""
+    if fact.location_id is not None:
+        if not str(fact.location_id).startswith("LOC-"):
+            errors.append(
+                f"Fact '{fact.id}' has invalid LocationID reference: '{fact.location_id}'."
+            )
+        elif locations_collection is not None and fact.location_id not in locations_collection:
+            errors.append(
+                f"Fact '{fact.id}' references missing or tombstoned Location '{fact.location_id}'."
+            )
+
+    if fact.site_id is not None:
+        if not str(fact.site_id).startswith("SID-"):
+            errors.append(f"Fact '{fact.id}' has invalid SiteID reference: '{fact.site_id}'.")
+        elif sites_collection is not None and fact.site_id not in sites_collection:
+            errors.append(
+                f"Fact '{fact.id}' references missing or tombstoned Site '{fact.site_id}'."
+            )
+
+
 def valid_collection_references(
     collection: Facts,
     locations_collection: Locations | None = None,
@@ -102,44 +157,10 @@ def valid_collection_references(
     errors: list[str] = []
 
     for fact in collection:
-        subj = fact.primary_subject_id
-        if isinstance(subj, IndividualID):
-            if individuals_collection is not None and subj not in individuals_collection:
-                errors.append(
-                    f"Fact '{fact.id}' references missing or tombstoned primary subject Individual '{subj}'."
-                )
-        elif isinstance(subj, FamilyID):
-            if families_collection is not None and subj not in families_collection:
-                errors.append(
-                    f"Fact '{fact.id}' references missing or tombstoned primary subject Family '{subj}'."
-                )
-        else:
-            errors.append(f"Fact '{fact.id}' has invalid primary_subject_id reference: '{subj}'.")
-
-        if individuals_collection is not None:
-            for pid in fact.participant_ids:
-                if pid not in individuals_collection:
-                    errors.append(
-                        f"Fact '{fact.id}' references missing or tombstoned participant Individual '{pid}'."
-                    )
-
-        if fact.location_id is not None:
-            if not str(fact.location_id).startswith("LOC-"):
-                errors.append(
-                    f"Fact '{fact.id}' has invalid LocationID reference: '{fact.location_id}'."
-                )
-            elif locations_collection is not None and fact.location_id not in locations_collection:
-                errors.append(
-                    f"Fact '{fact.id}' references missing or tombstoned Location '{fact.location_id}'."
-                )
-
-        if fact.site_id is not None:
-            if not str(fact.site_id).startswith("SID-"):
-                errors.append(f"Fact '{fact.id}' has invalid SiteID reference: '{fact.site_id}'.")
-            elif sites_collection is not None and fact.site_id not in sites_collection:
-                errors.append(
-                    f"Fact '{fact.id}' references missing or tombstoned Site '{fact.site_id}'."
-                )
+        _check_fact_subject_and_participants(
+            fact, individuals_collection, families_collection, errors
+        )
+        _check_fact_place_references(fact, locations_collection, sites_collection, errors)
 
     if errors:
         for err in errors:
@@ -177,6 +198,23 @@ def valid_collection_tombstones(collection: Facts) -> bool:
     return True
 
 
+def _check_fact_bucket_membership(
+    fact_id: FactID,
+    key: Any,
+    index_map: dict[Any, set[FactID]],
+    key_label: str,
+    index_label: str,
+    errors: list[str],
+) -> None:
+    """Verify that key exists in index_map and fact_id is present in its bucket."""
+    if key is None:
+        return
+    if key not in index_map:
+        errors.append(f"{key_label} '{key}' missing from {index_label} index.")
+    elif fact_id not in index_map[key]:
+        errors.append(f"Fact '{fact_id}' missing from {index_label} index bucket for '{key}'.")
+
+
 def valid_collection_indexes(collection: Facts) -> bool:
     """Validate synchronization between internal registry and secondary lookup indexes."""
     errors: list[str] = []
@@ -187,45 +225,28 @@ def valid_collection_indexes(collection: Facts) -> bool:
         elif collection._urn_index[fact.canonical_urn] != fact.id:
             errors.append(f"URN index mismatch for '{fact.canonical_urn}'.")
 
-        if fact.primary_subject_id not in collection._subject_index:
-            errors.append(
-                f"Primary subject '{fact.primary_subject_id}' missing from subject index."
-            )
-        elif fact.id not in collection._subject_index[fact.primary_subject_id]:
-            errors.append(
-                f"Fact '{fact.id}' missing from subject index bucket for '{fact.primary_subject_id}'."
-            )
-
-        if fact.fact_type not in collection._type_index:
-            errors.append(f"FactType '{fact.fact_type}' missing from type index.")
-        elif fact.id not in collection._type_index[fact.fact_type]:
-            errors.append(
-                f"Fact '{fact.id}' missing from type index bucket for '{fact.fact_type}'."
-            )
-
-        if fact.location_id is not None:
-            if fact.location_id not in collection._location_index:
-                errors.append(f"LocationID '{fact.location_id}' missing from location index.")
-            elif fact.id not in collection._location_index[fact.location_id]:
-                errors.append(
-                    f"Fact '{fact.id}' missing from location index bucket for '{fact.location_id}'."
-                )
-
-        if fact.site_id is not None:
-            if fact.site_id not in collection._site_index:
-                errors.append(f"SiteID '{fact.site_id}' missing from site index.")
-            elif fact.id not in collection._site_index[fact.site_id]:
-                errors.append(
-                    f"Fact '{fact.id}' missing from site index bucket for '{fact.site_id}'."
-                )
+        _check_fact_bucket_membership(
+            fact.id,
+            fact.primary_subject_id,
+            collection._subject_index,
+            "Primary subject",
+            "subject",
+            errors,
+        )
+        _check_fact_bucket_membership(
+            fact.id, fact.fact_type, collection._type_index, "FactType", "type", errors
+        )
+        _check_fact_bucket_membership(
+            fact.id, fact.location_id, collection._location_index, "LocationID", "location", errors
+        )
+        _check_fact_bucket_membership(
+            fact.id, fact.site_id, collection._site_index, "SiteID", "site", errors
+        )
 
         for pid in fact.participant_ids:
-            if pid not in collection._participant_index:
-                errors.append(f"Participant '{pid}' missing from participant index.")
-            elif fact.id not in collection._participant_index[pid]:
-                errors.append(
-                    f"Fact '{fact.id}' missing from participant index bucket for '{pid}'."
-                )
+            _check_fact_bucket_membership(
+                fact.id, pid, collection._participant_index, "Participant", "participant", errors
+            )
 
     for fact_id in collection._urn_index.values():
         if fact_id not in collection._registry:

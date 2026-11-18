@@ -48,11 +48,55 @@ if TYPE_CHECKING:
     from gda.entity.locations.collection import Locations
     from gda.entity.sites.collection import Sites
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "Facts",
 ]
+
+
+def _validate_fact_subject_fk(
+    res_subj: IndividualID | FamilyID,
+    individuals_collection: Individuals | None,
+    families_collection: Families | None,
+) -> None:
+    """Validate primary_subject_id against active Individuals or Families collections."""
+    if isinstance(res_subj, IndividualID) and individuals_collection is not None:
+        if res_subj not in individuals_collection:
+            raise FactValidationError(
+                f"Primary subject individual '{res_subj}' does not exist or is tombstoned."
+            )
+    elif isinstance(res_subj, FamilyID) and families_collection is not None:
+        if res_subj not in families_collection:
+            raise FactValidationError(
+                f"Primary subject family '{res_subj}' does not exist or is tombstoned."
+            )
+
+
+def _resolve_and_validate_fact_places(
+    location_id: LocationID | str | None,
+    site_id: SiteID | str | None,
+    locations_collection: Locations | None,
+    sites_collection: Sites | None,
+) -> tuple[LocationID | None, SiteID | None]:
+    """Coerce and validate optional LocationID and SiteID references for Fact.create."""
+    res_loc_id: LocationID | None = None
+    if location_id is not None:
+        res_loc_id = location_id if isinstance(location_id, LocationID) else LocationID(location_id)
+        if locations_collection is not None and res_loc_id not in locations_collection:
+            raise FactValidationError(
+                f"Governing location '{res_loc_id}' does not exist or is tombstoned."
+            )
+
+    res_site_id: SiteID | None = None
+    if site_id is not None:
+        res_site_id = site_id if isinstance(site_id, SiteID) else SiteID(site_id)
+        if sites_collection is not None and res_site_id not in sites_collection:
+            raise FactValidationError(
+                f"Venue site '{res_site_id}' does not exist or is tombstoned."
+            )
+
+    return res_loc_id, res_site_id
 
 
 class Facts(IntrospectableMixin):
@@ -395,35 +439,10 @@ class Facts(IntrospectableMixin):
             else FactType(str(fact_type).strip().upper())
         )
         res_subj = _resolve_subject_id(primary_subject_id)
-
-        if isinstance(res_subj, IndividualID) and individuals_collection is not None:
-            if res_subj not in individuals_collection:
-                raise FactValidationError(
-                    f"Primary subject individual '{res_subj}' does not exist or is tombstoned."
-                )
-        elif isinstance(res_subj, FamilyID) and families_collection is not None:
-            if res_subj not in families_collection:
-                raise FactValidationError(
-                    f"Primary subject family '{res_subj}' does not exist or is tombstoned."
-                )
-
-        res_loc_id: LocationID | None = None
-        if location_id is not None:
-            res_loc_id = (
-                location_id if isinstance(location_id, LocationID) else LocationID(location_id)
-            )
-            if locations_collection is not None and res_loc_id not in locations_collection:
-                raise FactValidationError(
-                    f"Governing location '{res_loc_id}' does not exist or is tombstoned."
-                )
-
-        res_site_id: SiteID | None = None
-        if site_id is not None:
-            res_site_id = site_id if isinstance(site_id, SiteID) else SiteID(site_id)
-            if sites_collection is not None and res_site_id not in sites_collection:
-                raise FactValidationError(
-                    f"Venue site '{res_site_id}' does not exist or is tombstoned."
-                )
+        _validate_fact_subject_fk(res_subj, individuals_collection, families_collection)
+        res_loc_id, res_site_id = _resolve_and_validate_fact_places(
+            location_id, site_id, locations_collection, sites_collection
+        )
 
         next_num = extract_max_smart_id(self._registry.keys(), prefix=SmartIDPrefix.FID) + 1
         fact_id = FactID(mint_smart_id(SmartIDPrefix.FID, next_num))
@@ -436,8 +455,6 @@ class Facts(IntrospectableMixin):
             urn = f"urn:gda:fact:{subj_slug}:{type_slug}_f{fact_id.suffix.lower()}"
 
         now = IsoTimestamp(utc_now_iso())
-        audit = AuditStamp(created_at=now, updated_at=now)
-
         fact = Fact.create(
             fact_id=fact_id,
             canonical_urn=urn,
@@ -452,7 +469,7 @@ class Facts(IntrospectableMixin):
             narrative=narrative,
             participants=participants,
             citations=citations,
-            audit=audit,
+            audit=AuditStamp(created_at=now, updated_at=now),
             notes=notes or [],
             tombstone=Tombstone[FactID](),
         )

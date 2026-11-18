@@ -17,7 +17,7 @@ build-backend = "setuptools.build_meta"
 # ------------------------------------------------------------------------------
 [project]
 name = "genealogy-digital-archive"
-version = "1.0.0+build.5"
+version = "1.0.0+build.6"
 description = "Consolidated Digital Archive Engine, CLI & Ancestry Desk UI"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -43,16 +43,16 @@ dependencies = [
 # ------------------------------------------------------------------------------
 [project.optional-dependencies]
 docs = [
-    "sphinx>=7.2.0",
+    "sphinx>=7.2.0",            # Documentation generator
     "pydata-sphinx-theme>=0.15.0",
-    "myst-parser>=2.0.0",
+    "myst-parser>=2.0.0",       # Markdown-to-Sphinx parser
     "sphinx-autodoc-typehints>=2.0.0",
 ]
 test = [
-    "pytest>=8.0.0",
-    "pytest-cov>=5.0.0",
-    "pytest-mock>=3.12.0",
-    "pytest-xdist>=3.5.0",
+    "pytest>=8.0.0",            # Core test runner
+    "pytest-cov>=5.0.0",        # Statement and branch coverage plugin
+    "pytest-mock>=3.12.0",      # Unittest.mock fixture wrapper
+    "pytest-xdist>=3.5.0",      # Parallel test execution worker pool
 ]
 ui = [
     "textual>=0.50.0",          # Ancestry Desk terminal UI engine
@@ -62,9 +62,9 @@ dev = [
     "pytest-cov>=5.0.0",
     "pytest-mock>=3.12.0",
     "pytest-xdist>=3.5.0",
-    "ruff>=0.8.0",
-    "mypy>=1.8.0",
-    "radon>=6.0.0",
+    "ruff>=0.8.0",              # Unified Python 3.13 linter, formatter, and import sorter
+    "mypy>=1.8.0",              # Static type checker
+    "radon>=6.0.0",             # Cyclomatic complexity (cc), maintainability (mi), and raw SLOC analyzer
     "jupyterlab>=4.0.0",
     "notebook>=7.0.0",
     "ipykernel>=6.0.0",
@@ -85,6 +85,7 @@ include = ["gda*", "ancestry_desk*", "cli*", "system*"]
 # ------------------------------------------------------------------------------
 [tool.pytest.ini_options]
 minversion = "8.0"
+# Route temporary test directories to local C:/temp/pytest_tmp to avoid Google Drive file-locking
 addopts = "-ra -q --basetemp=C:/temp/pytest_tmp --strict-markers --import-mode=importlib"
 testpaths = [
     "tests/test_gda",
@@ -103,7 +104,7 @@ markers = [
 # 6. CODE COVERAGE GATES (pytest-cov)
 # ------------------------------------------------------------------------------
 [tool.coverage.run]
-branch = true
+branch = true                   # Require both statement and branch path coverage
 source = ["src"]
 omit = [
     "tests/*",
@@ -113,7 +114,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 95
+fail_under = 95                 # Minimum workspace-wide gate (individual packages target 100%)
 precision = 2
 show_missing = true
 exclude_also = [
@@ -126,8 +127,8 @@ exclude_also = [
 # 7. RUFF LINTING, FORMATTING & IMPORT SORTING
 # ------------------------------------------------------------------------------
 [tool.ruff]
-line-length = 100
-target-version = "py313"
+line-length = 100               # Canonical GDA 100-column width
+target-version = "py313"        # Enforce PEP 695 generics and modern Python 3.13 syntax
 src = ["src", "tests"]
 extend-exclude = [
     "archive",
@@ -157,44 +158,44 @@ known-first-party = ["gda", "ancestry_desk", "cli", "system"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-line-ending = "lf"
+line-ending = "lf"              # Enforce LF line endings across Windows/POSIX
 docstring-code-format = true
 
 [tool.ruff.lint.mccabe]
-# Set the maximum acceptable cyclomatic complexity (default is often 10)
+# Set the maximum acceptable cyclomatic complexity (Radon CC target: average Grade A)
 max-complexity = 10
 
 # ------------------------------------------------------------------------------
 # 8. MYPY STATIC TYPE CHECKING & PYDANTIC PLUGIN
 # ------------------------------------------------------------------------------
 [tool.mypy]
-python_version = "3.13"
-plugins = ["pydantic.mypy"]
+python_version = "3.13"         # Validate PEP 695 type parameters and Python 3.13 stdlib types
+plugins = ["pydantic.mypy"]     # Type-check Pydantic v2 @dataclass and BaseModel contracts
 mypy_path = "src"
 explicit_package_bases = true
 ignore_missing_imports = true
-check_untyped_defs = true
+check_untyped_defs = true       # Type-check bodies of functions even if annotations are omitted
 disallow_untyped_defs = false
-warn_return_any = true
+warn_return_any = true          # Flag functions returning unconstrained Any
 warn_unused_configs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
+warn_redundant_casts = true     # Flag unnecessary typing.cast() calls
+warn_unused_ignores = true      # Flag stale # type: ignore[...] comments
 show_error_codes = true
 pretty = true
 
 [tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
+init_forbid_extra = true        # Reject unexpected keyword arguments in @dataclass constructors
+init_typed = true               # Enforce strict field types in generated __init__ signatures
 warn_required_dynamic_aliases = true
 
 # ------------------------------------------------------------------------------
 # 9. GDA CANONICAL WORKSPACE STORAGE ROOTS
 # ------------------------------------------------------------------------------
 [tool.gda.storage]
-profiles_dir = "data/profiles"
-reference_dir = "data/reference"
-archive_dir = "archive"
-backup_root = "archive/backups_workspace"
+profiles_dir = "data/profiles"            # JSON user/researcher profile configurations
+reference_dir = "data/reference"          # Read-only reference authorities and lookup tables
+archive_dir = "archive"                   # Root archival storage directory
+backup_root = "archive/backups_workspace" # Default workspace-level backup destination
 
 # ------------------------------------------------------------------------------
 # 10. GDA RUNTIME & ENVIRONMENT DATABASE CONFIGURATION
@@ -204,15 +205,17 @@ app_name = "Genealogy Digital Archive"
 environment = "development"
 debug = false
 
+# Default fallback SQLite database configuration loaded by DatabaseConfig()
 [tool.gda.database]
 engine = "sqlite"
 db_name = "archive.db"
 db_path = "data/archive.db"
-busy_timeout = 5000
-journal_mode = "WAL"
-foreign_keys = true
-synchronous = "NORMAL"
+busy_timeout = 5000             # Milliseconds to wait under SQLite lock contention
+journal_mode = "WAL"            # Write-Ahead Logging for concurrent read/write safety
+foreign_keys = true             # Enforce relational foreign-key constraints on every connection
+synchronous = "NORMAL"          # Balance durability and WAL write performance
 
+# Environment-specific database targets resolved via AppConfig.for_environment("<ENV>")
 [tool.gda.environments.DEV]
 engine = "sqlite"
 db_name = "gda_dev.db"

@@ -10,6 +10,7 @@ Operational Role:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
@@ -35,7 +36,7 @@ from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "BaptismRecord",
@@ -58,6 +59,11 @@ _BAPTISM_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
 )
 
 
+# ==============================================================================
+# 1. COERCION & NORMALIZATION HELPERS
+# ==============================================================================
+
+
 def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     """Coerce an EventDate instance, dictionary, or compact date string."""
     if isinstance(raw, EventDate):
@@ -65,6 +71,42 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     if isinstance(raw, (dict, str)):
         return EventDate.from_dict(raw)
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
+
+
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
+
+
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_sex(sex: Sex | str | None) -> Sex | None:
+    """Resolve optional Sex enum or raw token."""
+    if sex is None or isinstance(sex, Sex):
+        return sex
+    return Sex.from_input(str(sex))
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
+
+
+# ==============================================================================
+# 2. BAPTISM RECORD DOMAIN MODEL
+# ==============================================================================
 
 
 @dataclass(
@@ -215,79 +257,39 @@ class BaptismRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> BaptismRecord:
         """Factory constructor instantiating a validated BaptismRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
         resolved_urn = (
             source_urn if isinstance(source_urn, ArchivalURN) else SourceURN(str(source_urn))
         )
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
-        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
-        res_org_id = (
-            church_org_id
-            if (church_org_id is None or isinstance(church_org_id, OrganizationID))
-            else OrganizationID(church_org_id)
-        )
-        res_site_id = (
-            church_site_id
-            if (church_site_id is None or isinstance(church_site_id, SiteID))
-            else SiteID(church_site_id)
-        )
-        res_loc_id = (
-            location_id
-            if (location_id is None or isinstance(location_id, LocationID))
-            else LocationID(location_id)
-        )
-        res_ind_id = (
-            individual_id
-            if (individual_id is None or isinstance(individual_id, IndividualID))
-            else IndividualID(individual_id)
-        )
-        res_sex = sex if (sex is None or isinstance(sex, Sex)) else Sex.from_input(str(sex))
-
-        res_bap_date = _deserialize_event_date(date_of_baptism, "date_of_baptism")
-        res_dob = (
-            _deserialize_event_date(date_of_birth, "date_of_birth")
-            if date_of_birth is not None
-            else None
-        )
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
+            source_id=_coerce_id(source_id, SourceID),
             source_urn=resolved_urn,
-            record_category=res_cat,
-            record_type=res_type,
+            record_category=coerce_enum(
+                SourceRecordCategory, record_category, field_name="record_category"
+            ),
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
             description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             church_name_raw=church_name_raw,
             baptized_name_raw=baptized_name_raw,
-            date_of_baptism=res_bap_date,
-            church_org_id=res_org_id,
-            church_site_id=res_site_id,
-            location_id=res_loc_id,
+            date_of_baptism=_deserialize_event_date(date_of_baptism, "date_of_baptism"),
+            church_org_id=_opt_id(church_org_id, OrganizationID),
+            church_site_id=_opt_id(church_site_id, SiteID),
+            location_id=_opt_id(location_id, LocationID),
             denomination=denomination,
             volume_title=volume_title,
             register_locator=register_locator,
-            individual_id=res_ind_id,
-            sex=res_sex,
-            date_of_birth=res_dob,
+            individual_id=_opt_id(individual_id, IndividualID),
+            sex=_opt_sex(sex),
+            date_of_birth=_opt_event_date(date_of_birth, "date_of_birth"),
             place_of_birth_raw=place_of_birth_raw,
             officiant_name_raw=officiant_name_raw,
             father_name_raw=father_name_raw,
             mother_name_raw=mother_name_raw,
-            sponsors_or_godparents=(
-                list(sponsors_or_godparents) if sponsors_or_godparents is not None else []
-            ),
+            sponsors_or_godparents=list(sponsors_or_godparents) if sponsors_or_godparents else [],
         )
 
     def to_dict(self) -> dict[str, Any]:

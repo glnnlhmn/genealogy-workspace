@@ -11,6 +11,7 @@ Operational Role:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
@@ -30,7 +31,7 @@ from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "DeathRecord",
@@ -46,6 +47,11 @@ _DEATH_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
         SourceRecordType.DELAYED_DEATH,
     }
 )
+
+
+# ==============================================================================
+# 1. COERCION & NORMALIZATION HELPERS
+# ==============================================================================
 
 
 def _resolve_vital_urn(raw: ArchivalURN | str) -> ArchivalURN:
@@ -67,6 +73,11 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
+
+
 def _deserialize_age(raw: Any, field_name: str) -> Age:
     """Coerce an Age instance, dictionary, integer years, or raw text string."""
     if isinstance(raw, Age):
@@ -83,6 +94,42 @@ def _deserialize_age(raw: Any, field_name: str) -> Age:
     if isinstance(raw, str):
         return Age(raw_text=raw)
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected Age, dict, int, or str.")
+
+
+def _opt_age(raw: Any, field_name: str) -> Age | None:
+    """Coerce an optional Age input or return None when absent."""
+    return _deserialize_age(raw, field_name) if raw is not None else None
+
+
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_enum[E](enum_cls: type[E], raw: Any, field_name: str) -> E | None:
+    """Coerce an optional StrEnum value or return None when absent."""
+    if raw is None:
+        return None
+    return coerce_enum(enum_cls, raw, field_name=field_name)  # type: ignore[type-var]
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
+
+
+# ==============================================================================
+# 2. DEATH RECORD DOMAIN MODEL
+# ==============================================================================
 
 
 @dataclass(
@@ -229,21 +276,15 @@ class DeathRecord(SourceRecord):
                 f"got '{self.record_type.value}'."
             )
 
-        clean_decedent = self.decedent_name_raw.strip()
-        if not clean_decedent:
-            raise ModelFormatError(
-                f"{self.__class__.__name__} 'decedent_name_raw' cannot be empty or whitespace."
-            )
-        if clean_decedent != self.decedent_name_raw:
-            object.__setattr__(self, "decedent_name_raw", clean_decedent)
-
-        clean_place = self.place_of_death_raw.strip()
-        if not clean_place:
-            raise ModelFormatError(
-                f"{self.__class__.__name__} 'place_of_death_raw' cannot be empty or whitespace."
-            )
-        if clean_place != self.place_of_death_raw:
-            object.__setattr__(self, "place_of_death_raw", clean_place)
+        for field_name in ("decedent_name_raw", "place_of_death_raw"):
+            raw_val = getattr(self, field_name)
+            cleaned = raw_val.strip()
+            if not cleaned:
+                raise ModelFormatError(
+                    f"{self.__class__.__name__} '{field_name}' cannot be empty or whitespace."
+                )
+            if cleaned != raw_val:
+                object.__setattr__(self, field_name, cleaned)
 
     @classmethod
     def create(  # type: ignore[override]
@@ -286,105 +327,45 @@ class DeathRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> DeathRecord:
         """Factory constructor instantiating a validated DeathRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        resolved_urn = _resolve_vital_urn(source_urn)
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
-        res_dec_id = (
-            decedent_id
-            if (decedent_id is None or isinstance(decedent_id, IndividualID))
-            else IndividualID(decedent_id)
-        )
-        res_place_id = (
-            place_of_death_id
-            if (place_of_death_id is None or isinstance(place_of_death_id, LocationID))
-            else LocationID(place_of_death_id)
-        )
-        res_site_id = (
-            disposition_site_id
-            if (disposition_site_id is None or isinstance(disposition_site_id, SiteID))
-            else SiteID(disposition_site_id)
-        )
         res_sex = sex if isinstance(sex, Sex) else Sex.from_input(str(sex))
-        res_ms = (
-            coerce_enum(MaritalStatus, marital_status, field_name="marital_status")
-            if marital_status is not None
-            else None
-        )
-        res_manner = (
-            coerce_enum(MannerOfDeath, manner_of_death, field_name="manner_of_death")
-            if manner_of_death is not None
-            else None
-        )
-        res_disp = (
-            coerce_enum(DispositionType, disposition_type, field_name="disposition_type")
-            if disposition_type is not None
-            else None
-        )
-
-        res_dod = _deserialize_event_date(date_of_death, "date_of_death")
-        res_dob = (
-            _deserialize_event_date(date_of_birth, "date_of_birth")
-            if date_of_birth is not None
-            else None
-        )
-        res_disp_date = (
-            _deserialize_event_date(disposition_date, "disposition_date")
-            if disposition_date is not None
-            else None
-        )
-        res_filed = (
-            _deserialize_event_date(date_filed, "date_filed") if date_filed is not None else None
-        )
-        res_age = (
-            _deserialize_age(age_at_death, "age_at_death") if age_at_death is not None else None
-        )
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
-            source_urn=resolved_urn,
+            source_id=_coerce_id(source_id, SourceID),
+            source_urn=_resolve_vital_urn(source_urn),
             record_category=SourceRecordCategory.VITAL,
-            record_type=res_type,
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
             description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             decedent_name_raw=decedent_name_raw,
-            date_of_death=res_dod,
+            date_of_death=_deserialize_event_date(date_of_death, "date_of_death"),
             place_of_death_raw=place_of_death_raw,
-            decedent_id=res_dec_id,
+            decedent_id=_opt_id(decedent_id, IndividualID),
             sex=res_sex,
             is_stillborn=is_stillborn,
-            marital_status=res_ms,
+            marital_status=_opt_enum(MaritalStatus, marital_status, "marital_status"),
             spouse_name_raw=spouse_name_raw,
-            date_of_birth=res_dob,
-            age_at_death=res_age,
+            date_of_birth=_opt_event_date(date_of_birth, "date_of_birth"),
+            age_at_death=_opt_age(age_at_death, "age_at_death"),
             time_of_death=time_of_death,
-            place_of_death_id=res_place_id,
+            place_of_death_id=_opt_id(place_of_death_id, LocationID),
             residence_raw=residence_raw,
             occupation_raw=occupation_raw,
             father_name_raw=father_name_raw,
             mother_maiden_name_raw=mother_maiden_name_raw,
-            manner_of_death=res_manner,
+            manner_of_death=_opt_enum(MannerOfDeath, manner_of_death, "manner_of_death"),
             cause_of_death_raw=cause_of_death_raw,
             attending_physician_raw=attending_physician_raw,
             informant_name_raw=informant_name_raw,
-            disposition_type=res_disp,
-            disposition_date=res_disp_date,
+            disposition_type=_opt_enum(DispositionType, disposition_type, "disposition_type"),
+            disposition_date=_opt_event_date(disposition_date, "disposition_date"),
             disposition_place_raw=disposition_place_raw,
-            disposition_site_id=res_site_id,
+            disposition_site_id=_opt_id(disposition_site_id, SiteID),
             undertaker_raw=undertaker_raw,
             certificate_number=certificate_number,
-            date_filed=res_filed,
+            date_filed=_opt_event_date(date_filed, "date_filed"),
         )
 
     def to_dict(self) -> dict[str, Any]:

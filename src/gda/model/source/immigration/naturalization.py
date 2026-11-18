@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
@@ -34,7 +35,7 @@ from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "NaturalizationRecord",
@@ -62,6 +63,11 @@ _NATURALIZATION_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
 _NATURALIZATION_URN_PATTERN: re.Pattern[str] = URN_REGEXES["NATURALIZATION"]
 
 
+# ==============================================================================
+# 1. COERCION & NORMALIZATION HELPERS
+# ==============================================================================
+
+
 def _resolve_naturalization_urn(raw: ArchivalURN | str) -> ArchivalURN:
     """Coerce a raw URN string into ArchivalURN (URN:NATURALIZATION:...) or SourceURN (URN:SRC:...)."""
     if isinstance(raw, ArchivalURN):
@@ -86,12 +92,53 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
+
+
 def _parse_stage(raw: NaturalizationStage | str) -> NaturalizationStage:
     """Resolve NaturalizationStage by enum instance, exact value, or uppercase member name."""
     try:
         return coerce_enum(NaturalizationStage, raw, field_name="stage")
     except ModelFormatError as err:
         raise ModelFormatError(f"Invalid NaturalizationStage value: '{raw}'.") from err
+
+
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _coerce_witnesses_tuple(
+    witnesses: Iterable[NaturalizationWitness | dict[str, Any]] | None,
+) -> tuple[NaturalizationWitness, ...]:
+    """Hydrate an optional sequence of NaturalizationWitness objects or dicts into a tuple."""
+    if not witnesses:
+        return ()
+    return tuple(
+        w if isinstance(w, NaturalizationWitness) else NaturalizationWitness.from_dict(w)
+        for w in witnesses
+    )
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
+
+
+# ==============================================================================
+# 2. NATURALIZATION WITNESS VALUE OBJECT
+# ==============================================================================
 
 
 @dataclass(
@@ -136,14 +183,9 @@ class NaturalizationWitness(IntrospectableMixin):
         residence: str | None = None,
     ) -> NaturalizationWitness:
         """Factory constructor instantiating a validated NaturalizationWitness."""
-        res_ind = (
-            individual_id
-            if (individual_id is None or isinstance(individual_id, IndividualID))
-            else IndividualID(individual_id)
-        )
         return cls(
             name=name,
-            individual_id=res_ind,
+            individual_id=_opt_id(individual_id, IndividualID),
             occupation=occupation,
             residence=residence,
         )
@@ -193,6 +235,11 @@ class NaturalizationWitness(IntrospectableMixin):
 
     def __str__(self) -> str:
         return self.name
+
+
+# ==============================================================================
+# 3. NATURALIZATION RECORD DOMAIN MODEL
+# ==============================================================================
 
 
 @dataclass(
@@ -365,87 +412,39 @@ class NaturalizationRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> NaturalizationRecord:
         """Factory constructor instantiating a validated NaturalizationRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        resolved_urn = _resolve_naturalization_urn(source_urn)
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
-        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
-        res_stage = _parse_stage(stage) if stage is not None else None
-        res_court_loc = (
-            court_location_id
-            if (court_location_id is None or isinstance(court_location_id, LocationID))
-            else LocationID(court_location_id)
-        )
-        res_app_id = (
-            applicant_id
-            if (applicant_id is None or isinstance(applicant_id, IndividualID))
-            else IndividualID(applicant_id)
-        )
-        res_res_loc = (
-            current_residence_id
-            if (current_residence_id is None or isinstance(current_residence_id, LocationID))
-            else LocationID(current_residence_id)
-        )
-        res_pob_loc = (
-            place_of_birth_id
-            if (place_of_birth_id is None or isinstance(place_of_birth_id, LocationID))
-            else LocationID(place_of_birth_id)
-        )
-        res_event_dt = _deserialize_event_date(event_date, "event_date")
-        res_dob = (
-            _deserialize_event_date(date_of_birth, "date_of_birth")
-            if date_of_birth is not None
-            else None
-        )
-        res_arr_dt = (
-            _deserialize_event_date(arrival_date, "arrival_date")
-            if arrival_date is not None
-            else None
-        )
-
-        resolved_witnesses: tuple[NaturalizationWitness, ...] = tuple(
-            w if isinstance(w, NaturalizationWitness) else NaturalizationWitness.from_dict(w)
-            for w in (witnesses or ())
-        )
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
-            source_urn=resolved_urn,
-            record_category=res_cat,
-            record_type=res_type,
+            source_id=_coerce_id(source_id, SourceID),
+            source_urn=_resolve_naturalization_urn(source_urn),
+            record_category=coerce_enum(
+                SourceRecordCategory, record_category, field_name="record_category"
+            ),
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
             description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             court_name=court_name,
             docket_locator=docket_locator,
             applicant_name_raw=applicant_name_raw,
-            event_date=res_event_dt,
-            court_location_id=res_court_loc,
+            event_date=_deserialize_event_date(event_date, "event_date"),
+            court_location_id=_opt_id(court_location_id, LocationID),
             presiding_judge_or_clerk=presiding_judge_or_clerk,
             volume_page=volume_page,
             certificate_stub_number=certificate_stub_number,
-            stage=res_stage,
-            applicant_id=res_app_id,
+            stage=_parse_stage(stage) if stage is not None else None,
+            applicant_id=_opt_id(applicant_id, IndividualID),
             current_residence_raw=current_residence_raw,
-            current_residence_id=res_res_loc,
-            date_of_birth=res_dob,
+            current_residence_id=_opt_id(current_residence_id, LocationID),
+            date_of_birth=_opt_event_date(date_of_birth, "date_of_birth"),
             place_of_birth_raw=place_of_birth_raw,
-            place_of_birth_id=res_pob_loc,
+            place_of_birth_id=_opt_id(place_of_birth_id, LocationID),
             country_of_prior_allegiance=country_of_prior_allegiance,
             port_of_entry_raw=port_of_entry_raw,
-            arrival_date=res_arr_dt,
+            arrival_date=_opt_event_date(arrival_date, "arrival_date"),
             vessel_name=vessel_name,
-            witnesses=resolved_witnesses,
+            witnesses=_coerce_witnesses_tuple(witnesses),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -461,36 +460,36 @@ class NaturalizationRecord(SourceRecord):
                 "witnesses": [w.to_dict() for w in self.witnesses],
             }
         )
-        if self.court_location_id is not None:
-            data["court_location_id"] = str(self.court_location_id)
-        if self.presiding_judge_or_clerk is not None:
-            data["presiding_judge_or_clerk"] = self.presiding_judge_or_clerk
-        if self.volume_page is not None:
-            data["volume_page"] = self.volume_page
-        if self.certificate_stub_number is not None:
-            data["certificate_stub_number"] = self.certificate_stub_number
+        for id_key in (
+            "court_location_id",
+            "applicant_id",
+            "current_residence_id",
+            "place_of_birth_id",
+        ):
+            id_val = getattr(self, id_key)
+            if id_val is not None:
+                data[id_key] = str(id_val)
+
+        for str_key in (
+            "presiding_judge_or_clerk",
+            "volume_page",
+            "certificate_stub_number",
+            "current_residence_raw",
+            "place_of_birth_raw",
+            "country_of_prior_allegiance",
+            "port_of_entry_raw",
+            "vessel_name",
+        ):
+            str_val = getattr(self, str_key)
+            if str_val is not None:
+                data[str_key] = str_val
+
         if self.stage is not None:
             data["stage"] = self.stage.value
-        if self.applicant_id is not None:
-            data["applicant_id"] = str(self.applicant_id)
-        if self.current_residence_raw is not None:
-            data["current_residence_raw"] = self.current_residence_raw
-        if self.current_residence_id is not None:
-            data["current_residence_id"] = str(self.current_residence_id)
         if self.date_of_birth is not None:
             data["date_of_birth"] = self.date_of_birth.to_dict()
-        if self.place_of_birth_raw is not None:
-            data["place_of_birth_raw"] = self.place_of_birth_raw
-        if self.place_of_birth_id is not None:
-            data["place_of_birth_id"] = str(self.place_of_birth_id)
-        if self.country_of_prior_allegiance is not None:
-            data["country_of_prior_allegiance"] = self.country_of_prior_allegiance
-        if self.port_of_entry_raw is not None:
-            data["port_of_entry_raw"] = self.port_of_entry_raw
         if self.arrival_date is not None:
             data["arrival_date"] = self.arrival_date.to_dict()
-        if self.vessel_name is not None:
-            data["vessel_name"] = self.vessel_name
         return data
 
     @classmethod

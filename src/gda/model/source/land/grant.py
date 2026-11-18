@@ -12,6 +12,7 @@ Operational Role:
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
@@ -31,7 +32,7 @@ from gda.model.base.tombstone import Tombstone
 from gda.model.source.land.deed import LandParcel
 from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "LandGrantRecord",
@@ -81,12 +82,46 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
+def _opt_event_date(raw: Any, field_name: str) -> EventDate | None:
+    """Coerce an optional EventDate input or return None when absent."""
+    return _deserialize_event_date(raw, field_name) if raw is not None else None
+
+
 def _parse_grant_basis(raw: LandGrantBasis | str) -> LandGrantBasis:
     """Resolve LandGrantBasis by enum instance, exact value, or uppercase member name."""
     try:
         return coerce_enum(LandGrantBasis, raw, field_name="grant_basis")
     except ModelFormatError as err:
         raise ModelFormatError(f"Invalid LandGrantBasis value: '{raw}'.") from err
+
+
+def _opt_grant_basis(raw: LandGrantBasis | str | None) -> LandGrantBasis | None:
+    """Resolve optional LandGrantBasis or return None."""
+    return _parse_grant_basis(raw) if raw is not None else None
+
+
+def _coerce_id[TID](val: TID | str, id_cls: type[TID]) -> TID:
+    """Coerce a required typed ID or string token into id_cls."""
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _opt_id[TID](val: TID | str | None, id_cls: type[TID]) -> TID | None:
+    """Coerce an optional typed ID or string token into id_cls, or return None."""
+    if val is None:
+        return None
+    return val if isinstance(val, id_cls) else id_cls(val)  # type: ignore[call-arg]
+
+
+def _coerce_parcel(parcel: LandParcel | dict[str, Any]) -> LandParcel:
+    """Hydrate a LandParcel instance or dictionary."""
+    return parcel if isinstance(parcel, LandParcel) else LandParcel.from_dict(parcel)
+
+
+def _coerce_media_list(media_ids: Iterable[MediaID | str] | None) -> list[MediaID]:
+    """Hydrate an optional sequence of MediaID instances or strings into a list."""
+    if not media_ids:
+        return []
+    return [m if isinstance(m, MediaID) else MediaID(m) for m in media_ids]
 
 
 @dataclass(
@@ -242,79 +277,36 @@ class LandGrantRecord(SourceRecord):
         tombstone: Tombstone[SourceID] | None = None,
     ) -> LandGrantRecord:
         """Factory constructor instantiating a validated LandGrantRecord."""
-        resolved_sid = source_id if isinstance(source_id, SourceID) else SourceID(source_id)
-        resolved_urn = _resolve_land_urn(source_urn)
-        resolved_rep = (
-            repository_id
-            if isinstance(repository_id, RepositoryID)
-            else RepositoryID(repository_id)
-        )
-        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
-        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
-        res_office_loc = (
-            office_location_id
-            if (office_location_id is None or isinstance(office_location_id, LocationID))
-            else LocationID(office_location_id)
-        )
-        res_basis = _parse_grant_basis(grant_basis) if grant_basis is not None else None
-        res_pat_id = (
-            patentee_id
-            if (patentee_id is None or isinstance(patentee_id, IndividualID))
-            else IndividualID(patentee_id)
-        )
-        res_ass_id = (
-            assignee_id
-            if (assignee_id is None or isinstance(assignee_id, IndividualID))
-            else IndividualID(assignee_id)
-        )
-        res_warrant_dt = (
-            _deserialize_event_date(date_warrant_or_entry, "date_warrant_or_entry")
-            if date_warrant_or_entry is not None
-            else None
-        )
-        res_survey_dt = (
-            _deserialize_event_date(date_surveyed, "date_surveyed")
-            if date_surveyed is not None
-            else None
-        )
-        res_patent_dt = (
-            _deserialize_event_date(date_patented, "date_patented")
-            if date_patented is not None
-            else None
-        )
-        resolved_parcel = parcel if isinstance(parcel, LandParcel) else LandParcel.from_dict(parcel)
-
-        resolved_audit = audit if audit is not None else AuditStamp.now()
-        resolved_media = [m if isinstance(m, MediaID) else MediaID(m) for m in (media_ids or [])]
-
         return cls(
-            source_id=resolved_sid,
-            source_urn=resolved_urn,
-            record_category=res_cat,
-            record_type=res_type,
-            description=description.strip() if isinstance(description, str) else description,
-            repository_id=resolved_rep,
-            audit=resolved_audit,
-            media_ids=resolved_media,
+            source_id=_coerce_id(source_id, SourceID),
+            source_urn=_resolve_land_urn(source_urn),
+            record_category=coerce_enum(
+                SourceRecordCategory, record_category, field_name="record_category"
+            ),
+            record_type=coerce_enum(SourceRecordType, record_type, field_name="record_type"),
+            description=description.strip(),
+            repository_id=_coerce_id(repository_id, RepositoryID),
+            audit=audit or AuditStamp.now(),
+            media_ids=_coerce_media_list(media_ids),
             associated_people=associated_people or [],
             tombstone=tombstone,
             issuing_authority=issuing_authority,
             instrument_locator=instrument_locator,
             patentee_name_raw=patentee_name_raw,
-            parcel=resolved_parcel,
+            parcel=_coerce_parcel(parcel),
             land_office_raw=land_office_raw,
-            office_location_id=res_office_loc,
+            office_location_id=_opt_id(office_location_id, LocationID),
             patent_or_warrant_number=patent_or_warrant_number,
             certificate_or_entry_number=certificate_or_entry_number,
-            grant_basis=res_basis,
+            grant_basis=_opt_grant_basis(grant_basis),
             military_service_reference=military_service_reference,
-            patentee_id=res_pat_id,
+            patentee_id=_opt_id(patentee_id, IndividualID),
             assignee_name_raw=assignee_name_raw,
-            assignee_id=res_ass_id,
+            assignee_id=_opt_id(assignee_id, IndividualID),
             surveyor_or_chain_carriers=tuple(surveyor_or_chain_carriers or ()),
-            date_warrant_or_entry=res_warrant_dt,
-            date_surveyed=res_survey_dt,
-            date_patented=res_patent_dt,
+            date_warrant_or_entry=_opt_event_date(date_warrant_or_entry, "date_warrant_or_entry"),
+            date_surveyed=_opt_event_date(date_surveyed, "date_surveyed"),
+            date_patented=_opt_event_date(date_patented, "date_patented"),
             aliquot_description=aliquot_description,
         )
 
