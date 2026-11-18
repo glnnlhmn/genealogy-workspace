@@ -18,10 +18,11 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.immigration.manifest import ImmigrationManifestRecord
 from gda.model.source.immigration.naturalization import NaturalizationRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "ImmigrationManifestRepository",
@@ -53,7 +54,7 @@ class ImmigrationManifestRepository(BaseSQLiteRepository[ImmigrationManifestReco
         port_of_arrival_id: LocationID | str,
     ) -> list[ImmigrationManifestRecord]:
         """Find manifests arriving at a specific port LocationID."""
-        return self.find_by(port_of_arrival_id=_normalize_id(port_of_arrival_id))
+        return self.find_by(port_of_arrival_id=normalize_id(port_of_arrival_id))
 
     def find_by_ship_name(
         self,
@@ -102,14 +103,14 @@ class NaturalizationRepository(BaseSQLiteRepository[NaturalizationRecord, Source
         applicant_id: IndividualID | str,
     ) -> list[NaturalizationRecord]:
         """Find naturalization records linked to an applicant IndividualID."""
-        return self.find_by(applicant_id=_normalize_id(applicant_id))
+        return self.find_by(applicant_id=normalize_id(applicant_id))
 
     def find_by_court_location(
         self,
         court_location_id: LocationID | str,
     ) -> list[NaturalizationRecord]:
         """Find naturalization records filed in a court jurisdiction LocationID."""
-        return self.find_by(court_location_id=_normalize_id(court_location_id))
+        return self.find_by(court_location_id=normalize_id(court_location_id))
 
     def find_by_event_year_range(
         self,

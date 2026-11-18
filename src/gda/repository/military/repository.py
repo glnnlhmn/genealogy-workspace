@@ -28,9 +28,10 @@ from gda.model.source.military import (
     MilitaryPensionRecord,
     MilitaryServiceRecord,
 )
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "BountyLandWarrantRepository",
@@ -66,7 +67,7 @@ class MilitaryDraftRepository(BaseSQLiteRepository[MilitaryDraftRecord, SourceID
         registrant_id: IndividualID | str,
     ) -> list[MilitaryDraftRecord]:
         """Find draft records for a registrant IndividualID."""
-        return self.find_by(registrant_id=_normalize_id(registrant_id))
+        return self.find_by(registrant_id=normalize_id(registrant_id))
 
     def find_by_year(self, draft_year: int) -> list[MilitaryDraftRecord]:
         """Find draft records for a specific registration year."""
@@ -77,7 +78,7 @@ class MilitaryDraftRepository(BaseSQLiteRepository[MilitaryDraftRecord, SourceID
         board_location_id: LocationID | str,
     ) -> list[MilitaryDraftRecord]:
         """Find draft records linked to a local board LocationID."""
-        return self.find_by(board_location_id=_normalize_id(board_location_id))
+        return self.find_by(board_location_id=normalize_id(board_location_id))
 
 
 class MilitaryServiceRepository(BaseSQLiteRepository[MilitaryServiceRecord, SourceID]):
@@ -104,7 +105,7 @@ class MilitaryServiceRepository(BaseSQLiteRepository[MilitaryServiceRecord, Sour
         veteran_id: IndividualID | str,
     ) -> list[MilitaryServiceRecord]:
         """Find service records for a veteran IndividualID."""
-        return self.find_by(veteran_id=_normalize_id(veteran_id))
+        return self.find_by(veteran_id=normalize_id(veteran_id))
 
     def find_by_branch(self, branch: str) -> list[MilitaryServiceRecord]:
         """Find service records for an armed branch."""
@@ -115,7 +116,7 @@ class MilitaryServiceRepository(BaseSQLiteRepository[MilitaryServiceRecord, Sour
         location_id: LocationID | str,
     ) -> list[MilitaryServiceRecord]:
         """Find service records linked to an enlistment LocationID."""
-        return self.find_by(enlistment_location_id=_normalize_id(location_id))
+        return self.find_by(enlistment_location_id=normalize_id(location_id))
 
 
 class MilitaryPensionRepository(BaseSQLiteRepository[MilitaryPensionRecord, SourceID]):
@@ -142,14 +143,14 @@ class MilitaryPensionRepository(BaseSQLiteRepository[MilitaryPensionRecord, Sour
         veteran_id: IndividualID | str,
     ) -> list[MilitaryPensionRecord]:
         """Find pension records linked to a veteran IndividualID."""
-        return self.find_by(veteran_id=_normalize_id(veteran_id))
+        return self.find_by(veteran_id=normalize_id(veteran_id))
 
     def find_by_claimant(
         self,
         claimant_id: IndividualID | str,
     ) -> list[MilitaryPensionRecord]:
         """Find pension records linked to a claimant IndividualID."""
-        return self.find_by(claimant_id=_normalize_id(claimant_id))
+        return self.find_by(claimant_id=normalize_id(claimant_id))
 
     def find_by_application_year(
         self,
@@ -183,14 +184,14 @@ class BountyLandWarrantRepository(BaseSQLiteRepository[BountyLandWarrantRecord, 
         veteran_id: IndividualID | str,
     ) -> list[BountyLandWarrantRecord]:
         """Find bounty land warrants linked to a veteran IndividualID."""
-        return self.find_by(veteran_id=_normalize_id(veteran_id))
+        return self.find_by(veteran_id=normalize_id(veteran_id))
 
     def find_by_warrantee(
         self,
         warrantee_id: IndividualID | str,
     ) -> list[BountyLandWarrantRecord]:
         """Find bounty land warrants linked to a warrantee IndividualID."""
-        return self.find_by(warrantee_id=_normalize_id(warrantee_id))
+        return self.find_by(warrantee_id=normalize_id(warrantee_id))
 
     def find_by_warrant_year(
         self,
@@ -224,7 +225,7 @@ class MilitaryCasualtyRepository(BaseSQLiteRepository[MilitaryCasualtyRecord, So
         servicemember_id: IndividualID | str,
     ) -> list[MilitaryCasualtyRecord]:
         """Find casualty records for a servicemember IndividualID."""
-        return self.find_by(servicemember_id=_normalize_id(servicemember_id))
+        return self.find_by(servicemember_id=normalize_id(servicemember_id))
 
     def find_by_year(self, casualty_year: int) -> list[MilitaryCasualtyRecord]:
         """Find casualty records for a specific calendar year."""
@@ -235,7 +236,7 @@ class MilitaryCasualtyRepository(BaseSQLiteRepository[MilitaryCasualtyRecord, So
         location_id: LocationID | str,
     ) -> list[MilitaryCasualtyRecord]:
         """Find casualty records linked to a casualty LocationID."""
-        return self.find_by(casualty_location_id=_normalize_id(location_id))
+        return self.find_by(casualty_location_id=normalize_id(location_id))
 
 
 class MilitaryAwardRepository(BaseSQLiteRepository[MilitaryAwardRecord, SourceID]):
@@ -262,7 +263,7 @@ class MilitaryAwardRepository(BaseSQLiteRepository[MilitaryAwardRecord, SourceID
         recipient_id: IndividualID | str,
     ) -> list[MilitaryAwardRecord]:
         """Find military award records for a recipient IndividualID."""
-        return self.find_by(recipient_id=_normalize_id(recipient_id))
+        return self.find_by(recipient_id=normalize_id(recipient_id))
 
     def find_by_award_year(
         self,

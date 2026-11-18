@@ -22,10 +22,12 @@ from gda.model.source.publications import (
     PeriodicalArticleRecord,
     Publication,
 )
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
+from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "NewspaperClipRepository",
@@ -55,12 +57,13 @@ class PublicationRepository(BaseSQLiteRepository[Publication, SourceID]):
 
     def get_by_pub_code(self, pub_code: str) -> Publication | None:
         """Retrieve a Publication catalog record by its unique pub_code."""
-        matches = self.find_by(pub_code=pub_code)
+        clean_code = (clean_string(pub_code) or pub_code).upper()
+        matches = self.find_by(pub_code=clean_code)
         return matches[0] if matches else None
 
     def find_by_location(self, location_id: LocationID | str) -> list[Publication]:
         """Find publications published in a specific geographic LocationID."""
-        return self.find_by(location_id=_normalize_id(location_id))
+        return self.find_by(location_id=normalize_id(location_id))
 
 
 class NewspaperClipRepository(BaseSQLiteRepository[NewspaperClipRecord, SourceID]):
@@ -84,21 +87,22 @@ class NewspaperClipRepository(BaseSQLiteRepository[NewspaperClipRecord, SourceID
 
     def find_by_pub_code(self, pub_code: str) -> list[NewspaperClipRecord]:
         """Find newspaper clippings matching a parent publication code."""
-        return self.find_by(pub_code=pub_code)
+        clean_code = (clean_string(pub_code) or pub_code).upper()
+        return self.find_by(pub_code=clean_code)
 
     def find_by_parent_source(
         self,
         parent_source_id: SourceID | str,
     ) -> list[NewspaperClipRecord]:
         """Find newspaper clippings linked to a parent Publication SourceID."""
-        return self.find_by(parent_source_id=_normalize_id(parent_source_id))
+        return self.find_by(parent_source_id=normalize_id(parent_source_id))
 
     def find_by_location(
         self,
         location_id: LocationID | str,
     ) -> list[NewspaperClipRecord]:
         """Find newspaper clippings linked to a publication_location_id."""
-        return self.find_by(publication_location_id=_normalize_id(location_id))
+        return self.find_by(publication_location_id=normalize_id(location_id))
 
     def find_by_year_range(
         self,
@@ -137,21 +141,22 @@ class PeriodicalArticleRepository(BaseSQLiteRepository[PeriodicalArticleRecord, 
 
     def find_by_pub_code(self, pub_code: str) -> list[PeriodicalArticleRecord]:
         """Find periodical articles matching a parent publication code."""
-        return self.find_by(pub_code=pub_code)
+        clean_code = (clean_string(pub_code) or pub_code).upper()
+        return self.find_by(pub_code=clean_code)
 
     def find_by_parent_source(
         self,
         parent_source_id: SourceID | str,
     ) -> list[PeriodicalArticleRecord]:
         """Find periodical articles linked to a parent Publication SourceID."""
-        return self.find_by(parent_source_id=_normalize_id(parent_source_id))
+        return self.find_by(parent_source_id=normalize_id(parent_source_id))
 
     def find_by_institution_org(
         self,
         org_id: OrganizationID | str,
     ) -> list[PeriodicalArticleRecord]:
         """Find periodical articles linked to a publishing institution OrganizationID."""
-        return self.find_by(institution_org_id=_normalize_id(org_id))
+        return self.find_by(institution_org_id=normalize_id(org_id))
 
     def find_by_year_range(
         self,

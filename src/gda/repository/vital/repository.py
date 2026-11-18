@@ -25,10 +25,11 @@ from gda.model.source.vital.birth import BirthRecord
 from gda.model.source.vital.death import DeathRecord
 from gda.model.source.vital.divorce import DivorceRecord
 from gda.model.source.vital.marriage import MarriageRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "BaptismRepository",
@@ -60,19 +61,19 @@ class BaptismRepository(BaseSQLiteRepository[BaptismRecord, SourceID]):
 
     def find_by_individual(self, individual_id: IndividualID | str) -> list[BaptismRecord]:
         """Find baptism records linked to a specific baptized individual."""
-        return self.find_by(individual_id=_normalize_id(individual_id))
+        return self.find_by(individual_id=normalize_id(individual_id))
 
     def find_by_church_org(self, church_org_id: OrganizationID | str) -> list[BaptismRecord]:
         """Find baptism records linked to an ecclesiastical organization."""
-        return self.find_by(church_org_id=_normalize_id(church_org_id))
+        return self.find_by(church_org_id=normalize_id(church_org_id))
 
     def find_by_church_site(self, church_site_id: SiteID | str) -> list[BaptismRecord]:
         """Find baptism records linked to a church site."""
-        return self.find_by(church_site_id=_normalize_id(church_site_id))
+        return self.find_by(church_site_id=normalize_id(church_site_id))
 
     def find_by_location(self, location_id: LocationID | str) -> list[BaptismRecord]:
         """Find baptism records occurring in a specific geographic location."""
-        return self.find_by(location_id=_normalize_id(location_id))
+        return self.find_by(location_id=normalize_id(location_id))
 
     def find_by_year_range(self, start_year: int, end_year: int) -> list[BaptismRecord]:
         """Find baptism records within an inclusive baptism year range."""
@@ -107,11 +108,11 @@ class BirthRepository(BaseSQLiteRepository[BirthRecord, SourceID]):
 
     def find_by_child(self, child_id: IndividualID | str) -> list[BirthRecord]:
         """Find birth records linked to a specific child individual ID."""
-        return self.find_by(child_id=_normalize_id(child_id))
+        return self.find_by(child_id=normalize_id(child_id))
 
     def find_by_location(self, location_id: LocationID | str) -> list[BirthRecord]:
         """Find birth records linked to a place_of_birth_id."""
-        return self.find_by(place_of_birth_id=_normalize_id(location_id))
+        return self.find_by(place_of_birth_id=normalize_id(location_id))
 
     def find_by_certificate_number(self, certificate_number: str) -> list[BirthRecord]:
         """Find birth records matching a civil certificate number."""
@@ -150,15 +151,15 @@ class DeathRepository(BaseSQLiteRepository[DeathRecord, SourceID]):
 
     def find_by_decedent(self, decedent_id: IndividualID | str) -> list[DeathRecord]:
         """Find death records linked to a specific decedent individual ID."""
-        return self.find_by(decedent_id=_normalize_id(decedent_id))
+        return self.find_by(decedent_id=normalize_id(decedent_id))
 
     def find_by_location(self, location_id: LocationID | str) -> list[DeathRecord]:
         """Find death records linked to a place_of_death_id."""
-        return self.find_by(place_of_death_id=_normalize_id(location_id))
+        return self.find_by(place_of_death_id=normalize_id(location_id))
 
     def find_by_disposition_site(self, site_id: SiteID | str) -> list[DeathRecord]:
         """Find death records linked to a burial/disposition site."""
-        return self.find_by(disposition_site_id=_normalize_id(site_id))
+        return self.find_by(disposition_site_id=normalize_id(site_id))
 
     def find_by_certificate_number(self, certificate_number: str) -> list[DeathRecord]:
         """Find death records matching a civil certificate number."""
@@ -197,15 +198,15 @@ class DivorceRepository(BaseSQLiteRepository[DivorceRecord, SourceID]):
 
     def find_by_husband(self, husband_id: IndividualID | str) -> list[DivorceRecord]:
         """Find divorce records linked to a specific husband individual ID."""
-        return self.find_by(husband_id=_normalize_id(husband_id))
+        return self.find_by(husband_id=normalize_id(husband_id))
 
     def find_by_wife(self, wife_id: IndividualID | str) -> list[DivorceRecord]:
         """Find divorce records linked to a specific wife individual ID."""
-        return self.find_by(wife_id=_normalize_id(wife_id))
+        return self.find_by(wife_id=normalize_id(wife_id))
 
     def find_by_jurisdiction(self, jurisdiction_id: LocationID | str) -> list[DivorceRecord]:
         """Find divorce records linked to a court jurisdiction location ID."""
-        return self.find_by(jurisdiction_id=_normalize_id(jurisdiction_id))
+        return self.find_by(jurisdiction_id=normalize_id(jurisdiction_id))
 
     def find_by_docket_number(self, docket_number: str) -> list[DivorceRecord]:
         """Find divorce records matching a judicial docket number."""
@@ -244,15 +245,15 @@ class MarriageRepository(BaseSQLiteRepository[MarriageRecord, SourceID]):
 
     def find_by_groom(self, groom_id: IndividualID | str) -> list[MarriageRecord]:
         """Find marriage records linked to a specific groom individual ID."""
-        return self.find_by(groom_id=_normalize_id(groom_id))
+        return self.find_by(groom_id=normalize_id(groom_id))
 
     def find_by_bride(self, bride_id: IndividualID | str) -> list[MarriageRecord]:
         """Find marriage records linked to a specific bride individual ID."""
-        return self.find_by(bride_id=_normalize_id(bride_id))
+        return self.find_by(bride_id=normalize_id(bride_id))
 
     def find_by_location(self, location_id: LocationID | str) -> list[MarriageRecord]:
         """Find marriage records linked to a place_of_marriage_id."""
-        return self.find_by(place_of_marriage_id=_normalize_id(location_id))
+        return self.find_by(place_of_marriage_id=normalize_id(location_id))
 
     def find_by_license_number(self, license_number: str) -> list[MarriageRecord]:
         """Find marriage records matching a license number."""

@@ -17,14 +17,14 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, OrganizationID, SourceID
 from gda.model.source.orgs.membership import OrganizationMembershipRecord
 from gda.model.source.orgs.roster import OrganizationRosterRecord
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.orgs.repository import (
     OrganizationMembershipRepository,
     OrganizationRosterRepository,
 )
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "OrganizationMembershipCollection",
@@ -82,14 +82,14 @@ class OrganizationMembershipCollection(
         individual_id: IndividualID | str,
     ) -> list[OrganizationMembershipRecord]:
         """Return active membership records for an IndividualID."""
-        return self._records_for_ids(self._by_individual.get(_normalize_id(individual_id), set()))
+        return self._records_for_ids(self._by_individual.get(normalize_id(individual_id), set()))
 
     def find_by_organization(
         self,
         org_id: OrganizationID | str,
     ) -> list[OrganizationMembershipRecord]:
         """Return active membership records for an OrganizationID."""
-        return self._records_for_ids(self._by_org.get(_normalize_id(org_id), set()))
+        return self._records_for_ids(self._by_org.get(normalize_id(org_id), set()))
 
 
 class OrganizationRosterCollection(
@@ -135,7 +135,7 @@ class OrganizationRosterCollection(
         org_id: OrganizationID | str,
     ) -> list[OrganizationRosterRecord]:
         """Return active roster records for an OrganizationID."""
-        return self._records_for_ids(self._by_org.get(_normalize_id(org_id), set()))
+        return self._records_for_ids(self._by_org.get(normalize_id(org_id), set()))
 
     def find_by_jurisdiction(
         self,
@@ -143,5 +143,5 @@ class OrganizationRosterCollection(
     ) -> list[OrganizationRosterRecord]:
         """Return active roster records for a jurisdiction LocationID."""
         return self._records_for_ids(
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
+            self._by_jurisdiction.get(normalize_id(jurisdiction_id), set())
         )

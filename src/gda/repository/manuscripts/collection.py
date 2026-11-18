@@ -17,14 +17,15 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.manuscripts.bible import FamilyBibleRecord
 from gda.model.source.manuscripts.narrative import NarrativeManuscriptRecord
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.manuscripts.repository import (
     FamilyBibleRepository,
     NarrativeManuscriptRepository,
 )
+from gda.util.ids import normalize_id
+from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "FamilyBibleCollection",
@@ -68,14 +69,15 @@ class FamilyBibleCollection(BaseSourceCollection[FamilyBibleRecord, FamilyBibleR
         family_surname: str,
     ) -> list[FamilyBibleRecord]:
         """Return active family Bible records for a surname."""
-        return self._records_for_ids(self._by_surname.get(family_surname, set()))
+        key = clean_string(family_surname) or family_surname
+        return self._records_for_ids(self._by_surname.get(key, set()))
 
     def find_by_original_owner(
         self,
         original_owner_id: IndividualID | str,
     ) -> list[FamilyBibleRecord]:
         """Return active family Bible records for an original owner IndividualID."""
-        return self._records_for_ids(self._by_owner.get(_normalize_id(original_owner_id), set()))
+        return self._records_for_ids(self._by_owner.get(normalize_id(original_owner_id), set()))
 
 
 class NarrativeManuscriptCollection(
@@ -124,11 +126,11 @@ class NarrativeManuscriptCollection(
         author_id: IndividualID | str,
     ) -> list[NarrativeManuscriptRecord]:
         """Return active narrative manuscripts for an author IndividualID."""
-        return self._records_for_ids(self._by_author.get(_normalize_id(author_id), set()))
+        return self._records_for_ids(self._by_author.get(normalize_id(author_id), set()))
 
     def find_by_origin_place(
         self,
         location_id: LocationID | str,
     ) -> list[NarrativeManuscriptRecord]:
         """Return active narrative manuscripts for an origin LocationID."""
-        return self._records_for_ids(self._by_origin.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_origin.get(normalize_id(location_id), set()))

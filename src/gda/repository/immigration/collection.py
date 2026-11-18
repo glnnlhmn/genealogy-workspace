@@ -17,14 +17,14 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.immigration.manifest import ImmigrationManifestRecord
 from gda.model.source.immigration.naturalization import NaturalizationRecord
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.immigration.repository import (
     ImmigrationManifestRepository,
     NaturalizationRepository,
 )
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "ImmigrationManifestCollection",
@@ -77,14 +77,14 @@ class ImmigrationManifestCollection(
         individual_id: IndividualID | str,
     ) -> list[ImmigrationManifestRecord]:
         """Return active manifests containing a linked passenger IndividualID."""
-        return self._records_for_ids(self._by_passenger.get(_normalize_id(individual_id), set()))
+        return self._records_for_ids(self._by_passenger.get(normalize_id(individual_id), set()))
 
     def find_by_port_of_arrival(
         self,
         port_of_arrival_id: LocationID | str,
     ) -> list[ImmigrationManifestRecord]:
         """Return active manifests for a port of arrival LocationID."""
-        return self._records_for_ids(self._by_port.get(_normalize_id(port_of_arrival_id), set()))
+        return self._records_for_ids(self._by_port.get(normalize_id(port_of_arrival_id), set()))
 
 
 class NaturalizationCollection(
@@ -127,13 +127,13 @@ class NaturalizationCollection(
         applicant_id: IndividualID | str,
     ) -> list[NaturalizationRecord]:
         """Return active naturalization records for an applicant IndividualID."""
-        return self._records_for_ids(self._by_applicant.get(_normalize_id(applicant_id), set()))
+        return self._records_for_ids(self._by_applicant.get(normalize_id(applicant_id), set()))
 
     def find_by_court_location(
         self,
         court_location_id: LocationID | str,
     ) -> list[NaturalizationRecord]:
-        """Return active naturalization records for a court LocationID."""
+        """Return active naturalization records for a court jurisdiction LocationID."""
         return self._records_for_ids(
-            self._by_court_location.get(_normalize_id(court_location_id), set())
+            self._by_court_location.get(normalize_id(court_location_id), set())
         )

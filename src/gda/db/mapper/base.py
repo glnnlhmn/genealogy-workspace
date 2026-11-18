@@ -18,6 +18,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from gda.core.dates import parse_iso_date_parts
+from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.db.exceptions import EntityMappingError
 from gda.model.atom.date import IsoTimestamp
@@ -27,8 +28,9 @@ from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.note import Note
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "BaseRowMapper",
@@ -51,16 +53,12 @@ _YEAR_PATTERN: re.Pattern[str] = re.compile(r"\b(\d{4})\b")
 
 
 def _extract_id_str(val: Any) -> str | None:
-    """Extract plain ID string from raw string, dict dump, or AtomID."""
+    """Extract plain ID string from raw string, dict dump, or AtomID via normalize_id."""
     if val is None:
         return None
-    if isinstance(val, str):
-        return val
     if isinstance(val, dict):
-        return str(val.get("value", ""))
-    if isinstance(val, AtomID):
-        return str(val.value)
-    return str(val)
+        return normalize_id(val.get("value", "")) or None
+    return normalize_id(val) or None
 
 
 def _opt_val(val: Any) -> str | None:
@@ -138,11 +136,15 @@ def _hydrate_from_payload[TSource: SourceRecord](
 
 
 def _extract_year_from_text(date_text: str | None) -> int | None:
-    """Extract 4-digit calendar year from date text if present."""
+    """Extract 4-digit calendar year via parse_iso_date_parts with regex fallback for free text."""
     if not date_text:
         return None
-    match = _YEAR_PATTERN.search(date_text)
-    return int(match.group(1)) if match else None
+    try:
+        year, _, _ = parse_iso_date_parts(date_text)
+        return year
+    except ModelFormatError:
+        match = _YEAR_PATTERN.search(date_text)
+        return int(match.group(1)) if match else None
 
 
 def _serialize_name_thing(name: NameThing) -> dict[str, Any]:

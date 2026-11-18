@@ -4,11 +4,13 @@ Public facade and registry for GDA bidirectional SQLite row mappers.
 
 Operational Role:
     Aggregates modular entity, archival source, and cross-reference row mappers
-    and exposes the get_mapper() lookup registry.
+    and exposes the get_mapper() lookup registry across all 43 mapper classes
+    and their polymorphic domain subclasses.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 from gda.db.exceptions import EntityMappingError
@@ -26,6 +28,9 @@ from gda.db.mapper.education_manuscripts_orgs_other import (
     OtherMiscellaneousRecordMapper,
 )
 from gda.db.mapper.enumerated_publications import (
+    _POPULATION_SCHEDULE_REGISTRY,
+    _SUPPLEMENTAL_SCHEDULE_REGISTRY,
+    _TAX_RECORD_REGISTRY,
     DirectoryRollRecordMapper,
     NewspaperClipRecordMapper,
     PeriodicalArticleRecordMapper,
@@ -36,6 +41,10 @@ from gda.db.mapper.enumerated_publications import (
 )
 from gda.db.mapper.facts import FactRowMapper
 from gda.db.mapper.immigration_military import (
+    _CASUALTY_RECORD_REGISTRY,
+    _DRAFT_RECORD_REGISTRY,
+    _PENSION_RECORD_REGISTRY,
+    _SERVICE_RECORD_REGISTRY,
     BountyLandWarrantRecordMapper,
     ImmigrationManifestRecordMapper,
     MilitaryAwardRecordMapper,
@@ -74,14 +83,8 @@ from gda.db.mapper.xref import (
     SiteXRefMapper,
     SurnameXRefMapper,
 )
-from gda.model.entity.fact import Fact
-from gda.model.entity.family import Family
-from gda.model.entity.individual import Individual
-from gda.model.entity.location import Location
-from gda.model.entity.organization import Organization
-from gda.model.entity.site import Site
 
-__version__ = "1.0.0+build.7"
+__version__ = "1.0.0+build.9"
 
 __all__ = [
     "AcademicCredentialRecordMapper",
@@ -137,18 +140,122 @@ __all__ = [
     "get_mapper",
 ]
 
-_MAPPER_REGISTRY: dict[type[Any], BaseRowMapper[Any]] = {
-    Location: LocationRowMapper(),
-    Site: SiteRowMapper(),
-    Organization: OrganizationRowMapper(),
-    Individual: IndividualRowMapper(),
-    Family: FamilyRowMapper(),
-    Fact: FactRowMapper(),
-}
+_ALL_MAPPER_INSTANCES: tuple[BaseRowMapper[Any], ...] = (
+    # Core Entities (6)
+    LocationRowMapper(),
+    SiteRowMapper(),
+    OrganizationRowMapper(),
+    IndividualRowMapper(),
+    FamilyRowMapper(),
+    FactRowMapper(),
+    # Vital & Cemetery (7)
+    BaptismRecordMapper(),
+    BirthRecordMapper(),
+    DeathRecordMapper(),
+    DivorceRecordMapper(),
+    MarriageRecordMapper(),
+    CemeteryMarkerRecordMapper(),
+    CemeteryRegistryRecordMapper(),
+    # Probate & Land (4)
+    ProbateRecordMapper(),
+    EstateInventoryRecordMapper(),
+    LandDeedRecordMapper(),
+    LandGrantRecordMapper(),
+    # Immigration & Military (8)
+    ImmigrationManifestRecordMapper(),
+    NaturalizationRecordMapper(),
+    MilitaryDraftRecordMapper(),
+    MilitaryServiceRecordMapper(),
+    MilitaryPensionRecordMapper(),
+    BountyLandWarrantRecordMapper(),
+    MilitaryCasualtyRecordMapper(),
+    MilitaryAwardRecordMapper(),
+    # Enumerated & Publications (7)
+    PopulationScheduleMapper(),
+    SupplementalScheduleMapper(),
+    DirectoryRollRecordMapper(),
+    TaxAssessmentRecordMapper(),
+    PublicationMapper(),
+    NewspaperClipRecordMapper(),
+    PeriodicalArticleRecordMapper(),
+    # Education, Manuscripts, Orgs & Other (6)
+    AcademicCredentialRecordMapper(),
+    FamilyBibleRecordMapper(),
+    NarrativeManuscriptRecordMapper(),
+    OrganizationMembershipRecordMapper(),
+    OrganizationRosterRecordMapper(),
+    OtherMiscellaneousRecordMapper(),
+    # Cross-References (9)
+    FactParticipantXRefMapper(),
+    IndividualFamilyXRefMapper(),
+    IndividualOrganizationXRefMapper(),
+    IndividualSourceXRefMapper(),
+    IndividualSurnameXRefMapper(),
+    LocationXRefMapper(),
+    MediaXRefMapper(),
+    SiteXRefMapper(),
+    SurnameXRefMapper(),
+)
+
+
+def _bind_polymorphic_subclasses(
+    registry: dict[type[Any], BaseRowMapper[Any]],
+    mapper: BaseRowMapper[Any],
+    subclasses: Iterable[type[Any]],
+) -> None:
+    """Bind polymorphic concrete subclasses to their shared parent row mapper."""
+    for cls in subclasses:
+        registry[cls] = mapper
+
+
+def _build_mapper_registry() -> dict[type[Any], BaseRowMapper[Any]]:
+    """Build lookup dictionary mapping all 43 model classes and polymorphic subclasses."""
+    registry: dict[type[Any], BaseRowMapper[Any]] = {
+        mapper.model_cls: mapper for mapper in _ALL_MAPPER_INSTANCES
+    }
+    _bind_polymorphic_subclasses(
+        registry,
+        registry[PopulationScheduleMapper().model_cls],
+        _POPULATION_SCHEDULE_REGISTRY.values(),
+    )
+    _bind_polymorphic_subclasses(
+        registry,
+        registry[SupplementalScheduleMapper().model_cls],
+        _SUPPLEMENTAL_SCHEDULE_REGISTRY.values(),
+    )
+    _bind_polymorphic_subclasses(
+        registry,
+        registry[TaxAssessmentRecordMapper().model_cls],
+        _TAX_RECORD_REGISTRY.values(),
+    )
+    _bind_polymorphic_subclasses(
+        registry,
+        registry[MilitaryDraftRecordMapper().model_cls],
+        _DRAFT_RECORD_REGISTRY.values(),
+    )
+    _bind_polymorphic_subclasses(
+        registry,
+        registry[MilitaryServiceRecordMapper().model_cls],
+        _SERVICE_RECORD_REGISTRY.values(),
+    )
+    _bind_polymorphic_subclasses(
+        registry,
+        registry[MilitaryPensionRecordMapper().model_cls],
+        _PENSION_RECORD_REGISTRY.values(),
+    )
+    _bind_polymorphic_subclasses(
+        registry,
+        registry[MilitaryCasualtyRecordMapper().model_cls],
+        _CASUALTY_RECORD_REGISTRY.values(),
+    )
+    return registry
+
+
+_MAPPER_REGISTRY: dict[type[Any], BaseRowMapper[Any]] = _build_mapper_registry()
 
 
 def get_mapper[T](model_cls: type[T]) -> BaseRowMapper[T]:
-    """Retrieve the registered row mapper for a domain entity class."""
+    """Retrieve the registered row mapper for a domain entity, source, or XRef class."""
     mapper = _MAPPER_REGISTRY.get(model_cls)
     if mapper is None:
         raise EntityMappingError(

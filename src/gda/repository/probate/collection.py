@@ -17,14 +17,14 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.probate.inventory import EstateInventoryRecord
 from gda.model.source.probate.will import ProbateRecord
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.probate.repository import (
     EstateInventoryRepository,
     ProbateRepository,
 )
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "EstateInventoryCollection",
@@ -67,7 +67,7 @@ class ProbateCollection(BaseSourceCollection[ProbateRecord, ProbateRepository]):
         decedent_id: IndividualID | str,
     ) -> list[ProbateRecord]:
         """Return active probate records for a decedent IndividualID."""
-        return self._records_for_ids(self._by_decedent.get(_normalize_id(decedent_id), set()))
+        return self._records_for_ids(self._by_decedent.get(normalize_id(decedent_id), set()))
 
     def find_by_court_location(
         self,
@@ -75,7 +75,7 @@ class ProbateCollection(BaseSourceCollection[ProbateRecord, ProbateRepository]):
     ) -> list[ProbateRecord]:
         """Return active probate records for a court jurisdiction LocationID."""
         return self._records_for_ids(
-            self._by_court_location.get(_normalize_id(court_location_id), set())
+            self._by_court_location.get(normalize_id(court_location_id), set())
         )
 
 
@@ -119,13 +119,13 @@ class EstateInventoryCollection(
         decedent_id: IndividualID | str,
     ) -> list[EstateInventoryRecord]:
         """Return active estate inventory records for a decedent IndividualID."""
-        return self._records_for_ids(self._by_decedent.get(_normalize_id(decedent_id), set()))
+        return self._records_for_ids(self._by_decedent.get(normalize_id(decedent_id), set()))
 
     def find_by_parent_probate_source(
         self,
         parent_probate_source_id: SourceID | str,
     ) -> list[EstateInventoryRecord]:
-        """Return active estate inventories linked to a parent ProbateRecord SourceID."""
+        """Return active estate inventories for a parent ProbateRecord SourceID."""
         return self._records_for_ids(
-            self._by_parent_probate.get(_normalize_id(parent_probate_source_id), set())
+            self._by_parent_probate.get(normalize_id(parent_probate_source_id), set())
         )

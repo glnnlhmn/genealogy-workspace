@@ -36,7 +36,6 @@ from gda.model.source.military import (
     WwiDraftCardRecord,
     WwiiDraftCardRecord,
 )
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.military.repository import (
     BountyLandWarrantRepository,
@@ -46,8 +45,9 @@ from gda.repository.military.repository import (
     MilitaryPensionRepository,
     MilitaryServiceRepository,
 )
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "BountyLandWarrantCollection",
@@ -105,7 +105,7 @@ class MilitaryDraftCollection(BaseSourceCollection[MilitaryDraftRecord, Military
         registrant_id: IndividualID | str,
     ) -> list[MilitaryDraftRecord]:
         """Return active draft records for a registrant IndividualID."""
-        return self._records_for_ids(self._by_registrant.get(_normalize_id(registrant_id), set()))
+        return self._records_for_ids(self._by_registrant.get(normalize_id(registrant_id), set()))
 
     def find_by_board_location(
         self,
@@ -113,7 +113,7 @@ class MilitaryDraftCollection(BaseSourceCollection[MilitaryDraftRecord, Military
     ) -> list[MilitaryDraftRecord]:
         """Return active draft records for a local board LocationID."""
         return self._records_for_ids(
-            self._by_board_location.get(_normalize_id(board_location_id), set())
+            self._by_board_location.get(normalize_id(board_location_id), set())
         )
 
 
@@ -159,14 +159,14 @@ class MilitaryServiceCollection(
         veteran_id: IndividualID | str,
     ) -> list[MilitaryServiceRecord]:
         """Return active service records for a veteran IndividualID."""
-        return self._records_for_ids(self._by_veteran.get(_normalize_id(veteran_id), set()))
+        return self._records_for_ids(self._by_veteran.get(normalize_id(veteran_id), set()))
 
     def find_by_enlistment_location(
         self,
         location_id: LocationID | str,
     ) -> list[MilitaryServiceRecord]:
         """Return active service records for an enlistment LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))
 
 
 class MilitaryPensionCollection(
@@ -211,14 +211,14 @@ class MilitaryPensionCollection(
         veteran_id: IndividualID | str,
     ) -> list[MilitaryPensionRecord]:
         """Return active pension records for a veteran IndividualID."""
-        return self._records_for_ids(self._by_veteran.get(_normalize_id(veteran_id), set()))
+        return self._records_for_ids(self._by_veteran.get(normalize_id(veteran_id), set()))
 
     def find_by_application_location(
         self,
         location_id: LocationID | str,
     ) -> list[MilitaryPensionRecord]:
         """Return active pension records for an application LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))
 
 
 class BountyLandWarrantCollection(
@@ -262,16 +262,14 @@ class BountyLandWarrantCollection(
         veteran_id: IndividualID | str,
     ) -> list[BountyLandWarrantRecord]:
         """Return active bounty land warrants for a veteran IndividualID."""
-        return self._records_for_ids(self._by_veteran.get(_normalize_id(veteran_id), set()))
+        return self._records_for_ids(self._by_veteran.get(normalize_id(veteran_id), set()))
 
     def find_by_patent_location(
         self,
         location_id: LocationID | str,
     ) -> list[BountyLandWarrantRecord]:
         """Return active bounty land warrants for a patent LocationID."""
-        return self._records_for_ids(
-            self._by_patent_location.get(_normalize_id(location_id), set())
-        )
+        return self._records_for_ids(self._by_patent_location.get(normalize_id(location_id), set()))
 
 
 class MilitaryCasualtyCollection(
@@ -322,7 +320,7 @@ class MilitaryCasualtyCollection(
     ) -> list[MilitaryCasualtyRecord]:
         """Return active casualty records for a servicemember IndividualID."""
         return self._records_for_ids(
-            self._by_servicemember.get(_normalize_id(servicemember_id), set())
+            self._by_servicemember.get(normalize_id(servicemember_id), set())
         )
 
     def find_by_location(
@@ -330,7 +328,7 @@ class MilitaryCasualtyCollection(
         location_id: LocationID | str,
     ) -> list[MilitaryCasualtyRecord]:
         """Return active casualty records for a casualty LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))
 
 
 class MilitaryAwardCollection(BaseSourceCollection[MilitaryAwardRecord, MilitaryAwardRepository]):
@@ -369,11 +367,11 @@ class MilitaryAwardCollection(BaseSourceCollection[MilitaryAwardRecord, Military
         recipient_id: IndividualID | str,
     ) -> list[MilitaryAwardRecord]:
         """Return active military awards for a recipient IndividualID."""
-        return self._records_for_ids(self._by_recipient.get(_normalize_id(recipient_id), set()))
+        return self._records_for_ids(self._by_recipient.get(normalize_id(recipient_id), set()))
 
     def find_by_action_location(
         self,
         location_id: LocationID | str,
     ) -> list[MilitaryAwardRecord]:
         """Return active military awards for an action LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))

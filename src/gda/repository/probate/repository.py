@@ -18,10 +18,11 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.probate.inventory import EstateInventoryRecord
 from gda.model.source.probate.will import ProbateRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "EstateInventoryRepository",
@@ -53,14 +54,14 @@ class ProbateRepository(BaseSQLiteRepository[ProbateRecord, SourceID]):
         decedent_id: IndividualID | str,
     ) -> list[ProbateRecord]:
         """Find probate records linked to a decedent IndividualID."""
-        return self.find_by(decedent_id=_normalize_id(decedent_id))
+        return self.find_by(decedent_id=normalize_id(decedent_id))
 
     def find_by_court_location(
         self,
         court_location_id: LocationID | str,
     ) -> list[ProbateRecord]:
         """Find probate records filed in a court jurisdiction LocationID."""
-        return self.find_by(court_location_id=_normalize_id(court_location_id))
+        return self.find_by(court_location_id=normalize_id(court_location_id))
 
     def find_by_estate_file_number(
         self,
@@ -109,21 +110,21 @@ class EstateInventoryRepository(BaseSQLiteRepository[EstateInventoryRecord, Sour
         decedent_id: IndividualID | str,
     ) -> list[EstateInventoryRecord]:
         """Find estate inventory records linked to a decedent IndividualID."""
-        return self.find_by(decedent_id=_normalize_id(decedent_id))
+        return self.find_by(decedent_id=normalize_id(decedent_id))
 
     def find_by_parent_probate_source(
         self,
         parent_probate_source_id: SourceID | str,
     ) -> list[EstateInventoryRecord]:
         """Find estate inventories linked to a parent ProbateRecord SourceID."""
-        return self.find_by(parent_probate_source_id=_normalize_id(parent_probate_source_id))
+        return self.find_by(parent_probate_source_id=normalize_id(parent_probate_source_id))
 
     def find_by_court_location(
         self,
         court_location_id: LocationID | str,
     ) -> list[EstateInventoryRecord]:
         """Find estate inventories filed in a court jurisdiction LocationID."""
-        return self.find_by(court_location_id=_normalize_id(court_location_id))
+        return self.find_by(court_location_id=normalize_id(court_location_id))
 
     def find_by_year_range(
         self,

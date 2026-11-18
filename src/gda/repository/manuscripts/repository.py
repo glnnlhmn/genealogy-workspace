@@ -18,10 +18,12 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.manuscripts.bible import FamilyBibleRecord
 from gda.model.source.manuscripts.narrative import NarrativeManuscriptRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
+from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "FamilyBibleRepository",
@@ -53,14 +55,14 @@ class FamilyBibleRepository(BaseSQLiteRepository[FamilyBibleRecord, SourceID]):
         family_surname: str,
     ) -> list[FamilyBibleRecord]:
         """Find family Bible records matching a primary family surname."""
-        return self.find_by(family_surname=family_surname)
+        return self.find_by(family_surname=clean_string(family_surname) or family_surname)
 
     def find_by_original_owner(
         self,
         original_owner_id: IndividualID | str,
     ) -> list[FamilyBibleRecord]:
         """Find family Bible records linked to an original owner IndividualID."""
-        return self.find_by(original_owner_id=_normalize_id(original_owner_id))
+        return self.find_by(original_owner_id=normalize_id(original_owner_id))
 
 
 class NarrativeManuscriptRepository(BaseSQLiteRepository[NarrativeManuscriptRecord, SourceID]):
@@ -87,21 +89,21 @@ class NarrativeManuscriptRepository(BaseSQLiteRepository[NarrativeManuscriptReco
         author_id: IndividualID | str,
     ) -> list[NarrativeManuscriptRecord]:
         """Find narrative manuscripts linked to an author or sender IndividualID."""
-        return self.find_by(author_or_sender_id=_normalize_id(author_id))
+        return self.find_by(author_or_sender_id=normalize_id(author_id))
 
     def find_by_recipient(
         self,
         recipient_id: IndividualID | str,
     ) -> list[NarrativeManuscriptRecord]:
         """Find narrative manuscripts linked to a recipient IndividualID."""
-        return self.find_by(recipient_id=_normalize_id(recipient_id))
+        return self.find_by(recipient_id=normalize_id(recipient_id))
 
     def find_by_origin_place(
         self,
         location_id: LocationID | str,
     ) -> list[NarrativeManuscriptRecord]:
         """Find narrative manuscripts written at an origin LocationID."""
-        return self.find_by(origin_place_id=_normalize_id(location_id))
+        return self.find_by(origin_place_id=normalize_id(location_id))
 
     def find_by_written_year_range(
         self,

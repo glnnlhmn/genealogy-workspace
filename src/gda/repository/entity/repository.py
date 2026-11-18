@@ -29,9 +29,11 @@ from gda.model.entity.individual import Individual
 from gda.model.entity.location import Location
 from gda.model.entity.organization import Organization
 from gda.model.entity.site import Site
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
+from gda.util.ids import normalize_id
+from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "FactRepository",
@@ -67,11 +69,11 @@ class LocationRepository(BaseSQLiteRepository[Location, LocationID]):
         parent_id: LocationID | str,
     ) -> list[Location]:
         """Find child jurisdictions governed by a parent LocationID."""
-        return self.find_by(parent_id=_normalize_id(parent_id))
+        return self.find_by(parent_id=normalize_id(parent_id))
 
     def find_by_category(self, category: str) -> list[Location]:
         """Find locations matching a JurisdictionCategory value."""
-        return self.find_by(category=category)
+        return self.find_by(category=clean_string(category) or category)
 
 
 class SiteRepository(BaseSQLiteRepository[Site, SiteID]):
@@ -98,11 +100,11 @@ class SiteRepository(BaseSQLiteRepository[Site, SiteID]):
         location_id: LocationID | str,
     ) -> list[Site]:
         """Find physical sites located within a civil jurisdiction LocationID."""
-        return self.find_by(location_id=_normalize_id(location_id))
+        return self.find_by(location_id=normalize_id(location_id))
 
     def find_by_category(self, category: str) -> list[Site]:
         """Find physical sites matching a SiteType value."""
-        return self.find_by(category=category)
+        return self.find_by(category=clean_string(category) or category)
 
 
 class OrganizationRepository(BaseSQLiteRepository[Organization, OrganizationID]):
@@ -129,11 +131,11 @@ class OrganizationRepository(BaseSQLiteRepository[Organization, OrganizationID])
         location_id: LocationID | str,
     ) -> list[Organization]:
         """Find organizations operating within a civil jurisdiction LocationID."""
-        return self.find_by(location_id=_normalize_id(location_id))
+        return self.find_by(location_id=normalize_id(location_id))
 
     def find_by_category(self, category: str) -> list[Organization]:
         """Find organizations matching an OrganizationCategory value."""
-        return self.find_by(category=category)
+        return self.find_by(category=clean_string(category) or category)
 
 
 class IndividualRepository(BaseSQLiteRepository[Individual, IndividualID]):
@@ -157,7 +159,7 @@ class IndividualRepository(BaseSQLiteRepository[Individual, IndividualID]):
 
     def find_by_surname(self, surname: str) -> list[Individual]:
         """Find individuals matching a primary birth surname."""
-        return self.find_by(surname=surname)
+        return self.find_by(surname=clean_string(surname) or surname)
 
 
 class FamilyRepository(BaseSQLiteRepository[Family, FamilyID]):
@@ -181,7 +183,7 @@ class FamilyRepository(BaseSQLiteRepository[Family, FamilyID]):
 
     def find_by_union_type(self, union_type: str) -> list[Family]:
         """Find nuclear families matching a UnionType value."""
-        return self.find_by(union_type=union_type)
+        return self.find_by(union_type=clean_string(union_type) or union_type)
 
 
 class FactRepository(BaseSQLiteRepository[Fact, FactID]):
@@ -208,8 +210,8 @@ class FactRepository(BaseSQLiteRepository[Fact, FactID]):
         subject_id: IndividualID | FamilyID | str,
     ) -> list[Fact]:
         """Find facts asserted about a primary IndividualID or FamilyID."""
-        return self.find_by(primary_subject_id=_normalize_id(subject_id))
+        return self.find_by(primary_subject_id=normalize_id(subject_id))
 
     def find_by_fact_type(self, fact_type: str) -> list[Fact]:
         """Find facts matching a FactType value."""
-        return self.find_by(fact_type=fact_type)
+        return self.find_by(fact_type=clean_string(fact_type) or fact_type)

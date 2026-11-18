@@ -15,10 +15,11 @@ from gda.db.mapper.education_manuscripts_orgs_other import (
 from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.education.credential import AcademicCredentialRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "AcademicCredentialRepository",
@@ -49,14 +50,14 @@ class AcademicCredentialRepository(BaseSQLiteRepository[AcademicCredentialRecord
         subject_id: IndividualID | str,
     ) -> list[AcademicCredentialRecord]:
         """Find academic credentials linked to a student/graduate IndividualID."""
-        return self.find_by(subject_id=_normalize_id(subject_id))
+        return self.find_by(subject_id=normalize_id(subject_id))
 
     def find_by_institution_location(
         self,
         location_id: LocationID | str,
     ) -> list[AcademicCredentialRecord]:
         """Find academic credentials linked to an institution LocationID."""
-        return self.find_by(institution_location_id=_normalize_id(location_id))
+        return self.find_by(institution_location_id=normalize_id(location_id))
 
     def find_by_graduation_year(
         self,

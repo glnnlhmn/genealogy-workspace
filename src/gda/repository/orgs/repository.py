@@ -18,9 +18,10 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, OrganizationID, SourceID
 from gda.model.source.orgs.membership import OrganizationMembershipRecord
 from gda.model.source.orgs.roster import OrganizationRosterRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "OrganizationMembershipRepository",
@@ -54,14 +55,14 @@ class OrganizationMembershipRepository(
         individual_id: IndividualID | str,
     ) -> list[OrganizationMembershipRecord]:
         """Find organization membership records for an IndividualID."""
-        return self.find_by(individual_id=_normalize_id(individual_id))
+        return self.find_by(individual_id=normalize_id(individual_id))
 
     def find_by_organization(
         self,
         org_id: OrganizationID | str,
     ) -> list[OrganizationMembershipRecord]:
         """Find organization membership records linked to an OrganizationID."""
-        return self.find_by(org_id=_normalize_id(org_id))
+        return self.find_by(org_id=normalize_id(org_id))
 
 
 class OrganizationRosterRepository(BaseSQLiteRepository[OrganizationRosterRecord, SourceID]):
@@ -88,14 +89,14 @@ class OrganizationRosterRepository(BaseSQLiteRepository[OrganizationRosterRecord
         org_id: OrganizationID | str,
     ) -> list[OrganizationRosterRecord]:
         """Find organization roster records linked to an OrganizationID."""
-        return self.find_by(org_id=_normalize_id(org_id))
+        return self.find_by(org_id=normalize_id(org_id))
 
     def find_by_jurisdiction(
         self,
         jurisdiction_id: LocationID | str,
     ) -> list[OrganizationRosterRecord]:
         """Find organization roster records linked to a jurisdiction LocationID."""
-        return self.find_by(jurisdiction_id=_normalize_id(jurisdiction_id))
+        return self.find_by(jurisdiction_id=normalize_id(jurisdiction_id))
 
     def find_by_year(
         self,

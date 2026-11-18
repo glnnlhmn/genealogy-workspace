@@ -5,7 +5,9 @@ Domain repository exception hierarchy for the GDA persistence layer.
 Operational Role:
     Defines structured, introspectable exceptions raised by SQLite repositories
     and query builders when persistence constraints, record lookups, or SQL
-    identifier validations fail.
+    identifier validations fail. Unifies RecordNotFoundError with
+    gda.db.exceptions.RecordNotFoundError so callers catching either exception
+    class handle missing-record errors uniformly.
 """
 
 from __future__ import annotations
@@ -13,8 +15,9 @@ from __future__ import annotations
 from typing import Any
 
 from gda.core.errors import GenealogyDeskError
+from gda.db.exceptions import RecordNotFoundError as DbRecordNotFoundError
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "DuplicateRecordError",
@@ -28,7 +31,7 @@ class RepositoryError(GenealogyDeskError):
     """Base exception for all GDA repository and query operations."""
 
 
-class RecordNotFoundError(RepositoryError):
+class RecordNotFoundError(RepositoryError, DbRecordNotFoundError):
     """Raised when a requested record ID or URN cannot be found in a table."""
 
     def __init__(
@@ -56,7 +59,8 @@ class RecordNotFoundError(RepositoryError):
             merged_details.update(details)
 
         super().__init__(
-            f"Record not found in '{table_name}' where {field}={identifier!r}.",
+            message=f"Record not found in '{table_name}' where {field}={identifier!r}.",
+            error_code="ERR_DB_RECORD_NOT_FOUND",
             details=merged_details,
         )
         self.table_name = table_name

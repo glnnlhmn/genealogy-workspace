@@ -15,9 +15,9 @@ from __future__ import annotations
 
 import pytest
 
-import gda.db.mapper.base as base_mod
-from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
+from gda.core.enums.sources import SourceRecordCategory
 from gda.db.exceptions import EntityMappingError
+from gda.db.mapper import base as base_mod
 from gda.db.mapper.base import (
     _base_source_columns,
     _date_sort,
@@ -45,7 +45,7 @@ from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 from gda.model.source.vital.birth import BirthRecord
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 
 @pytest.mark.unit
@@ -71,6 +71,7 @@ def test_extract_id_str_and_extract_year_from_text() -> None:
 
     assert _extract_year_from_text(None) is None
     assert _extract_year_from_text("") is None
+    assert _extract_year_from_text("1880-05-12") == 1880
     assert _extract_year_from_text("Born in 1865 in NH") == 1865
     assert _extract_year_from_text("Circa 1905") == 1905
     assert _extract_year_from_text("Undated") is None
@@ -115,55 +116,63 @@ def test_source_mapper_shared_helpers() -> None:
     assert cols["deprecated_at"] == "2026-01-01T00:00:00Z"
     assert _hydrate_from_payload(cols, SourceRecord) == src
 
-    birth = BirthRecord(
+    active_src = SourceRecord(
         source_id=SourceID("00000000-0000-4000-8000-000000000002"),
-        source_urn=SourceURN("URN:SRC:1880:US_PA:BIR_002"),
-        record_type=SourceRecordType.BIRTH_CERTIFICATE,
-        description="Birth",
+        source_urn=SourceURN("URN:SRC:1880:US_PA:DOC_002"),
+        record_category=SourceRecordCategory.OTHER,
+        description="Active Source",
         repository_id=RepositoryID("REP-000001"),
         audit=audit,
-        child_name_raw="John Lehman",
-        date_of_birth=EventDate.from_dict("1880-05-12"),
-        place_of_birth_raw="Carlisle",
     )
-    b_cols = _base_source_columns(birth)
-    assert b_cols["record_type"] == "BIRTH_CERTIFICATE"
-    assert _hydrate_from_payload(b_cols, BirthRecord) == birth
+    assert _base_source_columns(active_src)["deprecated_at"] is None
 
     with pytest.raises(EntityMappingError, match="Missing or invalid 'payload_json'"):
-        _hydrate_from_payload({"payload_json": None}, BirthRecord)
-    with pytest.raises(EntityMappingError, match="Failed to hydrate"):
+        _hydrate_from_payload({"payload_json": ""}, BirthRecord)
+
+    with pytest.raises(EntityMappingError, match="Failed to hydrate BirthRecord"):
         _hydrate_from_payload({"payload_json": "{bad-json"}, BirthRecord)
 
 
 @pytest.mark.unit
 def test_name_thing_notes_and_tombstone_helpers() -> None:
     """Verify _serialize_name_thing, _deserialize_name_thing, _deserialize_notes, and _deserialize_tombstone."""
-    name = NameThing.create(
-        raw="Bow",
-        canonical="Bow",
-        aliases=["Bow Mills"],
-        alt_spellings=["Bowe"],
-        historic=[HistoricVariant.create(raw="Bow Town", name="Bow Town")],
-        comment="Historic town",
+    variant = HistoricVariant.create(raw="Old Town", name="Old Town")
+    nt = NameThing(
+        raw="New Town",
+        canonical="New Town",
+        aliases=["Townie"],
+        alt_spellings=["Newtowne"],
+        historic=[variant],
+        comment="Historic parish",
     )
-    cols = _serialize_name_thing(name)
-    assert _deserialize_name_thing(cols) == name
+    flat = _serialize_name_thing(nt)
+    assert _deserialize_name_thing(flat) == nt
+
+    empty_nt = _deserialize_name_thing({"raw_name": "Simple", "canonical_name": "Simple"})
+    assert empty_nt.aliases == []
+    assert empty_nt.alt_spellings == []
+    assert empty_nt.historic == []
 
     assert _deserialize_notes(None) == []
     assert _deserialize_notes("") == []
 
-    active_ts = _deserialize_tombstone({"is_deprecated": 0}, LocationID)
-    assert active_ts.is_deprecated is False
+    active_tomb = _deserialize_tombstone({"is_deprecated": 0}, LocationID)
+    assert active_tomb.is_deprecated is False
 
-    dep_fallback = _deserialize_tombstone(
+    dep_tomb = _deserialize_tombstone(
         {
             "is_deprecated": 1,
             "deprecated_at": None,
-            "updated_at": "2026-01-01T00:00:00Z",
-            "superseded_by": "LOC-000009",
+            "updated_at": "2026-02-01T00:00:00Z",
+            "superseded_by": "LOC-000099",
         },
         LocationID,
     )
-    assert dep_fallback.is_deprecated is True
-    assert dep_fallback.superseded_by == LocationID("LOC-000009")
+    assert dep_tomb.is_deprecated is True
+    assert dep_tomb.deprecated_at == IsoTimestamp("2026-02-01T00:00:00Z")
+    assert dep_tomb.superseded_by == LocationID("LOC-000099")
+
+    dep_no_ts = _deserialize_tombstone({"is_deprecated": 1}, LocationID)
+    assert dep_no_ts.is_deprecated is True
+    assert dep_no_ts.deprecated_at is None
+    assert dep_no_ts.superseded_by is None

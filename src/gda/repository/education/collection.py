@@ -15,11 +15,11 @@ from typing import Any
 from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.education.credential import AcademicCredentialRecord
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.education.repository import AcademicCredentialRepository
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "AcademicCredentialCollection",
@@ -69,11 +69,11 @@ class AcademicCredentialCollection(
         subject_id: IndividualID | str,
     ) -> list[AcademicCredentialRecord]:
         """Return active academic credentials for a subject IndividualID."""
-        return self._records_for_ids(self._by_subject.get(_normalize_id(subject_id), set()))
+        return self._records_for_ids(self._by_subject.get(normalize_id(subject_id), set()))
 
     def find_by_institution_location(
         self,
         location_id: LocationID | str,
     ) -> list[AcademicCredentialRecord]:
         """Return active academic credentials for an institution LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))

@@ -16,11 +16,11 @@ from typing import Any
 from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import LocationID, SourceID
 from gda.model.source.other.miscellaneous import OtherMiscellaneousRecord
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.other.repository import OtherMiscellaneousRepository
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "OtherMiscellaneousCollection",
@@ -68,4 +68,4 @@ class OtherMiscellaneousCollection(
         location_id: LocationID | str,
     ) -> list[OtherMiscellaneousRecord]:
         """Return active miscellaneous records for a LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))

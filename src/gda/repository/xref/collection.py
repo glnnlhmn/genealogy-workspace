@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Protocol, Self
 
 from gda.core.introspectable import IntrospectableMixin
 from gda.db.session import DatabaseSessionManager
@@ -61,7 +61,7 @@ from gda.repository.xref.repository import (
 from gda.util.ids import normalize_id
 from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "BaseXRefCollection",
@@ -77,8 +77,17 @@ __all__ = [
 ]
 
 
+class _XRefProtocol(Protocol):
+    """Structural protocol satisfied by all 9 GDA Cross-Reference models."""
+
+    @property
+    def xref_key(self) -> str: ...
+
+    def to_dict(self) -> dict[str, Any]: ...
+
+
 class BaseXRefCollection[
-    TXRef,
+    TXRef: _XRefProtocol,
     TRepo: BaseSQLiteRepository[Any, str],
 ](IntrospectableMixin, ABC):
     """Abstract in-memory collection manager for a compound-keyed XRef domain."""
@@ -269,7 +278,7 @@ class BaseXRefCollection[
     ) -> int:
         """Export XRef collection records to a formatted JSON file via GDAJsonIO."""
         records = self._records_for_keys(self._registry.keys())
-        serialized = [rec.to_dict() for rec in records]  # type: ignore[attr-defined]
+        serialized = [rec.to_dict() for rec in records]
         payload = {
             "schema_version": "1.0.0",
             "table_name": self.table_name,

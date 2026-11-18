@@ -27,9 +27,10 @@ from gda.model.source.enumerated import (
     PopulationScheduleRecord,
     TaxAssessmentRecord,
 )
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "DirectoryRollRepository",
@@ -67,7 +68,7 @@ class PopulationScheduleRepository(BaseSQLiteRepository[PopulationScheduleRecord
         jurisdiction_id: LocationID | str,
     ) -> list[PopulationScheduleRecord[Any]]:
         """Find population schedules linked to a resolved jurisdiction LocationID."""
-        return self.find_by(jurisdiction_id=_normalize_id(jurisdiction_id))
+        return self.find_by(jurisdiction_id=normalize_id(jurisdiction_id))
 
     def find_by_state_and_county(
         self,
@@ -113,7 +114,7 @@ class SupplementalScheduleRepository(BaseSQLiteRepository[CensusScheduleRecord[A
         jurisdiction_id: LocationID | str,
     ) -> list[CensusScheduleRecord[Any]]:
         """Find supplemental schedules linked to a jurisdiction LocationID."""
-        return self.find_by(jurisdiction_id=_normalize_id(jurisdiction_id))
+        return self.find_by(jurisdiction_id=normalize_id(jurisdiction_id))
 
 
 class DirectoryRollRepository(BaseSQLiteRepository[DirectoryRollRecord, SourceID]):
@@ -144,7 +145,7 @@ class DirectoryRollRepository(BaseSQLiteRepository[DirectoryRollRecord, SourceID
         jurisdiction_id: LocationID | str,
     ) -> list[DirectoryRollRecord]:
         """Find directory pages linked to a jurisdiction LocationID."""
-        return self.find_by(jurisdiction_id=_normalize_id(jurisdiction_id))
+        return self.find_by(jurisdiction_id=normalize_id(jurisdiction_id))
 
     def find_by_publication_title(
         self,
@@ -182,11 +183,11 @@ class TaxAssessmentRepository(BaseSQLiteRepository[TaxAssessmentRecord, SourceID
         taxpayer_id: IndividualID | str,
     ) -> list[TaxAssessmentRecord]:
         """Find tax assessment records linked to a specific taxpayer IndividualID."""
-        return self.find_by(taxpayer_id=_normalize_id(taxpayer_id))
+        return self.find_by(taxpayer_id=normalize_id(taxpayer_id))
 
     def find_by_jurisdiction(
         self,
         jurisdiction_id: LocationID | str,
     ) -> list[TaxAssessmentRecord]:
         """Find tax assessment records linked to a jurisdiction LocationID."""
-        return self.find_by(jurisdiction_id=_normalize_id(jurisdiction_id))
+        return self.find_by(jurisdiction_id=normalize_id(jurisdiction_id))

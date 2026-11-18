@@ -15,10 +15,11 @@ from gda.db.mapper.education_manuscripts_orgs_other import (
 from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import LocationID, SourceID
 from gda.model.source.other.miscellaneous import OtherMiscellaneousRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "OtherMiscellaneousRepository",
@@ -49,7 +50,7 @@ class OtherMiscellaneousRepository(BaseSQLiteRepository[OtherMiscellaneousRecord
         location_id: LocationID | str,
     ) -> list[OtherMiscellaneousRecord]:
         """Find miscellaneous records linked to an organization/origin LocationID."""
-        return self.find_by(organization_location_id=_normalize_id(location_id))
+        return self.find_by(organization_location_id=normalize_id(location_id))
 
     def find_by_item_year_range(
         self,

@@ -12,14 +12,14 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import LocationID, SiteID, SourceID
 from gda.model.source.cemetery.marker import CemeteryMarkerRecord
 from gda.model.source.cemetery.registry import CemeteryRegistryRecord
-from gda.repository.base import _normalize_id
 from gda.repository.cemetery.repository import (
     CemeteryMarkerRepository,
     CemeteryRegistryRepository,
 )
 from gda.repository.collection import BaseSourceCollection
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "CemeteryMarkerCollection",
@@ -64,14 +64,14 @@ class CemeteryMarkerCollection(
         cemetery_site_id: SiteID | str,
     ) -> list[CemeteryMarkerRecord]:
         """Return active marker records for a cemetery SiteID."""
-        return self._records_for_ids(self._by_site.get(_normalize_id(cemetery_site_id), set()))
+        return self._records_for_ids(self._by_site.get(normalize_id(cemetery_site_id), set()))
 
     def find_by_location(
         self,
         location_id: LocationID | str,
     ) -> list[CemeteryMarkerRecord]:
         """Return active marker records for a geographic LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))
 
 
 class CemeteryRegistryCollection(
@@ -109,11 +109,11 @@ class CemeteryRegistryCollection(
         cemetery_site_id: SiteID | str,
     ) -> list[CemeteryRegistryRecord]:
         """Return active plot registry records for a cemetery SiteID."""
-        return self._records_for_ids(self._by_site.get(_normalize_id(cemetery_site_id), set()))
+        return self._records_for_ids(self._by_site.get(normalize_id(cemetery_site_id), set()))
 
     def find_by_location(
         self,
         location_id: LocationID | str,
     ) -> list[CemeteryRegistryRecord]:
         """Return active plot registry records for a geographic LocationID."""
-        return self._records_for_ids(self._by_location.get(_normalize_id(location_id), set()))
+        return self._records_for_ids(self._by_location.get(normalize_id(location_id), set()))

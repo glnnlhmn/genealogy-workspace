@@ -18,9 +18,10 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import LocationID, SiteID, SourceID
 from gda.model.source.cemetery.marker import CemeteryMarkerRecord
 from gda.model.source.cemetery.registry import CemeteryRegistryRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "CemeteryMarkerRepository",
@@ -52,14 +53,14 @@ class CemeteryMarkerRepository(BaseSQLiteRepository[CemeteryMarkerRecord, Source
         cemetery_site_id: SiteID | str,
     ) -> list[CemeteryMarkerRecord]:
         """Find marker records located at a specific cemetery SiteID."""
-        return self.find_by(cemetery_site_id=_normalize_id(cemetery_site_id))
+        return self.find_by(cemetery_site_id=normalize_id(cemetery_site_id))
 
     def find_by_location(
         self,
         location_id: LocationID | str,
     ) -> list[CemeteryMarkerRecord]:
         """Find marker records associated with a geographic LocationID."""
-        return self.find_by(location_id=_normalize_id(location_id))
+        return self.find_by(location_id=normalize_id(location_id))
 
     def find_by_findagrave_id(self, findagrave_id: str) -> list[CemeteryMarkerRecord]:
         """Find marker records matching an external Find A Grave memorial ID."""
@@ -90,11 +91,11 @@ class CemeteryRegistryRepository(BaseSQLiteRepository[CemeteryRegistryRecord, So
         cemetery_site_id: SiteID | str,
     ) -> list[CemeteryRegistryRecord]:
         """Find plot registry records for a specific cemetery SiteID."""
-        return self.find_by(cemetery_site_id=_normalize_id(cemetery_site_id))
+        return self.find_by(cemetery_site_id=normalize_id(cemetery_site_id))
 
     def find_by_location(
         self,
         location_id: LocationID | str,
     ) -> list[CemeteryRegistryRecord]:
         """Find plot registry records associated with a geographic LocationID."""
-        return self.find_by(location_id=_normalize_id(location_id))
+        return self.find_by(location_id=normalize_id(location_id))

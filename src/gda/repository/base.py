@@ -35,8 +35,9 @@ from gda.repository.query import (
     validate_sql_identifier,
 )
 from gda.util.ids import normalize_id
+from gda.util.text import clean_string
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "BaseSQLiteRepository",
@@ -86,7 +87,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
 
     def get(self, record_id: TID | str) -> TModel | None:
         """Retrieve a single domain record by primary key, or None if missing."""
-        id_str = _normalize_id(record_id)
+        id_str = normalize_id(record_id)
         qb = self.query().where(self.primary_key, id_str).limit(1)
         results = self.find_where(qb)
         return results[0] if results else None
@@ -97,20 +98,21 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         if record is None:
             raise RecordNotFoundError(
                 self.table_name,
-                _normalize_id(record_id),
+                normalize_id(record_id),
                 field=self.primary_key,
             )
         return record
 
     def get_by_urn(self, canonical_urn: str) -> TModel | None:
         """Retrieve a single domain record by its canonical_urn column."""
-        qb = self.query().where("canonical_urn", canonical_urn).limit(1)
+        clean_urn = clean_string(canonical_urn) or canonical_urn
+        qb = self.query().where("canonical_urn", clean_urn).limit(1)
         results = self.find_where(qb)
         return results[0] if results else None
 
     def exists(self, record_id: TID | str) -> bool:
         """Check whether a record with the given primary key exists."""
-        id_str = _normalize_id(record_id)
+        id_str = normalize_id(record_id)
         qb = self.query().where(self.primary_key, id_str)
         return self.count(qb) > 0
 
@@ -170,7 +172,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
         try:
             with self._session.get_connection() as conn:
                 rows = conn.execute(sql, params).fetchall()
-                return [self._mapper.from_row(row) for row in rows]
+            return [self._mapper.from_row(row) for row in rows]
         except (DatabaseError, EntityMappingError) as err:
             raise RepositoryError(
                 f"Query execution failed on '{self.table_name}': {err.message}",
@@ -228,7 +230,7 @@ class BaseSQLiteRepository[TModel, TID](IntrospectableMixin, ABC):
 
     def delete(self, record_id: TID | str) -> bool:
         """Delete a record by primary key."""
-        id_str = _normalize_id(record_id)
+        id_str = normalize_id(record_id)
         qb = self.query().where(self.primary_key, id_str)
         sql, params = qb.build_delete()
         try:

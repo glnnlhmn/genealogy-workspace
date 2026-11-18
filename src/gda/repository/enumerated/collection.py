@@ -22,7 +22,6 @@ from gda.model.source.enumerated import (
     SeptennialCensusRecord,
     TaxAssessmentRecord,
 )
-from gda.repository.base import _normalize_id
 from gda.repository.collection import BaseSourceCollection
 from gda.repository.enumerated.repository import (
     DirectoryRollRepository,
@@ -30,8 +29,9 @@ from gda.repository.enumerated.repository import (
     SupplementalScheduleRepository,
     TaxAssessmentRepository,
 )
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "DirectoryRollCollection",
@@ -115,7 +115,7 @@ class PopulationScheduleCollection(
     ) -> list[PopulationScheduleRecord[Any]]:
         """Return active population schedules for a jurisdiction LocationID."""
         return self._records_for_ids(
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
+            self._by_jurisdiction.get(normalize_id(jurisdiction_id), set())
         )
 
 
@@ -171,7 +171,7 @@ class SupplementalScheduleCollection(
     ) -> list[CensusScheduleRecord[Any]]:
         """Return active supplemental schedules for a jurisdiction LocationID."""
         return self._records_for_ids(
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
+            self._by_jurisdiction.get(normalize_id(jurisdiction_id), set())
         )
 
 
@@ -213,7 +213,7 @@ class DirectoryRollCollection(BaseSourceCollection[DirectoryRollRecord, Director
     ) -> list[DirectoryRollRecord]:
         """Return active directory roll records for a jurisdiction LocationID."""
         return self._records_for_ids(
-            self._by_jurisdiction.get(_normalize_id(jurisdiction_id), set())
+            self._by_jurisdiction.get(normalize_id(jurisdiction_id), set())
         )
 
 
@@ -256,4 +256,4 @@ class TaxAssessmentCollection(BaseSourceCollection[TaxAssessmentRecord, TaxAsses
         taxpayer_id: IndividualID | str,
     ) -> list[TaxAssessmentRecord]:
         """Return active tax assessment records for a taxpayer IndividualID."""
-        return self._records_for_ids(self._by_taxpayer.get(_normalize_id(taxpayer_id), set()))
+        return self._records_for_ids(self._by_taxpayer.get(normalize_id(taxpayer_id), set()))

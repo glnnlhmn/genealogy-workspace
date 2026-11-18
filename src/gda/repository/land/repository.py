@@ -18,10 +18,11 @@ from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.source.land.deed import LandDeedRecord
 from gda.model.source.land.grant import LandGrantRecord
-from gda.repository.base import BaseSQLiteRepository, _normalize_id
+from gda.repository.base import BaseSQLiteRepository
 from gda.repository.query import FilterOp, SortOrder
+from gda.util.ids import normalize_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "LandDeedRepository",
@@ -53,21 +54,21 @@ class LandDeedRepository(BaseSQLiteRepository[LandDeedRecord, SourceID]):
         grantor_id: IndividualID | str,
     ) -> list[LandDeedRecord]:
         """Find deeds where the primary grantor matches IndividualID."""
-        return self.find_by(primary_grantor_id=_normalize_id(grantor_id))
+        return self.find_by(primary_grantor_id=normalize_id(grantor_id))
 
     def find_by_grantee(
         self,
         grantee_id: IndividualID | str,
     ) -> list[LandDeedRecord]:
         """Find deeds where the primary grantee matches IndividualID."""
-        return self.find_by(primary_grantee_id=_normalize_id(grantee_id))
+        return self.find_by(primary_grantee_id=normalize_id(grantee_id))
 
     def find_by_parcel_location(
         self,
         location_id: LocationID | str,
     ) -> list[LandDeedRecord]:
         """Find deeds conveying parcels within a specific LocationID."""
-        return self.find_by(parcel_location_id=_normalize_id(location_id))
+        return self.find_by(parcel_location_id=normalize_id(location_id))
 
     def find_by_written_year_range(
         self,
@@ -109,21 +110,21 @@ class LandGrantRepository(BaseSQLiteRepository[LandGrantRecord, SourceID]):
         patentee_id: IndividualID | str,
     ) -> list[LandGrantRecord]:
         """Find land grants linked to a patentee or warrantee IndividualID."""
-        return self.find_by(patentee_id=_normalize_id(patentee_id))
+        return self.find_by(patentee_id=normalize_id(patentee_id))
 
     def find_by_assignee(
         self,
         assignee_id: IndividualID | str,
     ) -> list[LandGrantRecord]:
         """Find land grants linked to an assignee IndividualID."""
-        return self.find_by(assignee_id=_normalize_id(assignee_id))
+        return self.find_by(assignee_id=normalize_id(assignee_id))
 
     def find_by_parcel_location(
         self,
         location_id: LocationID | str,
     ) -> list[LandGrantRecord]:
         """Find land grants located within a specific parcel LocationID."""
-        return self.find_by(parcel_location_id=_normalize_id(location_id))
+        return self.find_by(parcel_location_id=normalize_id(location_id))
 
     def find_by_patented_year_range(
         self,
