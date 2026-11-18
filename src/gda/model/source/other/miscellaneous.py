@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import copy
 import re
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -21,7 +21,6 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -29,8 +28,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "OtherMiscellaneousRecord",
@@ -88,7 +88,11 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class OtherMiscellaneousRecord(SourceRecord):
     """Flexible archival record for ephemera, receipts, lodge items, and unclassified sources."""
 
@@ -169,16 +173,8 @@ class OtherMiscellaneousRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_org_loc = (
             organization_location_id
             if (
@@ -213,19 +209,7 @@ class OtherMiscellaneousRecord(SourceRecord):
     def to_dict(self) -> dict[str, Any]:
         """Serialize OtherMiscellaneousRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "item_date": self.item_date.to_dict(),
-                "custom_fields": copy.deepcopy(self.custom_fields),
-            }
-        )
-        if self.organization_or_entity_name is not None:
-            data["organization_or_entity_name"] = self.organization_or_entity_name
-        if self.organization_location_id is not None:
-            data["organization_location_id"] = str(self.organization_location_id)
-        if self.item_note is not None:
-            data["item_note"] = self.item_note
+        data["custom_fields"] = copy.deepcopy(self.custom_fields)
         return data
 
     @classmethod
@@ -251,43 +235,25 @@ class OtherMiscellaneousRecord(SourceRecord):
         if not isinstance(raw_custom, dict):
             raise ModelFormatError("OtherMiscellaneousRecord 'custom_fields' must be a dictionary.")
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "OtherMiscellaneousRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),
             source_urn=str(raw_urn),
             description=str(desc),
             repository_id=str(rep),
-            item_date=raw_item_dt,
+            item_date=cast(Any, raw_item_dt),
             record_category=data.get("record_category", SourceRecordCategory.OTHER),
             record_type=data.get("record_type", SourceRecordType.MISC),
             organization_or_entity_name=data.get("organization_or_entity_name"),

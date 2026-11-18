@@ -25,14 +25,15 @@ from gda.core.types import COLONIAL_MILITIA_MAX_YEAR, COLONIAL_MILITIA_MIN_YEAR
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["ColonialMilitiaClass", "ColonialMilitiaRecord", "ColonialWarPeriod"]
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class ColonialMilitiaRecord(MilitaryDraftRecord):
     """Evidentiary record for colonial militia enrollments, muster rolls, and levies."""

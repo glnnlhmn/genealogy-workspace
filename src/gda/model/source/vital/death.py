@@ -11,7 +11,7 @@ Operational Role:
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -20,7 +20,6 @@ from gda.core.enums.core import Sex
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.enums.vital import DispositionType, MannerOfDeath, MaritalStatus
 from gda.core.errors import ModelFormatError
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SiteID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN, VitalCertificateUrn
 from gda.model.base.age import Age
@@ -29,8 +28,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "DeathRecord",
@@ -85,21 +85,11 @@ def _deserialize_age(raw: Any, field_name: str) -> Age:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected Age, dict, int, or str.")
 
 
-def _serialize_age(age: Age) -> dict[str, Any]:
-    """Serialize an Age value object to a dictionary."""
-    data: dict[str, Any] = {}
-    if age.raw_text is not None:
-        data["raw_text"] = age.raw_text
-    if age.years is not None:
-        data["years"] = age.years
-    if age.months is not None:
-        data["months"] = age.months
-    if age.days is not None:
-        data["days"] = age.days
-    return data
-
-
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class DeathRecord(SourceRecord):
     """Primary archival record documenting a death, coroner inquest, or transit permit."""
 
@@ -303,11 +293,7 @@ class DeathRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_dec_id = (
             decedent_id
             if (decedent_id is None or isinstance(decedent_id, IndividualID))
@@ -325,19 +311,19 @@ class DeathRecord(SourceRecord):
         )
         res_sex = sex if isinstance(sex, Sex) else Sex.from_input(str(sex))
         res_ms = (
-            marital_status
-            if (marital_status is None or isinstance(marital_status, MaritalStatus))
-            else MaritalStatus(str(marital_status).strip().capitalize())
+            coerce_enum(MaritalStatus, marital_status, field_name="marital_status")
+            if marital_status is not None
+            else None
         )
         res_manner = (
-            manner_of_death
-            if (manner_of_death is None or isinstance(manner_of_death, MannerOfDeath))
-            else MannerOfDeath(str(manner_of_death).strip().capitalize())
+            coerce_enum(MannerOfDeath, manner_of_death, field_name="manner_of_death")
+            if manner_of_death is not None
+            else None
         )
         res_disp = (
-            disposition_type
-            if (disposition_type is None or isinstance(disposition_type, DispositionType))
-            else DispositionType(str(disposition_type).strip().capitalize())
+            coerce_enum(DispositionType, disposition_type, field_name="disposition_type")
+            if disposition_type is not None
+            else None
         )
 
         res_dod = _deserialize_event_date(date_of_death, "date_of_death")
@@ -403,62 +389,7 @@ class DeathRecord(SourceRecord):
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize DeathRecord to a dictionary."""
-        data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "decedent_name_raw": self.decedent_name_raw,
-                "date_of_death": self.date_of_death.to_dict(),
-                "place_of_death_raw": self.place_of_death_raw,
-                "sex": self.sex.value,
-                "is_stillborn": self.is_stillborn,
-            }
-        )
-        if self.decedent_id is not None:
-            data["decedent_id"] = str(self.decedent_id)
-        if self.marital_status is not None:
-            data["marital_status"] = self.marital_status.value
-        if self.spouse_name_raw is not None:
-            data["spouse_name_raw"] = self.spouse_name_raw
-        if self.date_of_birth is not None:
-            data["date_of_birth"] = self.date_of_birth.to_dict()
-        if self.age_at_death is not None:
-            data["age_at_death"] = _serialize_age(self.age_at_death)
-        if self.time_of_death is not None:
-            data["time_of_death"] = self.time_of_death
-        if self.place_of_death_id is not None:
-            data["place_of_death_id"] = str(self.place_of_death_id)
-        if self.residence_raw is not None:
-            data["residence_raw"] = self.residence_raw
-        if self.occupation_raw is not None:
-            data["occupation_raw"] = self.occupation_raw
-        if self.father_name_raw is not None:
-            data["father_name_raw"] = self.father_name_raw
-        if self.mother_maiden_name_raw is not None:
-            data["mother_maiden_name_raw"] = self.mother_maiden_name_raw
-        if self.manner_of_death is not None:
-            data["manner_of_death"] = self.manner_of_death.value
-        if self.cause_of_death_raw is not None:
-            data["cause_of_death_raw"] = self.cause_of_death_raw
-        if self.attending_physician_raw is not None:
-            data["attending_physician_raw"] = self.attending_physician_raw
-        if self.informant_name_raw is not None:
-            data["informant_name_raw"] = self.informant_name_raw
-        if self.disposition_type is not None:
-            data["disposition_type"] = self.disposition_type.value
-        if self.disposition_date is not None:
-            data["disposition_date"] = self.disposition_date.to_dict()
-        if self.disposition_place_raw is not None:
-            data["disposition_place_raw"] = self.disposition_place_raw
-        if self.disposition_site_id is not None:
-            data["disposition_site_id"] = str(self.disposition_site_id)
-        if self.undertaker_raw is not None:
-            data["undertaker_raw"] = self.undertaker_raw
-        if self.certificate_number is not None:
-            data["certificate_number"] = self.certificate_number
-        if self.date_filed is not None:
-            data["date_filed"] = self.date_filed.to_dict()
-        return data
+        return super().to_dict()
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DeathRecord:
@@ -485,34 +416,16 @@ class DeathRecord(SourceRecord):
         if str(raw_cat).strip().upper() != SourceRecordCategory.VITAL.value:
             raise ModelFormatError(f"DeathRecord requires record_category VITAL, got '{raw_cat}'.")
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("DeathRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),
@@ -520,7 +433,7 @@ class DeathRecord(SourceRecord):
             description=str(desc),
             repository_id=str(rep),
             decedent_name_raw=str(decedent_name),
-            date_of_death=raw_dod,
+            date_of_death=cast(Any, raw_dod),
             place_of_death_raw=str(place_raw),
             record_type=data.get("record_type", SourceRecordType.DEATH_CERTIFICATE),
             decedent_id=data.get("decedent_id"),

@@ -20,7 +20,7 @@ from gda.model.source.enumerated.census.population.base import (
     PopulationScheduleRecord,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "Population1940Entry",
@@ -30,7 +30,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class Population1940Entry(PopulationLineEntry):
     """Individual line entry for the 1940 U.S. Federal Population Schedule."""
@@ -92,7 +93,8 @@ class Population1940Entry(PopulationLineEntry):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class PopulationSchedule1940(PopulationScheduleRecord[Population1940Entry]):
     """Evidentiary 1940 U.S. Federal Population Schedule."""

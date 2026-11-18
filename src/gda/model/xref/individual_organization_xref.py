@@ -30,8 +30,9 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import IndividualID, OrganizationID
 from gda.model.atom.year import HistoricalYear
 from gda.model.entity.organization import Organization
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "IndividualOrganizationXRef",
@@ -40,35 +41,26 @@ __all__ = [
 
 def _parse_org_category(raw: OrganizationCategory | str) -> OrganizationCategory:
     """Resolve OrganizationCategory by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, OrganizationCategory):
-        return raw
-    token = str(raw).strip().upper()
-    for member in OrganizationCategory:
-        if token in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid OrganizationCategory value: '{raw}'.")
+    try:
+        return coerce_enum(OrganizationCategory, raw, field_name="org_category")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid OrganizationCategory value: '{raw}'.") from err
 
 
 def _parse_affiliation_type(raw: AffiliationType | str) -> AffiliationType:
     """Resolve AffiliationType by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, AffiliationType):
-        return raw
-    token = str(raw).strip().upper()
-    for member in AffiliationType:
-        if token in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid AffiliationType value: '{raw}'.")
+    try:
+        return coerce_enum(AffiliationType, raw, field_name="affiliation_type")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid AffiliationType value: '{raw}'.") from err
 
 
 def _parse_membership_status(raw: MembershipStatus | str) -> MembershipStatus:
     """Resolve MembershipStatus by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, MembershipStatus):
-        return raw
-    token = str(raw).strip().upper()
-    for member in MembershipStatus:
-        if token in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid MembershipStatus value: '{raw}'.")
+    try:
+        return coerce_enum(MembershipStatus, raw, field_name="membership_status")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid MembershipStatus value: '{raw}'.") from err
 
 
 def _resolve_year(raw: HistoricalYear | int | None) -> HistoricalYear | None:
@@ -79,7 +71,11 @@ def _resolve_year(raw: HistoricalYear | int | None) -> HistoricalYear | None:
 
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class IndividualOrganizationXRef(IntrospectableMixin):
     """Immutable derived index row linking an OrganizationID to an affiliated IndividualID."""
 

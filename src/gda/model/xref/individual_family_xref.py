@@ -22,29 +22,34 @@ from gda.core.enums.vital import PedigreeType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import FamilyID, IndividualID
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "IndividualFamilyXRef",
 ]
 
+_PEDIGREE_ALIASES: dict[str, PedigreeType] = {
+    "BIOLOGICAL": PedigreeType.BIRTH,
+}
+
 
 def _parse_pedigree(raw: PedigreeType | str) -> PedigreeType:
-    """Resolve PedigreeType by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, PedigreeType):
-        return raw
-    token = str(raw).strip().upper()
-    if token == "BIOLOGICAL":
-        return PedigreeType.BIRTH
-    for member in PedigreeType:
-        if token in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid PedigreeType value: '{raw}'.")
+    """Resolve PedigreeType by enum instance, alias, exact value, or uppercase member name."""
+    candidate = _PEDIGREE_ALIASES.get(raw.strip().upper(), raw) if isinstance(raw, str) else raw
+    try:
+        return coerce_enum(PedigreeType, candidate, field_name="pedigree")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid PedigreeType value: '{raw}'.") from err
 
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class IndividualFamilyXRef(IntrospectableMixin):
     """Immutable derived index row linking an IndividualID to a FamilyID."""
 

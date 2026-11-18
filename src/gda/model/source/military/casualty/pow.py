@@ -18,14 +18,15 @@ from gda.model.atom.id import LocationID
 from gda.model.atom.year import HistoricalYear
 from gda.model.source.military.casualty.base import MilitaryCasualtyRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["PrisonerOfWarRecord"]
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class PrisonerOfWarRecord(MilitaryCasualtyRecord):
     """Evidentiary military prisoner of war internment record."""

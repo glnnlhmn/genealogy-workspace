@@ -21,23 +21,14 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.core import IDType, SmartIDPrefix
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import ATOM_ID_REGEX, UUID_V4_REGEX
 from gda.model.atom.id import (
     AtomID,
-    DraftRecordID,
-    FactID,
-    FamilyID,
-    IndividualID,
-    LocationID,
     MediaID,
-    NoteID,
-    OrganizationID,
-    RepositoryID,
-    SiteID,
     SourceID,
 )
+from gda.model.xref.location_xref import _coerce_atom_subclass, _resolve_target_id
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "MediaTargetID",
@@ -46,58 +37,13 @@ __all__ = [
 
 type MediaTargetID = AtomID | SourceID
 
-_ATOM_PREFIX_MAP: dict[SmartIDPrefix, type[AtomID]] = {
-    SmartIDPrefix.DRF: DraftRecordID,
-    SmartIDPrefix.FID: FactID,
-    SmartIDPrefix.FAM: FamilyID,
-    SmartIDPrefix.IND: IndividualID,
-    SmartIDPrefix.LOC: LocationID,
-    SmartIDPrefix.NOT: NoteID,
-    SmartIDPrefix.ORG: OrganizationID,
-    SmartIDPrefix.REP: RepositoryID,
-    SmartIDPrefix.SID: SiteID,
-}
-
-
-def _resolve_target_id(raw: MediaTargetID | str) -> MediaTargetID:
-    """Resolve a canonical SmartIDPrefix AtomID subclass, SourceID instance, or raw string token."""
-    if isinstance(raw, SourceID):
-        return raw
-
-    if isinstance(raw, AtomID):
-        try:
-            prefix_enum = SmartIDPrefix(raw.prefix)
-        except ValueError as exc:
-            raise ModelFormatError(
-                f"Unsupported SmartIDPrefix '{raw.prefix}' in target_id '{raw.value}'."
-            ) from exc
-        atom_cls = _ATOM_PREFIX_MAP[prefix_enum]
-        return raw if type(raw) is atom_cls else atom_cls(raw.value)
-
-    token = str(raw).strip()
-    upper_token = token.upper()
-    if ATOM_ID_REGEX.match(upper_token):
-        raw_prefix = upper_token.split("-", 1)[0]
-        try:
-            prefix_enum = SmartIDPrefix(raw_prefix)
-        except ValueError as exc:
-            raise ModelFormatError(
-                f"Unsupported SmartIDPrefix '{raw_prefix}' in target_id '{raw}'."
-            ) from exc
-        return _ATOM_PREFIX_MAP[prefix_enum](upper_token)
-
-    lower_token = token.lower()
-    if UUID_V4_REGEX.match(lower_token):
-        return SourceID(lower_token)
-
-    raise ModelFormatError(
-        f"Invalid MediaXRef target_id: '{raw}'. Must be a canonical SmartIDPrefix AtomID "
-        "('AAA-######') or lowercase RFC 4122 UUIDv4 SourceID."
-    )
-
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class MediaXRef(IntrospectableMixin):
     """Immutable derived index row linking a MediaID to a canonical AtomID or SourceID."""
 
@@ -113,15 +59,9 @@ class MediaXRef(IntrospectableMixin):
     def __post_init__(self) -> None:
         """Enforce canonical SmartIDPrefix membership when target_id is an AtomID."""
         if isinstance(self.target_id, AtomID):
-            try:
-                prefix_enum = SmartIDPrefix(self.target_id.prefix)
-            except ValueError as exc:
-                raise ModelFormatError(
-                    f"Unsupported SmartIDPrefix '{self.target_id.prefix}' in target_id '{self.target_id.value}'."
-                ) from exc
-            expected_cls = _ATOM_PREFIX_MAP[prefix_enum]
-            if type(self.target_id) is not expected_cls:
-                object.__setattr__(self, "target_id", expected_cls(self.target_id.value))
+            coerced = _coerce_atom_subclass(self.target_id)
+            if coerced is not self.target_id:
+                object.__setattr__(self, "target_id", coerced)
 
     @property
     def is_source_target(self) -> bool:
@@ -160,7 +100,7 @@ class MediaXRef(IntrospectableMixin):
         res_media = (
             media_id if isinstance(media_id, MediaID) else MediaID(str(media_id).strip().lower())
         )
-        res_target = _resolve_target_id(target_id)
+        res_target = _resolve_target_id(target_id, owner_name="MediaXRef")
         return cls(media_id=res_media, target_id=res_target)
 
     def to_dict(self) -> dict[str, Any]:

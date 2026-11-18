@@ -19,7 +19,7 @@ from gda.core.errors import ModelFormatError
 from gda.core.types import US_AGRICULTURAL_SCHEDULE_YEARS
 from gda.model.source.enumerated.census.base import CensusLineEntry, CensusScheduleRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "AgriculturalScheduleEntry",
@@ -29,7 +29,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class AgriculturalScheduleEntry(CensusLineEntry):
     """Farm proprietor/operator line entry on a Census Agricultural Schedule."""
@@ -60,7 +61,8 @@ class AgriculturalScheduleEntry(CensusLineEntry):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class AgriculturalScheduleRecord(CensusScheduleRecord[AgriculturalScheduleEntry]):
     """Evidentiary composite for Census Agricultural Schedules (1850-1880)."""

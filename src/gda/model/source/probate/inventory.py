@@ -25,7 +25,6 @@ from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -33,8 +32,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "EstateInventoryRecord",
@@ -86,16 +86,17 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
 
 def _parse_probate_enum[E](enum_cls: type[E], raw: Any, field_name: str) -> E:
     """Resolve a probate StrEnum by instance, exact value, or uppercase member name."""
-    if isinstance(raw, enum_cls):
-        return raw
-    token = str(raw).strip().upper()
-    for member in enum_cls:  # type: ignore[attr-defined]
-        if token in (member.name, member.value):
-            return member  # type: ignore[no-any-return]
-    raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.")
+    try:
+        return coerce_enum(enum_cls, raw, field_name=field_name)  # type: ignore[type-var]
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class InventoryLineItem(IntrospectableMixin):
     """Single appraised real or personal property row in an estate inventory."""
 
@@ -230,7 +231,11 @@ class InventoryLineItem(IntrospectableMixin):
         return f"Line {self.line_number}: {self.item_description_raw}"
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class ProbateLedgerEntry(IntrospectableMixin):
     """Single receipt, debt paid, expense, or heir distribution in an administration account."""
 
@@ -363,7 +368,11 @@ class ProbateLedgerEntry(IntrospectableMixin):
         return f"Line {self.line_number}: {self.party_name_raw} [{self.entry_kind.value}]"
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class EstateInventoryRecord(SourceRecord):
     """Collection-wide estate appraisal inventory or administration accounting record."""
 
@@ -586,16 +595,8 @@ class EstateInventoryRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_court_loc = (
             court_location_id
             if (court_location_id is None or isinstance(court_location_id, LocationID))
@@ -667,34 +668,9 @@ class EstateInventoryRecord(SourceRecord):
     def to_dict(self) -> dict[str, Any]:
         """Serialize EstateInventoryRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "court_name": self.court_name,
-                "filing_locator": self.filing_locator,
-                "decedent_name_raw": self.decedent_name_raw,
-                "appraisers_or_administrators": list(self.appraisers_or_administrators),
-                "currency_code": self.currency_code,
-                "items": [i.to_dict() for i in self.items],
-                "ledger_entries": [e.to_dict() for e in self.ledger_entries],
-            }
-        )
-        if self.court_location_id is not None:
-            data["court_location_id"] = str(self.court_location_id)
-        if self.estate_file_number is not None:
-            data["estate_file_number"] = self.estate_file_number
-        if self.book_and_page is not None:
-            data["book_and_page"] = self.book_and_page
-        if self.decedent_id is not None:
-            data["decedent_id"] = str(self.decedent_id)
-        if self.parent_probate_source_id is not None:
-            data["parent_probate_source_id"] = str(self.parent_probate_source_id)
-        if self.date_appraised_or_accounted is not None:
-            data["date_appraised_or_accounted"] = self.date_appraised_or_accounted.to_dict()
-        if self.total_appraised_value_raw is not None:
-            data["total_appraised_value_raw"] = self.total_appraised_value_raw
-        if self.total_appraised_value_numeric is not None:
-            data["total_appraised_value_numeric"] = self.total_appraised_value_numeric
+        data["appraisers_or_administrators"] = list(self.appraisers_or_administrators)
+        data["items"] = [i.to_dict() for i in self.items]
+        data["ledger_entries"] = [e.to_dict() for e in self.ledger_entries]
         return data
 
     @classmethod
@@ -718,36 +694,18 @@ class EstateInventoryRecord(SourceRecord):
                 "audit, court_name, filing_locator, and decedent_name_raw."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "EstateInventoryRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_items = data.get("items", [])
         if not isinstance(raw_items, (list, tuple)):

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import replace
 from functools import total_ordering
 from typing import Any, ClassVar, Self
@@ -36,8 +37,9 @@ from gda.model.base.entity import BaseEntity
 from gda.model.base.note import Note
 from gda.model.base.source import SourceReference
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = ["Fact", "FactParticipant"]
 
@@ -47,23 +49,17 @@ _FACT_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["FID"]
 
 def _normalize_role(role: AssociatedRole | str) -> AssociatedRole:
     """Resolve enum member or raw string token to canonical AssociatedRole."""
-    if isinstance(role, AssociatedRole):
-        return role
-    token = str(role).strip().upper()
     try:
-        return AssociatedRole(token)
-    except ValueError as exc:
+        return coerce_enum(AssociatedRole, role, field_name="role")
+    except ModelFormatError as exc:
         raise ModelFormatError(f"Cannot normalize '{role}' to a valid AssociatedRole.") from exc
 
 
 def _normalize_fact_type(fact_type: FactType | str) -> FactType:
     """Resolve enum member or raw string token to canonical FactType."""
-    if isinstance(fact_type, FactType):
-        return fact_type
-    token = str(fact_type).strip().upper()
     try:
-        return FactType(token)
-    except ValueError as exc:
+        return coerce_enum(FactType, fact_type, field_name="fact_type")
+    except ModelFormatError as exc:
         raise ModelFormatError(f"Cannot normalize '{fact_type}' to a valid FactType.") from exc
 
 
@@ -80,6 +76,50 @@ def _resolve_fact_date(
             return TimePeriod.from_dict(date)
         return EventDate.from_dict(date)
     raise TypeError(f"Unsupported date payload type: {type(date).__name__}.")
+
+
+def _resolve_primary_subject(
+    primary_subject_id: IndividualID | FamilyID | str,
+) -> IndividualID | FamilyID:
+    """Resolve IndividualID, FamilyID, or prefixed string token."""
+    if isinstance(primary_subject_id, (IndividualID, FamilyID)):
+        return primary_subject_id
+    subj_str = str(primary_subject_id).strip()
+    return FamilyID(subj_str) if subj_str.startswith("FAM-") else IndividualID(subj_str)
+
+
+def _resolve_participants_payload(
+    participants: Sequence[FactParticipant | dict[str, Any]] | None,
+) -> list[FactParticipant]:
+    """Resolve sequence of FactParticipant instances or dict payloads."""
+    if participants is None:
+        return []
+    resolved: list[FactParticipant] = []
+    for p in participants:
+        if isinstance(p, FactParticipant):
+            resolved.append(p)
+        elif isinstance(p, dict):
+            resolved.append(FactParticipant.from_dict(p))
+        else:
+            raise TypeError(f"Cannot resolve participant from payload: {p!r}")
+    return resolved
+
+
+def _resolve_citations_payload(
+    citations: Sequence[SourceReference | dict[str, Any]] | None,
+) -> list[SourceReference]:
+    """Resolve sequence of SourceReference instances or dict payloads."""
+    if citations is None:
+        return []
+    resolved: list[SourceReference] = []
+    for c in citations:
+        if isinstance(c, SourceReference):
+            resolved.append(c)
+        elif isinstance(c, dict):
+            resolved.append(SourceReference.from_dict(c))
+        else:
+            raise TypeError(f"Cannot resolve citation from payload: {c!r}")
+    return resolved
 
 
 @total_ordering
@@ -369,25 +409,16 @@ class Fact(BaseEntity[FactID]):
         value: str | None = None,
         description: str | None = None,
         narrative: str | None = None,
-        participants: list[FactParticipant | dict[str, Any]] | None = None,
-        citations: list[SourceReference | dict[str, Any]] | None = None,
+        participants: Sequence[FactParticipant | dict[str, Any]] | None = None,
+        citations: Sequence[SourceReference | dict[str, Any]] | None = None,
         audit: AuditStamp | None = None,
         tombstone: Tombstone[FactID] | None = None,
-        notes: list[Note] | None = None,
+        notes: Sequence[Note] | None = None,
     ) -> Fact:
         """Factory constructor instantiating a validated Fact entity."""
         resolved_id = fact_id if isinstance(fact_id, FactID) else FactID(fact_id)
         resolved_type = _normalize_fact_type(fact_type)
-
-        if isinstance(primary_subject_id, (IndividualID, FamilyID)):
-            resolved_subject: IndividualID | FamilyID = primary_subject_id
-        else:
-            subj_str = str(primary_subject_id).strip()
-            if subj_str.startswith("FAM-"):
-                resolved_subject = FamilyID(subj_str)
-            else:
-                resolved_subject = IndividualID(subj_str)
-
+        resolved_subject = _resolve_primary_subject(primary_subject_id)
         resolved_date = _resolve_fact_date(date)
 
         resolved_loc = (
@@ -399,30 +430,9 @@ class Fact(BaseEntity[FactID]):
             site_id if (site_id is None or isinstance(site_id, SiteID)) else SiteID(site_id)
         )
 
-        resolved_participants: list[FactParticipant] = []
-        if participants is not None:
-            for p in participants:
-                if isinstance(p, FactParticipant):
-                    resolved_participants.append(p)
-                elif isinstance(p, dict):
-                    resolved_participants.append(FactParticipant.from_dict(p))
-                else:
-                    raise TypeError(f"Cannot resolve participant from payload: {p!r}")
-
-        resolved_citations: list[SourceReference] = []
-        if citations is not None:
-            for c in citations:
-                if isinstance(c, SourceReference):
-                    resolved_citations.append(c)
-                elif isinstance(c, dict):
-                    resolved_citations.append(SourceReference.from_dict(c))
-                else:
-                    raise TypeError(f"Cannot resolve citation from payload: {c!r}")
-
-        now_ts = IsoTimestamp(utc_now_iso())
-        resolved_audit = (
-            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
-        )
+        resolved_participants = _resolve_participants_payload(participants)
+        resolved_citations = _resolve_citations_payload(citations)
+        resolved_audit = audit if audit is not None else AuditStamp.now()
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[FactID]()
         resolved_notes = list(notes) if notes is not None else []
 
@@ -716,23 +726,8 @@ class Fact(BaseEntity[FactID]):
             "primary_subject_id": self.primary_subject_id.value,
             "participants": [p.to_dict() for p in self.participants],
             "citations": [c.to_dict() for c in self.citations],
-            "audit": {
-                "created_at": str(self.audit.created_at),
-                "updated_at": str(self.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": self.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(self.tombstone.deprecated_at)
-                    if self.tombstone.deprecated_at is not None
-                    else None
-                ),
-                "superseded_by": (
-                    str(self.tombstone.superseded_by)
-                    if self.tombstone.superseded_by is not None
-                    else None
-                ),
-            },
+            "audit": self.audit.to_dict(),
+            "tombstone": self.tombstone.to_dict(),
             "notes": [n.to_dict() for n in self.notes],
         }
 
@@ -770,29 +765,14 @@ class Fact(BaseEntity[FactID]):
             raise ModelFormatError("Fact requires 'fact_type', 'title', and 'primary_subject_id'.")
 
         audit_payload = data.get("audit")
-        audit_obj: AuditStamp | None = None
-        if isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
+        audit_obj = AuditStamp.from_dict(audit_payload) if isinstance(audit_payload, dict) else None
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[FactID] | None = None
-        if isinstance(tombstone_payload, dict):
-            tombstone_obj = Tombstone[FactID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    FactID(tombstone_payload["superseded_by"])
-                    if tombstone_payload.get("superseded_by")
-                    else None
-                ),
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=FactID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         notes_payload = data.get("notes", [])
         notes_list = [Note.from_dict(n) for n in notes_payload if isinstance(n, dict)]

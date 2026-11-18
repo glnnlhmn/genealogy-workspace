@@ -22,7 +22,6 @@ from gda.core.enums.site import MarkerCondition, MarkerMaterial, MarkerType
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SiteID, SourceID
 from gda.model.atom.urn import ArchivalURN, CemeteryPlotUrn, SourceURN
 from gda.model.base.age import Age
@@ -32,7 +31,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "CemeteryMarkerRecord",
@@ -113,7 +112,11 @@ def _parse_marker_enum[E](enum_cls: type[E], raw: Any, field_name: str) -> E:
     raise ModelFormatError(f"Invalid {field_name} value: '{raw}'.")
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class MarkerInterment(IntrospectableMixin):
     """Single person inscription engraved on a cemetery headstone, monument, or crypt."""
 
@@ -237,7 +240,11 @@ class MarkerInterment(IntrospectableMixin):
         return self.inscribed_name
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class CemeteryMarkerRecord(SourceRecord):
     """Primary epigraphic record documenting a cemetery marker, monument, or crypt."""
 
@@ -527,36 +534,18 @@ class CemeteryMarkerRecord(SourceRecord):
         if not isinstance(raw_interments, (list, tuple)):
             raise ModelFormatError("CemeteryMarkerRecord 'interments' must be a list or tuple.")
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "CemeteryMarkerRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),

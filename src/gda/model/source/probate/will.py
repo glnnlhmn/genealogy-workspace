@@ -24,7 +24,6 @@ from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -32,8 +31,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "ProbateRecord",
@@ -87,16 +87,17 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
 
 def _parse_bequest_type(raw: BequestType | str) -> BequestType:
     """Resolve BequestType by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, BequestType):
-        return raw
-    token = str(raw).strip().upper()
-    for member in BequestType:
-        if token in (member.name, member.value):
-            return member
-    raise ModelFormatError(f"Invalid BequestType value: '{raw}'.")
+    try:
+        return coerce_enum(BequestType, raw, field_name="bequest_type")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid BequestType value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class WillBequest(IntrospectableMixin):
     """Single structured devise, legacy, or guardianship clause in a will or codicil."""
 
@@ -235,7 +236,11 @@ class WillBequest(IntrospectableMixin):
         )
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class ProbateRecord(SourceRecord):
     """Primary archival record documenting a will, codicil, letters, or probate court entry."""
 
@@ -399,16 +404,8 @@ class ProbateRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_court_loc = (
             court_location_id
             if (court_location_id is None or isinstance(court_location_id, LocationID))
@@ -538,34 +535,16 @@ class ProbateRecord(SourceRecord):
                 "audit, court_name, filing_locator, and decedent_name_raw."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("ProbateRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_bequests = data.get("bequests", [])
         if not isinstance(raw_bequests, (list, tuple)):

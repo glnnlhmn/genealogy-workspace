@@ -3,9 +3,11 @@
 Historical naturalization declarations of intention, petitions, oaths, and certificates.
 
 Operational Role:
-    Defines NaturalizationWitness (deponent or character witness supporting a
-    petition) and NaturalizationRecord (extending SourceRecord) to capture primary
-    documentary evidence from judicial naturalization proceedings (aligned with
+    Defines NaturalizationWitness (subscribing witness on a petition or oath) and
+    NaturalizationRecord (extending SourceRecord) to capture primary documentary
+    evidence from Declarations of Intention ('First Papers'), Petitions for
+    Naturalization ('Second/Final Papers'), Certificates of Citizenship, Oaths of
+    Allegiance, and Court Naturalization Orders (aligned with
     schemas/sources/naturalization_record.schema.json).
 """
 
@@ -13,7 +15,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -23,7 +25,6 @@ from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -31,8 +32,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "NaturalizationRecord",
@@ -61,7 +63,7 @@ _NATURALIZATION_URN_PATTERN: re.Pattern[str] = URN_REGEXES["NATURALIZATION"]
 
 
 def _resolve_naturalization_urn(raw: ArchivalURN | str) -> ArchivalURN:
-    """Coerce a raw URN string into ArchivalURN (URN:NATURALIZATION:...) or SourceURN."""
+    """Coerce a raw URN string into ArchivalURN (URN:NATURALIZATION:...) or SourceURN (URN:SRC:...)."""
     if isinstance(raw, ArchivalURN):
         return raw
     token = str(raw).strip()
@@ -86,34 +88,35 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
 
 def _parse_stage(raw: NaturalizationStage | str) -> NaturalizationStage:
     """Resolve NaturalizationStage by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, NaturalizationStage):
-        return raw
-    token = str(raw).strip().upper()
-    for member in NaturalizationStage:
-        if token in (member.name, member.value):
-            return member
-    raise ModelFormatError(f"Invalid NaturalizationStage value: '{raw}'.")
+    try:
+        return coerce_enum(NaturalizationStage, raw, field_name="stage")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid NaturalizationStage value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class NaturalizationWitness(IntrospectableMixin):
-    """Single deponent or character witness attesting to a naturalization petition."""
+    """Subscribing witness attesting to an applicant's residence and character."""
 
     name: str = Field(
         ...,
-        description="Verbatim full name of the witness or voucher.",
+        description="Verbatim full name of the subscribing witness.",
     )
     individual_id: IndividualID | None = Field(
         default=None,
-        description="Resolved canonical IndividualID if linked to a person entity.",
+        description="Resolved canonical IndividualID of the witness if linked.",
     )
     occupation: str | None = Field(
         default=None,
-        description="Verbatim occupation stated by the witness.",
+        description="Verbatim occupation of the witness stated on the petition.",
     )
     residence: str | None = Field(
         default=None,
-        description="Verbatim street, town, or county residence stated by the witness.",
+        description="Verbatim street or town residence of the witness.",
     )
 
     def __post_init__(self) -> None:
@@ -147,7 +150,9 @@ class NaturalizationWitness(IntrospectableMixin):
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize NaturalizationWitness to a dictionary."""
-        data: dict[str, Any] = {"name": self.name}
+        data: dict[str, Any] = {
+            "name": self.name,
+        }
         if self.individual_id is not None:
             data["individual_id"] = str(self.individual_id)
         if self.occupation is not None:
@@ -190,7 +195,11 @@ class NaturalizationWitness(IntrospectableMixin):
         return self.name
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class NaturalizationRecord(SourceRecord):
     """Primary archival record documenting a naturalization declaration, petition, or certificate."""
 
@@ -224,19 +233,19 @@ class NaturalizationRecord(SourceRecord):
     )
     presiding_judge_or_clerk: str | None = Field(
         default=None,
-        description="Name of the presiding judge, clerk, or deputy clerk.",
+        description="Name of the presiding judge, clerk, or prothonotary.",
     )
     volume_page: str | None = Field(
         default=None,
-        description="Recorded volume and page reference.",
+        description="Volume, book, and page/folio number in the naturalization docket.",
     )
     certificate_stub_number: str | None = Field(
         default=None,
-        description="Official certificate of naturalization stub or serial number.",
+        description="Certificate of Naturalization or stub number.",
     )
     stage: NaturalizationStage | None = Field(
         default=None,
-        description="Procedural stage within the naturalization sequence.",
+        description="Procedural stage (FIRST_PAPERS, FINAL_PAPERS, DERIVATIVE, MILITARY, OTHER).",
     )
     applicant_id: IndividualID | None = Field(
         default=None,
@@ -244,19 +253,19 @@ class NaturalizationRecord(SourceRecord):
     )
     current_residence_raw: str | None = Field(
         default=None,
-        description="Verbatim residence of the applicant at the time of filing.",
+        description="Verbatim street, town, or county residence of the applicant.",
     )
     current_residence_id: LocationID | None = Field(
         default=None,
-        description="Resolved canonical LocationID for the applicant's current residence.",
+        description="Resolved canonical LocationID for the applicant's residence.",
     )
     date_of_birth: EventDate | None = Field(
         default=None,
-        description="Date of birth stated by the applicant.",
+        description="Applicant's date of birth or age-derived birth date stated on the instrument.",
     )
     place_of_birth_raw: str | None = Field(
         default=None,
-        description="Verbatim birthplace stated by the applicant.",
+        description="Verbatim town, province, and country of birth.",
     )
     place_of_birth_id: LocationID | None = Field(
         default=None,
@@ -264,23 +273,23 @@ class NaturalizationRecord(SourceRecord):
     )
     country_of_prior_allegiance: str | None = Field(
         default=None,
-        description="Verbatim sovereign ruler or nation renounced by the applicant.",
+        description="Foreign sovereign or state whose allegiance is renounced.",
     )
     port_of_entry_raw: str | None = Field(
         default=None,
-        description="Verbatim port of arrival recited in the naturalization filing.",
+        description="Verbatim port of arrival stated on the declaration or petition.",
     )
     arrival_date: EventDate | None = Field(
         default=None,
-        description="Date of arrival recited in the naturalization filing.",
+        description="Date of arrival in the United States stated on the instrument.",
     )
     vessel_name: str | None = Field(
         default=None,
-        description="Name of the vessel recited in the naturalization filing.",
+        description="Vessel or carrier of arrival stated on the declaration or petition.",
     )
     witnesses: tuple[NaturalizationWitness, ...] = Field(
         default=(),
-        description="Ordered tuple of supporting witnesses or character vouchers.",
+        description="Ordered tuple of subscribing witnesses on the petition or oath.",
     )
 
     ALLOWED_CATEGORIES: ClassVar[frozenset[SourceRecordCategory]] = _NATURALIZATION_CATEGORIES
@@ -363,28 +372,20 @@ class NaturalizationRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
+        res_stage = _parse_stage(stage) if stage is not None else None
         res_court_loc = (
             court_location_id
             if (court_location_id is None or isinstance(court_location_id, LocationID))
             else LocationID(court_location_id)
         )
-        res_stage = _parse_stage(stage) if stage is not None else None
         res_app_id = (
             applicant_id
             if (applicant_id is None or isinstance(applicant_id, IndividualID))
             else IndividualID(applicant_id)
         )
-        res_curr_loc = (
+        res_res_loc = (
             current_residence_id
             if (current_residence_id is None or isinstance(current_residence_id, LocationID))
             else LocationID(current_residence_id)
@@ -436,7 +437,7 @@ class NaturalizationRecord(SourceRecord):
             stage=res_stage,
             applicant_id=res_app_id,
             current_residence_raw=current_residence_raw,
-            current_residence_id=res_curr_loc,
+            current_residence_id=res_res_loc,
             date_of_birth=res_dob,
             place_of_birth_raw=place_of_birth_raw,
             place_of_birth_id=res_pob_loc,
@@ -509,43 +510,35 @@ class NaturalizationRecord(SourceRecord):
         raw_event_dt = data.get("event_date")
 
         if not all(
-            (sid, raw_urn, desc, rep, audit_payload, court_name, locator, applicant, raw_event_dt)
+            (
+                sid,
+                raw_urn,
+                desc,
+                rep,
+                audit_payload,
+                court_name,
+                locator,
+                applicant,
+                raw_event_dt,
+            )
         ):
             raise ModelFormatError(
                 "NaturalizationRecord requires source_id, source_urn, description, repository_id, "
                 "audit, court_name, docket_locator, applicant_name_raw, and event_date."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "NaturalizationRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_witnesses = data.get("witnesses", [])
         if not isinstance(raw_witnesses, (list, tuple)):
@@ -559,7 +552,7 @@ class NaturalizationRecord(SourceRecord):
             court_name=str(court_name),
             docket_locator=str(locator),
             applicant_name_raw=str(applicant),
-            event_date=raw_event_dt,
+            event_date=cast(Any, raw_event_dt),
             record_category=data.get("record_category", SourceRecordCategory.LEGAL),
             record_type=data.get("record_type", SourceRecordType.DECLARATION_OF_INTENTION),
             court_location_id=data.get("court_location_id"),
@@ -588,6 +581,6 @@ class NaturalizationRecord(SourceRecord):
 
     def __str__(self) -> str:
         return (
-            f"NaturalizationRecord [{self.record_type.value}] "
-            f"{self.applicant_name_raw} ({self.docket_locator})"
+            f"NaturalizationRecord [{self.record_type.value}] {self.applicant_name_raw} "
+            f"({self.docket_locator})"
         )

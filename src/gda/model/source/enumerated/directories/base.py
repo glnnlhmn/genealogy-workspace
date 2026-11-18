@@ -25,14 +25,13 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, SourceID
 from gda.model.atom.urn import ArchivalURN
-from gda.model.base.audit import AuditStamp
 from gda.model.source.enumerated.base import (
     EnumeratedRollRecord,
     coerce_field_value,
     serialize_primitive_value,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "DirectoryEntry",
@@ -60,7 +59,8 @@ _DIRECTORY_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class DirectoryEntry(IntrospectableMixin):
     """Single enumerated person or household listing in a directory or civic roll."""
@@ -161,7 +161,8 @@ class DirectoryEntry(IntrospectableMixin):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class DirectoryRollRecord(EnumeratedRollRecord):
     """Evidentiary composite for printed directory pages or civic voter/poll lists."""
@@ -287,10 +288,7 @@ class DirectoryRollRecord(EnumeratedRollRecord):
                 details={"entry_urn": target_urn, "source_urn": str(self.source_urn)},
             )
 
-        new_audit = AuditStamp(
-            created_at=self.audit.created_at,
-            updated_at=IsoTimestamp(format_utc_timestamp()),
-        )
+        new_audit = self.audit.touch(IsoTimestamp(format_utc_timestamp()))
         return dataclasses.replace(self, entries=tuple(new_entries), audit=new_audit)
 
     def flatten_entries(self) -> tuple[dict[str, Any], ...]:

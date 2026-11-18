@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any, ClassVar, Self
 
@@ -39,7 +40,7 @@ from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "Site",
@@ -48,6 +49,20 @@ __all__ = [
 
 _SITE_ID_PATTERN: re.Pattern[str] = ENTITY_ID_REGEXES["SID"]
 _SITE_URN_PATTERN: re.Pattern[str] = ENTITY_URN_REGEXES["SID"]
+
+
+def _resolve_site_name(name: NameThing | str) -> NameThing:
+    """Resolve NameThing instance or non-blank string into NameThing."""
+    if isinstance(name, NameThing):
+        return name
+    if isinstance(name, str):
+        clean_str = name.strip()
+        if not clean_str:
+            raise ModelFormatError("Site 'name' cannot be empty or whitespace.")
+        return NameThing.create(raw=clean_str, canonical=clean_str)
+    raise TypeError(
+        f"Site 'name' must be an instance of NameThing or str, got {type(name).__name__}."
+    )
 
 
 @dataclass(
@@ -169,7 +184,7 @@ class Site(BaseEntity[SiteID]):
         location_id: LocationID | str,
         audit: AuditStamp | None = None,
         tombstone: Tombstone[SiteID] | None = None,
-        notes: list[Note] | None = None,
+        notes: Sequence[Note] | None = None,
         address: Address | None = None,
         coordinates: Coordinates | None = None,
         period: TimePeriod | None = None,
@@ -177,19 +192,7 @@ class Site(BaseEntity[SiteID]):
     ) -> Site:
         """Factory constructor instantiating a validated Site entity."""
         resolved_id = site_id if isinstance(site_id, SiteID) else SiteID(site_id)
-
-        if isinstance(name, NameThing):
-            resolved_name = name
-        elif isinstance(name, str):
-            clean_str = name.strip()
-            if not clean_str:
-                raise ModelFormatError("Site 'name' cannot be empty or whitespace.")
-            resolved_name = NameThing.create(raw=clean_str, canonical=clean_str)
-        else:
-            raise TypeError(
-                f"Site 'name' must be an instance of NameThing or str, got {type(name).__name__}."
-            )
-
+        resolved_name = _resolve_site_name(name)
         resolved_cat = (
             category if isinstance(category, SiteType) else SiteType(category.strip().upper())
         )
@@ -197,10 +200,7 @@ class Site(BaseEntity[SiteID]):
             location_id if isinstance(location_id, LocationID) else LocationID(location_id)
         )
 
-        now_ts = IsoTimestamp(utc_now_iso())
-        resolved_audit = (
-            audit if audit is not None else AuditStamp(created_at=now_ts, updated_at=now_ts)
-        )
+        resolved_audit = audit if audit is not None else AuditStamp.now()
         resolved_tombstone = tombstone if tombstone is not None else Tombstone[SiteID]()
         resolved_notes = list(notes) if notes is not None else []
 
@@ -293,17 +293,7 @@ class Site(BaseEntity[SiteID]):
 
     def update_name(self, name: NameThing | str) -> Self:
         """Return a new immutable copy with updated naming value object."""
-        if isinstance(name, NameThing):
-            new_name = name
-        elif isinstance(name, str):
-            clean_str = name.strip()
-            if not clean_str:
-                raise ModelFormatError("Site 'name' cannot be empty or whitespace.")
-            new_name = NameThing.create(raw=clean_str, canonical=clean_str)
-        else:
-            raise TypeError(
-                f"Site 'name' must be an instance of NameThing or str, got {type(name).__name__}."
-            )
+        new_name = _resolve_site_name(name)
         if new_name == self.name:
             return self
         return replace(
@@ -427,23 +417,8 @@ class Site(BaseEntity[SiteID]):
             "canonical_urn": self.canonical_urn,
             "location_id": self.location_id.value,
             "is_active": self.is_active,
-            "audit": {
-                "created_at": str(self.audit.created_at),
-                "updated_at": str(self.audit.updated_at),
-            },
-            "tombstone": {
-                "is_deprecated": self.tombstone.is_deprecated,
-                "deprecated_at": (
-                    str(self.tombstone.deprecated_at)
-                    if self.tombstone.deprecated_at is not None
-                    else None
-                ),
-                "superseded_by": (
-                    str(self.tombstone.superseded_by)
-                    if self.tombstone.superseded_by is not None
-                    else None
-                ),
-            },
+            "audit": self.audit.to_dict(),
+            "tombstone": self.tombstone.to_dict(),
             "notes": [n.to_dict() for n in self.notes],
         }
         if self.address is not None:
@@ -504,29 +479,14 @@ class Site(BaseEntity[SiteID]):
             resolved_period = TimePeriod.from_dict(raw_period)
 
         audit_payload = data.get("audit")
-        audit_obj: AuditStamp | None = None
-        if isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
+        audit_obj = AuditStamp.from_dict(audit_payload) if isinstance(audit_payload, dict) else None
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SiteID] | None = None
-        if isinstance(tombstone_payload, dict):
-            tombstone_obj = Tombstone[SiteID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=(
-                    SiteID(tombstone_payload["superseded_by"])
-                    if tombstone_payload.get("superseded_by")
-                    else None
-                ),
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SiteID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         notes_payload = data.get("notes", [])
         notes_list = [Note.from_dict(n) for n in notes_payload if isinstance(n, dict)]

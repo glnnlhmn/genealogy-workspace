@@ -27,9 +27,9 @@ from gda.model.atom.id import (
     SiteID,
     SourceID,
 )
-from gda.model.xref.location_xref import _ATOM_PREFIX_MAP, _resolve_target_id
+from gda.model.xref.location_xref import _coerce_atom_subclass, _resolve_target_id
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "SiteTargetID",
@@ -40,7 +40,11 @@ type SiteTargetID = AtomID | SourceID
 
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class SiteXRef(IntrospectableMixin):
     """Immutable derived index row linking a SiteID and governing LocationID to an AtomID or SourceID."""
 
@@ -60,15 +64,9 @@ class SiteXRef(IntrospectableMixin):
     def __post_init__(self) -> None:
         """Enforce canonical SmartIDPrefix membership and non-self-reference when target_id is an AtomID."""
         if isinstance(self.target_id, AtomID):
-            try:
-                prefix_enum = SmartIDPrefix(self.target_id.prefix)
-            except ValueError as exc:
-                raise ModelFormatError(
-                    f"Unsupported SmartIDPrefix '{self.target_id.prefix}' in target_id '{self.target_id.value}'."
-                ) from exc
-            expected_cls = _ATOM_PREFIX_MAP[prefix_enum]
-            if type(self.target_id) is not expected_cls:
-                object.__setattr__(self, "target_id", expected_cls(self.target_id.value))
+            coerced = _coerce_atom_subclass(self.target_id)
+            if coerced is not self.target_id:
+                object.__setattr__(self, "target_id", coerced)
 
             if self.target_id.value == self.site_id.value:
                 raise ModelFormatError(
@@ -116,7 +114,7 @@ class SiteXRef(IntrospectableMixin):
             if isinstance(location_id, LocationID)
             else LocationID(str(location_id).strip().upper())
         )
-        res_target = _resolve_target_id(target_id)
+        res_target = _resolve_target_id(target_id, owner_name="SiteXRef")
         return cls(site_id=res_site, location_id=res_loc, target_id=res_target)
 
     def to_dict(self) -> dict[str, Any]:

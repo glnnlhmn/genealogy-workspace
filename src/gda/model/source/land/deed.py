@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -24,7 +24,6 @@ from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import URN_REGEXES
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -32,8 +31,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "DeedParty",
@@ -91,16 +91,17 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
 
 def _parse_party_role(raw: DeedPartyRole | str) -> DeedPartyRole:
     """Resolve DeedPartyRole by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, DeedPartyRole):
-        return raw
-    token = str(raw).strip().upper()
-    for member in DeedPartyRole:
-        if token in (member.name, member.value):
-            return member
-    raise ModelFormatError(f"Invalid DeedPartyRole value: '{raw}'.")
+    try:
+        return coerce_enum(DeedPartyRole, raw, field_name="party_role")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid DeedPartyRole value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class DeedParty(IntrospectableMixin):
     """Single grantor or grantee named in a real-property conveyance."""
 
@@ -217,7 +218,11 @@ class DeedParty(IntrospectableMixin):
         return f"{self.full_name} ({self.party_role.value})"
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class LandParcel(IntrospectableMixin):
     """Tract of real property, acreage, metes-and-bounds, and abutting neighbors."""
 
@@ -354,7 +359,11 @@ class LandParcel(IntrospectableMixin):
         return self.location_raw
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class LandDeedRecord(SourceRecord):
     """Primary archival record documenting a land deed, indenture, mortgage, or release."""
 
@@ -541,16 +550,8 @@ class LandDeedRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_office_loc = (
             office_location_id
             if (office_location_id is None or isinstance(office_location_id, LocationID))
@@ -625,36 +626,7 @@ class LandDeedRecord(SourceRecord):
     def to_dict(self) -> dict[str, Any]:
         """Serialize LandDeedRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "office_title": self.office_title,
-                "recording_locator": self.recording_locator,
-                "date_written": self.date_written.to_dict(),
-                "grantors": [g.to_dict() for g in self.grantors],
-                "grantees": [g.to_dict() for g in self.grantees],
-                "parcel": self.parcel.to_dict(),
-                "additional_parcels": [p.to_dict() for p in self.additional_parcels],
-            }
-        )
-        if self.office_location_id is not None:
-            data["office_location_id"] = str(self.office_location_id)
-        if self.recorder_or_deputy is not None:
-            data["recorder_or_deputy"] = self.recorder_or_deputy
-        if self.deed_book is not None:
-            data["deed_book"] = self.deed_book
-        if self.page_number is not None:
-            data["page_number"] = self.page_number
-        if self.instrument_number is not None:
-            data["instrument_number"] = self.instrument_number
-        if self.date_acknowledged is not None:
-            data["date_acknowledged"] = self.date_acknowledged.to_dict()
-        if self.date_recorded is not None:
-            data["date_recorded"] = self.date_recorded.to_dict()
-        if self.consideration_amount is not None:
-            data["consideration_amount"] = self.consideration_amount
-        if self.dower_relinquished is not None:
-            data["dower_relinquished"] = self.dower_relinquished
+        data["additional_parcels"] = [p.to_dict() for p in self.additional_parcels]
         return data
 
     @classmethod
@@ -704,34 +676,16 @@ class LandDeedRecord(SourceRecord):
         if not isinstance(raw_extra, (list, tuple)):
             raise ModelFormatError("LandDeedRecord 'additional_parcels' must be a list or tuple.")
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("LandDeedRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),
@@ -740,10 +694,10 @@ class LandDeedRecord(SourceRecord):
             repository_id=str(rep),
             office_title=str(office),
             recording_locator=str(locator),
-            date_written=raw_written,
+            date_written=cast(Any, raw_written),
             grantors=list(raw_grantors),
             grantees=list(raw_grantees),
-            parcel=raw_parcel,
+            parcel=cast(Any, raw_parcel),
             record_category=data.get("record_category", SourceRecordCategory.LAND),
             record_type=data.get("record_type", SourceRecordType.DEED_INDENTURE),
             office_location_id=data.get("office_location_id"),

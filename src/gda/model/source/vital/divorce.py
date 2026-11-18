@@ -11,7 +11,7 @@ Operational Role:
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -19,7 +19,6 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.enums.vital import DivorceDecreeType, LegalPlaintiff
 from gda.core.errors import ModelFormatError
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -27,8 +26,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "DivorceRecord",
@@ -62,16 +62,17 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
 
 def _parse_decree_type(raw: DivorceDecreeType | str) -> DivorceDecreeType:
     """Resolve DivorceDecreeType from enum member, value string, or member name."""
-    if isinstance(raw, DivorceDecreeType):
-        return raw
-    token = str(raw).strip()
-    for member in DivorceDecreeType:
-        if token.upper() in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid DivorceDecreeType value: '{raw}'.")
+    try:
+        return coerce_enum(DivorceDecreeType, raw, field_name="decree_type")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid DivorceDecreeType value: '{raw}'.") from err
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class DivorceRecord(SourceRecord):
     """Primary archival record documenting a civil divorce decree, report, or annulment."""
 
@@ -235,16 +236,8 @@ class DivorceRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_jur_id = (
             jurisdiction_id
             if (jurisdiction_id is None or isinstance(jurisdiction_id, LocationID))
@@ -261,9 +254,9 @@ class DivorceRecord(SourceRecord):
             else IndividualID(wife_id)
         )
         res_plaintiff = (
-            plaintiff
-            if (plaintiff is None or isinstance(plaintiff, LegalPlaintiff))
-            else LegalPlaintiff(str(plaintiff).strip().capitalize())
+            coerce_enum(LegalPlaintiff, plaintiff, field_name="plaintiff")
+            if plaintiff is not None
+            else None
         )
         res_decree_type = _parse_decree_type(decree_type)
 
@@ -316,46 +309,7 @@ class DivorceRecord(SourceRecord):
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize DivorceRecord to a dictionary."""
-        data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "court_name": self.court_name,
-                "husband_name_raw": self.husband_name_raw,
-                "wife_name_raw": self.wife_name_raw,
-                "date_decree_granted": self.date_decree_granted.to_dict(),
-                "decree_type": self.decree_type.value,
-            }
-        )
-        if self.docket_number is not None:
-            data["docket_number"] = self.docket_number
-        if self.state_file_number is not None:
-            data["state_file_number"] = self.state_file_number
-        if self.jurisdiction_raw is not None:
-            data["jurisdiction_raw"] = self.jurisdiction_raw
-        if self.jurisdiction_id is not None:
-            data["jurisdiction_id"] = str(self.jurisdiction_id)
-        if self.husband_id is not None:
-            data["husband_id"] = str(self.husband_id)
-        if self.wife_id is not None:
-            data["wife_id"] = str(self.wife_id)
-        if self.wife_maiden_name_raw is not None:
-            data["wife_maiden_name_raw"] = self.wife_maiden_name_raw
-        if self.date_of_marriage is not None:
-            data["date_of_marriage"] = self.date_of_marriage.to_dict()
-        if self.place_of_marriage_raw is not None:
-            data["place_of_marriage_raw"] = self.place_of_marriage_raw
-        if self.date_of_separation is not None:
-            data["date_of_separation"] = self.date_of_separation.to_dict()
-        if self.plaintiff is not None:
-            data["plaintiff"] = self.plaintiff.value
-        if self.legal_grounds is not None:
-            data["legal_grounds"] = self.legal_grounds
-        if self.minor_children_count is not None:
-            data["minor_children_count"] = self.minor_children_count
-        if self.alimony_awarded is not None:
-            data["alimony_awarded"] = self.alimony_awarded
-        return data
+        return super().to_dict()
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DivorceRecord:
@@ -391,34 +345,16 @@ class DivorceRecord(SourceRecord):
                 "audit, court_name, husband_name_raw, wife_name_raw, and date_decree_granted."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("DivorceRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),
@@ -428,7 +364,7 @@ class DivorceRecord(SourceRecord):
             court_name=str(court_name),
             husband_name_raw=str(husband_name),
             wife_name_raw=str(wife_name),
-            date_decree_granted=raw_decree_date,
+            date_decree_granted=cast(Any, raw_decree_date),
             record_category=data.get("record_category", SourceRecordCategory.LEGAL),
             record_type=data.get("record_type", SourceRecordType.DIVORCE_REPORT),
             docket_number=data.get("docket_number"),

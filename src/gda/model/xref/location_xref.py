@@ -6,7 +6,9 @@ Operational Role:
     Defines LocationXRef (frozen Pydantic dataclass) as a derived relational index
     row linking a LocationID ('LOC-######') to a polymorphic target identifier
     (canonical SmartIDPrefix AtomID subclass or SourceID UUIDv4), exposing
-    IDType and SmartIDPrefix classification properties.
+    IDType and SmartIDPrefix classification properties. Also provides the shared
+    polymorphic target-resolution helpers used across LocationXRef, MediaXRef,
+    and SiteXRef.
 """
 
 from __future__ import annotations
@@ -36,7 +38,7 @@ from gda.model.atom.id import (
     SourceID,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "LocationTargetID",
@@ -58,45 +60,51 @@ _ATOM_PREFIX_MAP: dict[SmartIDPrefix, type[AtomID]] = {
 }
 
 
-def _resolve_target_id(raw: LocationTargetID | str) -> LocationTargetID:
+def _coerce_atom_subclass(atom_id: AtomID) -> AtomID:
+    """Validate SmartIDPrefix membership on an AtomID and coerce base AtomID to its concrete subclass."""
+    try:
+        prefix_enum = SmartIDPrefix(atom_id.prefix)
+    except ValueError as exc:
+        raise ModelFormatError(
+            f"Unsupported SmartIDPrefix '{atom_id.prefix}' in target_id '{atom_id.value}'."
+        ) from exc
+    atom_cls = _ATOM_PREFIX_MAP[prefix_enum]
+    return atom_id if type(atom_id) is atom_cls else atom_cls(atom_id.value)
+
+
+def _resolve_target_id(
+    raw: LocationTargetID | str,
+    *,
+    owner_name: str = "LocationXRef",
+) -> LocationTargetID:
     """Resolve a canonical SmartIDPrefix AtomID subclass, SourceID instance, or raw string token."""
     if isinstance(raw, SourceID):
         return raw
 
     if isinstance(raw, AtomID):
-        try:
-            prefix_enum = SmartIDPrefix(raw.prefix)
-        except ValueError as exc:
-            raise ModelFormatError(
-                f"Unsupported SmartIDPrefix '{raw.prefix}' in target_id '{raw.value}'."
-            ) from exc
-        atom_cls = _ATOM_PREFIX_MAP[prefix_enum]
-        return raw if type(raw) is atom_cls else atom_cls(raw.value)
+        return _coerce_atom_subclass(raw)
 
     token = str(raw).strip()
     upper_token = token.upper()
     if ATOM_ID_REGEX.match(upper_token):
-        raw_prefix = upper_token.split("-", 1)[0]
-        try:
-            prefix_enum = SmartIDPrefix(raw_prefix)
-        except ValueError as exc:
-            raise ModelFormatError(
-                f"Unsupported SmartIDPrefix '{raw_prefix}' in target_id '{raw}'."
-            ) from exc
-        return _ATOM_PREFIX_MAP[prefix_enum](upper_token)
+        return _coerce_atom_subclass(AtomID(upper_token))
 
     lower_token = token.lower()
     if UUID_V4_REGEX.match(lower_token):
         return SourceID(lower_token)
 
     raise ModelFormatError(
-        f"Invalid LocationXRef target_id: '{raw}'. Must be a canonical SmartIDPrefix AtomID "
+        f"Invalid {owner_name} target_id: '{raw}'. Must be a canonical SmartIDPrefix AtomID "
         "('AAA-######') or lowercase RFC 4122 UUIDv4 SourceID."
     )
 
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class LocationXRef(IntrospectableMixin):
     """Immutable derived index row linking a LocationID to a canonical AtomID or SourceID."""
 
@@ -112,15 +120,9 @@ class LocationXRef(IntrospectableMixin):
     def __post_init__(self) -> None:
         """Enforce canonical SmartIDPrefix membership and non-self-reference when target_id is an AtomID."""
         if isinstance(self.target_id, AtomID):
-            try:
-                prefix_enum = SmartIDPrefix(self.target_id.prefix)
-            except ValueError as exc:
-                raise ModelFormatError(
-                    f"Unsupported SmartIDPrefix '{self.target_id.prefix}' in target_id '{self.target_id.value}'."
-                ) from exc
-            expected_cls = _ATOM_PREFIX_MAP[prefix_enum]
-            if type(self.target_id) is not expected_cls:
-                object.__setattr__(self, "target_id", expected_cls(self.target_id.value))
+            coerced = _coerce_atom_subclass(self.target_id)
+            if coerced is not self.target_id:
+                object.__setattr__(self, "target_id", coerced)
 
             if self.target_id.value == self.location_id.value:
                 raise ModelFormatError(
@@ -166,7 +168,7 @@ class LocationXRef(IntrospectableMixin):
             if isinstance(location_id, LocationID)
             else LocationID(str(location_id).strip().upper())
         )
-        res_target = _resolve_target_id(target_id)
+        res_target = _resolve_target_id(target_id, owner_name="LocationXRef")
         return cls(location_id=res_loc, target_id=res_target)
 
     def to_dict(self) -> dict[str, Any]:

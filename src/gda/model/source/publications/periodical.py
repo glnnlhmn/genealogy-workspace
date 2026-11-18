@@ -13,7 +13,7 @@ Operational Role:
 from __future__ import annotations
 
 import json
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -22,7 +22,6 @@ from gda.core.enums.sources import EducationLevel, SourceRecordCategory, SourceR
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import PUB_CODE_REGEX
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, MediaID, OrganizationID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -30,8 +29,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "PeriodicalArticleRecord",
@@ -70,7 +70,11 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class PublicationEntry(IntrospectableMixin):
     """Single enumerated subject row on a yearbook page, alumni directory, or history."""
 
@@ -189,7 +193,11 @@ class PublicationEntry(IntrospectableMixin):
         return f"Line {self.line_number}: {self.subject_name_verbatim}"
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class PeriodicalArticleRecord(SourceRecord):
     """Archival record for a periodical article, yearbook page, or published county/family history."""
 
@@ -374,16 +382,8 @@ class PeriodicalArticleRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_parent = (
             parent_source_id
             if (parent_source_id is None or isinstance(parent_source_id, SourceID))
@@ -395,9 +395,9 @@ class PeriodicalArticleRecord(SourceRecord):
             else OrganizationID(institution_org_id)
         )
         res_edu = (
-            education_level
-            if (education_level is None or isinstance(education_level, EducationLevel))
-            else EducationLevel(str(education_level).strip().upper())
+            coerce_enum(EducationLevel, education_level, field_name="education_level")
+            if education_level is not None
+            else None
         )
         res_date = _deserialize_event_date(date_published, "date_published")
 
@@ -442,33 +442,7 @@ class PeriodicalArticleRecord(SourceRecord):
     def to_dict(self) -> dict[str, Any]:
         """Serialize PeriodicalArticleRecord to a dictionary."""
         data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "publication_title_raw": self.publication_title_raw,
-                "date_published": self.date_published.to_dict(),
-                "publication_kind": self.publication_kind,
-                "entries": [e.to_dict() for e in self.entries],
-            }
-        )
-        if self.parent_source_id is not None:
-            data["parent_source_id"] = str(self.parent_source_id)
-        if self.pub_code is not None:
-            data["pub_code"] = self.pub_code
-        if self.institution_or_publisher_raw is not None:
-            data["institution_or_publisher_raw"] = self.institution_or_publisher_raw
-        if self.institution_org_id is not None:
-            data["institution_org_id"] = str(self.institution_org_id)
-        if self.author_or_editor_raw is not None:
-            data["author_or_editor_raw"] = self.author_or_editor_raw
-        if self.article_or_chapter_title is not None:
-            data["article_or_chapter_title"] = self.article_or_chapter_title
-        if self.volume_issue is not None:
-            data["volume_issue"] = self.volume_issue
-        if self.page_or_plate is not None:
-            data["page_or_plate"] = self.page_or_plate
-        if self.education_level is not None:
-            data["education_level"] = self.education_level.value
+        data["entries"] = [e.to_dict() for e in self.entries]
         return data
 
     @classmethod
@@ -491,36 +465,18 @@ class PeriodicalArticleRecord(SourceRecord):
                 "repository_id, audit, publication_title_raw, and date_published."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError(
                 "PeriodicalArticleRecord audit must be an AuditStamp or dictionary."
             )
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         raw_entries = data.get("entries", [])
         if not isinstance(raw_entries, (list, tuple)):
@@ -532,7 +488,7 @@ class PeriodicalArticleRecord(SourceRecord):
             description=str(desc),
             repository_id=str(rep),
             publication_title_raw=str(title_raw),
-            date_published=raw_date,
+            date_published=cast(Any, raw_date),
             publication_kind=str(data.get("publication_kind", "PERIODICAL")),
             record_category=data.get("record_category", SourceRecordCategory.EDUCATION),
             record_type=data.get("record_type", SourceRecordType.YEARBOOK_PAGE),

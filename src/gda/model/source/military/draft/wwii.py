@@ -28,14 +28,15 @@ from gda.core.types import (
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = ["WwiiDraftCardRecord", "WwiiDraftWave", "WwiiPhysicalMetrics"]
 
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class WwiiPhysicalMetrics(IntrospectableMixin):
     """Physical description reported by the registrar on WWII Form 1/DSS Form 1."""
@@ -82,7 +83,8 @@ class WwiiPhysicalMetrics(IntrospectableMixin):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class WwiiDraftCardRecord(MilitaryDraftRecord):
     """Specialized evidentiary record for WWII Selective Service Draft Cards (1940-1946)."""

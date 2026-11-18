@@ -24,8 +24,9 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import FactID, IndividualID, LocationID, SiteID
 from gda.model.atom.year import HistoricalYear
 from gda.model.entity.fact import Fact
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "FactParticipantXRef",
@@ -34,24 +35,18 @@ __all__ = [
 
 def _parse_role(raw: AssociatedRole | str) -> AssociatedRole:
     """Resolve AssociatedRole by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, AssociatedRole):
-        return raw
-    token = str(raw).strip().upper()
-    for member in AssociatedRole:
-        if token in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid AssociatedRole value: '{raw}'.")
+    try:
+        return coerce_enum(AssociatedRole, raw, field_name="role")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid AssociatedRole value: '{raw}'.") from err
 
 
 def _parse_fact_type(raw: FactType | str) -> FactType:
     """Resolve FactType by enum instance, exact value, or uppercase member name."""
-    if isinstance(raw, FactType):
-        return raw
-    token = str(raw).strip().upper()
-    for member in FactType:
-        if token in (member.name, member.value.upper()):
-            return member
-    raise ModelFormatError(f"Invalid FactType value: '{raw}'.")
+    try:
+        return coerce_enum(FactType, raw, field_name="fact_type")
+    except ModelFormatError as err:
+        raise ModelFormatError(f"Invalid FactType value: '{raw}'.") from err
 
 
 def _resolve_temporal_year(raw: HistoricalYear | int | None) -> HistoricalYear | None:
@@ -62,7 +57,11 @@ def _resolve_temporal_year(raw: HistoricalYear | int | None) -> HistoricalYear |
 
 
 @total_ordering
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class FactParticipantXRef(IntrospectableMixin):
     """Immutable derived index row linking a FactID to a participating IndividualID."""
 

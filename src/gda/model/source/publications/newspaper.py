@@ -11,7 +11,7 @@ Operational Role:
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -19,7 +19,6 @@ from pydantic.dataclasses import dataclass
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.types import NEWS_CATEGORY_REGEX, PUB_CODE_REGEX
-from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN
 from gda.model.base.association import AssociatedIndividual
@@ -27,8 +26,9 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
+from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "NewspaperClipRecord",
@@ -64,7 +64,11 @@ def _deserialize_event_date(raw: Any, field_name: str) -> EventDate:
     raise ModelFormatError(f"Invalid '{field_name}' payload: expected EventDate, dict, or str.")
 
 
-@dataclass(repr=False, config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True))
+@dataclass(
+    repr=False,
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
+)
 class NewspaperClipRecord(SourceRecord):
     """Single-row archival record representing a newspaper article, obituary, or notice."""
 
@@ -214,16 +218,8 @@ class NewspaperClipRecord(SourceRecord):
             if isinstance(repository_id, RepositoryID)
             else RepositoryID(repository_id)
         )
-        res_cat = (
-            record_category
-            if isinstance(record_category, SourceRecordCategory)
-            else SourceRecordCategory(str(record_category).strip().upper())
-        )
-        res_type = (
-            record_type
-            if isinstance(record_type, SourceRecordType)
-            else SourceRecordType(str(record_type).strip().upper())
-        )
+        res_cat = coerce_enum(SourceRecordCategory, record_category, field_name="record_category")
+        res_type = coerce_enum(SourceRecordType, record_type, field_name="record_type")
         res_parent = (
             parent_source_id
             if (parent_source_id is None or isinstance(parent_source_id, SourceID))
@@ -268,36 +264,7 @@ class NewspaperClipRecord(SourceRecord):
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize NewspaperClipRecord to a dictionary."""
-        data = super().to_dict()
-        data.update(
-            {
-                "record_type": self.record_type.value,
-                "newspaper_name_raw": self.newspaper_name_raw,
-                "issue_date": self.issue_date.to_dict(),
-                "news_category": self.news_category,
-            }
-        )
-        if self.parent_source_id is not None:
-            data["parent_source_id"] = str(self.parent_source_id)
-        if self.pub_code is not None:
-            data["pub_code"] = self.pub_code
-        if self.publication_location_raw is not None:
-            data["publication_location_raw"] = self.publication_location_raw
-        if self.publication_location_id is not None:
-            data["publication_location_id"] = str(self.publication_location_id)
-        if self.headline_raw is not None:
-            data["headline_raw"] = self.headline_raw
-        if self.byline_raw is not None:
-            data["byline_raw"] = self.byline_raw
-        if self.volume_issue is not None:
-            data["volume_issue"] = self.volume_issue
-        if self.page_column is not None:
-            data["page_column"] = self.page_column
-        if self.edition is not None:
-            data["edition"] = self.edition
-        if self.article_summary is not None:
-            data["article_summary"] = self.article_summary
-        return data
+        return super().to_dict()
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NewspaperClipRecord:
@@ -319,34 +286,16 @@ class NewspaperClipRecord(SourceRecord):
                 "audit, newspaper_name_raw, and issue_date."
             )
 
-        if isinstance(audit_payload, AuditStamp):
-            audit_obj = audit_payload
-        elif isinstance(audit_payload, dict):
-            audit_obj = AuditStamp(
-                created_at=IsoTimestamp(audit_payload["created_at"]),
-                updated_at=IsoTimestamp(audit_payload["updated_at"]),
-            )
-        else:
+        if not isinstance(audit_payload, (AuditStamp, dict)):
             raise ModelFormatError("NewspaperClipRecord audit must be an AuditStamp or dictionary.")
+        audit_obj = AuditStamp.from_dict(audit_payload)
 
         tombstone_payload = data.get("tombstone")
-        tombstone_obj: Tombstone[SourceID] | None = None
-        if isinstance(tombstone_payload, dict):
-            raw_sup = tombstone_payload.get("superseded_by")
-            sup_id = (
-                raw_sup
-                if (raw_sup is None or isinstance(raw_sup, SourceID))
-                else SourceID(str(raw_sup))
-            )
-            tombstone_obj = Tombstone[SourceID](
-                is_deprecated=tombstone_payload.get("is_deprecated", False),
-                deprecated_at=(
-                    IsoTimestamp(tombstone_payload["deprecated_at"])
-                    if tombstone_payload.get("deprecated_at")
-                    else None
-                ),
-                superseded_by=sup_id,
-            )
+        tombstone_obj = (
+            Tombstone.from_dict(tombstone_payload, id_cls=SourceID)
+            if isinstance(tombstone_payload, dict)
+            else None
+        )
 
         return cls.create(
             source_id=str(sid),
@@ -354,7 +303,7 @@ class NewspaperClipRecord(SourceRecord):
             description=str(desc),
             repository_id=str(rep),
             newspaper_name_raw=str(paper_name),
-            issue_date=raw_issue_date,
+            issue_date=cast(Any, raw_issue_date),
             news_category=str(data.get("news_category", "GENERAL")),
             record_category=data.get("record_category", SourceRecordCategory.NEWS),
             record_type=data.get("record_type", SourceRecordType.MISC),

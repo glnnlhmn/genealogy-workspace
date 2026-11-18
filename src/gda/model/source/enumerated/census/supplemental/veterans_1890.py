@@ -20,7 +20,7 @@ from gda.core.errors import ModelFormatError
 from gda.core.types import US_VETERANS_SCHEDULE_YEAR
 from gda.model.source.enumerated.census.base import CensusLineEntry, CensusScheduleRecord
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "Veterans1890Entry",
@@ -30,7 +30,8 @@ __all__ = [
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class Veterans1890Entry(CensusLineEntry):
     """Individual veteran or widow line entry on the 1890 Veterans Schedule."""
@@ -65,7 +66,8 @@ class Veterans1890Entry(CensusLineEntry):
 
 @dataclass(
     repr=False,
-    config=ConfigDict(kw_only=True, frozen=True, extra="forbid", strict=True),
+    config=ConfigDict(frozen=True, extra="forbid", strict=True),
+    kw_only=True,
 )
 class Veterans1890ScheduleRecord(CensusScheduleRecord[Veterans1890Entry]):
     """Evidentiary composite for the 1890 Special Veterans Schedule."""
