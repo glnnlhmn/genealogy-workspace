@@ -1,0 +1,100 @@
+# Path: config/gd_metrics/config.toml
+# Default configuration for gd_metrics (GDA Code & Test Telemetry)
+
+[telemetry]
+default_scopes = ["gda"]
+sync_sheets_by_default = true
+sheet_id = "1_TP32cyKTjTeTb5SKrnEFZBIMHLQ2kKop_zIk9gIN3E"
+sheet_url = "https://docs.google.com/spreadsheets/d/1_TP32cyKTjTeTb5SKrnEFZBIMHLQ2kKop_zIk9gIN3E/edit"
+write_local_report = true
+local_report_dir = "reports"
+pytest_basetemp = "gtemp/pytest_tmp"
+
+[gates.coverage]
+gda = 95.0
+cli = 95.0
+system = 100.0
+ancestry_desk = 85.0
+
+[[batches]]
+id = "GDA-Batch-1"
+scope = "gda"
+tier = "Tier 0 (Foundation)"
+paths = ["src/gda/core"]
+test_paths = ["tests/test_gda/test_core"]
+
+[[batches]]
+id = "GDA-Batch-2"
+scope = "gda"
+tier = "Tier 1 (I/O & Utilities)"
+paths = ["src/gda/io", "src/gda/util"]
+test_paths = ["tests/test_gda/test_io", "tests/test_gda/test_util"]
+
+[[batches]]
+id = "GDA-Batch-3"
+scope = "gda"
+tier = "Tier 2 (Core Models)"
+paths = [
+    "src/gda/__init__.py",
+    "src/gda/model/atom",
+    "src/gda/model/base",
+    "src/gda/model/entity",
+    "src/gda/model/xref",
+]
+test_paths = ["tests/test_gda/test_model"]
+
+[[batches]]
+id = "GDA-Batch-4"
+scope = "gda"
+tier = "Tier 3 (Source Models)"
+paths = ["src/gda/model/source"]
+test_paths = ["tests/test_gda/test_model/test_source"]
+
+[[batches]]
+id = "GDA-Batch-5"
+scope = "gda"
+tier = "Tier 4 (Entity Managers)"
+paths = ["src/gda/entity"]
+test_paths = ["tests/test_gda/test_entity"]
+
+[[batches]]
+id = "GDA-Batch-6"
+scope = "gda"
+tier = "Tier 5 (Database & Mappers)"
+paths = ["src/gda/db"]
+test_paths = ["tests/test_gda/test_db"]
+
+[[batches]]
+id = "GDA-Batch-7"
+scope = "gda"
+tier = "Tier 6 (Repositories)"
+paths = ["src/gda/repository"]
+test_paths = ["tests/test_gda/test_repository"]
+
+[[batches]]
+id = "GDA-Batch-8"
+scope = "gda"
+tier = "Tier 7 (Engines & Managers)"
+paths = ["src/gda/engine", "src/gda/manager"]
+test_paths = ["tests/test_gda/test_engine", "tests/test_gda/test_manager"]
+
+[[batches]]
+id = "Group-S"
+scope = "system"
+tier = "System Utilities"
+paths = ["src/system"]
+test_paths = ["tests/test_system"]
+
+[[batches]]
+id = "Group-CLI"
+scope = "cli"
+tier = "Operational CLI"
+paths = ["src/cli"]
+test_paths = ["tests/test_cli"]
+
+[[batches]]
+id = "Group-GenDesk"
+scope = "ancestry_desk"
+tier = "Desktop Presentation"
+paths = ["src/ancestry_desk"]
+test_paths = ["tests/test_ancestry_desk"]

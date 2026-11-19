@@ -18,7 +18,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "gen_readme.toml"
 
@@ -92,7 +92,11 @@ def extract_module_metadata(file_path: Path) -> dict[str, str]:
                     if target.id == "__version__" and isinstance(value, ast.Constant):
                         metadata["version"] = str(value.value)
                     elif target.id == "__all__" and isinstance(value, ast.List):
-                        names = [elt.value for elt in value.elts if isinstance(elt, ast.Constant)]
+                        names = [
+                            elt.value
+                            for elt in value.elts
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+                        ]
                         metadata["all_exports"] = ", ".join(f"`{n}`" for n in names)
     except Exception as exc:
         metadata["description"] = f"Extraction error: {exc}"

@@ -16,7 +16,7 @@ import json
 import sys
 from dataclasses import replace
 from enum import Enum
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -40,7 +40,7 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.tombstone import Tombstone
 from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.0.0+build.10"
 
 __all__ = [
     "RecordMetadata",
@@ -133,7 +133,7 @@ def _resolve_field_type(cls: type[Any], type_str: str) -> type[Any] | None:
     for mro_cls in cls.__mro__:
         mod = sys.modules.get(mro_cls.__module__)
         if mod is not None and hasattr(mod, base_token):
-            return getattr(mod, base_token)
+            return cast("type[Any]", getattr(mod, base_token))
     return None
 
 

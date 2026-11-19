@@ -22,7 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.5.0+build.3"
+__version__ = "1.5.0+build.4"
 
 
 def load_gsi_config(config_path: Path | None = None) -> dict[str, Any]:
@@ -72,11 +72,11 @@ def load_gsi_config(config_path: Path | None = None) -> dict[str, Any]:
         try:
             with open(config_path, "rb") as fh:
                 loaded = tomllib.load(fh)
-                for sec, vals in loaded.items():
-                    if sec in default_config and isinstance(vals, dict):
-                        default_config[sec].update(vals)
-                    else:
-                        default_config[sec] = vals
+            for sec, vals in loaded.items():
+                if sec in default_config and isinstance(vals, dict):
+                    default_config[sec].update(vals)
+                else:
+                    default_config[sec] = vals
         except Exception as err:
             print(f"Warning: Failed to parse {config_path}: {err}. Using defaults.")
 
@@ -209,7 +209,7 @@ def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, 
             target_path_str = docstring_path_m.group(1).strip()
         else:
             generic_path_m = re.search(
-                r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Path:[ \t]*[\"']?([^\r\n>\"*]+)[\"']?",
+                r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Path:[ \t]*[\"\']?([^\r\n>\"\*]+)[\"\']?",
                 head_block,
                 re.MULTILINE | re.IGNORECASE,
             )
@@ -218,7 +218,7 @@ def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, 
 
         if not target_name:
             name_m = re.search(
-                r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Name:[ \t]*[\"']?([^\r\n>*/\"']+)[\"']?",
+                r"^[ \t]*(?:#|<!--|//|/\*|\*)*[ \t]*Name:[ \t]*[\"\']?([^\r\n>*/\"']+)[\"\']?",
                 head_block,
                 re.MULTILINE | re.IGNORECASE,
             )
@@ -272,18 +272,18 @@ def _determine_backup_directory(dest_path: Path, root_dir: Path, config: dict[st
     """
     rel_path_str = dest_path.relative_to(root_dir).as_posix()
     routing = config.get("backup_routing", {})
-    archive_dir_name = config.get("workspace", {}).get("archive_dir", "archive")
+    archive_dir_name = str(config.get("workspace", {}).get("archive_dir", "archive"))
 
-    chosen_project = None
+    chosen_project: str | None = None
     for prefix, project in routing.items():
         if prefix != "default" and (
             rel_path_str == prefix or rel_path_str.startswith(f"{prefix}/")
         ):
-            chosen_project = project
+            chosen_project = str(project)
             break
 
     if not chosen_project:
-        chosen_project = routing.get("default", "backups_system")
+        chosen_project = str(routing.get("default", "backups_system"))
 
     parent_rel = dest_path.parent.relative_to(root_dir)
     return root_dir / archive_dir_name / chosen_project / parent_rel
@@ -468,7 +468,7 @@ def run_intake(
     if moved_files:
         print("Intake completed successfully. Relocated files:")
         for mf in moved_files:
-            print(f"  -> {mf}")
+            print(f" -> {mf}")
     else:
         print("No files were relocated.")
 

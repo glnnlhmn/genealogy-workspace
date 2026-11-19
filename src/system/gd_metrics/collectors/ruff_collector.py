@@ -1,0 +1,154 @@
+"""Path: src/system/gd_metrics/collectors/ruff_collector.py
+
+Subprocess collector for Ruff JSON lint diagnostics.
+"""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from system.gd_metrics.config import BatchDefinition, MetricsConfig
+from system.gd_metrics.progress import ProgressReporter
+
+__version__ = "1.0.0+build.1"
+
+__all__ = [
+    "RuffDiagnostic",
+    "RuffRunResult",
+    "parse_ruff_json",
+    "run_ruff_check",
+]
+
+
+@dataclass(frozen=True)
+class RuffDiagnostic:
+    """Single parsed Ruff lint finding."""
+
+    batch_id: str
+    file_path: str
+    lineno: int
+    col: int
+    rule_code: str
+    message: str
+    fixable: bool
+
+
+@dataclass(frozen=True)
+class RuffRunResult:
+    """Aggregated result of a Ruff JSON lint execution."""
+
+    diagnostics: tuple[RuffDiagnostic, ...]
+    summary_note: str
+    returncode: int
+
+
+def _normalize_rel_path(raw_path: str, workspace_root: Path) -> str:
+    """Normalize a Ruff filename to a workspace-relative POSIX string."""
+    candidate = Path(raw_path)
+    if candidate.is_absolute():
+        try:
+            return candidate.relative_to(workspace_root).as_posix()
+        except ValueError:
+            return candidate.as_posix()
+    return raw_path.replace("\\", "/").lstrip("./")
+
+
+def _match_batch_id(rel_path: str, batches: tuple[BatchDefinition, ...]) -> str:
+    """Resolve the owning batch ID for a normalized relative file path."""
+    for batch in batches:
+        for base in batch.paths:
+            prefix = base.rstrip("/")
+            if rel_path == prefix or rel_path.startswith(f"{prefix}/"):
+                return batch.id
+    return ""
+
+
+def parse_ruff_json(
+    output: str,
+    workspace_root: Path,
+    batches: tuple[BatchDefinition, ...],
+) -> tuple[RuffDiagnostic, ...]:
+    """Parse Ruff --output-format json stdout into RuffDiagnostic records."""
+    if not output.strip():
+        return ()
+    try:
+        items = json.loads(output)
+    except json.JSONDecodeError:
+        return ()
+
+    records: list[RuffDiagnostic] = []
+    for item in items:
+        rel_path = _normalize_rel_path(str(item.get("filename", "")), workspace_root)
+        loc = item.get("location") or {}
+        records.append(
+            RuffDiagnostic(
+                batch_id=_match_batch_id(rel_path, batches),
+                file_path=rel_path,
+                lineno=int(loc.get("row", 0)),
+                col=int(loc.get("column", 0)),
+                rule_code=str(item.get("code") or ""),
+                message=str(item.get("message") or ""),
+                fixable=bool(item.get("fix")),
+            )
+        )
+    return tuple(records)
+
+
+def _collect_existing_targets(
+    workspace_root: Path,
+    batches: tuple[BatchDefinition, ...],
+) -> list[str]:
+    """Collect deduplicated existing source paths across active batches."""
+    targets: list[str] = []
+    seen: set[str] = set()
+    for batch in batches:
+        for rel_path in batch.paths:
+            if rel_path not in seen and (workspace_root / rel_path).exists():
+                seen.add(rel_path)
+                targets.append(rel_path)
+    return targets
+
+
+def run_ruff_check(
+    config: MetricsConfig,
+    batches: tuple[BatchDefinition, ...],
+    *,
+    progress: ProgressReporter | None = None,
+    runner: Callable[..., Any] = subprocess.run,
+) -> RuffRunResult:
+    """Execute ruff check --output-format json against active batch paths."""
+    targets = _collect_existing_targets(config.workspace_root, batches)
+    if not targets:
+        return RuffRunResult(diagnostics=(), summary_note="skipped (no targets)", returncode=0)
+
+    if progress is not None:
+        progress.update("Running ruff lint check")
+
+    cmd = [sys.executable, "-m", "ruff", "check", "--output-format", "json", *targets]
+    try:
+        proc = runner(
+            cmd,
+            cwd=config.workspace_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError as exc:
+        return RuffRunResult(
+            diagnostics=(),
+            summary_note=f"ruff unavailable: {exc}",
+            returncode=1,
+        )
+
+    diagnostics = parse_ruff_json(str(proc.stdout), config.workspace_root, batches)
+    return RuffRunResult(
+        diagnostics=diagnostics,
+        summary_note=f"{len(diagnostics)} diagnostic(s)",
+        returncode=int(proc.returncode),
+    )

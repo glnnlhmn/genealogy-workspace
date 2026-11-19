@@ -41,6 +41,10 @@ dependencies = [
 # ------------------------------------------------------------------------------
 # 3. OPTIONAL & SUBSYSTEM DEPENDENCY TIERS
 # ------------------------------------------------------------------------------
+[project.scripts]
+gd-metrics = "system.gd_metrics.cli:main"
+
+
 [project.optional-dependencies]
 docs = [
     "sphinx>=7.2.0",            # Documentation generator

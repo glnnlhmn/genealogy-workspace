@@ -1,70 +1,47 @@
 <!--Path: prompts/topics/topic_library_architecture.md-->
-# Topic Specification: Library Architecture & Packaging Hierarchy
+# Topic Specification: Library Architecture, Dependency Tiers & Behavioral Contracts
 <!-- Version: 1.0.1 -->
 <!-- Operational Directive: Ingest this topic specification as a modular overlay extending the active MIP baseline. Do not execute or rewrite without explicit operator command. Confirm processing and state any conflicts. -->
 
-## 1. Architectural Scope & Directory Hierarchy
-Application and library source trees reside under `src/`, modularized into domain libraries, CLI tools, system utilities, and application interfaces:
+## 1. Architectural Vision & Authoritative Layout Reference
 
-```text
-src/
-  ├── ancestry_desk/       # Desktop presentation layer (controllers, state, views, app.py)
-  ├── cli/                 # Operational CLI orchestrators (commands, formatters, main.py)
-  ├── gda/                 # Core domain framework packages
-  │     ├── core/          # Foundation primitives, errors, config, logging, introspection
-  │     ├── data/          # Static reference datasets and resources
-  │     ├── engine/        # Kinship graph and biological plausibility verification
-  │     ├── entity/        # Active domain entity management (person, fact, location, site)
-  │     ├── enums/         # Categorical and domain enumerations
-  │     ├── io/            # File I/O, atomic commit staging, schemas, backup protocols
-  │     ├── manager/       # Vocabulary governance and reference minting engines
-  │     ├── model/         # Structural entity definitions, primitives, and base schemas
-  │     ├── types/         # Foundational primitive types
-  │     └── util/          # Pure helper utilities (date normalization, hashing, phonetic algorithms)
-  └── system/              # Workstation utilities, hooks, GSI intake, structure verification
-```
-* Authoritative Inspection: The live filesystem tree emitted by GenDeskStructure serves as the authoritative layout reference.
+The `src/` tree separates the core genealogical domain framework (`src/gda/`) from presentation surfaces (`src/ancestry_desk/`), command-line orchestrators (`src/cli/`), and workstation developer utilities (`src/system/`).
 
-* Test Suite Co-location: Corresponding test suites are co-located under tests/ (tests/test_ancestry_desk/, tests/test_cli/, tests/test_gda/, tests/test_system/)
+* **Single Source of Layout Truth:** Rather than hardcoding static directory trees that drift as packages evolve, the live filesystem tree emitted by `GenDeskStructure` (`GenDeskStructureSrcTests.txt`) and validated by `src/system/util/check_structure.py` serves as the authoritative structural inventory.
+* **Test Suite Co-location:** Every production subsystem under `src/` is paired with a co-located test hierarchy under `tests/` (`tests/test_gda/`, `tests/test_cli/`, `tests/test_ancestry_desk/`, `tests/test_system/`) governed by `topic_test_harness.md`.
 
-## 2. Library Package Roles & Dependencies
+## 2. Unidirectional Dependency Tiers (`src/gda/`)
 
-All paths anchor strictly to `G:/My Drive/genealogy-workspace` using forward slashes (`/`). The following enumeration outlines primary architectural directories, core services, and subsystems; it represents key operational components rather than an exhaustive listing of every workspace folder.
+To guarantee acyclic imports, high testability, and clean separation between domain state and storage mechanisms, packages within `src/gda/` enforce a strict bottom-up dependency hierarchy. Lower tiers must never import from higher tiers:
 
-### **2.1 Core Infrastructure (gda.core)**
-  - **Role:** Domain-agnostic foundational primitives providing canonical error hierarchies (errors.py), immutable Pydantic configuration engines (config.py), dual-pipeline structured JSON/console logging (logging.py), and runtime introspection mixins (introspectable.py).
-  - **Persistence Boundary:** All physical disk mutations, atomic temporary write staging, and the Safe Backup Protocol reside in gda.io.
-  - **Dependency Invariant:** Zero internal framework dependencies. Imports strictly from the Python standard library and Pydantic.
+1. **Tier 0 - Foundation & Primitives (`gda.core`, `gda.util`, `gda.io`):**
+   * **Goal:** Provide domain-agnostic configuration, canonical error taxonomy, structured dual-pipeline logging, runtime introspection (`IntrospectableMixin`), domain enumerations (`gda.core.enums`), pure ID/text/enum helpers (`gda.util`), and atomic UTF-8 file I/O with pre-write Safe Backups (`gda.io`).
+   * **Boundary Rule:** `gda.core` depends solely on the Python standard library and Pydantic. `gda.util` and `gda.io` depend strictly on `gda.core`. All physical disk reads, atomic temporary staging, and `archive/backups_[project]/` snapshot creation are isolated to `gda.io`.
+2. **Tier 1 - Domain Models & Value Contracts (`gda.model`):**
+   * **Goal:** Define immutable, strictly validated domain structures across atomic scalars/identifiers (`atom/`), composite building blocks (`base/`), primary domain entities (`entity/`), bidirectional cross-references (`xref/`), and archival source records (`source/`).
+   * **Boundary Rule:** Consumes Tier 0 (`gda.core`, `gda.util`). Completely decoupled from physical disk I/O (`gda.io`) and SQLite database sessions (`gda.db`).
+3. **Tier 2 - Relational Persistence & In-Memory Entity Collections (`gda.db`, `gda.entity`):**
+   * **Goal:** Provide transactional SQLite session management, deterministic schema migrations, and bidirectional row mappers (`gda.db`), alongside active in-memory entity collections, secondary indexing, and domain validation (`gda.entity`).
+   * **Boundary Rule:** Consumes Tiers 0 and 1.
+4. **Tier 3 - Unified Domain Repositories (`gda.repository`):**
+   * **Goal:** Coordinate query construction, collection caching, and persistence routing across entity, source, and cross-reference domains.
+   * **Boundary Rule:** Consumes Tiers 0 through 2.
+5. **Tier 4 - Analytical Engines & Orchestration Managers (`gda.engine`, `gda.manager`):**
+   * **Goal:** Execute higher-order graph traversal, fact/media resolution, kinship inference, biological plausibility checks (`gda.engine`), and vocabulary/reference governance (`gda.manager`).
+   * **Boundary Rule:** Consumes Tiers 0 through 3; consumed by external application layers (`src/cli/`, `src/ancestry_desk/`).
 
-### **2.2 I/O & Persistence Infrastructure (gda.io)**
-  - **Role:** Governs all physical filesystem interaction, UTF-8 file access, atomic temporary file staging, and the automated Safe Backup Protocol before write operations.
-- **Safe Backup Store:** Manages snapshot emission into isolated `archive/backups_[project]/` targets.  
-- **Dependency Invariant:** Depends strictly on gda.core primitives.
+## 3. Core Cross-Cutting Behavioral Contracts
 
-### **2.3 Authoritative Enumerations (gda.enums)**
-  - **Role:** Standardized domain classifications, evidentiary confidence metrics (QuayScore), kinship roles, onomastic classifications (NameStatus), and archival categories.
-  - **Dependency Invariant:** Zero framework dependencies; inherits from standard library StrEnum and IntEnum.
+### 3.1 Introspection Contract (`IntrospectableMixin`)
+Public service classes, domain models, and collection facades across `src/gda/` inherit `IntrospectableMixin` from `gda.core` to provide uniform runtime `.help()` discovery and schema inspection in interactive sessions and CLI tools.
 
-### **2.4 Model Authority & Domain Entities (gda.model)**
-  - **Role:** Central domain authority structured into distinct sub-tiers:
-    - **atom/:** Immutable atomic value objects (DateString, EventDate, prefixed FactID, IndividualID, FamilyID, SiteID, LocationID, SourceID).
-    - **base/:** Composite building blocks, audit stamps, tombstone records, onomastic names, and citation references.
-    - **entity/:** Primary domain entities (Individual, Family, Fact) enforcing relational integrity, temporal bounds, and participant linkages.
-    - **xref/:** Bidirectional cross-reference indexers and relationship traversal resolvers.
-  - **In-Place Tombstoning:** Deprecated, superseded, or absorbed domain entities remain in their primary stores marked with tombstone metadata (is_deprecated: true, superseded_by: <id>).
-  - **Dependency Invariant:** Consumes gda.core and gda.enums. Decoupled from physical I/O mutations.
+### 3.2 Immutability, Audit Stamps & In-Place Tombstoning
+* **Copy-on-Write Mutation:** Domain models enforce frozen immutability; state transitions occur through explicit copy-on-write mutators that refresh `AuditStamp` metadata and mark records dirty for persistence synchronization.
+* **In-Place Tombstoning:** Deprecated, superseded, or merged records are never silently purged from primary stores; they retain tombstone metadata (`is_deprecated`, `superseded_by`) so historical citations and cross-references resolve deterministically.
 
-## 3. Core Architectural Contracts
+### 3.3 Documentation & Package `README.md` Parity
+* **PEP 257 & Google-Style Docstrings:** Every module opens on Line 1 with its `Path:` docstring header, declares a PEP 440 `__version__` build counter and sorted `__all__`, and maintains an approximate 15% to 20% comment-and-docstring-to-SLOC density.
+* **Package `README.md` Invariant:** Every package directory maintains an accurate `README.md` synchronized with the actual `.py` modules on disk (`gen_readme.py`).
 
-### 3.1 Introspection Contract (IntrospectableMixin)
-All public service classes across framework packages inherit IntrospectableMixin from gda.core to provide self-documenting .help() discovery in interactive sessions and terminal runs.
-
-### 3.2 Docstring Specification (PEP 257 & Google Style)
-All classes, methods, and callable functions must strictly adhere to PEP 257 and Google-style docstring conventions. Detailed API contracts, parameter types, and return values are maintained directly in code docstrings.
-
-### 3.3 State Persistence & Safe Backups
-* **Atomic Writes:** All filesystem mutations and serialized writes must use gda.io routines to enforce atomic file replacements and pre-write Safe Backups.
-* **In-Place Tombstoning:** Deprecated, superseded, or absorbed domain entities and assertions remain in their primary stores marked with tombstone metadata (is_deprecated: true, superseded_by: <id>).
-
-### 3.4 Verification & Quality Gates Governance
-All packages and modules under `src/gda/` are tested under `tests/test_gda/` in strict conformance with `topic_test_harness.md`, enforcing registered marker hygiene and the minimum >= 95.00% statement and branch coverage gate.
+### 3.4 Verification & Quality Gate Governance
+All `src/gda/` packages are verified under `tests/test_gda/` in accordance with `topic_test_harness.md`, enforcing registered pytest marker hygiene, zero `ruff` or `mypy` errors, Grade A cyclomatic complexity averages, and the minimum >= 95.00% statement and branch coverage gate.

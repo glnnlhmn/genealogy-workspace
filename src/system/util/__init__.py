@@ -14,24 +14,14 @@ from system.util.check_structure import (
     main as check_structure_main,
 )
 from system.util.extract_coverage_gaps import generate_gap_report, parse_gap_range
-from system.util.gd_code_scoring import (
-    generate_scoring_report,
-    run_ruff_updates,
-)
-from system.util.gd_code_scoring import (
-    main as gd_code_scoring_main,
-)
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "build_tree",
     "check_structure_main",
-    "gd_code_scoring_main",
     "generate_gap_report",
-    "generate_scoring_report",
     "generate_structure_report",
     "parse_gap_range",
     "resolve_workspace_root",
-    "run_ruff_updates",
 ]

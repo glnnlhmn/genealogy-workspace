@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0+build.11"
+__version__ = "1.0.0+build.12"
 
 BK_PATTERN = re.compile(r"^(.*?)\.(\d{8}_\d{6})(?:_\d+)?\.bk$")
 
@@ -86,16 +86,16 @@ def resolve_backup_destination(
     """
     rel_posix = target_file.resolve().relative_to(root_dir.resolve()).as_posix()
     routing = cfg.get("backup_routing", {})
-    archive_dir_name = cfg.get("workspace", {}).get("archive_dir", "archive")
+    archive_dir_name = str(cfg.get("workspace", {}).get("archive_dir", "archive"))
 
-    chosen_project = None
+    chosen_project: str | None = None
     for prefix, project in routing.items():
         if prefix != "default" and (rel_posix == prefix or rel_posix.startswith(f"{prefix}/")):
-            chosen_project = project
+            chosen_project = str(project)
             break
 
     if not chosen_project:
-        chosen_project = routing.get("default", "backups_system")
+        chosen_project = str(routing.get("default", "backups_system"))
 
     parent_rel = target_file.resolve().parent.relative_to(root_dir.resolve())
     return root_dir / archive_dir_name / chosen_project / parent_rel
