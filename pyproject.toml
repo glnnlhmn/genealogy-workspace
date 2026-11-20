@@ -17,8 +17,8 @@ build-backend = "setuptools.build_meta"
 # ------------------------------------------------------------------------------
 [project]
 name = "genealogy-digital-archive"
-version = "1.0.0+build.6"
-description = "Consolidated Digital Archive Engine, CLI & Ancestry Desk UI"
+version = "1.0.0+build.7"
+description = "Consolidated Digital Archive Engine, CLI, GenDesk Tools & Ancestry Desk UI"
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [
@@ -39,12 +39,20 @@ dependencies = [
 ]
 
 # ------------------------------------------------------------------------------
-# 3. OPTIONAL & SUBSYSTEM DEPENDENCY TIERS
+# 3. CLI ENTRYPOINTS & OPTIONAL DEPENDENCY TIERS
 # ------------------------------------------------------------------------------
+
+# --- 3.1 Console Script Entrypoints ---
 [project.scripts]
-gd-metrics = "system.gd_metrics.cli:main"
+# Uncomment each GDT entrypoint as its package migration completes:
+gdrm = "gen_desk_tools.readme_gen.cli:main"
+gdb = "gen_desk_tools.backup_mgr.cli:main"
+gd-metrics = "gen_desk_tools.metrics.cli:main"
+gd-gaps = "gen_desk_tools.coverage_gaps.cli:main"
+gd-struct = "gen_desk_tools.structure.cli:main"
+gsi = "gen_desk_tools.script_importer.cli:main"  # Migrate last
 
-
+# --- 3.2 Optional & Development Dependency Groups ---
 [project.optional-dependencies]
 docs = [
     "sphinx>=7.2.0",            # Documentation generator
@@ -82,7 +90,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["gda*", "ancestry_desk*", "cli*", "system*"]
+include = ["gda*", "gen_desk_tools*", "ancestry_desk*", "cli*", "system*"]
 
 # ------------------------------------------------------------------------------
 # 5. PYTEST HARNESS & TEST RUNNER SETTINGS
@@ -93,6 +101,7 @@ minversion = "8.0"
 addopts = "-ra -q --basetemp=C:/temp/pytest_tmp --strict-markers --import-mode=importlib"
 testpaths = [
     "tests/test_gda",
+    "tests/test_gen_desk_tools",
     "tests/test_system",
 ]
 pythonpath = ["src"]
@@ -143,6 +152,7 @@ extend-exclude = [
     "reports",
 ]
 
+# --- 7.1 Lint Rules & Import Sorting ---
 [tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
@@ -157,17 +167,18 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["gda", "ancestry_desk", "cli", "system"]
+known-first-party = ["gda", "gen_desk_tools", "ancestry_desk", "cli", "system"]
 
+[tool.ruff.lint.mccabe]
+# Set the maximum acceptable cyclomatic complexity (Radon CC target: average Grade A)
+max-complexity = 10
+
+# --- 7.2 Code Formatting ---
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"              # Enforce LF line endings across Windows/POSIX
 docstring-code-format = true
-
-[tool.ruff.lint.mccabe]
-# Set the maximum acceptable cyclomatic complexity (Radon CC target: average Grade A)
-max-complexity = 10
 
 # ------------------------------------------------------------------------------
 # 8. MYPY STATIC TYPE CHECKING & PYDANTIC PLUGIN
@@ -209,7 +220,7 @@ app_name = "Genealogy Digital Archive"
 environment = "development"
 debug = false
 
-# Default fallback SQLite database configuration loaded by DatabaseConfig()
+# --- 10.1 Default Fallback SQLite Database ---
 [tool.gda.database]
 engine = "sqlite"
 db_name = "archive.db"
@@ -219,7 +230,7 @@ journal_mode = "WAL"            # Write-Ahead Logging for concurrent read/write 
 foreign_keys = true             # Enforce relational foreign-key constraints on every connection
 synchronous = "NORMAL"          # Balance durability and WAL write performance
 
-# Environment-specific database targets resolved via AppConfig.for_environment("<ENV>")
+# --- 10.2 Environment-Specific Database Targets ---
 [tool.gda.environments.DEV]
 engine = "sqlite"
 db_name = "gda_dev.db"
@@ -243,3 +254,43 @@ engine = "sqlite"
 db_name = "gda_prod.db"
 db_path = "data/db/gda_prod.db"
 timeout_seconds = 30.0
+
+# ------------------------------------------------------------------------------
+# 11. GENDESK TOOLS (GDT) CONFIGURATION
+# ------------------------------------------------------------------------------
+
+# --- 11.1 Workspace Directory Defaults ---
+[tool.gen_desk_tools.workspace]
+root = "."
+download_dir = "download"
+archive_dir = "archive"
+logs_dir = "logs"
+reports_dir = "reports"
+gtemp_dir = "gtemp"
+
+# --- 11.2 Protected Domains & Backup Routing ---
+[tool.gen_desk_tools.code_domains]
+protected_domains = ["src", "tests", "schemas", "data/setup"]
+
+[tool.gen_desk_tools.backup_routing]
+"src/gda" = "backups_gda"
+"tests/test_gda" = "backups_gda"
+"src/gen_desk_tools" = "backups_gen_desk_tools"
+"tests/test_gen_desk_tools" = "backups_gen_desk_tools"
+"src/ancestry_desk" = "backups_ancestry_desk"
+"tests/test_ancestry_desk" = "backups_ancestry_desk"
+"src/cli" = "backups_cli"
+"tests/test_cli" = "backups_cli"
+"src/system" = "backups_system"
+"tests/test_system" = "backups_system"
+"schemas" = "backups_schemas"
+"data/setup" = "backups_data_setup"
+"default" = "backups_gen_desk_tools"
+
+# --- 11.3 Logging & Retention Defaults ---
+[tool.gen_desk_tools.logging]
+log_level = "INFO"
+
+[tool.gen_desk_tools.retention]
+max_versions = 5
+max_age_days = 90

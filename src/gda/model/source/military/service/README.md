@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/military/service/README.md-->
 # Active Military Service & Discharge Records (src/gda/model/source/military/service)
 
 ## Architectural Role
@@ -11,12 +12,13 @@ Enlistment contracts, company muster rolls, naval service postings, and formal s
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `base.py` | `1.0.0+build.1` | Foundational military service record domain entity model. |
-| `enlistment.py` | `1.0.0+build.1` | Enlistment contracts, muster rolls, and Compiled Military Service Records (CMSR). |
-| `separation.py` | `1.0.0+build.1` | Discharge separation certificates and release records (DD-214, WD AGO). |
+| `base.py` | `1.0.0+build.2` | Foundational military service record domain entity model. |
+| `enlistment.py` | `1.0.0+build.2` | Enlistment contracts, muster rolls, and Compiled Military Service Records (CMSR). |
+| `separation.py` | `1.0.0+build.2` | Discharge separation certificates and release records (DD-214, WD AGO). |
 
 ## Public Exports & Consumption Contract
 Exports: `EnlistmentMusterRecord`, `MilitaryBranch`, `MilitaryServiceRecord`, `MusterRollType`, `SeparationCharacter`, `SeparationDischargeRecord`, `SeparationFormType`, `ServiceComponent`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 8d3321ecc6d148c9 -->

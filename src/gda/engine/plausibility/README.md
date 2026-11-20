@@ -1,11 +1,12 @@
-# Biological & Chronological Plausibility (src/gda/engine/plausibility)
+<!--Path: src/gda/engine/plausibility/README.md-->
+# Package Documentation (src/gda/engine/plausibility)
 
 ## Architectural Role
-Temporal plausibility validators, biological generation gap verifiers, lifespan anomaly detectors, and contradiction engines.
+Architectural subsystem package.
 
 ## Quality Gate & Verification Status
-- **Quality Gate:** 100.0% Statement & Branch Coverage
-- **Verification Suite:** `tests/test_gda/test_engine/`
+- **Quality Gate:** >= 95.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_plausibility/`
 - **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
 ## Module Inventory & Descriptions
@@ -16,4 +17,5 @@ Temporal plausibility validators, biological generation gap verifiers, lifespan 
 Modules export public interfaces explicitly declared in `__all__`.
 
 ---
-Generated dynamically by `src/system/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 3f5d60a63d90b1f4 -->

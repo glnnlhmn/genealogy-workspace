@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/manuscripts/README.md-->
 # Family Bibles & Narrative Manuscripts (src/gda/model/source/manuscripts)
 
 ## Architectural Role
@@ -11,11 +12,12 @@ Inscribed family Bible vital registers, personal diaries, correspondence, and un
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `bible.py` | `1.0.0+build.2` | Family Bible vital registers and genealogical inscriptions. |
-| `narrative.py` | `1.0.0+build.2` | Manuscript collections, personal correspondence, diaries, memoirs, depositions, and oral histories. |
+| `bible.py` | `1.0.0+build.3` | Family Bible vital registers and genealogical inscriptions. |
+| `narrative.py` | `1.0.0+build.3` | Manuscript collections, personal correspondence, diaries, memoirs, depositions, and oral histories. |
 
 ## Public Exports & Consumption Contract
 Exports: `BibleRegisterEntry`, `FamilyBibleRecord`, `NarrativeManuscriptRecord`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 4c8dc396d081f8f6 -->

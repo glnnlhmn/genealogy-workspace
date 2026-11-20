@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/orgs/README.md-->
 # Organizational Membership & Roster Source Records (src/gda/model/source/orgs)
 
 ## Architectural Role
@@ -11,11 +12,12 @@ Documentary membership certificates, lodge initiation/demit records, and multi-e
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `membership.py` | `1.0.0+build.1` | Evidentiary record models for individual organization memberships and affiliations. |
-| `roster.py` | `1.0.0+build.2` | Tabulated organization roster, lodge directory, and society roll domain models. |
+| `membership.py` | `1.0.0+build.2` | Evidentiary record models for individual organization memberships and affiliations. |
+| `roster.py` | `1.0.0+build.3` | Tabulated organization roster, lodge directory, and society roll domain models. |
 
 ## Public Exports & Consumption Contract
 Exports: `OrganizationMembershipRecord`, `OrganizationRosterEntry`, `OrganizationRosterRecord`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 301340c22ac57f21 -->

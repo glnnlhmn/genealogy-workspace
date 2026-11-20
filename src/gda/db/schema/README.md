@@ -1,3 +1,4 @@
+<!--Path: src/gda/db/schema/README.md-->
 # Schema Migration Coordinator & DDL Engine (src/gda/db/schema)
 
 ## Architectural Role
@@ -20,4 +21,5 @@ Governs SQLite schema version discovery, idempotent migration execution, and ato
 Exports: `MIGRATION_REGISTRY`, `Migration`, `SchemaManager`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 9d511c8a9120e410 -->

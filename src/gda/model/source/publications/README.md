@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/publications/README.md-->
 # Newspapers, Periodicals & Bibliographic Catalogs (src/gda/model/source/publications)
 
 ## Architectural Role
@@ -11,12 +12,13 @@ Published newspaper clippings, obituaries, marriage/legal notices, periodical ar
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `newspaper.py` | `1.0.0+build.1` | Newspaper article, obituary, vital notice, and clipping domain models. |
-| `periodical.py` | `1.0.0+build.1` | Periodical article, school yearbook, commencement program, and published history models. |
-| `publication.py` | `1.0.0+build.1` | Master serial, newspaper, periodical, and monograph publication source container models. |
+| `newspaper.py` | `1.0.0+build.3` | Newspaper article, obituary, vital notice, and clipping domain models. |
+| `periodical.py` | `1.0.0+build.3` | Periodical article, school yearbook, commencement program, and published history models. |
+| `publication.py` | `1.0.0+build.3` | Master serial, newspaper, periodical, and monograph publication source container models. |
 
 ## Public Exports & Consumption Contract
 Exports: `NewspaperClipRecord`, `PeriodicalArticleRecord`, `Publication`, `PublicationEntry`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 8bf7d668f3e70522 -->

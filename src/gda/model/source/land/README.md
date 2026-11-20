@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/land/README.md-->
 # Land Deeds, Conveyances & Sovereign Grants (src/gda/model/source/land)
 
 ## Architectural Role
@@ -11,11 +12,12 @@ Real property deeds, grantor/grantee conveyances, metes-and-bounds / PLSS parcel
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `deed.py` | `1.0.0+build.3` | Historical land deeds, indentures, quitclaims, mortgages, sheriff's deeds, and dower releases. |
-| `grant.py` | `1.0.0+build.3` | Sovereign land grants, patents, land warrants, bounty land claims, and metes-and-bounds surveys. |
+| `deed.py` | `1.0.0+build.6` | Historical land deeds, indentures, quitclaims, mortgages, sheriff's deeds, and dower releases. |
+| `grant.py` | `1.0.0+build.6` | Sovereign land grants, patents, land warrants, bounty land claims, and metes-and-bounds surveys. |
 
 ## Public Exports & Consumption Contract
 Exports: `DeedParty`, `LandDeedRecord`, `LandGrantRecord`, `LandParcel`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: d0a7d2f1881e098e -->

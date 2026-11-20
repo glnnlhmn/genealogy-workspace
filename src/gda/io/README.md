@@ -1,3 +1,4 @@
+<!--Path: src/gda/io/README.md-->
 # I/O, Safe Backup & Persistence Infrastructure (src/gda/io)
 
 ## Architectural Role
@@ -14,11 +15,12 @@ Governs physical filesystem interactions, line-ending preserving UTF-8 file acce
 | `atomic.py` | `1.0.0+build.2` | Same-directory atomic file staging and replacement engine. |
 | `backup.py` | `1.0.0+build.2` | Safe Backup Protocol and snapshot lifecycle manager. |
 | `errors.py` | `1.0.0+build.2` | Canonical I/O error hierarchy and specialized persistence exceptions. |
-| `json.py` | `1.0.0+build.2` | Deterministic JSON serialization and atomic persistence engine. |
-| `text.py` | `1.0.0+build.2` | Normalized UTF-8 text and markdown atomic persistence engine. |
+| `json.py` | `1.0.0+build.3` | Deterministic JSON serialization and atomic persistence engine. |
+| `text.py` | `1.0.0+build.3` | Normalized UTF-8 text and markdown atomic persistence engine. |
 
 ## Public Exports & Consumption Contract
 Exports: `AtomicWriteError`, `AtomicWriter`, `BackupError`, `DirectoryCreationError`, `FileLockError`, `FileReadError`, `GDABackupManager`, `GDAIOError`, `GDAJsonIO`, `GDATextIO`, `SerializationError`, `atomic_write`, `atomic_write_bytes`, `atomic_write_stream`, `atomic_write_text`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 5875d7e024dca8c4 -->

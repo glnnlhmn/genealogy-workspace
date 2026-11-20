@@ -1,11 +1,12 @@
-# Kinship Graph Computation (src/gda/engine/kinship)
+<!--Path: src/gda/engine/kinship/README.md-->
+# Package Documentation (src/gda/engine/kinship)
 
 ## Architectural Role
-Consanguinity calculators, pedigree collapse resolvers, canonical ancestor traversal algorithms, and relationship degree mappers.
+Architectural subsystem package.
 
 ## Quality Gate & Verification Status
-- **Quality Gate:** 100.0% Statement & Branch Coverage
-- **Verification Suite:** `tests/test_gda/test_engine/`
+- **Quality Gate:** >= 95.0% Statement & Branch Coverage
+- **Verification Suite:** `tests/test_kinship/`
 - **Operational Invariant:** In-memory verification, hermetic test isolation, zero warnings.
 
 ## Module Inventory & Descriptions
@@ -16,4 +17,5 @@ Consanguinity calculators, pedigree collapse resolvers, canonical ancestor trave
 Modules export public interfaces explicitly declared in `__all__`.
 
 ---
-Generated dynamically by `src/system/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 1aef7110ae53368b -->

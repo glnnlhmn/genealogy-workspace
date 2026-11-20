@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/military/casualty/README.md-->
 # Military Casualties, POW & Burials (src/gda/model/source/military/casualty)
 
 ## Architectural Role
@@ -11,13 +12,14 @@ Battlefield casualty reports, combat injury logs, prisoner-of-war internment rec
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `base.py` | `1.0.0+build.1` | Foundational military casualty domain entity model. |
-| `burial.py` | `1.0.0+build.1` | Military cemetery interments, national cemeteries, and government headstones. |
-| `combat.py` | `1.0.0+build.1` | Battlefield combat casualty records (KIA, WIA, DOW, MIA). |
-| `pow.py` | `1.0.0+build.1` | Prisoner of War (POW) internment, detention, and repatriation records. |
+| `base.py` | `1.0.0+build.2` | Foundational military casualty domain entity model. |
+| `burial.py` | `1.0.0+build.2` | Military cemetery interments, national cemeteries, and government headstones. |
+| `combat.py` | `1.0.0+build.2` | Battlefield combat casualty records (KIA, WIA, DOW, MIA). |
+| `pow.py` | `1.0.0+build.2` | Prisoner of War (POW) internment, detention, and repatriation records. |
 
 ## Public Exports & Consumption Contract
 Exports: `CasualtyCategory`, `CombatCasualtyRecord`, `IntermentCemeteryType`, `MilitaryBurialRecord`, `MilitaryCasualtyRecord`, `PowCampType`, `PrisonerOfWarRecord`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 25c1c2d6c124c3a7 -->

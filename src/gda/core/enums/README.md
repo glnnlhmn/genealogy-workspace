@@ -1,3 +1,4 @@
+<!--Path: src/gda/core/enums/README.md-->
 # Authoritative Enumeration Domains (src/gda/core/enums)
 
 ## Architectural Role
@@ -29,4 +30,5 @@ Authoritative genealogical enumerations inheriting from StrEnum and IntEnum, gov
 Exports: `AffiliationType`, `ArrivalPassageClass`, `AssociatedRole`, `AwardScope`, `BequestType`, `BirthPlurality`, `BountyLandAct`, `CasualtyCategory`, `CensusYearUS`, `CitizenshipStatus`, `CivilWarConscriptionAllegiance`, `CivilWarEnrollmentClass`, `ColonialMilitiaClass`, `ColonialWarPeriod`, `DateModifier`, `DeedPartyRole`, `DispositionType`, `DivorceDecreeType`, `DocumentSide`, `DraftCardTier`, `EducationLevel`, `EstatePropertyCategory`, `EyeColor`, `FactType`, `HairColor`, `HistoricNameType`, `HomeOwnership`, `IDType`, `IntermentCemeteryType`, `JurisdictionCategory`, `LandGrantBasis`, `LegalPlaintiff`, `Legibility`, `LocationType`, `MODIFIER_ALIASES`, `MannerOfDeath`, `MaritalHistoryDissolution`, `MaritalStatus`, `MarkerCondition`, `MarkerMaterial`, `MarkerType`, `MembershipStatus`, `MilitaryAwardTier`, `MilitaryBranch`, `MilitaryConflict`, `MilitaryDraftType`, `MilitaryWar`, `ModernDraftEra`, `MusterRollType`, `NaturalizationStage`, `NoteType`, `OperationalStatus`, `OrganizationCategory`, `PedigreeType`, `PensionClaimantRole`, `PensionPaymentAuthority`, `PhysicalBuild`, `PowCampType`, `ProbateLedgerEntryKind`, `PublicationFrequency`, `QualityAssessment`, `QuayScore`, `ResidentialStatus`, `SelectiveServiceClass`, `SeparationCharacter`, `SeparationFormType`, `ServiceComponent`, `Sex`, `SiteType`, `SmartIDPrefix`, `SourceRecordCategory`, `SourceRecordType`, `SssClassification`, `TaxpayerClassification`, `TestimonyMedium`, `TextQuality`, `TranscriptLegibility`, `UnionDissolutionType`, `UnionType`, `VitalModifier`, `WwiCardType`, `WwiCitizenshipStatus`, `WwiiDraftWave`, `normalize_modifier`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 8ad3651043546f43 -->

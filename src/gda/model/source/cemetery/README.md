@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/cemetery/README.md-->
 # Cemetery Marker & Sexton Registry Records (src/gda/model/source/cemetery)
 
 ## Architectural Role
@@ -11,11 +12,12 @@ Gravestone marker transcriptions, multi-interment memorials, plot registries, an
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `marker.py` | `1.0.0+build.2` | Cemetery marker, headstone, monument, mausoleum crypt, and memorial inscription models. |
-| `registry.py` | `1.0.0+build.2` | Cemetery plot ledger, sexton book, and grave survey registry domain models. |
+| `marker.py` | `1.0.0+build.3` | Cemetery marker, headstone, monument, mausoleum crypt, and memorial inscription models. |
+| `registry.py` | `1.0.0+build.3` | Cemetery plot ledger, sexton book, and grave survey registry domain models. |
 
 ## Public Exports & Consumption Contract
 Exports: `CemeteryMarkerRecord`, `CemeteryPlotEntry`, `CemeteryRegistryRecord`, `MarkerInterment`, `RegistryInterment`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 9915f6ac68149b2e -->

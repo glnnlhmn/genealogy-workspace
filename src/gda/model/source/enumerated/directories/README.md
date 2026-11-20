@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/enumerated/directories/README.md-->
 # City, County & Occupational Directories (src/gda/model/source/enumerated/directories)
 
 ## Architectural Role
@@ -11,10 +12,11 @@ Historical city, county, and business directory roll records capturing residenti
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `base.py` | `1.0.0+build.3` | City, business, farmers', and civic/voter directory enumeration models. |
+| `base.py` | `1.0.0+build.4` | City, business, farmers', and civic/voter directory enumeration models. |
 
 ## Public Exports & Consumption Contract
 Exports: `DirectoryEntry`, `DirectoryRollRecord`, `ResidentialStatus`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 4dc099d2af46ab7f -->

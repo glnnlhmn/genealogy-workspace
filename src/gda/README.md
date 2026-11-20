@@ -1,3 +1,4 @@
+<!--Path: src/gda/README.md-->
 # Genealogy Digital Archive Framework (src/gda)
 
 ## Architectural Role
@@ -16,15 +17,16 @@ Top-level shared domain framework uniting core primitives, controlled enumeratio
 - **[io/](io/README.md)**: Genealogy Digital Archive I/O and persistence infrastructure.
 - **[manager/](manager/README.md)**: Stateful data access coordinators, vocabulary governors, and reference authorities.
 - **[model/](model/README.md)**: Authoritative five-pillar domain model suite for the Genealogy Digital Archive.
-- **`repository/`**: Persistence repository interfaces and implementations for GDA models.
-- **[util/](util/README.md)**: Domain-specific helper utilities for identifiers, text sanitization, and phonetics.
+- **`repository/`**: Unified persistence, query, and in-memory collection layer for GDA.
+- **[util/](util/README.md)**: Stateless utility functions for identifier management, enum coercion, and text processing.
 
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 
 ## Public Exports & Consumption Contract
-Modules export public interfaces explicitly declared in `__all__`.
+Exports: `core`, `db`, `entity`, `io`, `model`, `util`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 0c4d00cbc9983671 -->

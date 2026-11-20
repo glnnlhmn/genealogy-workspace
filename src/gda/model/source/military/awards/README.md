@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/military/awards/README.md-->
 # Military Valor & Service Awards (src/gda/model/source/military/awards)
 
 ## Architectural Role
@@ -11,10 +12,11 @@ Valor citations, campaign medals, unit commendations, wound badges, and military
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `base.py` | `1.0.0+build.1` | Military awards, decorations, citations, and campaign medal entity records. |
+| `base.py` | `1.0.0+build.2` | Military awards, decorations, citations, and campaign medal entity records. |
 
 ## Public Exports & Consumption Contract
 Exports: `AwardScope`, `MilitaryAwardRecord`, `MilitaryAwardTier`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 007b3193ad8846bb -->

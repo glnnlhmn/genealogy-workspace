@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/README.md-->
 # Authoritative Domain Model Suite (src/gda/model)
 
 ## Architectural Role
@@ -23,4 +24,5 @@ Five-pillar structural data model hierarchy uniting atomic primitives (atom), co
 Exports: `atom`, `base`, `entity`, `source`, `xref`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 61564e8d14997f5b -->

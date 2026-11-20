@@ -1,3 +1,4 @@
+<!--Path: src/gda/entity/README.md-->
 # Domain Entity Collection Managers & Relational Authorities (src/gda/entity)
 
 ## Architectural Role
@@ -24,4 +25,5 @@ Top-level package facade uniting the six in-memory domain entity collection mana
 Exports: `FactError`, `FactNotFoundError`, `FactValidationError`, `Facts`, `Families`, `FamilyError`, `FamilyNotFoundError`, `FamilyValidationError`, `IndividualError`, `IndividualNotFoundError`, `IndividualValidationError`, `Individuals`, `LocationError`, `LocationHierarchyError`, `LocationNotFoundError`, `Locations`, `OrganizationError`, `OrganizationHierarchyError`, `OrganizationNotFoundError`, `OrganizationValidationError`, `Organizations`, `SiteError`, `SiteNotFoundError`, `SiteValidationError`, `Sites`, `facts`, `families`, `individuals`, `locations`, `organizations`, `sites`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: a3fcbf5530f90d45 -->

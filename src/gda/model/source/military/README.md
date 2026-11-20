@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/military/README.md-->
 # Military Source Records Suite (src/gda/model/source/military)
 
 ## Architectural Role
@@ -23,4 +24,5 @@ Evidentiary military source record models encompassing conscription, active serv
 Exports: `AwardScope`, `BountyLandAct`, `BountyLandWarrantRecord`, `CasualtyCategory`, `CivilWarConscriptionAllegiance`, `CivilWarDraftRecord`, `CivilWarEnrollmentClass`, `ColonialMilitiaClass`, `ColonialMilitiaRecord`, `ColonialWarPeriod`, `CombatCasualtyRecord`, `DraftCardTier`, `EnlistmentMusterRecord`, `IntermentCemeteryType`, `MilitaryAwardRecord`, `MilitaryAwardTier`, `MilitaryBranch`, `MilitaryBurialRecord`, `MilitaryCasualtyRecord`, `MilitaryDraftRecord`, `MilitaryPensionRecord`, `MilitaryServiceRecord`, `ModernDraftEra`, `ModernSelectiveServiceRecord`, `MusterRollType`, `PensionClaimantRole`, `PensionPaymentAuthority`, `PensionVeteranClaimRecord`, `PensionWidowDependentRecord`, `PowCampType`, `PrisonerOfWarRecord`, `SeparationCharacter`, `SeparationDischargeRecord`, `SeparationFormType`, `ServiceComponent`, `SssClassification`, `WwiCitizenshipStatus`, `WwiDraftCardRecord`, `WwiPhysicalDescription`, `WwiiDraftCardRecord`, `WwiiDraftWave`, `WwiiPhysicalMetrics`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 2d4d9a93b736cd8a -->

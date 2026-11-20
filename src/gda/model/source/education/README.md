@@ -1,3 +1,4 @@
+<!--Path: src/gda/model/source/education/README.md-->
 # Academic Credential & Institutional Education Records (src/gda/model/source/education)
 
 ## Architectural Role
@@ -11,10 +12,11 @@ Academic diplomas, degree conferrals, institutional enrollment records, and scho
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `credential.py` | `1.0.0+build.2` | Historical academic diplomas, graduation certificates, yearbooks, and school transcripts. |
+| `credential.py` | `1.0.0+build.4` | Historical academic diplomas, graduation certificates, yearbooks, and school transcripts. |
 
 ## Public Exports & Consumption Contract
 Exports: `AcademicCredentialRecord`.
 
 ---
-Generated dynamically by `src/system/gen_readme/gen_readme.py`.
+Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
+<!-- gdrm-hash: 61546693a02beff9 -->
