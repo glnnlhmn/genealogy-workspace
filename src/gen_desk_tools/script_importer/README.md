@@ -13,7 +13,7 @@ Hermetic staging intake pipeline inspecting staged files for routing headers, en
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 | `cli.py` | `1.0.0+build.2` | Command-line interface entrypoint for GenDesk Script Importer (gsi). |
-| `headers.py` | `1.0.0+build.4` | Multi-format routing header parser for GenDesk Script Importer (gsi). |
+| `headers.py` | `1.0.0+build.5` | Multi-format routing header parser for GenDesk Script Importer (gsi). |
 | `intake.py` | `1.0.0+build.3` | Hermetic file intake orchestrator for GenDesk Script Importer (gsi). |
 
 ## Public Exports & Consumption Contract
@@ -21,4 +21,4 @@ Exports: `build_parser`, `main`, `parse_metadata_header`, `run_intake`.
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 8305f09f2c54c4d7 -->
+<!-- gdrm-hash: 8a94c8f80d58e137 -->

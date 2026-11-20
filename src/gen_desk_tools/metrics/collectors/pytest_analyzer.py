@@ -27,7 +27,7 @@ from pathlib import Path
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "BUILTIN_PYTEST_MARKERS",
@@ -334,6 +334,35 @@ def _record_fixture_usage(
     consumer_files.setdefault(fix_name, set()).add(consumer_path)
 
 
+def _tally_test_functions(
+    test_funcs: list[tuple[ast.FunctionDef | ast.AsyncFunctionDef, list[ast.expr]]],
+    rel_path: str,
+    valid_markers: set[str],
+    reuse_counts: Counter[str],
+    consumer_files: dict[str, set[str]],
+) -> tuple[Counter[str], int, tuple[str, ...]]:
+    """Tally marker frequencies, unmarked count, unregistered markers, and fixture uses."""
+    file_counts: Counter[str] = Counter()
+    unmarked = 0
+    unregistered: set[str] = set()
+
+    for func_node, decorators in test_funcs:
+        markers, use_fix = _extract_markers_and_usefixtures(decorators)
+        custom_markers = [m for m in markers if m not in BUILTIN_PYTEST_MARKERS]
+        if not custom_markers:
+            unmarked += 1
+        for mark in custom_markers:
+            file_counts[mark] += 1
+            if mark not in valid_markers:
+                unregistered.add(mark)
+
+        arg_names = [a.arg for a in func_node.args.args if a.arg not in IGNORED_PARAMS]
+        for fix_name in (*arg_names, *use_fix):
+            _record_fixture_usage(fix_name, rel_path, reuse_counts, consumer_files)
+
+    return file_counts, unmarked, tuple(sorted(unregistered))
+
+
 def _analyze_single_test_file(
     batch_id: str,
     test_path: Path,
@@ -365,25 +394,14 @@ def _analyze_single_test_file(
             0,
         )
 
-    file_counts: Counter[str] = Counter()
-    unmarked = 0
-    unregistered: set[str] = set()
     test_funcs = _iter_test_functions(tree)
-
-    for func_node, decorators in test_funcs:
-        markers, use_fix = _extract_markers_and_usefixtures(decorators)
-        custom_markers = [m for m in markers if m not in BUILTIN_PYTEST_MARKERS]
-        if not custom_markers:
-            unmarked += 1
-        for mark in custom_markers:
-            file_counts[mark] += 1
-            if mark not in valid_markers:
-                unregistered.add(mark)
-
-        arg_names = [a.arg for a in func_node.args.args if a.arg not in IGNORED_PARAMS]
-        for fix_name in (*arg_names, *use_fix):
-            _record_fixture_usage(fix_name, rel_path, reuse_counts, consumer_files)
-
+    file_counts, unmarked, unregistered = _tally_test_functions(
+        test_funcs,
+        rel_path,
+        valid_markers,
+        reuse_counts,
+        consumer_files,
+    )
     smoke_count = file_counts["smoke"]
     summary = FileMarkerSummary(
         batch_id=batch_id,
@@ -395,7 +413,7 @@ def _analyze_single_test_file(
         integration_count=file_counts["integration"],
         integrity_count=file_counts["integrity"],
         smoke_count=smoke_count,
-        unregistered_markers=tuple(sorted(unregistered)),
+        unregistered_markers=unregistered,
         smoke_inflation=smoke_count > SMOKE_PER_FILE_LIMIT,
         parse_error="",
     )

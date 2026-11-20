@@ -5,7 +5,8 @@ Command-line interface entrypoint for GenDesk Backup Manager (gdb).
 Operational Role:
     Registers shared gen_desk_tools.core CLI flags alongside target backup,
     -a/--auto, -s/--status (4-section audit), -p/--prune, -r/--restore,
-    -R/--restore-list, and --no-recursive.
+    -R/--restore-list, and --no-recursive, dispatching each requested action
+    to focused backup_mgr engines.
 
 Functions:
     build_parser: Construct the ArgumentParser for gdb.
@@ -34,7 +35,7 @@ from gen_desk_tools.core.config import load_gdt_config
 from gen_desk_tools.core.logging import setup_tool_logger
 from gen_desk_tools.core.workspace import resolve_workspace_root
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "build_parser",
@@ -66,7 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-s",
         "--status",
         action="store_true",
-        help="Print 4-section backup status report (BACKUP NEWER, NO BACKUP, BACK OKAY, NO ORIGIN).",
+        help="Print 4-section status report (BACKUP NEWER, NO BACKUP, BACK OKAY, NO ORIGIN).",
     )
     parser.add_argument(
         "-p",
@@ -143,18 +144,16 @@ def _handle_target_backup(
     return 1
 
 
-def run(args: argparse.Namespace) -> int:
-    """Execute the requested gdb operations and return a POSIX exit code."""
-    try:
-        root = resolve_workspace_root(cfg_root=args.root)
-        cfg = load_gdt_config(root_dir=root, config_path=args.config)
-    except Exception as exc:
-        print(f"[ERROR] Failed to load GDT configuration: {exc}")
-        return 1
-
-    logger = setup_tool_logger("gdb", root, cfg, verbose=args.verbose, debug=args.debug)
+def _dispatch_flag_actions(
+    args: argparse.Namespace,
+    root: Path,
+    cfg: dict[str, Any],
+    logger: logging.Logger,
+) -> tuple[int, int]:
+    """Execute flag actions (-s, -a, -r, -R, -p) and return (actions_run, exit_code)."""
     actions_executed = 0
 
+    # --- Status Audit & Automated Domain Scan ---
     if args.status:
         actions_executed += 1
         partitioned = audit_workspace(root, cfg, target_rel_path=args.target)
@@ -165,24 +164,44 @@ def run(args: argparse.Namespace) -> int:
         results = run_auto_backup(root, cfg, logger=logger)
         print(f"Auto-backup completed: {len(results)} files processed.")
 
+    # --- Single-File & Manifest Restoration ---
     if args.restore:
         actions_executed += 1
         ok, msg = restore_file_entry(args.restore, root, cfg, logger=logger)
         print(msg)
         if not ok:
-            return 1
+            return actions_executed, 1
 
     if args.restore_list:
         actions_executed += 1
         if _handle_restore_list(args.restore_list, root, cfg, logger) != 0:
-            return 1
+            return actions_executed, 1
 
+    # --- Retention Pruning ---
     if args.prune:
         actions_executed += 1
         archive_root = root / str(cfg.get("workspace", {}).get("archive_dir", "archive"))
         pruned = execute_prune(archive_root, cfg, logger=logger)
         print(f"Prune completed: {len(pruned)} snapshots removed.")
 
+    return actions_executed, 0
+
+
+def run(args: argparse.Namespace) -> int:
+    """Execute the requested gdb operations and return a POSIX exit code."""
+    try:
+        root = resolve_workspace_root(cfg_root=args.root)
+        cfg = load_gdt_config(root_dir=root, config_path=args.config)
+    except Exception as exc:
+        print(f"[ERROR] Failed to load GDT configuration: {exc}")
+        return 1
+
+    logger = setup_tool_logger("gdb", root, cfg, verbose=args.verbose, debug=args.debug)
+    actions_executed, exit_code = _dispatch_flag_actions(args, root, cfg, logger)
+    if exit_code != 0:
+        return exit_code
+
+    # --- Positional Target Backup (when not consumed as --status filter) ---
     if args.target and not args.status:
         actions_executed += 1
         return _handle_target_backup(args.target, root, cfg, logger, no_recursive=args.no_recursive)

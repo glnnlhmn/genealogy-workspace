@@ -2,7 +2,7 @@
 # GenDesk Tools Core Primitives (gen_desk_tools.core)
 
 ## Architectural Role
-Shared internal primitives for GenDesk Tools providing workspace root resolution, layered TOML configuration loading, atomic file writes and Safe Backup routing, logging setup, and common CLI argument helpers.
+Shared internal primitives for GenDesk Tools providing workspace root resolution, layered TOML configuration loading, atomic file writes and Safe Backup routing, logging setup, subprocess execution, and common CLI argument helpers.
 
 ## Quality Gate & Verification Status
 - **Quality Gate:** 100.00% Statement & Branch Coverage
@@ -24,4 +24,4 @@ Exports: `CommandResult`, `DEFAULT_GDT_CONFIG`, `MANDATORY_EXCLUSIONS`, `add_com
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: d640bbab3db4cc84 -->
+<!-- gdrm-hash: b0ae86a21c589272 -->

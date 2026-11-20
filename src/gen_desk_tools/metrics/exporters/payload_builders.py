@@ -26,7 +26,7 @@ from gen_desk_tools.metrics.collectors.pytest_analyzer import PytestSuiteAnalysi
 from gen_desk_tools.metrics.collectors.radon_collector import BatchRadonRollup, FileRadonMetrics
 from gen_desk_tools.metrics.collectors.ruff_collector import RuffDiagnostic
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "TAB_NAMES",
@@ -45,6 +45,7 @@ TAB_NAMES = (
     "Import_Dependency_Graph",
 )
 
+# Canonical 24-column header schema for Tab 1 (Master_Scorecard).
 _MASTER_HEADER: list[str] = [
     "Batch ID",
     "Tier & Scope",
@@ -70,6 +71,89 @@ _MASTER_HEADER: list[str] = [
     "Smoke Inflation",
     "Open Findings",
     "Batch Sheet Link",
+]
+
+# Canonical column headers for Tabs 2 through 9.
+_RAW_HEADER: list[str] = [
+    "Batch",
+    "File Path",
+    "LOC",
+    "LLOC",
+    "SLOC",
+    "Blank",
+    "Cmt",
+    "Doc",
+    "Doc%",
+    "MI Score",
+    "MI Grade",
+    "Max CC",
+    "Max CC Symbol",
+    "Total Cov%",
+    "Missing Lines",
+]
+
+_HOTSPOT_HEADER: list[str] = [
+    "Category",
+    "Batch",
+    "File Path",
+    "Line",
+    "Kind",
+    "Symbol",
+    "Score",
+    "Grade",
+]
+
+_MARKER_HEADER: list[str] = [
+    "Batch",
+    "Test File",
+    "Tests",
+    "Unmarked",
+    "unit",
+    "regression",
+    "integration",
+    "integrity",
+    "smoke",
+    "Unregistered Markers",
+    "Smoke Inflation",
+    "Parse Error",
+]
+
+_FIXTURE_HEADER: list[str] = [
+    "Conftest Path",
+    "Scope Dir",
+    "Fixture Name",
+    "Line",
+    "Scope",
+    "Autouse",
+    "Parameterized",
+    "Reuse Count",
+    "Consumer Files",
+    "Unused",
+    "Shadowed",
+    "Shadowed By",
+]
+
+_HYGIENE_HEADER: list[str] = [
+    "Batch",
+    "File Path",
+    "Path Header OK",
+    "Version",
+    "PEP440 Valid",
+    "Has __all__",
+    "Future Annotations",
+    "README Listed",
+    "Test File Exists",
+    "Hygiene Flags",
+]
+
+_IMPORT_HEADER: list[str] = [
+    "Batch",
+    "Source Module",
+    "Imported Module",
+    "Source Layer",
+    "Target Layer",
+    "Boundary Violation",
+    "Violation Reason",
 ]
 
 
@@ -100,34 +184,31 @@ def _coverage_totals(
     return stmt_pct, branch_pct, total_pct
 
 
-def _sum_rollup_counts(rollups: tuple[BatchRadonRollup, ...]) -> dict[str, Any]:
-    """Aggregate raw line totals, weighted CC, and hotspot counts across rollups."""
-    total_files = sum(r.file_count for r in rollups)
-    total_loc = sum(r.loc for r in rollups)
-    total_lloc = sum(r.lloc for r in rollups)
-    total_sloc = sum(r.sloc for r in rollups)
-    total_blank = sum(r.blank for r in rollups)
-    total_cmt = sum(r.comments for r in rollups)
-    total_doc = sum(r.docstrings for r in rollups)
-    doc_pct = round(((total_cmt + total_doc) / total_sloc) * 100.0, 1) if total_sloc > 0 else 0.0
-    avg_cc = (
-        round(sum(r.avg_cc * r.file_count for r in rollups) / total_files, 2)
-        if total_files > 0
-        else 0.0
+def _sum_line_metrics(
+    rollups: tuple[BatchRadonRollup, ...],
+) -> tuple[int, int, int, int, int, int, int]:
+    """Sum file count, LOC, LLOC, SLOC, blank, comment, and docstring counts."""
+    return (
+        sum(r.file_count for r in rollups),
+        sum(r.loc for r in rollups),
+        sum(r.lloc for r in rollups),
+        sum(r.sloc for r in rollups),
+        sum(r.blank for r in rollups),
+        sum(r.comments for r in rollups),
+        sum(r.docstrings for r in rollups),
     )
-    return {
-        "files": total_files,
-        "loc": total_loc,
-        "lloc": total_lloc,
-        "sloc": total_sloc,
-        "blank": total_blank,
-        "cmt": total_cmt,
-        "doc": total_doc,
-        "doc_pct": doc_pct,
-        "avg_cc": avg_cc,
-        "cc_c_plus": sum(r.cc_c_plus_count for r in rollups),
-        "mi_below_a": sum(r.mi_below_a_count for r in rollups),
-    }
+
+
+def _sum_complexity_metrics(
+    rollups: tuple[BatchRadonRollup, ...],
+    total_files: int,
+) -> tuple[float, int, int]:
+    """Compute file-weighted average CC and total Grade C+ / MI < A counts."""
+    weighted_sum = sum(r.avg_cc * r.file_count for r in rollups)
+    avg_cc = round(weighted_sum / total_files, 2) if total_files > 0 else 0.0
+    cc_c_plus = sum(r.cc_c_plus_count for r in rollups)
+    mi_below_a = sum(r.mi_below_a_count for r in rollups)
+    return avg_cc, cc_c_plus, mi_below_a
 
 
 def _build_workspace_total_row(
@@ -137,24 +218,28 @@ def _build_workspace_total_row(
     counts: tuple[int, int, int, int, int],
 ) -> list[Any]:
     """Build the bottom TOTAL / WORKSPACE rollup row for Master_Scorecard."""
-    totals_map = _sum_rollup_counts(rollups)
+    total_files, total_loc, total_lloc, total_sloc, total_blank, total_cmt, total_doc = (
+        _sum_line_metrics(rollups)
+    )
+    doc_pct = round(((total_cmt + total_doc) / total_sloc) * 100.0, 1) if total_sloc > 0 else 0.0
+    avg_cc, cc_c_plus, mi_below_a = _sum_complexity_metrics(rollups, total_files)
     stmt_pct, br_pct, tot_pct = _coverage_totals(file_metrics, coverage_map)
     mypy_tot, ruff_tot, hyg_tot, bnd_tot, smoke_tot = counts
     return [
         "TOTAL / WORKSPACE",
         "All Scoped Batches",
         "-",
-        totals_map["files"],
-        totals_map["loc"],
-        totals_map["lloc"],
-        totals_map["sloc"],
-        totals_map["blank"],
-        totals_map["cmt"],
-        totals_map["doc"],
-        totals_map["doc_pct"],
-        totals_map["avg_cc"],
-        totals_map["cc_c_plus"],
-        totals_map["mi_below_a"],
+        total_files,
+        total_loc,
+        total_lloc,
+        total_sloc,
+        total_blank,
+        total_cmt,
+        total_doc,
+        doc_pct,
+        avg_cc,
+        cc_c_plus,
+        mi_below_a,
         stmt_pct,
         br_pct,
         tot_pct,
@@ -205,6 +290,22 @@ def _format_batch_scorecard_row(
     ]
 
 
+def _count_batch_findings(
+    suite_analysis: PytestSuiteAnalysis,
+    mypy_diagnostics: tuple[MypyDiagnostic, ...],
+    ruff_diagnostics: tuple[RuffDiagnostic, ...],
+    hygiene_records: tuple[ModuleHygieneRecord, ...],
+    import_edges: tuple[ImportEdgeRecord, ...],
+) -> tuple[Counter[str], Counter[str], Counter[str], Counter[str], Counter[str]]:
+    """Tally mypy, Ruff, hygiene, import boundary, and smoke inflation counts per batch."""
+    mypy_err = Counter(d.batch_id for d in mypy_diagnostics if d.severity == "error")
+    ruff_err = Counter(r.batch_id for r in ruff_diagnostics)
+    hyg_cnt = Counter(h.batch_id for h in hygiene_records if h.hygiene_flags)
+    bnd_cnt = Counter(e.batch_id for e in import_edges if e.boundary_violation)
+    smoke_cnt = Counter(m.batch_id for m in suite_analysis.marker_summaries if m.smoke_inflation)
+    return mypy_err, ruff_err, hyg_cnt, bnd_cnt, smoke_cnt
+
+
 def _build_master_rows(
     rollups: tuple[BatchRadonRollup, ...],
     file_metrics: tuple[FileRadonMetrics, ...],
@@ -217,12 +318,13 @@ def _build_master_rows(
 ) -> list[list[Any]]:
     """Build Master_Scorecard tab rows with per-batch rollups and workspace total."""
     # --- Aggregate Per-Batch Diagnostic & Hygiene Counters ---
-    mypy_err = Counter(d.batch_id for d in mypy_diagnostics if d.severity == "error")
-    ruff_err = Counter(r.batch_id for r in ruff_diagnostics)
-    hyg_cnt = Counter(h.batch_id for h in hygiene_records if h.hygiene_flags)
-    bnd_cnt = Counter(e.batch_id for e in import_edges if e.boundary_violation)
-    smoke_cnt = Counter(m.batch_id for m in suite_analysis.marker_summaries if m.smoke_inflation)
-
+    mypy_err, ruff_err, hyg_cnt, bnd_cnt, smoke_cnt = _count_batch_findings(
+        suite_analysis,
+        mypy_diagnostics,
+        ruff_diagnostics,
+        hygiene_records,
+        import_edges,
+    )
     rows: list[list[Any]] = [list(_MASTER_HEADER)]
 
     # --- Emit One Summary Row Per Active Batch ---
@@ -237,6 +339,7 @@ def _build_master_rows(
         )
         rows.append(_format_batch_scorecard_row(r, batch_files, coverage_map, row_counts))
 
+    # --- Append Workspace Grand Total Row ---
     totals = (
         sum(mypy_err.values()),
         sum(ruff_err.values()),
@@ -257,25 +360,7 @@ def _build_raw_and_hotspot_rows(
     Sorts CC >= 11 hotspots descending by complexity and MI < A modules
     ascending by maintainability score so worst offenders appear first.
     """
-    raw_rows: list[list[Any]] = [
-        [
-            "Batch",
-            "File Path",
-            "LOC",
-            "LLOC",
-            "SLOC",
-            "Blank",
-            "Cmt",
-            "Doc",
-            "Doc%",
-            "MI Score",
-            "MI Grade",
-            "Max CC",
-            "Max CC Symbol",
-            "Total Cov%",
-            "Missing Lines",
-        ]
-    ]
+    raw_rows: list[list[Any]] = [list(_RAW_HEADER)]
     cc_rows: list[list[Any]] = []
     mi_rows: list[list[Any]] = []
     for m in file_metrics:
@@ -322,8 +407,7 @@ def _build_raw_and_hotspot_rows(
     # Order CC hotspots highest-complexity first, then MI hotspots lowest-score first.
     cc_rows.sort(key=lambda row: (-row[6], row[1], row[2], row[3]))
     mi_rows.sort(key=lambda row: (row[6], row[1], row[2]))
-    hotspot_header = ["Category", "Batch", "File Path", "Line", "Kind", "Symbol", "Score", "Grade"]
-    return raw_rows, [hotspot_header, *cc_rows, *mi_rows]
+    return raw_rows, [list(_HOTSPOT_HEADER), *cc_rows, *mi_rows]
 
 
 def _build_pytest_rows(
@@ -335,22 +419,7 @@ def _build_pytest_rows(
     Conftest_Fixture_Map for immediate audit visibility.
     """
     # --- Tab 4: Test_Markers_Summary ---
-    marker_rows: list[list[Any]] = [
-        [
-            "Batch",
-            "Test File",
-            "Tests",
-            "Unmarked",
-            "unit",
-            "regression",
-            "integration",
-            "integrity",
-            "smoke",
-            "Unregistered Markers",
-            "Smoke Inflation",
-            "Parse Error",
-        ]
-    ]
+    marker_rows: list[list[Any]] = [list(_MARKER_HEADER)]
     for ms in suite_analysis.marker_summaries:
         marker_rows.append(
             [
@@ -370,22 +439,7 @@ def _build_pytest_rows(
         )
 
     # --- Tab 5: Conftest_Fixture_Map ---
-    fixture_rows: list[list[Any]] = [
-        [
-            "Conftest Path",
-            "Scope Dir",
-            "Fixture Name",
-            "Line",
-            "Scope",
-            "Autouse",
-            "Parameterized",
-            "Reuse Count",
-            "Consumer Files",
-            "Unused",
-            "Shadowed",
-            "Shadowed By",
-        ]
-    ]
+    fixture_rows: list[list[Any]] = [list(_FIXTURE_HEADER)]
     sorted_fixtures = sorted(
         suite_analysis.fixtures,
         key=lambda fx: (not fx.is_unused, not fx.is_shadowed, fx.conftest_path, fx.lineno),
@@ -445,20 +499,7 @@ def _build_hygiene_and_import_rows(
 ) -> tuple[list[list[Any]], list[list[Any]]]:
     """Build Module_Hygiene_Audit and violation-first Import_Dependency_Graph tab rows."""
     # --- Tab 8: Module_Hygiene_Audit ---
-    hygiene_rows: list[list[Any]] = [
-        [
-            "Batch",
-            "File Path",
-            "Path Header OK",
-            "Version",
-            "PEP440 Valid",
-            "Has __all__",
-            "Future Annotations",
-            "README Listed",
-            "Test File Exists",
-            "Hygiene Flags",
-        ]
-    ]
+    hygiene_rows: list[list[Any]] = [list(_HYGIENE_HEADER)]
     for h in hygiene_records:
         hygiene_rows.append(
             [
@@ -476,17 +517,7 @@ def _build_hygiene_and_import_rows(
         )
 
     # --- Tab 9: Import_Dependency_Graph ---
-    import_rows: list[list[Any]] = [
-        [
-            "Batch",
-            "Source Module",
-            "Imported Module",
-            "Source Layer",
-            "Target Layer",
-            "Boundary Violation",
-            "Violation Reason",
-        ]
-    ]
+    import_rows: list[list[Any]] = [list(_IMPORT_HEADER)]
     sorted_edges = sorted(
         import_edges,
         key=lambda e: (not e.boundary_violation, e.batch_id, e.source_module, e.imported_module),

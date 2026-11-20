@@ -12,7 +12,7 @@ import pytest
 
 from gen_desk_tools.script_importer.headers import parse_metadata_header
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 # ==========================================================================
 # GROUP 1: Smoke & Primary Entrypoints
@@ -58,10 +58,10 @@ def test_parse_metadata_header_markdown_html_comment_extracts_path(tmp_path: Pat
 def test_parse_metadata_header_markdown_yaml_frontmatter_extracts_skill_path(
     tmp_path: Path,
 ) -> None:
-    """Verify Markdown YAML frontmatter _path routes skill files without breaking Line 1."""
+    """Verify Markdown YAML frontmatter _path within first 3 lines routes skill files."""
     staged = tmp_path / "skill.md"
     staged.write_text(
-        "---\nname: example-skill\n_path: .skills/example-skill/SKILL.md\n---\n\n# Example Skill\n",
+        "---\nname: example-skill\n_path: .skills/example-skill/SKILL.md\n---\n\n# Example\n",
         encoding="utf-8",
     )
 
@@ -75,7 +75,7 @@ def test_parse_metadata_header_markdown_yaml_frontmatter_extracts_skill_path(
 def test_parse_metadata_header_json_toml_yaml_and_txt_extract_structured_paths(
     tmp_path: Path,
 ) -> None:
-    """Verify JSON, TOML, YAML, and .txt downloads resolve _path and path keys."""
+    """Verify JSON, TOML, YAML, and .txt downloads resolve _path and path keys in lines 1-3."""
     json_file = tmp_path / "payload.json"
     json_file.write_text('{"_path": "schemas/item.json", "type": "object"}\n', encoding="utf-8")
 
@@ -153,7 +153,7 @@ def test_parse_metadata_header_ipynb_reads_metadata_and_cell_fallback(tmp_path: 
 
 # ==========================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Directory paths, frontmatter fallback, and Notebooks without headers.
+# Note: 3-line scan boundary, TOML comment priority, and Notebooks without headers.
 # ==========================================================================
 
 
@@ -172,13 +172,36 @@ def test_parse_metadata_header_directory_path_appends_explicit_name(tmp_path: Pa
 
 
 @pytest.mark.regression
+def test_parse_metadata_header_ignores_path_keys_after_line_three(tmp_path: Path) -> None:
+    """Verify TOML body path keys after line 3 do not override Line-1 # Path: headers."""
+    staged = tmp_path / "readme_gen.toml"
+    staged.write_text(
+        "# Path: src/gen_desk_tools/readme_gen/readme_gen.toml\n"
+        "# Registry\n"
+        'default_root = "."\n'
+        "[[packages]]\n"
+        'path = "src/gda/core/enums"\n',
+        encoding="utf-8",
+    )
+
+    name, dest = parse_metadata_header(staged, tmp_path)
+
+    assert name == "readme_gen.toml"
+    assert dest == (tmp_path / "src/gen_desk_tools/readme_gen/readme_gen.toml").resolve()
+
+    late_only = tmp_path / "late.py"
+    late_only.write_text("# l1\n# l2\n# l3\n# Path: src/late.py\n", encoding="utf-8")
+    assert parse_metadata_header(late_only, tmp_path) == (None, None)
+
+
+@pytest.mark.regression
 def test_parse_metadata_header_markdown_frontmatter_without_path_falls_back_to_comment(
     tmp_path: Path,
 ) -> None:
-    """Verify frontmatter with name only preserves target_name while falling back to HTML Path:."""
+    """Verify frontmatter with name only preserves target_name when comment is within line 3."""
     staged = tmp_path / "hybrid.md"
     staged.write_text(
-        "---\nname: custom.md\n---\n<!--Path: docs/-->\n# Body\n",
+        "---\nname: custom.md\n<!--Path: docs/-->\n---\n# Body\n",
         encoding="utf-8",
     )
 

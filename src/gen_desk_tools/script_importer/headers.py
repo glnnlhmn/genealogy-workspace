@@ -3,10 +3,10 @@
 Multi-format routing header parser for GenDesk Script Importer (gsi).
 
 Operational Role:
-    Inspects staged candidate files in download/ across Python, Markdown
-    (including YAML frontmatter), YAML, JSON, TOML, plain-text downloads,
-    and Jupyter Notebook formats to extract canonical workspace destination
-    paths while enforcing root containment guards.
+    Inspects the first 3 lines of staged candidate files in download/ across
+    Python, Markdown (including YAML frontmatter), YAML, JSON, TOML,
+    plain-text downloads, and Jupyter Notebook formats to extract canonical
+    workspace destination paths while enforcing root containment guards.
 
 Functions:
     parse_metadata_header: Extract destination filename and resolved workspace path.
@@ -21,11 +21,14 @@ from typing import Any
 
 from gen_desk_tools.core.workspace import ensure_within_root
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
+    "HEADER_SCAN_LINES",
     "parse_metadata_header",
 ]
+
+HEADER_SCAN_LINES = 3
 
 _TRAILING_DELIMS_RE = re.compile(r'(?:[\s\-]*-->|[\s\-]*\*/|\s*"""|\s*\'\'\'|--+)\s*$')
 _YAML_FRONTMATTER_RE = re.compile(r"\A---\s*\r?\n(.*?)\r?\n---", re.DOTALL)
@@ -37,13 +40,14 @@ def _clean_token(value: str) -> str:
 
 
 def _extract_first_cell_meta(nb_data: dict[str, Any]) -> tuple[str | None, str | None]:
-    """Extract Name and Path header tags from the first notebook cell if present."""
+    """Extract Name and Path header tags from the first 3 lines of the first notebook cell."""
     cells = nb_data.get("cells", [])
     if not cells or cells[0].get("cell_type") not in ("raw", "markdown", "code"):
         return None, None
     first_cell = "".join(cells[0].get("source", []))
-    name_m = re.search(r"(?:#|<!--)[ \t]*Name:[ \t]*([^\r\n>\*/]+)", first_cell, re.IGNORECASE)
-    path_m = re.search(r"(?:#|<!--)[ \t]*Path:[ \t]*([^\r\n>]+)", first_cell, re.IGNORECASE)
+    cell_head = "\n".join(first_cell.splitlines()[:HEADER_SCAN_LINES])
+    name_m = re.search(r"(?:#|<!--)[ \t]*Name:[ \t]*([^\r\n>\*/]+)", cell_head, re.IGNORECASE)
+    path_m = re.search(r"(?:#|<!--)[ \t]*Path:[ \t]*([^\r\n>]+)", cell_head, re.IGNORECASE)
     target_name = name_m.group(1).strip() if name_m else None
     target_path = path_m.group(1).strip() if path_m else None
     return target_name, target_path
@@ -120,9 +124,8 @@ def _extract_raw_header_pair(
     if suffix in (".json", ".toml", ".yaml", ".yml", ".txt"):
         return _extract_structured_path(head_block)
     if suffix == ".md":
-        fm_match = _YAML_FRONTMATTER_RE.match(content)
-        if fm_match:
-            return _extract_structured_path(fm_match.group(1))
+        if _YAML_FRONTMATTER_RE.match(content):
+            return _extract_structured_path(head_block)
     return None, None
 
 
@@ -151,10 +154,10 @@ def _resolve_contained_destination(
 
 
 def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, Path | None]:
-    """Extract destination filename and resolved workspace path from a staged file.
+    """Extract destination filename and resolved workspace path from the first 3 lines.
 
-    Returns (None, None) if the file cannot be read, lacks a routing header, or
-    resolves outside root_dir.
+    Returns (None, None) if the file cannot be read, lacks a routing header
+    within the first 3 lines, or resolves outside root_dir.
     """
     try:
         content = file_path.read_text(encoding="utf-8")
@@ -162,7 +165,7 @@ def parse_metadata_header(file_path: Path, root_dir: Path) -> tuple[str | None, 
         return None, None
 
     suffix = file_path.suffix.lower()
-    head_block = "\n".join(content.splitlines()[:25])
+    head_block = "\n".join(content.splitlines()[:HEADER_SCAN_LINES])
     target_name, target_path_str = _extract_raw_header_pair(content, head_block, suffix)
 
     # --- Generic Docstring / Comment Fallback ---

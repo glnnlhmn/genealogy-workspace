@@ -1,7 +1,7 @@
-# Path: src/system/gen_readme/gen_readme.toml
-# Authoritative package documentation registry for gen_readme.py
-# Scoped to audited foundation, domain model, entity collection, and database packages:
-# gda.core, gda.io, gda.util, gda.model, gda.entity, and gda.db
+# Path: src/gen_desk_tools/readme_gen/readme_gen.toml
+# Authoritative package documentation registry for gdrm
+# Scoped to audited foundation, domain model, entity collection, database packages,
+# and workstation developer tooling (src/gen_desk_tools)
 
 default_root = "."
 
@@ -334,20 +334,20 @@ test_path = "tests/test_gda"
 quality_gate = "100.0% Statement & Branch Coverage"
 
 # ==============================================================================
-# 5. Workstation & Developer Tooling Subpackages (src/gen_desk_tools)
+# 6. Workstation & Developer Tooling Subpackages (src/gen_desk_tools)
 # ==============================================================================
 
 [[packages]]
 path = "src/gen_desk_tools"
 title = "GenDesk Tools Namespace Package (gen_desk_tools)"
-role = "Top-level namespace and workstation tooling root providing shared core primitives, backup management, coverage gap extraction, telemetry collection, README generation, script intake, and directory structure reporting."
+role = "Top-level namespace and workstation tooling root providing shared core primitives, backup management, coverage gap extraction, telemetry collection, combined Radon reporting, README generation, script intake, and directory structure reporting."
 test_path = "tests/test_gen_desk_tools"
 quality_gate = "100.00% Statement & Branch Coverage"
 
 [[packages]]
 path = "src/gen_desk_tools/core"
 title = "GenDesk Tools Core Primitives (gen_desk_tools.core)"
-role = "Shared internal primitives for GenDesk Tools providing workspace root resolution, layered TOML configuration loading, atomic file writes and Safe Backup routing, logging setup, and common CLI argument helpers."
+role = "Shared internal primitives for GenDesk Tools providing workspace root resolution, layered TOML configuration loading, atomic file writes and Safe Backup routing, logging setup, subprocess execution, and common CLI argument helpers."
 test_path = "tests/test_gen_desk_tools/test_core"
 quality_gate = "100.00% Statement & Branch Coverage"
 
@@ -384,6 +384,13 @@ path = "src/gen_desk_tools/metrics/exporters"
 title = "GenDesk Metrics Exporters (gen_desk_tools.metrics.exporters)"
 role = "Telemetry report exporters building worksheet tab payloads and writing local JSON reports or syncing to Google Sheets."
 test_path = "tests/test_gen_desk_tools/test_metrics"
+quality_gate = "100.00% Statement & Branch Coverage"
+
+[[packages]]
+path = "src/gen_desk_tools/radon_report"
+title = "GenDesk Radon Report (gdradon)"
+role = "Combined Radon cyclomatic complexity (CC), maintainability index (MI), and raw line metrics report generator."
+test_path = "tests/test_gen_desk_tools/test_radon_report"
 quality_gate = "100.00% Statement & Branch Coverage"
 
 [[packages]]

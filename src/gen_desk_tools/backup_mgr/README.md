@@ -13,7 +13,7 @@ Safe Backup snapshot creation, four-section backup status audits, retention prun
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 | `auditor.py` | `1.0.0+build.2` | Four-section workspace archive status and audit engine for GenDesk Backup Manager (gdb). |
-| `cli.py` | `1.0.0+build.2` | Command-line interface entrypoint for GenDesk Backup Manager (gdb). |
+| `cli.py` | `1.0.0+build.3` | Command-line interface entrypoint for GenDesk Backup Manager (gdb). |
 | `engine.py` | `1.0.0+build.2` | Safe Backup creation engine and automated code-domain scanner for GenDesk Backup Manager (gdb). |
 | `pruner.py` | `1.0.0+build.2` | Safe Backup retention evaluator and snapshot pruning engine for GenDesk Backup Manager (gdb). |
 | `restorer.py` | `1.0.0+build.2` | Single-file and batch restoration engine for GenDesk Backup Manager (gdb). |
@@ -23,4 +23,4 @@ Exports: `AuditRecord`, `AuditStatus`, `BackupCandidate`, `PruneCandidate`, `aud
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 0bc39c0de720df80 -->
+<!-- gdrm-hash: 9f13208b2d231b5c -->

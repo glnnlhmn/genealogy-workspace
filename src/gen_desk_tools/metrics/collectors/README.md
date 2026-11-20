@@ -16,8 +16,8 @@ Telemetry collectors for Radon raw/complexity/maintainability metrics, pytest-co
 | `hygiene_collector.py` | `1.0.0+build.5` | AST-based module hygiene collector for header, PEP 440 version, and test parity checks. |
 | `import_collector.py` | `1.0.0+build.4` | AST-based import dependency graph and architectural boundary violation collector. |
 | `mypy_collector.py` | `1.0.0+build.4` | Subprocess collector for mypy static type-check diagnostics. |
-| `pytest_analyzer.py` | `1.0.0+build.5` | AST-based pytest suite analyzer for conftest mapping, fixture reuse, and markers. |
-| `radon_collector.py` | `1.0.0+build.3` | Radon static metrics collector (raw, cyclomatic complexity, maintainability). |
+| `pytest_analyzer.py` | `1.0.0+build.6` | AST-based pytest suite analyzer for conftest mapping, fixture reuse, and markers. |
+| `radon_collector.py` | `1.0.0+build.4` | Radon static metrics collector (raw, cyclomatic complexity, maintainability). |
 | `ruff_collector.py` | `1.0.0+build.3` | Subprocess collector for Ruff JSON lint diagnostics. |
 
 ## Public Exports & Consumption Contract
@@ -25,4 +25,4 @@ Exports: `BatchRadonRollup`, `ComplexityHotspot`, `ConftestFixtureRecord`, `Cove
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 244db3e035788871 -->
+<!-- gdrm-hash: 68631a9426ae4734 -->

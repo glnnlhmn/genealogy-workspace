@@ -32,7 +32,7 @@ from radon.raw import analyze
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "BatchRadonRollup",
@@ -217,6 +217,20 @@ def analyze_file_radon(
     )
 
 
+def _sum_batch_raw_lines(
+    file_metrics: list[FileRadonMetrics],
+) -> tuple[int, int, int, int, int, int]:
+    """Sum LOC, LLOC, SLOC, blank, comment, and docstring counts across files."""
+    return (
+        sum(m.loc for m in file_metrics),
+        sum(m.lloc for m in file_metrics),
+        sum(m.sloc for m in file_metrics),
+        sum(m.blank for m in file_metrics),
+        sum(m.comments for m in file_metrics),
+        sum(m.docstrings for m in file_metrics),
+    )
+
+
 def _build_batch_rollup(
     batch: BatchDefinition,
     file_metrics: list[FileRadonMetrics],
@@ -226,12 +240,7 @@ def _build_batch_rollup(
     Averages cyclomatic complexity across only modules with non-zero avg_cc so
     empty __init__.py files do not artificially dilute batch complexity.
     """
-    loc = sum(m.loc for m in file_metrics)
-    lloc = sum(m.lloc for m in file_metrics)
-    sloc = sum(m.sloc for m in file_metrics)
-    blank = sum(m.blank for m in file_metrics)
-    comments = sum(m.comments for m in file_metrics)
-    docstrings = sum(m.docstrings for m in file_metrics)
+    loc, lloc, sloc, blank, comments, docstrings = _sum_batch_raw_lines(file_metrics)
     non_zero_cc = [m.avg_cc for m in file_metrics if m.avg_cc > 0]
 
     return BatchRadonRollup(
