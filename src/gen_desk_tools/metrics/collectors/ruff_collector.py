@@ -3,9 +3,10 @@
 Subprocess collector for Ruff JSON lint diagnostics.
 
 Operational Role:
-    Invokes ruff check in JSON output mode against existing source paths across
-    active audit batches, parses rule findings with fixability metadata, and
-    maps each diagnostic back to its owning batch ID.
+    Invokes ruff check in JSON output mode via
+    gen_desk_tools.core.process.run_command against existing source paths
+    across active audit batches, parses rule findings with fixability metadata,
+    and maps each diagnostic back to its owning batch ID.
 
 Classes:
     RuffDiagnostic: Single parsed Ruff lint finding with location and fix flag.
@@ -26,10 +27,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from gen_desk_tools.core.process import run_command
 from gen_desk_tools.metrics.config import BatchDefinition, MetricsConfig
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "RuffDiagnostic",
@@ -161,24 +163,17 @@ def run_ruff_check(
 
     # --- Invoke Ruff Subprocess & Parse JSON ---
     cmd = [sys.executable, "-m", "ruff", "check", "--output-format", "json", *targets]
-    try:
-        proc = runner(
-            cmd,
-            cwd=config.workspace_root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError as exc:
+    res = run_command(cmd, cwd=config.workspace_root, runner=runner)
+    if res.error:
         return RuffRunResult(
             diagnostics=(),
-            summary_note=f"ruff unavailable: {exc}",
+            summary_note=f"ruff unavailable: {res.error}",
             returncode=1,
         )
 
-    diagnostics = parse_ruff_json(str(proc.stdout), config.workspace_root, batches)
+    diagnostics = parse_ruff_json(res.stdout, config.workspace_root, batches)
     return RuffRunResult(
         diagnostics=diagnostics,
         summary_note=f"{len(diagnostics)} diagnostic(s)",
-        returncode=int(proc.returncode),
+        returncode=res.returncode,
     )

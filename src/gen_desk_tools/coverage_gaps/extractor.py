@@ -4,8 +4,8 @@ Line-range parser and coverage gap report generator for GenDesk Coverage Gaps (g
 
 Operational Role:
     Parses line ranges (single line, start-end, or pytest-cov branch arrow
-    start->end) and extracts formatted, line-numbered source context into
-    reports/Coverage Gap + <filename> + <range>.txt.
+    start->end) and extracts formatted, line-numbered source context atomically
+    into reports/Coverage Gap + <filename> + <range>.txt via core primitives.
 
 Functions:
     parse_gap_range: Normalize a line-range specification into (start, end, label).
@@ -17,7 +17,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-__version__ = "1.0.0+build.1"
+from gen_desk_tools.core.backup import atomic_write_text
+from gen_desk_tools.core.workspace import resolve_report_path
+
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "generate_gap_report",
@@ -102,11 +105,8 @@ def generate_gap_report(
 
     start, end, lines_label = parse_gap_range(gap_arg, total_lines)
 
-    out_path = Path(output_dir)
-    resolved_out = out_path if out_path.is_absolute() else (root / out_path)
-    resolved_out.mkdir(parents=True, exist_ok=True)
-
-    report_path = resolved_out / f"Coverage Gap + {resolved_target.name} + {lines_label}.txt"
+    filename = f"Coverage Gap + {resolved_target.name} + {lines_label}.txt"
+    report_path = resolve_report_path(root, {}, filename, override_dir=Path(output_dir))
 
     extracted_lines: list[str] = []
     if total_lines > 0 and start <= end:
@@ -115,5 +115,5 @@ def generate_gap_report(
             extracted_lines.append(f"{line_no:{width}d}: {source_lines[line_no - 1]}")
 
     report_content = "\n".join(extracted_lines) + ("\n" if extracted_lines else "")
-    report_path.write_text(report_content, encoding="utf-8")
+    atomic_write_text(report_path, report_content)
     return report_path, len(extracted_lines)

@@ -1,31 +1,52 @@
 """Path: src/gen_desk_tools/core/workspace.py
 
-Workspace root discovery, POSIX path normalization, and root containment guards.
+Workspace root discovery, POSIX path normalization, file discovery, and report routing.
 
 Operational Role:
     Provides cross-platform path resolution primitives shared across all GenDesk
     Tools subpackages so Windows and POSIX environments evaluate workspace
-    boundaries, relative paths, and directory traversal guards identically.
+    boundaries, relative paths, exclusion-aware file discovery, and report
+    output directories identically.
 
 Functions:
     resolve_workspace_root: Locate the canonical workspace root directory.
     to_posix_rel: Convert a workspace path into a normalized POSIX relative string.
     ensure_within_root: Resolve a path and verify it does not escape the workspace root.
+    iter_workspace_files: Return sorted files under a path excluding cache/VCS dirs.
+    resolve_report_path: Resolve a report output path under the configured reports_dir.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
+    "MANDATORY_EXCLUSIONS",
     "ensure_within_root",
+    "iter_workspace_files",
+    "resolve_report_path",
     "resolve_workspace_root",
     "to_posix_rel",
 ]
 
 ROOT_MARKERS: tuple[str, ...] = ("pyproject.toml", ".git")
+
+MANDATORY_EXCLUSIONS: frozenset[str] = frozenset(
+    {
+        ".git",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".tox",
+        ".venv",
+        "__pycache__",
+        "node_modules",
+    }
+)
 
 
 def resolve_workspace_root(
@@ -85,3 +106,68 @@ def ensure_within_root(path: Path, root: Path) -> Path:
         raise ValueError(f"Path escapes workspace root ({resolved_root}): {resolved_path}")
 
     return resolved_path
+
+
+def iter_workspace_files(
+    target: Path,
+    *,
+    suffixes: tuple[str, ...] | None = None,
+    exclusions: frozenset[str] = MANDATORY_EXCLUSIONS,
+) -> tuple[Path, ...]:
+    """Return sorted files under target while filtering excluded directory names.
+
+    Returns an empty tuple when target does not exist. When target is a single
+    file, returns (target,) if it matches suffixes (or suffixes is None).
+
+    Args:
+        suffixes: Optional tuple of allowed file suffixes (e.g., (".py",)).
+        exclusions: Directory or path component names to skip during traversal.
+    """
+    if not target.exists():
+        return ()
+
+    if target.is_file():
+        if suffixes is None or target.suffix in suffixes:
+            return (target,)
+        return ()
+
+    found: list[Path] = []
+    for item in target.rglob("*"):
+        if not item.is_file():
+            continue
+        rel_parts = item.relative_to(target).parts
+        if any(part in exclusions for part in rel_parts):
+            continue
+        if suffixes is None or item.suffix in suffixes:
+            found.append(item)
+
+    return tuple(sorted(found))
+
+
+def resolve_report_path(
+    root: Path,
+    cfg: Mapping[str, Any],
+    filename: str,
+    *,
+    override_dir: Path | None = None,
+    create_dir: bool = True,
+) -> Path:
+    """Resolve a report output path under the configured reports directory.
+
+    Uses override_dir when provided (anchoring relative overrides to root),
+    otherwise reads workspace.reports_dir from cfg (defaulting to "reports").
+
+    Args:
+        override_dir: Optional directory override bypassing cfg["workspace"]["reports_dir"].
+        create_dir: When True, creates the destination directory if it does not exist.
+    """
+    if override_dir is not None:
+        report_dir = override_dir if override_dir.is_absolute() else root / override_dir
+    else:
+        reports_rel = str(cfg.get("workspace", {}).get("reports_dir", "reports"))
+        report_dir = root / reports_rel
+
+    if create_dir:
+        report_dir.mkdir(parents=True, exist_ok=True)
+
+    return report_dir / filename

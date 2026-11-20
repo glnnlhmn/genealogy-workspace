@@ -5,7 +5,8 @@ Directory tree scanner and report generator for GenDesk Structure (gd-struct).
 Operational Role:
     Traverses workspace directories or Git-tracked/unignored files up to a
     configured depth (default 7), filters mandatory noise directories, and
-    writes standardized tree reports into the configured reports/ directory.
+    writes standardized tree reports atomically into the configured reports/
+    directory via gen_desk_tools.core primitives.
 
 Functions:
     build_tree: Recursively collect sorted directory tree lines up to max_depth.
@@ -18,7 +19,16 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-__version__ = "1.0.0+build.1"
+from gen_desk_tools.core.backup import atomic_write_text
+from gen_desk_tools.core.process import run_command
+from gen_desk_tools.core.workspace import (
+    MANDATORY_EXCLUSIONS as CORE_EXCLUSIONS,
+)
+from gen_desk_tools.core.workspace import (
+    resolve_report_path,
+)
+
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "DEFAULT_MAX_DEPTH",
@@ -31,17 +41,7 @@ __all__ = [
 
 DEFAULT_MAX_DEPTH: int = 7
 
-MANDATORY_EXCLUSIONS: frozenset[str] = frozenset(
-    {
-        ".git",
-        ".pytest_cache",
-        ".ruff_cache",
-        ".venv",
-        "__pycache__",
-        "pytest_tmp",
-        "temp",
-    }
-)
+MANDATORY_EXCLUSIONS: frozenset[str] = CORE_EXCLUSIONS | frozenset({"pytest_tmp", "temp"})
 
 # Maps mode name -> (source relative path, matching tests relative path)
 MODE_TARGETS: dict[str, tuple[str, str]] = {
@@ -99,17 +99,19 @@ def build_git_tree(
     workspace_root: Path,
     max_depth: int = DEFAULT_MAX_DEPTH,
 ) -> list[str]:
-    """Collect sorted non-gitignored workspace paths up to max_depth via git ls-files."""
-    try:
-        res = subprocess.run(
-            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-            cwd=str(workspace_root),
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except (subprocess.CalledProcessError, OSError) as exc:
-        raise RuntimeError(f"Failed to query git-tracked/unignored files: {exc}") from exc
+    """Collect sorted non-gitignored workspace paths up to max_depth via git ls-files.
+
+    Raises:
+        RuntimeError: If git ls-files fails or git is unavailable.
+    """
+    res = run_command(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        cwd=workspace_root,
+        runner=subprocess.run,
+    )
+    if not res.ok:
+        detail = res.error or res.stderr.strip() or f"exit code {res.returncode}"
+        raise RuntimeError(f"Failed to query git-tracked/unignored files: {detail}")
 
     paths: set[str] = set()
     for raw_line in res.stdout.splitlines():
@@ -132,12 +134,8 @@ def generate_structure_report(
     reports_dir: Path | str = "reports",
     max_depth: int = DEFAULT_MAX_DEPTH,
 ) -> tuple[Path, int]:
-    """Generate a workspace structure report and write it to reports_dir."""
+    """Generate a workspace structure report and write it atomically to reports_dir."""
     root = Path(workspace_root).resolve()
-    out_dir = Path(reports_dir)
-    resolved_out = out_dir if out_dir.is_absolute() else (root / out_dir)
-    resolved_out.mkdir(parents=True, exist_ok=True)
-
     output_lines: list[str] = []
 
     if mode == "all":
@@ -162,7 +160,7 @@ def generate_structure_report(
         valid = ", ".join(sorted([*MODE_TARGETS, "all", "git"]))
         raise ValueError(f"Unknown structure mode: '{mode}'. Expected one of: {valid}.")
 
-    report_path = resolved_out / filename
+    report_path = resolve_report_path(root, {}, filename, override_dir=Path(reports_dir))
     payload = "\n".join(output_lines) + ("\n" if output_lines else "")
-    report_path.write_text(payload, encoding="utf-8")
+    atomic_write_text(report_path, payload)
     return report_path, len(output_lines)

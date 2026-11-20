@@ -4,9 +4,10 @@ Four-layer configuration loader for gd_metrics.
 
 Operational Role:
     Resolves runtime telemetry settings across four precedence layers—workspace
-    pyproject.toml, metrics config.toml, GDA_METRICS_* environment variables,
-    and explicit CLI overrides—producing immutable MetricsConfig and
-    BatchDefinition records for downstream collectors and exporters.
+    pyproject.toml (and core GDT workspace defaults via load_gdt_config),
+    metrics config.toml, GDA_METRICS_* environment variables, and explicit CLI
+    overrides—producing immutable MetricsConfig and BatchDefinition records for
+    downstream collectors and exporters.
 
 Classes:
     BatchDefinition: Declarative batch grouping mapping source and test paths.
@@ -26,7 +27,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0+build.2"
+from gen_desk_tools.core.config import load_gdt_config
+
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "BatchDefinition",
@@ -161,7 +164,7 @@ def load_config(
     """Load and merge gd_metrics configuration across all four layers.
 
     Precedence (lowest to highest):
-        1. Workspace pyproject.toml (pytest markers, Ruff line length)
+        1. Workspace pyproject.toml & core GDT defaults (pytest markers, Ruff line length, dirs)
         2. Metrics config.toml (batches, coverage gates, defaults)
         3. GDA_METRICS_* environment variables
         4. Explicit CLI override arguments
@@ -186,6 +189,11 @@ def load_config(
     if resolved_config_path is None:
         env_cfg = environ.get("GDA_METRICS_CONFIG", "").strip()
         resolved_config_path = Path(env_cfg) if env_cfg else root / DEFAULT_CONFIG_REL_PATH
+
+    gdt_cfg = load_gdt_config(root_dir=root)
+    ws_cfg = gdt_cfg.get("workspace", {})
+    default_reports_dir = str(ws_cfg.get("reports_dir", "reports"))
+    default_basetemp = f"{ws_cfg.get('gtemp_dir', 'gtemp')}/pytest_tmp"
 
     pyproject_data = _read_toml_file(root / "pyproject.toml")
     config_data = _read_toml_file(resolved_config_path)
@@ -237,8 +245,8 @@ def load_config(
         sheet_url=sheet_url,
         google_creds_path=google_creds,
         write_local_report=bool(telemetry.get("write_local_report", True)),
-        local_report_dir=root / str(telemetry.get("local_report_dir", "reports")),
-        pytest_basetemp=root / str(telemetry.get("pytest_basetemp", "gtemp/pytest_tmp")),
+        local_report_dir=root / str(telemetry.get("local_report_dir", default_reports_dir)),
+        pytest_basetemp=root / str(telemetry.get("pytest_basetemp", default_basetemp)),
         ruff_line_length=ruff_line_length,
         registered_markers=registered_markers,
         coverage_gates=gates,

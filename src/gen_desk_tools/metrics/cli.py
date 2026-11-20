@@ -3,8 +3,9 @@
 Command-line interface and 7-stage pipeline orchestrator for gd_metrics.
 
 Operational Role:
-    Defines the gd-metrics CLI parser, coordinates the seven telemetry stages
-    (batch resolution, Radon analysis, pytest coverage, AST pytest suite
+    Defines the gd-metrics CLI parser (incorporating shared flags from
+    gen_desk_tools.core.cli.add_common_args), coordinates the seven telemetry
+    stages (batch resolution, Radon analysis, pytest coverage, AST pytest suite
     inspection, mypy/Ruff diagnostics, module hygiene/import graph, and report
     export), and ensures ProgressReporter log handles close cleanly on exit.
 
@@ -21,6 +22,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from gen_desk_tools.core.cli import add_common_args
 from gen_desk_tools.metrics.collectors.coverage_collector import (
     FileCoverageMetrics,
     run_pytest_coverage,
@@ -37,7 +39,7 @@ from gen_desk_tools.metrics.exporters.report_exporter import write_local_json_re
 from gen_desk_tools.metrics.exporters.sheets_exporter import sync_to_google_sheets
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = ["build_parser", "main", "run_pipeline"]
 
@@ -48,8 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="gd-metrics",
         description="GDA code quality, coverage, and pytest suite telemetry utility.",
     )
-    parser.add_argument("--root", type=Path, default=None, help="Workspace root directory.")
-    parser.add_argument("--config", type=Path, default=None, help="Path to config.toml.")
+    add_common_args(parser)
     parser.add_argument(
         "--scope",
         action="append",
@@ -76,8 +77,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--no-mypy", action="store_true", help="Skip mypy static type checking.")
     parser.add_argument("--no-ruff", action="store_true", help="Skip ruff lint diagnostics.")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose progress.")
-    parser.add_argument("--debug", action="store_true", help="Enable debug diagnostics.")
     parser.add_argument("--log-file", type=Path, default=None, help="Optional UTF-8 log path.")
     return parser
 

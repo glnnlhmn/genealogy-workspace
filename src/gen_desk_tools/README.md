@@ -11,7 +11,7 @@ Top-level namespace and workstation tooling root providing shared core primitive
 
 ## Subpackages
 - **[backup_mgr/](backup_mgr/README.md)**: GenDesk Backup Manager package (gdb).
-- **[core/](core/README.md)**: Shared internal primitives for GenDesk Tools (workspace, config, backup, logging, CLI).
+- **[core/](core/README.md)**: Shared internal primitives for GenDesk Tools (workspace, config, backup, logging, CLI, process).
 - **[coverage_gaps/](coverage_gaps/README.md)**: GenDesk Coverage Gaps package (gaps).
 - **[metrics/](metrics/README.md)**: First-class code quality, coverage, and test suite telemetry package.
 - **[readme_gen/](readme_gen/README.md)**: AST-driven package README.md documentation generator package (gdrm).
@@ -27,4 +27,4 @@ Modules export public interfaces explicitly declared in `__all__`.
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 676de1fe8812db76 -->
+<!-- gdrm-hash: 50a0dd8aef15234f -->

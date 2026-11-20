@@ -3,10 +3,10 @@
 Pytest branch and statement coverage collector for gd_metrics.
 
 Operational Role:
-    Executes pytest-cov scoped to active audit batches using the configured
-    basetemp sandbox, parses the resulting coverage.json artifact into
-    normalized per-file metrics, and formats uncovered line numbers into
-    compact range notation.
+    Executes pytest-cov scoped to active audit batches via
+    gen_desk_tools.core.process.run_command, parses the resulting coverage.json
+    artifact into normalized per-file metrics, and formats uncovered line
+    numbers into compact range notation.
 
 Classes:
     FileCoverageMetrics: Statement and branch coverage metrics for one module.
@@ -27,10 +27,11 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from gen_desk_tools.core.process import run_command
 from gen_desk_tools.metrics.config import BatchDefinition, MetricsConfig
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "CoverageRunResult",
@@ -208,13 +209,7 @@ def run_pytest_coverage(
         progress.update(f"Running pytest across {len(test_targets)} target(s)")
 
     exec_fn = subprocess.run if runner is None else runner
-    completed = exec_fn(
-        cmd,
-        cwd=config.workspace_root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    completed = run_command(cmd, cwd=config.workspace_root, runner=exec_fn)
 
     # --- Extract Final Summary Line & Parse JSON Artifact ---
     last_line = ""
@@ -227,7 +222,7 @@ def run_pytest_coverage(
     files = parse_coverage_json(cov_json_path, config.workspace_root)
 
     return CoverageRunResult(
-        exit_code=int(completed.returncode),
+        exit_code=completed.returncode,
         summary_note=summary_note,
         files=files,
     )

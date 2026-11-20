@@ -5,8 +5,8 @@ Single-file and batch restoration engine for GenDesk Backup Manager (gdb).
 Operational Role:
     Parses line-delimited restore manifests, verifies protected-domain
     authorization, discovers the newest archive Safe Backup snapshot (.bk)
-    with Git HEAD fallback, and atomically restores files via
-    gen_desk_tools.core.backup.atomic_copy.
+    with Git HEAD fallback via gen_desk_tools.core.process.run_command, and
+    atomically restores files via gen_desk_tools.core.backup.atomic_copy.
 
 Functions:
     parse_restore_list: Parse a plain-text manifest of relative target paths.
@@ -26,9 +26,10 @@ from typing import Any, NamedTuple
 
 from gen_desk_tools.backup_mgr.engine import parse_backup_filename
 from gen_desk_tools.core.backup import atomic_copy, is_protected_domain
+from gen_desk_tools.core.process import run_command
 from gen_desk_tools.core.workspace import to_posix_rel
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "BackupCandidate",
@@ -88,17 +89,12 @@ def find_latest_archive_backup(
 
 def restore_from_git(target_path: Path, root_dir: Path) -> bool:
     """Attempt to restore target_path directly from Git HEAD."""
-    try:
-        res = subprocess.run(
-            ["git", "checkout", "HEAD", "--", str(target_path)],
-            cwd=str(root_dir),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        return res.returncode == 0
-    except (FileNotFoundError, OSError):
-        return False
+    res = run_command(
+        ["git", "checkout", "HEAD", "--", str(target_path)],
+        cwd=root_dir,
+        runner=subprocess.run,
+    )
+    return res.ok
 
 
 def restore_file_entry(

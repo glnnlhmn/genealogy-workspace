@@ -13,11 +13,11 @@ Workspace directory tree and Git-aware file tree scanner generating depth-bounde
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 | `cli.py` | `1.0.0+build.1` | Command-line interface entrypoint for GenDesk Structure (gd-struct). |
-| `scanner.py` | `1.0.0+build.1` | Directory tree scanner and report generator for GenDesk Structure (gd-struct). |
+| `scanner.py` | `1.0.0+build.2` | Directory tree scanner and report generator for GenDesk Structure (gd-struct). |
 
 ## Public Exports & Consumption Contract
 Exports: `DEFAULT_MAX_DEPTH`, `MANDATORY_EXCLUSIONS`, `MODE_TARGETS`, `build_git_tree`, `build_parser`, `build_tree`, `generate_structure_report`, `main`, `resolve_mode`, `run`.
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 517d372512ee428b -->
+<!-- gdrm-hash: e39405454e3aa202 -->

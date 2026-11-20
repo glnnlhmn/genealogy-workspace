@@ -3,7 +3,8 @@
 Subprocess collector for mypy static type-check diagnostics.
 
 Operational Role:
-    Invokes mypy in machine-readable output mode against existing source paths
+    Invokes mypy in machine-readable output mode via
+    gen_desk_tools.core.process.run_command against existing source paths
     across active audit batches, parses line-level error/warning/note records,
     and maps each diagnostic back to its owning batch ID.
 
@@ -26,10 +27,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from gen_desk_tools.core.process import run_command
 from gen_desk_tools.metrics.config import BatchDefinition, MetricsConfig
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "MypyDiagnostic",
@@ -169,24 +171,17 @@ def run_mypy_check(
         "--no-error-summary",
         *targets,
     ]
-    try:
-        proc = runner(
-            cmd,
-            cwd=config.workspace_root,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-    except OSError as exc:
+    res = run_command(cmd, cwd=config.workspace_root, runner=runner)
+    if res.error:
         return MypyRunResult(
             diagnostics=(),
-            summary_note=f"mypy unavailable: {exc}",
+            summary_note=f"mypy unavailable: {res.error}",
             returncode=1,
         )
 
-    diagnostics = parse_mypy_output(str(proc.stdout), config.workspace_root, batches)
+    diagnostics = parse_mypy_output(res.stdout, config.workspace_root, batches)
     return MypyRunResult(
         diagnostics=diagnostics,
         summary_note=f"{len(diagnostics)} diagnostic(s)",
-        returncode=int(proc.returncode),
+        returncode=res.returncode,
     )
