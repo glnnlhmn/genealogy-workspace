@@ -32,7 +32,7 @@ from radon.raw import analyze
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "BatchRadonRollup",
@@ -135,6 +135,16 @@ def _format_block_symbol(block: Any) -> tuple[str, str]:
     return kind, name
 
 
+def _safe_doc_pct(comments: int, docstrings: int, sloc: int) -> float:
+    """Compute rounded (comments + docstrings) / sloc percentage safely."""
+    return round(((comments + docstrings) / sloc) * 100.0, 1) if sloc > 0 else 0.0
+
+
+def _safe_mean(values: list[float], decimals: int) -> float:
+    """Compute rounded arithmetic mean of values, returning 0.0 when empty."""
+    return round(sum(values) / len(values), decimals) if values else 0.0
+
+
 def analyze_file_radon(
     file_path: Path,
     workspace_root: Path,
@@ -150,14 +160,14 @@ def analyze_file_radon(
     rel_path = file_path.relative_to(workspace_root).as_posix()
 
     raw = analyze(source)
-    doc_pct = round(((raw.comments + raw.multi) / raw.sloc) * 100.0, 1) if raw.sloc > 0 else 0.0
+    doc_pct = _safe_doc_pct(int(raw.comments), int(raw.multi), int(raw.sloc))
     mi_score = round(float(mi_visit(source, multi=True)), 2)
     mi_grade = str(mi_rank(mi_score))
 
     # --- Cyclomatic Complexity & Peak Block Summary ---
     blocks = list(cc_visit(source))
     if blocks:
-        avg_cc = round(sum(b.complexity for b in blocks) / len(blocks), 2)
+        avg_cc = _safe_mean([float(b.complexity) for b in blocks], 2)
         top_block = max(blocks, key=lambda b: b.complexity)
         top_kind, top_name = _format_block_symbol(top_block)
         max_cc = int(top_block.complexity)
@@ -222,11 +232,7 @@ def _build_batch_rollup(
     blank = sum(m.blank for m in file_metrics)
     comments = sum(m.comments for m in file_metrics)
     docstrings = sum(m.docstrings for m in file_metrics)
-    doc_pct = round(((comments + docstrings) / sloc) * 100.0, 1) if sloc > 0 else 0.0
     non_zero_cc = [m.avg_cc for m in file_metrics if m.avg_cc > 0]
-    avg_cc = round(sum(non_zero_cc) / len(non_zero_cc), 2) if non_zero_cc else 0.0
-    cc_c_plus = sum(m.cc_c_plus_count for m in file_metrics)
-    mi_below_a = sum(1 for m in file_metrics if m.mi_grade != "A")
 
     return BatchRadonRollup(
         batch_id=batch.id,
@@ -239,10 +245,10 @@ def _build_batch_rollup(
         blank=blank,
         comments=comments,
         docstrings=docstrings,
-        doc_pct=doc_pct,
-        avg_cc=avg_cc,
-        cc_c_plus_count=cc_c_plus,
-        mi_below_a_count=mi_below_a,
+        doc_pct=_safe_doc_pct(comments, docstrings, sloc),
+        avg_cc=_safe_mean(non_zero_cc, 2),
+        cc_c_plus_count=sum(m.cc_c_plus_count for m in file_metrics),
+        mi_below_a_count=sum(1 for m in file_metrics if m.mi_grade != "A"),
     )
 
 

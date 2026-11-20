@@ -22,7 +22,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "MANDATORY_EXCLUSIONS",
@@ -108,6 +108,20 @@ def ensure_within_root(path: Path, root: Path) -> Path:
     return resolved_path
 
 
+def _matches_workspace_file(
+    item: Path,
+    target: Path,
+    suffixes: tuple[str, ...] | None,
+    exclusions: frozenset[str],
+) -> bool:
+    """Return True if item is a non-excluded file matching suffixes."""
+    if not item.is_file():
+        return False
+    if item != target and any(part in exclusions for part in item.relative_to(target).parts):
+        return False
+    return suffixes is None or item.suffix in suffixes
+
+
 def iter_workspace_files(
     target: Path,
     *,
@@ -127,20 +141,13 @@ def iter_workspace_files(
         return ()
 
     if target.is_file():
-        if suffixes is None or target.suffix in suffixes:
-            return (target,)
-        return ()
+        return (target,) if _matches_workspace_file(target, target, suffixes, exclusions) else ()
 
-    found: list[Path] = []
-    for item in target.rglob("*"):
-        if not item.is_file():
-            continue
-        rel_parts = item.relative_to(target).parts
-        if any(part in exclusions for part in rel_parts):
-            continue
-        if suffixes is None or item.suffix in suffixes:
-            found.append(item)
-
+    found = [
+        item
+        for item in target.rglob("*")
+        if _matches_workspace_file(item, target, suffixes, exclusions)
+    ]
     return tuple(sorted(found))
 
 

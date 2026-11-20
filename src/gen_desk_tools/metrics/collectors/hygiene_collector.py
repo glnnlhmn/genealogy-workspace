@@ -26,7 +26,7 @@ from gen_desk_tools.metrics.collectors.radon_collector import discover_batch_fil
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "ModuleHygieneRecord",
@@ -63,6 +63,15 @@ def _check_path_header(docstring: str | None, rel_path: str) -> bool:
     return expected in head_lines
 
 
+def _has_future_annotations(node: ast.stmt) -> bool:
+    """Return True when stmt is 'from __future__ import annotations'."""
+    return (
+        isinstance(node, ast.ImportFrom)
+        and node.module == "__future__"
+        and any(alias.name == "annotations" for alias in node.names)
+    )
+
+
 def _extract_ast_metadata(tree: ast.Module) -> tuple[str, bool, bool]:
     """Extract (__version__, has___all__, has_future_annotations) from module AST."""
     version = ""
@@ -70,24 +79,20 @@ def _extract_ast_metadata(tree: ast.Module) -> tuple[str, bool, bool]:
     has_future = False
 
     for node in tree.body:
-        if (
-            isinstance(node, ast.ImportFrom)
-            and node.module == "__future__"
-            and any(alias.name == "annotations" for alias in node.names)
-        ):
+        if _has_future_annotations(node):
             has_future = True
         elif isinstance(node, ast.Assign):
             for target in node.targets:
                 if not isinstance(target, ast.Name):
                     continue
-                if (
+                if target.id == "__all__":
+                    has_all = True
+                elif (
                     target.id == "__version__"
                     and isinstance(node.value, ast.Constant)
                     and isinstance(node.value.value, str)
                 ):
                     version = node.value.value
-                elif target.id == "__all__":
-                    has_all = True
 
     return version, has_all, has_future
 

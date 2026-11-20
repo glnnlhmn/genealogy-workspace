@@ -26,7 +26,7 @@ from gen_desk_tools.metrics.collectors.pytest_analyzer import PytestSuiteAnalysi
 from gen_desk_tools.metrics.collectors.radon_collector import BatchRadonRollup, FileRadonMetrics
 from gen_desk_tools.metrics.collectors.ruff_collector import RuffDiagnostic
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "TAB_NAMES",
@@ -44,6 +44,33 @@ TAB_NAMES = (
     "Module_Hygiene_Audit",
     "Import_Dependency_Graph",
 )
+
+_MASTER_HEADER: list[str] = [
+    "Batch ID",
+    "Tier & Scope",
+    "Audit Status",
+    "Files",
+    "LOC",
+    "LLOC",
+    "SLOC",
+    "Blank",
+    "# Cmt",
+    "Docstr",
+    "(C+Doc)/SLOC %",
+    "Avg CC",
+    "CC C+ Count",
+    "MI < A Count",
+    "Stmt Cov %",
+    "Branch Cov %",
+    "Total Cov %",
+    "Mypy Errors",
+    "Ruff Errors",
+    "Hygiene Flags",
+    "Boundary Violations",
+    "Smoke Inflation",
+    "Open Findings",
+    "Batch Sheet Link",
+]
 
 
 def _coverage_totals(
@@ -73,17 +100,8 @@ def _coverage_totals(
     return stmt_pct, branch_pct, total_pct
 
 
-def _build_workspace_total_row(
-    rollups: tuple[BatchRadonRollup, ...],
-    file_metrics: tuple[FileRadonMetrics, ...],
-    coverage_map: Mapping[str, FileCoverageMetrics],
-    counts: tuple[int, int, int, int, int],
-) -> list[Any]:
-    """Build the bottom TOTAL / WORKSPACE rollup row for Master_Scorecard.
-
-    Weights average cyclomatic complexity by per-batch file count so small
-    batches do not skew the workspace-wide average.
-    """
+def _sum_rollup_counts(rollups: tuple[BatchRadonRollup, ...]) -> dict[str, Any]:
+    """Aggregate raw line totals, weighted CC, and hotspot counts across rollups."""
     total_files = sum(r.file_count for r in rollups)
     total_loc = sum(r.loc for r in rollups)
     total_lloc = sum(r.lloc for r in rollups)
@@ -97,23 +115,46 @@ def _build_workspace_total_row(
         if total_files > 0
         else 0.0
     )
+    return {
+        "files": total_files,
+        "loc": total_loc,
+        "lloc": total_lloc,
+        "sloc": total_sloc,
+        "blank": total_blank,
+        "cmt": total_cmt,
+        "doc": total_doc,
+        "doc_pct": doc_pct,
+        "avg_cc": avg_cc,
+        "cc_c_plus": sum(r.cc_c_plus_count for r in rollups),
+        "mi_below_a": sum(r.mi_below_a_count for r in rollups),
+    }
+
+
+def _build_workspace_total_row(
+    rollups: tuple[BatchRadonRollup, ...],
+    file_metrics: tuple[FileRadonMetrics, ...],
+    coverage_map: Mapping[str, FileCoverageMetrics],
+    counts: tuple[int, int, int, int, int],
+) -> list[Any]:
+    """Build the bottom TOTAL / WORKSPACE rollup row for Master_Scorecard."""
+    totals_map = _sum_rollup_counts(rollups)
     stmt_pct, br_pct, tot_pct = _coverage_totals(file_metrics, coverage_map)
     mypy_tot, ruff_tot, hyg_tot, bnd_tot, smoke_tot = counts
     return [
         "TOTAL / WORKSPACE",
         "All Scoped Batches",
         "-",
-        total_files,
-        total_loc,
-        total_lloc,
-        total_sloc,
-        total_blank,
-        total_cmt,
-        total_doc,
-        doc_pct,
-        avg_cc,
-        sum(r.cc_c_plus_count for r in rollups),
-        sum(r.mi_below_a_count for r in rollups),
+        totals_map["files"],
+        totals_map["loc"],
+        totals_map["lloc"],
+        totals_map["sloc"],
+        totals_map["blank"],
+        totals_map["cmt"],
+        totals_map["doc"],
+        totals_map["doc_pct"],
+        totals_map["avg_cc"],
+        totals_map["cc_c_plus"],
+        totals_map["mi_below_a"],
         stmt_pct,
         br_pct,
         tot_pct,
@@ -122,6 +163,43 @@ def _build_workspace_total_row(
         hyg_tot,
         bnd_tot,
         smoke_tot,
+        0,
+        "",
+    ]
+
+
+def _format_batch_scorecard_row(
+    rollup: BatchRadonRollup,
+    batch_files: list[FileRadonMetrics],
+    coverage_map: Mapping[str, FileCoverageMetrics],
+    finding_counts: tuple[int, int, int, int, int],
+) -> list[Any]:
+    """Format a single batch summary row for the Master_Scorecard tab."""
+    stmt_pct, br_pct, tot_pct = _coverage_totals(batch_files, coverage_map)
+    mypy_c, ruff_c, hyg_c, bnd_c, smoke_c = finding_counts
+    return [
+        rollup.batch_id,
+        f"{rollup.tier} ({rollup.scope})",
+        "PENDING",
+        rollup.file_count,
+        rollup.loc,
+        rollup.lloc,
+        rollup.sloc,
+        rollup.blank,
+        rollup.comments,
+        rollup.docstrings,
+        rollup.doc_pct,
+        rollup.avg_cc,
+        rollup.cc_c_plus_count,
+        rollup.mi_below_a_count,
+        stmt_pct,
+        br_pct,
+        tot_pct,
+        mypy_c,
+        ruff_c,
+        hyg_c,
+        bnd_c,
+        smoke_c,
         0,
         "",
     ]
@@ -145,67 +223,19 @@ def _build_master_rows(
     bnd_cnt = Counter(e.batch_id for e in import_edges if e.boundary_violation)
     smoke_cnt = Counter(m.batch_id for m in suite_analysis.marker_summaries if m.smoke_inflation)
 
-    rows: list[list[Any]] = [
-        [
-            "Batch ID",
-            "Tier & Scope",
-            "Audit Status",
-            "Files",
-            "LOC",
-            "LLOC",
-            "SLOC",
-            "Blank",
-            "# Cmt",
-            "Docstr",
-            "(C+Doc)/SLOC %",
-            "Avg CC",
-            "CC C+ Count",
-            "MI < A Count",
-            "Stmt Cov %",
-            "Branch Cov %",
-            "Total Cov %",
-            "Mypy Errors",
-            "Ruff Errors",
-            "Hygiene Flags",
-            "Boundary Violations",
-            "Smoke Inflation",
-            "Open Findings",
-            "Batch Sheet Link",
-        ]
-    ]
+    rows: list[list[Any]] = [list(_MASTER_HEADER)]
 
     # --- Emit One Summary Row Per Active Batch ---
     for r in rollups:
         batch_files = [m for m in file_metrics if m.batch_id == r.batch_id]
-        stmt_pct, br_pct, tot_pct = _coverage_totals(batch_files, coverage_map)
-        rows.append(
-            [
-                r.batch_id,
-                f"{r.tier} ({r.scope})",
-                "PENDING",
-                r.file_count,
-                r.loc,
-                r.lloc,
-                r.sloc,
-                r.blank,
-                r.comments,
-                r.docstrings,
-                r.doc_pct,
-                r.avg_cc,
-                r.cc_c_plus_count,
-                r.mi_below_a_count,
-                stmt_pct,
-                br_pct,
-                tot_pct,
-                mypy_err[r.batch_id],
-                ruff_err[r.batch_id],
-                hyg_cnt[r.batch_id],
-                bnd_cnt[r.batch_id],
-                smoke_cnt[r.batch_id],
-                0,
-                "",
-            ]
+        row_counts = (
+            mypy_err[r.batch_id],
+            ruff_err[r.batch_id],
+            hyg_cnt[r.batch_id],
+            bnd_cnt[r.batch_id],
+            smoke_cnt[r.batch_id],
         )
+        rows.append(_format_batch_scorecard_row(r, batch_files, coverage_map, row_counts))
 
     totals = (
         sum(mypy_err.values()),

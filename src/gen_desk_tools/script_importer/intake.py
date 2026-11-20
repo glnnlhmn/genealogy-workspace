@@ -26,7 +26,7 @@ from gen_desk_tools.core.logging import setup_tool_logger
 from gen_desk_tools.core.workspace import resolve_workspace_root, to_posix_rel
 from gen_desk_tools.script_importer.headers import parse_metadata_header
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "run_intake",
@@ -83,6 +83,34 @@ def _relocate_candidate(
     return rel_dest
 
 
+def _process_candidates(
+    candidates: list[Path],
+    resolved_root: Path,
+    cfg: dict[str, Any],
+    download_dir_name: str,
+    *,
+    force: bool,
+    clean: bool,
+    logger: logging.Logger,
+) -> list[str]:
+    """Parse, validate, and relocate all staged candidate files."""
+    moved_files: list[str] = []
+    for candidate in candidates:
+        target_name, dest_path = parse_metadata_header(candidate, resolved_root)
+        if not target_name or not dest_path:
+            _handle_unparseable_candidate(
+                candidate, download_dir_name, clean=clean, force=force, logger=logger
+            )
+            continue
+
+        rel_dest = _relocate_candidate(
+            candidate, dest_path, resolved_root, cfg, force=force, logger=logger
+        )
+        if rel_dest is not None:
+            moved_files.append(rel_dest)
+    return moved_files
+
+
 def run_intake(
     *,
     force: bool = False,
@@ -123,20 +151,15 @@ def run_intake(
         print(f"No intake candidates found in {download_dir_name}/.")
         return 0
 
-    moved_files: list[str] = []
-    for candidate in candidates:
-        target_name, dest_path = parse_metadata_header(candidate, resolved_root)
-        if not target_name or not dest_path:
-            _handle_unparseable_candidate(
-                candidate, download_dir_name, clean=clean, force=force, logger=logger
-            )
-            continue
-
-        rel_dest = _relocate_candidate(
-            candidate, dest_path, resolved_root, cfg, force=force, logger=logger
-        )
-        if rel_dest is not None:
-            moved_files.append(rel_dest)
+    moved_files = _process_candidates(
+        candidates,
+        resolved_root,
+        cfg,
+        download_dir_name,
+        force=force,
+        clean=clean,
+        logger=logger,
+    )
 
     # --- Report Summary ---
     if moved_files:

@@ -25,7 +25,7 @@ from typing import Any
 from gen_desk_tools.core.backup import create_safe_backup, is_protected_domain
 from gen_desk_tools.core.workspace import to_posix_rel
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "BK_PATTERN",
@@ -93,6 +93,40 @@ def backup_folder(
     return created
 
 
+def _index_existing_backup_names(archive_root: Path) -> set[str]:
+    """Collect original filenames that already have at least one .bk snapshot."""
+    existing_names: set[str] = set()
+    if not archive_root.is_dir():
+        return existing_names
+
+    for bk_file in archive_root.rglob("*.bk"):
+        if bk_file.is_file():
+            orig_name, _ = parse_backup_filename(bk_file.name)
+            existing_names.add(orig_name)
+    return existing_names
+
+
+def _backup_untracked_in_domain(
+    domain_dir: Path,
+    root_dir: Path,
+    cfg: dict[str, Any],
+    existing_names: set[str],
+    *,
+    logger: logging.Logger | None = None,
+) -> list[Path]:
+    """Create Safe Backups for files in domain_dir absent from existing_names."""
+    created: list[Path] = []
+    for live_file in sorted(domain_dir.rglob("*")):
+        if not live_file.is_file() or live_file.name in existing_names:
+            continue
+        bk = create_single_backup(live_file, root_dir, cfg, logger=logger)
+        if bk is not None:
+            created.append(bk)
+            if logger:
+                logger.info("AUTO_BACKUP: %s", to_posix_rel(live_file, root_dir))
+    return created
+
+
 def run_auto_backup(
     root_dir: Path,
     cfg: dict[str, Any],
@@ -101,15 +135,7 @@ def run_auto_backup(
 ) -> list[Path]:
     """Scan all protected domains and back up files that currently have no archive snapshot."""
     archive_dir_name = str(cfg.get("workspace", {}).get("archive_dir", "archive"))
-    archive_root = root_dir / archive_dir_name
-
-    # Index existing backup base filenames by relative parent directory
-    existing_names: set[str] = set()
-    if archive_root.is_dir():
-        for bk_file in archive_root.rglob("*.bk"):
-            if bk_file.is_file():
-                orig_name, _ = parse_backup_filename(bk_file.name)
-                existing_names.add(orig_name)
+    existing_names = _index_existing_backup_names(root_dir / archive_dir_name)
 
     protected = cfg.get("code_domains", {}).get(
         "protected_domains", ["src", "tests", "schemas", "data/setup"]
@@ -117,16 +143,10 @@ def run_auto_backup(
     created: list[Path] = []
     for domain in protected:
         domain_dir = root_dir / domain
-        if not domain_dir.is_dir():
-            continue
-        for live_file in sorted(domain_dir.rglob("*")):
-            if not live_file.is_file():
-                continue
-            if live_file.name in existing_names:
-                continue
-            bk = create_single_backup(live_file, root_dir, cfg, logger=logger)
-            if bk is not None:
-                created.append(bk)
-                if logger:
-                    logger.info("AUTO_BACKUP: %s", to_posix_rel(live_file, root_dir))
+        if domain_dir.is_dir():
+            created.extend(
+                _backup_untracked_in_domain(
+                    domain_dir, root_dir, cfg, existing_names, logger=logger
+                )
+            )
     return created

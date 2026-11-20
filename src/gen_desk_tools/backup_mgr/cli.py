@@ -16,8 +16,10 @@ Functions:
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 from gen_desk_tools.backup_mgr.auditor import audit_workspace, format_full_audit_report
 from gen_desk_tools.backup_mgr.engine import (
@@ -32,7 +34,7 @@ from gen_desk_tools.core.config import load_gdt_config
 from gen_desk_tools.core.logging import setup_tool_logger
 from gen_desk_tools.core.workspace import resolve_workspace_root
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "build_parser",
@@ -94,6 +96,53 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _handle_restore_list(
+    restore_list: Path,
+    root: Path,
+    cfg: dict[str, Any],
+    logger: logging.Logger,
+) -> int:
+    """Execute batch restoration from a manifest file and return a POSIX exit code."""
+    manifest = restore_list if restore_list.is_absolute() else (root / restore_list)
+    if not manifest.is_file():
+        print(f"Error: Restore manifest not found: {restore_list}", file=sys.stderr)
+        return 1
+    succ, fail, msgs = restore_batch_from_list(manifest, root, cfg, logger=logger)
+    for msg in msgs:
+        print(f"  {msg}")
+    print(f"Restoration completed: {succ} restored, {fail} failed.")
+    return 1 if fail > 0 else 0
+
+
+def _handle_target_backup(
+    target_arg: str,
+    root: Path,
+    cfg: dict[str, Any],
+    logger: logging.Logger,
+    *,
+    no_recursive: bool,
+) -> int:
+    """Back up a single file or directory target and return a POSIX exit code."""
+    target_path = Path(target_arg)
+    resolved_target = target_path if target_path.is_absolute() else (root / target_path)
+    if resolved_target.is_dir():
+        created = backup_folder(
+            resolved_target, root, cfg, recursive=not no_recursive, logger=logger
+        )
+        print(f"Folder backup completed: {len(created)} snapshots created.")
+        return 0
+    if resolved_target.is_file():
+        bk = create_single_backup(resolved_target, root, cfg, logger=logger)
+        if bk is None:
+            print(f"Skipped (outside protected domains): {target_arg}")
+            return 1
+        print(f"Backup created: {bk.relative_to(root).as_posix()}")
+        return 0
+
+    print(f"Error: Target not found: {target_arg}", file=sys.stderr)
+    return 1
+
+
 def run(args: argparse.Namespace) -> int:
     """Execute the requested gdb operations and return a POSIX exit code."""
     try:
@@ -125,17 +174,7 @@ def run(args: argparse.Namespace) -> int:
 
     if args.restore_list:
         actions_executed += 1
-        manifest = (
-            args.restore_list if args.restore_list.is_absolute() else (root / args.restore_list)
-        )
-        if not manifest.is_file():
-            print(f"Error: Restore manifest not found: {args.restore_list}", file=sys.stderr)
-            return 1
-        succ, fail, msgs = restore_batch_from_list(manifest, root, cfg, logger=logger)
-        for msg in msgs:
-            print(f"  {msg}")
-        print(f"Restoration completed: {succ} restored, {fail} failed.")
-        if fail > 0:
+        if _handle_restore_list(args.restore_list, root, cfg, logger) != 0:
             return 1
 
     if args.prune:
@@ -146,22 +185,7 @@ def run(args: argparse.Namespace) -> int:
 
     if args.target and not args.status:
         actions_executed += 1
-        target_path = Path(args.target)
-        resolved_target = target_path if target_path.is_absolute() else (root / target_path)
-        if resolved_target.is_dir():
-            created = backup_folder(
-                resolved_target, root, cfg, recursive=not args.no_recursive, logger=logger
-            )
-            print(f"Folder backup completed: {len(created)} snapshots created.")
-        elif resolved_target.is_file():
-            bk = create_single_backup(resolved_target, root, cfg, logger=logger)
-            if bk is None:
-                print(f"Skipped (outside protected domains): {args.target}")
-                return 1
-            print(f"Backup created: {bk.relative_to(root).as_posix()}")
-        else:
-            print(f"Error: Target not found: {args.target}", file=sys.stderr)
-            return 1
+        return _handle_target_backup(args.target, root, cfg, logger, no_recursive=args.no_recursive)
 
     if actions_executed == 0:
         print("No action specified. Run 'gdb --help' for usage.")

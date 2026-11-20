@@ -25,7 +25,7 @@ from typing import Any, NamedTuple
 from gen_desk_tools.backup_mgr.engine import parse_backup_filename
 from gen_desk_tools.core.workspace import to_posix_rel
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "GRACE_DELTA_SECONDS",
@@ -121,36 +121,37 @@ def _matches_filter(posix_path: str, target_filter: str | None) -> bool:
     return posix_path == target_filter or posix_path.startswith(f"{target_filter}/")
 
 
-def audit_workspace(
-    workspace_root: Path | str,
-    cfg: dict[str, Any],
-    *,
-    target_rel_path: str | None = None,
-    now: datetime | None = None,
-) -> dict[AuditStatus, list[AuditRecord]]:
-    """Scan archive and protected domains, partitioning records into 4 status sections."""
-    root = Path(workspace_root).resolve()
-    archive_root = root / str(cfg.get("workspace", {}).get("archive_dir", "archive"))
-    current_time = now or datetime.now(UTC).replace(tzinfo=None)
-    target_filter = Path(target_rel_path).as_posix().strip("/") if target_rel_path else None
-
-    # 1. Index newest archive backups by canonical relative path
+def _index_archive_snapshots(
+    archive_root: Path,
+    target_filter: str | None,
+) -> dict[str, tuple[Path, datetime]]:
+    """Index newest archive .bk snapshots by canonical relative POSIX path."""
     newest_backups: dict[str, tuple[Path, datetime]] = {}
-    if archive_root.is_dir():
-        for bk_path in sorted(archive_root.rglob("*.bk"), reverse=True):
-            if not bk_path.is_file():
-                continue
-            orig_posix = resolve_original_path(bk_path, archive_root).as_posix()
-            if not _matches_filter(orig_posix, target_filter):
-                continue
+    if not archive_root.is_dir():
+        return newest_backups
 
-            _, ts = parse_backup_filename(bk_path.name)
-            if ts is None:
-                ts = datetime.fromtimestamp(bk_path.stat().st_mtime, tz=UTC).replace(tzinfo=None)
-            if orig_posix not in newest_backups or ts > newest_backups[orig_posix][1]:
-                newest_backups[orig_posix] = (bk_path, ts)
+    for bk_path in sorted(archive_root.rglob("*.bk"), reverse=True):
+        if not bk_path.is_file():
+            continue
+        orig_posix = resolve_original_path(bk_path, archive_root).as_posix()
+        if not _matches_filter(orig_posix, target_filter):
+            continue
 
-    # 2. Index active files on disk in protected code domains
+        _, ts = parse_backup_filename(bk_path.name)
+        if ts is None:
+            ts = datetime.fromtimestamp(bk_path.stat().st_mtime, tz=UTC).replace(tzinfo=None)
+        if orig_posix not in newest_backups or ts > newest_backups[orig_posix][1]:
+            newest_backups[orig_posix] = (bk_path, ts)
+
+    return newest_backups
+
+
+def _index_live_files(
+    root: Path,
+    cfg: dict[str, Any],
+    target_filter: str | None,
+) -> dict[str, datetime]:
+    """Index active files on disk across configured protected code domains."""
     protected = cfg.get("code_domains", {}).get(
         "protected_domains", ["src", "tests", "schemas", "data/setup"]
     )
@@ -168,40 +169,68 @@ def audit_workspace(
             live_files[posix_rel] = datetime.fromtimestamp(item.stat().st_mtime, tz=UTC).replace(
                 tzinfo=None
             )
+    return live_files
 
-    # 3. Partition union of live and backed-up paths into 4 status buckets
+
+def _classify_audit_record(
+    rel_path: str,
+    live_ts: datetime | None,
+    bk_entry: tuple[Path, datetime] | None,
+    current_time: datetime,
+) -> AuditRecord:
+    """Classify a single file's live vs. archive timestamps into an AuditRecord."""
+    bk_name = bk_entry[0].name if bk_entry else None
+    bk_ts = bk_entry[1] if bk_entry else None
+
+    if live_ts is not None and bk_ts is None:
+        status = AuditStatus.NO_BACKUP
+    elif live_ts is None and bk_ts is not None:
+        status = AuditStatus.NO_ORIGIN
+    else:
+        assert bk_ts is not None and live_ts is not None
+        delta_sec = (bk_ts - live_ts).total_seconds()
+        status = (
+            AuditStatus.BACKUP_NEWER if delta_sec >= GRACE_DELTA_SECONDS else AuditStatus.BACK_OKAY
+        )
+
+    return AuditRecord(
+        status=status,
+        original_rel_path=rel_path,
+        backup_filename=bk_name,
+        backup_timestamp=bk_ts,
+        live_timestamp=live_ts,
+        age_str=format_age_from_now(bk_ts, current_time),
+        delta_str=format_delta_minutes(bk_ts, live_ts),
+    )
+
+
+def audit_workspace(
+    workspace_root: Path | str,
+    cfg: dict[str, Any],
+    *,
+    target_rel_path: str | None = None,
+    now: datetime | None = None,
+) -> dict[AuditStatus, list[AuditRecord]]:
+    """Scan archive and protected domains, partitioning records into 4 status sections."""
+    root = Path(workspace_root).resolve()
+    archive_root = root / str(cfg.get("workspace", {}).get("archive_dir", "archive"))
+    current_time = now or datetime.now(UTC).replace(tzinfo=None)
+    target_filter = Path(target_rel_path).as_posix().strip("/") if target_rel_path else None
+
+    # --- Phase 1 & 2: Index Archive Snapshots & Live Protected Files ---
+    newest_backups = _index_archive_snapshots(archive_root, target_filter)
+    live_files = _index_live_files(root, cfg, target_filter)
+
+    # --- Phase 3: Partition Union into 4 Audit Status Buckets ---
     partitioned: dict[AuditStatus, list[AuditRecord]] = {status: [] for status in AuditStatus}
     for rel_path in sorted(set(live_files) | set(newest_backups)):
-        live_ts = live_files.get(rel_path)
-        bk_entry = newest_backups.get(rel_path)
-        bk_name = bk_entry[0].name if bk_entry else None
-        bk_ts = bk_entry[1] if bk_entry else None
-
-        if live_ts is not None and bk_ts is None:
-            status = AuditStatus.NO_BACKUP
-        elif live_ts is None and bk_ts is not None:
-            status = AuditStatus.NO_ORIGIN
-        elif bk_ts is not None and live_ts is not None:
-            delta_sec = (bk_ts - live_ts).total_seconds()
-            status = (
-                AuditStatus.BACKUP_NEWER
-                if delta_sec >= GRACE_DELTA_SECONDS
-                else AuditStatus.BACK_OKAY
-            )
-        else:  # pragma: no cover - unreachable given union of non-empty dicts
-            continue
-
-        partitioned[status].append(
-            AuditRecord(
-                status=status,
-                original_rel_path=rel_path,
-                backup_filename=bk_name,
-                backup_timestamp=bk_ts,
-                live_timestamp=live_ts,
-                age_str=format_age_from_now(bk_ts, current_time),
-                delta_str=format_delta_minutes(bk_ts, live_ts),
-            )
+        record = _classify_audit_record(
+            rel_path,
+            live_files.get(rel_path),
+            newest_backups.get(rel_path),
+            current_time,
         )
+        partitioned[record.status].append(record)
 
     return partitioned
 

@@ -29,7 +29,7 @@ from typing import Any
 
 from gen_desk_tools.core.config import load_gdt_config
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "BatchDefinition",
@@ -151,6 +151,38 @@ def _validate_scopes(scopes: tuple[str, ...]) -> tuple[str, ...]:
     return scopes
 
 
+def _resolve_scopes(
+    telemetry: Mapping[str, Any],
+    environ: Mapping[str, str],
+    cli_scopes: tuple[str, ...] | None,
+) -> tuple[str, ...]:
+    """Resolve and validate effective scopes across config, env, and CLI layers."""
+    default_scopes = tuple(str(s) for s in telemetry.get("default_scopes", ["gda"]))
+    env_scope = environ.get("GDA_METRICS_SCOPE", "").strip()
+    if env_scope:
+        effective = tuple(s.strip() for s in env_scope.split(",") if s.strip())
+    else:
+        effective = default_scopes
+    if cli_scopes:
+        effective = cli_scopes
+    return _validate_scopes(effective)
+
+
+def _resolve_sync_sheets(
+    telemetry: Mapping[str, Any],
+    environ: Mapping[str, str],
+    cli_no_sheets: bool,
+) -> bool:
+    """Resolve whether Google Sheets sync is enabled across config, env, and CLI."""
+    sync_sheets = bool(telemetry.get("sync_sheets_by_default", True))
+    env_sync = environ.get("GDA_METRICS_SYNC_SHEETS", "").strip()
+    if env_sync:
+        sync_sheets = _parse_bool_env(env_sync)
+    if cli_no_sheets:
+        sync_sheets = False
+    return sync_sheets
+
+
 def load_config(
     workspace_root: Path | None = None,
     config_path: Path | None = None,
@@ -209,23 +241,9 @@ def load_config(
         {str(k): float(v) for k, v in config_data.get("gates", {}).get("coverage", {}).items()}
     )
 
-    # --- Layer 3 & 4: Resolve Scopes & Sync Overrides ---
-    default_scopes = tuple(str(s) for s in telemetry.get("default_scopes", ["gda"]))
-    env_scope = environ.get("GDA_METRICS_SCOPE", "").strip()
-    if env_scope:
-        effective_scopes = tuple(s.strip() for s in env_scope.split(",") if s.strip())
-    else:
-        effective_scopes = default_scopes
-    if cli_scopes:
-        effective_scopes = cli_scopes
-    effective_scopes = _validate_scopes(effective_scopes)
-
-    sync_sheets = bool(telemetry.get("sync_sheets_by_default", True))
-    env_sync = environ.get("GDA_METRICS_SYNC_SHEETS", "").strip()
-    if env_sync:
-        sync_sheets = _parse_bool_env(env_sync)
-    if cli_no_sheets:
-        sync_sheets = False
+    # --- Layer 3 & 4: Resolve Scopes, Sync & Sheet Targets ---
+    effective_scopes = _resolve_scopes(telemetry, environ, cli_scopes)
+    sync_sheets = _resolve_sync_sheets(telemetry, environ, cli_no_sheets)
 
     sheet_id = environ.get("GDA_METRICS_SHEET_ID", str(telemetry.get("sheet_id", ""))).strip()
     sheet_url = environ.get("GDA_METRICS_SHEET_URL", str(telemetry.get("sheet_url", ""))).strip()

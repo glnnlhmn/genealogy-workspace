@@ -21,7 +21,7 @@ from typing import Any, NamedTuple
 
 from gen_desk_tools.backup_mgr.engine import parse_backup_filename
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "PruneCandidate",
@@ -37,6 +37,62 @@ class PruneCandidate(NamedTuple):
     original_name: str
     timestamp: datetime
     reason: str
+
+
+def _group_archive_snapshots(archive_root: Path) -> dict[str, list[tuple[Path, datetime]]]:
+    """Group archive .bk snapshots by parent directory and original filename."""
+    snapshots_by_target: dict[str, list[tuple[Path, datetime]]] = {}
+    for bk_file in archive_root.rglob("*.bk"):
+        if not bk_file.is_file():
+            continue
+        orig_name, ts = parse_backup_filename(bk_file.name)
+        if ts is None:
+            ts = datetime.fromtimestamp(bk_file.stat().st_mtime)
+        key = f"{bk_file.parent.as_posix()}::{orig_name}"
+        snapshots_by_target.setdefault(key, []).append((bk_file, ts))
+    return snapshots_by_target
+
+
+def _evaluate_group_retention(
+    orig_name: str,
+    entries: list[tuple[Path, datetime]],
+    *,
+    max_versions: int,
+    max_age_days: int,
+    age_cutoff: datetime | None,
+) -> list[PruneCandidate]:
+    """Evaluate max_versions and max_age_days retention limits for one file group."""
+    ordered = sorted(entries, key=lambda item: item[1], reverse=True)
+    candidates: list[PruneCandidate] = []
+    seen_paths: set[Path] = set()
+
+    if max_versions > 0 and len(ordered) > max_versions:
+        for path, ts in ordered[max_versions:]:
+            seen_paths.add(path)
+            candidates.append(
+                PruneCandidate(
+                    path=path,
+                    original_name=orig_name,
+                    timestamp=ts,
+                    reason=f"Exceeds max_versions ({max_versions})",
+                )
+            )
+
+    if age_cutoff is not None:
+        for path, ts in ordered:
+            if path in seen_paths or ts >= age_cutoff:
+                continue
+            seen_paths.add(path)
+            candidates.append(
+                PruneCandidate(
+                    path=path,
+                    original_name=orig_name,
+                    timestamp=ts,
+                    reason=f"Exceeds max_age_days ({max_age_days}d)",
+                )
+            )
+
+    return candidates
 
 
 def find_prune_candidates(
@@ -55,50 +111,20 @@ def find_prune_candidates(
     current = now or datetime.now()
     age_cutoff = current - timedelta(days=max_age_days) if max_age_days > 0 else None
 
-    # Group snapshots by parent directory + original filename
-    snapshots_by_target: dict[str, list[tuple[Path, datetime]]] = {}
-    for bk_file in archive_root.rglob("*.bk"):
-        if not bk_file.is_file():
-            continue
-        orig_name, ts = parse_backup_filename(bk_file.name)
-        if ts is None:
-            ts = datetime.fromtimestamp(bk_file.stat().st_mtime)
-        key = f"{bk_file.parent.as_posix()}::{orig_name}"
-        snapshots_by_target.setdefault(key, []).append((bk_file, ts))
-
+    snapshots_by_target = _group_archive_snapshots(archive_root)
     prune_candidates: list[PruneCandidate] = []
-    seen_paths: set[Path] = set()
 
     for key, entries in sorted(snapshots_by_target.items()):
-        entries.sort(key=lambda item: item[1], reverse=True)
         orig_name = key.split("::", 1)[1]
-
-        if max_versions > 0 and len(entries) > max_versions:
-            for path, ts in entries[max_versions:]:
-                seen_paths.add(path)
-                prune_candidates.append(
-                    PruneCandidate(
-                        path=path,
-                        original_name=orig_name,
-                        timestamp=ts,
-                        reason=f"Exceeds max_versions ({max_versions})",
-                    )
-                )
-
-        if age_cutoff is not None:
-            for path, ts in entries:
-                if path in seen_paths:
-                    continue
-                if ts < age_cutoff:
-                    seen_paths.add(path)
-                    prune_candidates.append(
-                        PruneCandidate(
-                            path=path,
-                            original_name=orig_name,
-                            timestamp=ts,
-                            reason=f"Exceeds max_age_days ({max_age_days}d)",
-                        )
-                    )
+        prune_candidates.extend(
+            _evaluate_group_retention(
+                orig_name,
+                entries,
+                max_versions=max_versions,
+                max_age_days=max_age_days,
+                age_cutoff=age_cutoff,
+            )
+        )
 
     return prune_candidates
 

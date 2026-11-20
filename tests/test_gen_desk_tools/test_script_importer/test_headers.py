@@ -12,7 +12,7 @@ import pytest
 
 from gen_desk_tools.script_importer.headers import parse_metadata_header
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 # ==========================================================================
 # GROUP 1: Smoke & Primary Entrypoints
@@ -126,11 +126,29 @@ def test_parse_metadata_header_ipynb_reads_metadata_and_cell_fallback(tmp_path: 
         encoding="utf-8",
     )
 
+    nb_preserves_meta_name = tmp_path / "meta_name.ipynb"
+    nb_preserves_meta_name.write_text(
+        json.dumps(
+            {
+                "metadata": {"_name": "kept.ipynb"},
+                "cells": [
+                    {
+                        "cell_type": "markdown",
+                        "source": ["# Name: ignored.ipynb\n", "# Path: notebooks/override.ipynb\n"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
     name_m, dest_m = parse_metadata_header(nb_meta, tmp_path)
     name_c, dest_c = parse_metadata_header(nb_cell, tmp_path)
+    name_p, dest_p = parse_metadata_header(nb_preserves_meta_name, tmp_path)
 
     assert (name_m, dest_m) == ("nb.ipynb", (tmp_path / "notebooks/nb.ipynb").resolve())
     assert (name_c, dest_c) == ("report.ipynb", (tmp_path / "notebooks/report.ipynb").resolve())
+    assert (name_p, dest_p) == ("kept.ipynb", (tmp_path / "notebooks/override.ipynb").resolve())
 
 
 # ==========================================================================

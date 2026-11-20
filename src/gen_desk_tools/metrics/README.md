@@ -17,7 +17,7 @@ Multi-stage code quality, coverage, test suite AST analysis, module hygiene, imp
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 | `cli.py` | `1.0.0+build.4` | Command-line interface and 7-stage pipeline orchestrator for gd_metrics. |
-| `config.py` | `1.0.0+build.3` | Four-layer configuration loader for gd_metrics. |
+| `config.py` | `1.0.0+build.4` | Four-layer configuration loader for gd_metrics. |
 | `progress.py` | `1.0.0+build.2` | Real-time stage and file progress reporter for gd_metrics. |
 
 ## Public Exports & Consumption Contract
@@ -25,4 +25,4 @@ Exports: `BatchDefinition`, `MetricsConfig`, `ProgressReporter`, `__version__`, 
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: ec8e99b5aaad1612 -->
+<!-- gdrm-hash: 645bf31b22614fe7 -->
