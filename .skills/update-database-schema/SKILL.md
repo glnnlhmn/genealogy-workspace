@@ -1,7 +1,9 @@
+<!--Path: .skills/update-database-schema/SKILL.md-->
 ---
 name: update-database-schema
 description: Inspects, backs up, and applies schema migrations to SQLite databases across GDA environments (DEV, TEST, STAGING, PROD). Use when the operator asks to update, migrate, or upgrade a database schema.
 ---
+
 # Update Database Schema
 
 Safely migrate an existing SQLite database to the latest schema version across environments by creating an atomic pre-migration backup and delegating execution to `gda.db`.
