@@ -5,7 +5,7 @@ Command-line interface entrypoint for GenDesk Structure (gd-struct).
 Operational Role:
     Registers shared gen_desk_tools.core CLI flags alongside target mode flags
     (--gd, --ancestry-desk, --gd-tools, -s/--system, --cli, --src, -a/--all,
-    -g/--git), -t/--tests, and -l/--level (default 7).
+    -g/--git), -t/--tests, -l/--level (default 7), and --reports-dir.
 
 Functions:
     build_parser: Construct the ArgumentParser for gd-struct.
@@ -18,13 +18,14 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from gen_desk_tools.core.cli import add_common_args
 from gen_desk_tools.core.config import load_gdt_config
 from gen_desk_tools.core.workspace import resolve_workspace_root
 from gen_desk_tools.structure.scanner import DEFAULT_MAX_DEPTH, generate_structure_report
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "build_parser",
@@ -116,6 +117,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_MAX_DEPTH,
         help=f"Maximum directory depth (default: {DEFAULT_MAX_DEPTH}).",
     )
+    parser.add_argument(
+        "--reports-dir",
+        type=Path,
+        default=None,
+        help="Destination directory for report output (defaults to config workspace.reports_dir).",
+    )
     return parser
 
 
@@ -133,7 +140,11 @@ def run(args: argparse.Namespace) -> int:
         print(f"[ERROR] Failed to load GDT configuration: {exc}", file=sys.stderr)
         return 1
 
-    reports_dir = str(cfg.get("workspace", {}).get("reports_dir", "reports"))
+    reports_dir = (
+        args.reports_dir
+        if args.reports_dir is not None
+        else Path(str(cfg.get("workspace", {}).get("reports_dir", "reports")))
+    )
     mode = resolve_mode(args)
 
     try:

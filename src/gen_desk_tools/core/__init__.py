@@ -22,6 +22,7 @@ from gen_desk_tools.core.logging import setup_tool_logger
 from gen_desk_tools.core.process import CommandResult, run_command
 from gen_desk_tools.core.workspace import (
     MANDATORY_EXCLUSIONS,
+    MODE_TARGETS,
     ensure_within_root,
     iter_workspace_files,
     resolve_report_path,
@@ -29,12 +30,13 @@ from gen_desk_tools.core.workspace import (
     to_posix_rel,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "CommandResult",
     "DEFAULT_GDT_CONFIG",
     "MANDATORY_EXCLUSIONS",
+    "MODE_TARGETS",
     "add_common_args",
     "atomic_copy",
     "atomic_write_text",

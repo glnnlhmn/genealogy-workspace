@@ -21,9 +21,9 @@ from pathlib import Path
 
 from gen_desk_tools.core.backup import atomic_write_text
 from gen_desk_tools.core.process import run_command
-from gen_desk_tools.core.workspace import resolve_report_path
+from gen_desk_tools.core.workspace import MODE_TARGETS, resolve_report_path
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "DEFAULT_MAX_DEPTH",
@@ -34,16 +34,6 @@ __all__ = [
 ]
 
 DEFAULT_MAX_DEPTH: int = 7
-
-# Maps mode name -> (source relative path, matching tests relative path)
-MODE_TARGETS: dict[str, tuple[str, str]] = {
-    "gda": ("src/gda", "tests/test_gda"),
-    "ancestry_desk": ("src/ancestry_desk", "tests/test_ancestry_desk"),
-    "gd_tools": ("src/gen_desk_tools", "tests/test_gen_desk_tools"),
-    "system": ("src/system", "tests/test_system"),
-    "cli": ("src/cli", "tests/test_cli"),
-    "src": ("src", "tests"),
-}
 
 
 def format_radon_section(

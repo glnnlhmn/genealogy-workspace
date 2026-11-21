@@ -12,12 +12,12 @@ Combined Radon cyclomatic complexity (CC), maintainability index (MI), and raw l
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
-| `cli.py` | `1.0.0+build.1` | Command-line interface entrypoint for GenDesk Radon Report (gdradon). |
-| `scanner.py` | `1.0.0+build.1` | Combined Radon static analysis report generator (CC, MI, and RAW) for GenDesk Tools. |
+| `cli.py` | `1.0.0+build.2` | Command-line interface entrypoint for GenDesk Radon Report (gdradon). |
+| `scanner.py` | `1.0.0+build.2` | Combined Radon static analysis report generator (CC, MI, and RAW) for GenDesk Tools. |
 
 ## Public Exports & Consumption Contract
 Exports: `DEFAULT_MAX_DEPTH`, `MODE_TARGETS`, `__version__`, `build_combined_radon_report`, `build_parser`, `format_radon_section`, `generate_radon_report`, `main`, `run`.
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: ac56155609d74c11 -->
+<!-- gdrm-hash: 0055d3e5e9e05096 -->

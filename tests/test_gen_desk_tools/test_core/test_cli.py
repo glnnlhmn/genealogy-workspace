@@ -10,91 +10,110 @@ from pathlib import Path
 
 import pytest
 
-from gen_desk_tools.core.cli import add_common_args, prompt_yes_no
+from gen_desk_tools.core.cli import add_common_args, prompt_int_default, prompt_yes_no
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 # ==========================================================================
-# GROUP 1: Smoke & Primary Entrypoints
-# Note: Standard GDT flag registration and parsing on ArgumentParser.
+# GROUP 1: Smoke & Common Argument Registration
+# Note: Standard GDT CLI flags (-v, --debug, --config, --root, --prompts).
 # ==========================================================================
 
 
 @pytest.mark.smoke
 @pytest.mark.unit
-def test_add_common_args_registers_and_parses_standard_flags() -> None:
-    """Verify add_common_args attaches -v, --debug, --config, and --root cleanly."""
-    parser = add_common_args(argparse.ArgumentParser(prog="gdt-test"))
-    args = parser.parse_args(["-v", "--debug", "--config", "custom.toml", "--root", "/tmp/repo"])
+def test_add_common_args_registers_standard_gdt_flags() -> None:
+    """Verify add_common_args registers verbose, debug, config, root, and prompts flags."""
+    parser = add_common_args(argparse.ArgumentParser(prog="demo"))
+    args = parser.parse_args(["-v", "--debug", "--config", "cfg.toml", "--root", "ws", "--prompts"])
 
     assert args.verbose is True
     assert args.debug is True
-    assert args.config == Path("custom.toml")
-    assert args.root == Path("/tmp/repo")
+    assert args.config == Path("cfg.toml")
+    assert args.root == Path("ws")
+    assert args.prompts is True
 
 
 # ==========================================================================
-# GROUP 2: Core Logic & Happy Paths
-# Note: Default flag values and standard yes/no interactive responses.
+# GROUP 2: Interactive Prompt Helpers (prompt_yes_no & prompt_int_default)
+# Note: Happy paths, defaults, invalid tokens, and EOF/KeyboardInterrupt safety.
 # ==========================================================================
 
 
 @pytest.mark.unit
-def test_add_common_args_default_values_when_omitted() -> None:
-    """Verify standard flags default to False/None when no CLI arguments are supplied."""
-    parser = add_common_args(argparse.ArgumentParser(prog="gdt-test"))
-    args = parser.parse_args([])
-
-    assert args.verbose is False
-    assert args.debug is False
-    assert args.config is None
-    assert args.root is None
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize("raw_input", ["y", "yes", "YES", "  y  "])
-def test_prompt_yes_no_affirmative_responses_return_true(
-    raw_input: str,
+@pytest.mark.parametrize(
+    ("raw_input", "default", "expected"),
+    [
+        ("y", False, True),
+        ("YES", False, True),
+        ("n", True, False),
+        ("No", True, False),
+        ("", True, True),
+        ("", False, False),
+        ("maybe", True, True),
+        ("maybe", False, False),
+    ],
+)
+def test_prompt_yes_no_parses_responses_and_defaults(
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Verify affirmative stdin inputs return True."""
-    monkeypatch.setattr("builtins.input", lambda _prompt: raw_input)
-    assert prompt_yes_no("Proceed?") is True
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize("raw_input", ["n", "no", "NO", "  n  "])
-def test_prompt_yes_no_negative_responses_return_false(
     raw_input: str,
-    monkeypatch: pytest.MonkeyPatch,
+    default: bool,
+    expected: bool,
 ) -> None:
-    """Verify negative stdin inputs return False."""
-    monkeypatch.setattr("builtins.input", lambda _prompt: raw_input)
-    assert prompt_yes_no("Proceed?", default=True) is False
-
-
-# ==========================================================================
-# GROUP 3: Edge Cases & Boundary Conditions
-# Note: Empty-input defaults and reprompting after unrecognized input.
-# ==========================================================================
+    """Verify prompt_yes_no returns expected booleans for yes, no, blank, and unknown text."""
+    monkeypatch.setattr("builtins.input", lambda _: raw_input)
+    assert prompt_yes_no("Proceed?", default=default) is expected
 
 
 @pytest.mark.regression
-def test_prompt_yes_no_empty_input_respects_default_flag(
+@pytest.mark.parametrize("exc_type", [EOFError, KeyboardInterrupt])
+def test_prompt_yes_no_returns_default_on_eof_or_interrupt(
     monkeypatch: pytest.MonkeyPatch,
+    exc_type: type[BaseException],
 ) -> None:
-    """Verify pressing Enter on an empty line returns the configured default value."""
-    monkeypatch.setattr("builtins.input", lambda _prompt: "")
-    assert prompt_yes_no("Proceed?", default=False) is False
+    """Verify prompt_yes_no safely returns default on EOFError or KeyboardInterrupt."""
+
+    def _raise(_: str) -> str:
+        raise exc_type()
+
+    monkeypatch.setattr("builtins.input", _raise)
     assert prompt_yes_no("Proceed?", default=True) is True
+    assert prompt_yes_no("Proceed?", default=False) is False
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("raw_input", "default", "minimum", "expected"),
+    [
+        ("15", 20, 1, 15),
+        ("0", 20, 1, 1),
+        ("-5", 20, 1, 1),
+        ("", 20, 1, 20),
+        ("not-a-number", 20, 1, 20),
+    ],
+)
+def test_prompt_int_default_parses_clamps_and_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+    raw_input: str,
+    default: int,
+    minimum: int,
+    expected: int,
+) -> None:
+    """Verify prompt_int_default parses integers, enforces minimum, and handles invalid input."""
+    monkeypatch.setattr("builtins.input", lambda _: raw_input)
+    assert prompt_int_default("Lines", default, minimum=minimum) == expected
 
 
 @pytest.mark.regression
-def test_prompt_yes_no_reprompts_until_valid_input(
+@pytest.mark.parametrize("exc_type", [EOFError, KeyboardInterrupt])
+def test_prompt_int_default_returns_default_on_eof_or_interrupt(
     monkeypatch: pytest.MonkeyPatch,
+    exc_type: type[BaseException],
 ) -> None:
-    """Verify unrecognized responses loop until the operator enters y or n."""
-    responses = iter(["maybe", "123", "yes"])
-    monkeypatch.setattr("builtins.input", lambda _prompt: next(responses))
+    """Verify prompt_int_default safely returns default on EOFError or KeyboardInterrupt."""
 
-    assert prompt_yes_no("Proceed?") is True
+    def _raise(_: str) -> str:
+        raise exc_type()
+
+    monkeypatch.setattr("builtins.input", _raise)
+    assert prompt_int_default("Lines", 20, minimum=1) == 20

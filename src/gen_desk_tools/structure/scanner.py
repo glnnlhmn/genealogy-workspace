@@ -25,10 +25,11 @@ from gen_desk_tools.core.workspace import (
     MANDATORY_EXCLUSIONS as CORE_EXCLUSIONS,
 )
 from gen_desk_tools.core.workspace import (
+    MODE_TARGETS,
     resolve_report_path,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "DEFAULT_MAX_DEPTH",
@@ -42,16 +43,6 @@ __all__ = [
 DEFAULT_MAX_DEPTH: int = 7
 
 MANDATORY_EXCLUSIONS: frozenset[str] = CORE_EXCLUSIONS | frozenset({"pytest_tmp", "temp"})
-
-# Maps mode name -> (source relative path, matching tests relative path)
-MODE_TARGETS: dict[str, tuple[str, str]] = {
-    "gda": ("src/gda", "tests/test_gda"),
-    "ancestry_desk": ("src/ancestry_desk", "tests/test_ancestry_desk"),
-    "gd_tools": ("src/gen_desk_tools", "tests/test_gen_desk_tools"),
-    "system": ("src/system", "tests/test_system"),
-    "cli": ("src/cli", "tests/test_cli"),
-    "src": ("src", "tests"),
-}
 
 
 def build_tree(
@@ -161,6 +152,6 @@ def generate_structure_report(
         raise ValueError(f"Unknown structure mode: '{mode}'. Expected one of: {valid}.")
 
     report_path = resolve_report_path(root, {}, filename, override_dir=Path(reports_dir))
-    payload = "\n".join(output_lines) + ("\n" if output_lines else "")
-    atomic_write_text(report_path, payload)
+    content = "\n".join(output_lines) + ("\n" if output_lines else "")
+    atomic_write_text(report_path, content)
     return report_path, len(output_lines)

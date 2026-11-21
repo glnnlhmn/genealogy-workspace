@@ -3,10 +3,10 @@
 Workspace root discovery, POSIX path normalization, file discovery, and report routing.
 
 Operational Role:
-    Provides cross-platform path resolution primitives shared across all GenDesk
-    Tools subpackages so Windows and POSIX environments evaluate workspace
-    boundaries, relative paths, exclusion-aware file discovery, and report
-    output directories identically.
+    Provides cross-platform path resolution primitives and canonical subsystem
+    target mappings shared across all GenDesk Tools subpackages so Windows and
+    POSIX environments evaluate workspace boundaries, relative paths,
+    exclusion-aware file discovery, and report output directories identically.
 
 Functions:
     resolve_workspace_root: Locate the canonical workspace root directory.
@@ -22,10 +22,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "MANDATORY_EXCLUSIONS",
+    "MODE_TARGETS",
     "ensure_within_root",
     "iter_workspace_files",
     "resolve_report_path",
@@ -34,6 +35,16 @@ __all__ = [
 ]
 
 ROOT_MARKERS: tuple[str, ...] = ("pyproject.toml", ".git")
+
+# Canonical mode -> (source relative path, matching tests relative path)
+MODE_TARGETS: dict[str, tuple[str, str]] = {
+    "gda": ("src/gda", "tests/test_gda"),
+    "ancestry_desk": ("src/ancestry_desk", "tests/test_ancestry_desk"),
+    "gd_tools": ("src/gen_desk_tools", "tests/test_gen_desk_tools"),
+    "system": ("src/system", "tests/test_system"),
+    "cli": ("src/cli", "tests/test_cli"),
+    "src": ("src", "tests"),
+}
 
 MANDATORY_EXCLUSIONS: frozenset[str] = frozenset(
     {

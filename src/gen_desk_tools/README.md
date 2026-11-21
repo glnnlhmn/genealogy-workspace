@@ -14,7 +14,7 @@ Top-level namespace and workstation tooling root providing shared core primitive
 - **[core/](core/README.md)**: Shared internal primitives for GenDesk Tools (workspace, config, backup, logging, CLI, process).
 - **[coverage_gaps/](coverage_gaps/README.md)**: GenDesk Coverage Gaps package (gaps).
 - **[metrics/](metrics/README.md)**: First-class code quality, coverage, and test suite telemetry package.
-- **`radon_report/`**: Combined Radon static analysis report package (gdradon).
+- **[radon_report/](radon_report/README.md)**: Combined Radon static analysis report package (gdradon).
 - **[readme_gen/](readme_gen/README.md)**: AST-driven package README.md documentation generator package (gdrm).
 - **[script_importer/](script_importer/README.md)**: Hermetic script and asset intake pipeline package (gsi).
 - **[structure/](structure/README.md)**: GenDesk Structure package (gd-struct).
@@ -22,10 +22,11 @@ Top-level namespace and workstation tooling root providing shared core primitive
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
+| `menu.py` | `1.0.0+build.2` | Layered interactive console menu for GenDesk Tools (gd-menu). |
 
 ## Public Exports & Consumption Contract
 Modules export public interfaces explicitly declared in `__all__`.
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 9e5168b51104c838 -->
+<!-- gdrm-hash: 984a5276ef96b7d6 -->

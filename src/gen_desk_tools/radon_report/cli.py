@@ -3,7 +3,7 @@
 Command-line interface entrypoint for GenDesk Radon Report (gdradon).
 
 Operational Role:
-    Exposes structure-aligned CLI flags (-m/--mode, --include-tests,
+    Exposes structure-aligned CLI flags (-m/--mode, -t/--tests/--include-tests,
     --reports-dir, -n/--min-grade, -o/--output) alongside common GDT flags
     (-v/--verbose, --debug, --config, --root) to generate combined CC, MI,
     and RAW reports.
@@ -26,7 +26,7 @@ from gen_desk_tools.core.logging import setup_tool_logger
 from gen_desk_tools.core.workspace import resolve_workspace_root
 from gen_desk_tools.radon_report.scanner import MODE_TARGETS, generate_radon_report
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "build_parser",
@@ -51,7 +51,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Target subsystem mode (default: gd_tools).",
     )
     parser.add_argument(
+        "-t",
+        "--tests",
         "--include-tests",
+        dest="include_tests",
         action="store_true",
         help="Include matching test suite directories alongside source paths.",
     )
