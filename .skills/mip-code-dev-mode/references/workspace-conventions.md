@@ -1,21 +1,21 @@
 <!--Path: .skills/mip-code-dev-mode/references/workspace-conventions.md-->
 # Workspace Conventions & Execution Safeguards
 
-Reference specification for `mip-code-dev-mode`. Authoritative directory layout is defined in root `pyproject.toml` and verified via `gd-struct`.
+Reference specification for `mip-code-dev-mode`. Authoritative directory layout comes from `pyproject.toml` and `gd-struct`.
 
-## 1. Path Anchors & Routing
+## Path Anchors
 
-- **Canonical Workspace Root:** `G:/My Drive/genealogy-workspace` (always use forward slashes `/`).
-- **Inbound Staging:** `download/` (ingested via `gsi`).
-- **Safe Backups:** `archive/backups_<project>/` (timestamped `[filename].[YYYYMMDD_HHMMSS].bk` snapshots).
-- **Ephemeral Scratchpad:** `gtemp/` (never `temp/`).
-- **Reports:** `reports/` (Radon, structure, and coverage gap reports).
+- **Workspace Root:** `G:/My Drive/genealogy-workspace` (forward slashes `/`).
+- **Staging (`gsi`):** `download/` .
+- **Safe Backups:** `archive/backups_<project>/` (`[filename].[YYYYMMDD_HHMMSS].bk`).
+- **Scratchpad:** `gtemp/` (never `temp/`).
+- **Reports:** `reports/`.
 - **Logs:** `logs/` for permanent tools; `gtemp/[script]-timestamp.log` for temporary scripts.
-- **Production Data & Profiles:** `data/` (`data/profiles/glenn_profile.json`, `data/profiles/gda_profile.json`).
+- **Data & Profiles:** `data/` (`data/profiles/glenn_profile.json`, `data/profiles/gda_profile.json`).
 
-## 2. Subsystem Coverage Gates
+## Coverage Gates
 
-Track both statement and branch coverage via `pytest --cov --cov-branch --cov-report=term-missing` (omit `--basetemp` flags; temporary directory routing is handled in `pyproject.toml`):
+Verify statement and branch coverage via `pytest --cov --cov-branch --cov-report=term-missing` (omit `--basetemp` flags; temporary paths are configured in `pyproject.toml`):
 
 | Subsystem | Test Directory | Minimum Statement & Branch Coverage |
 | :--- | :--- | :--- |
@@ -25,13 +25,9 @@ Track both statement and branch coverage via `pytest --cov --cov-branch --cov-re
 | `src/system/` | `tests/test_system/` | 100.00% |
 | `src/gen_desk_tools/` | `tests/test_gen_desk_tools/` | 100.00% |
 
-## 3. CLI, Runtime & Safety Standards
+## Execution Safeguards
 
-- **Runtime & Formatting:** Python 3.13 (`.venv/`), Ruff (`ruff format` + `ruff check --fix`, 100-character max line length), and `mypy` with zero errors.
-- **Standard CLI Flags:**
-  - `src/gen_desk_tools/`: `-h`/`--help`, `-v`/`--verbose`, `--debug`, `--root`, `--config`, `--prompts` (with standardized `main(argv)`).
-  - `src/system/` & `src/cli/`: `-h`/`--help`, `-v`/`--verbose`, `--debug`.
-- **Safe I/O & Destructive Guards:**
-  - Enforce `encoding="utf-8"` on all file reads and writes.
-  - Verify `Path.exists()` before destructive operations (`os.remove`, `shutil.rmtree`) and verify target outputs upon completion.
-  - Create atomic pre-write Safe Backups before mutating canonical archive data (`data/`) or tracked source files.
+- **Toolchain:** Python 3.13 (`.venv/`), Ruff (`ruff format` + `ruff check --fix`, 100-char line limit), and `mypy` with zero errors.
+- **CLI Flags:** `-h`/`--help`, `-v`/`--verbose`, `--debug` across CLIs, plus `--root`, `--config`, `--prompts` for `src/gen_desk_tools/` (`main(argv)`).
+- **File & Destructive Safety:** Use `encoding="utf-8"`, check `Path.exists()` before destructive operations (`os.remove`, `shutil.rmtree`), verify outputs after completion, and take atomic pre-write Safe Backups before mutating canonical archive data (`data/`) or tracked source files.
+- **Test Collection Shielding:** Set `<Class>.__test__ = False` or alias `Test*` domain types imported into test files so pytest does not collect them as tests.

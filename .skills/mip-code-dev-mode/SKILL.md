@@ -1,40 +1,30 @@
 <!--Path: .skills/mip-code-dev-mode/SKILL.md-->
 ---
 name: mip-code-dev-mode
-description: Master Intelligence Profile (MIP) coding and archival systems development mode for the genealogy-workspace repository. Use whenever starting a development session, writing or refactoring code, running tests, managing backups, or delegating to workspace skills in G:/My Drive/genealogy-workspace.
+description: Master Intelligence Profile (MIP) workflow controller for the genealogy-workspace repository. Use at session start or when coordinating development workflows, task completion gates, workspace path anchors, and skill delegation.
 ---
 
 # MIP Code Dev Mode
 
-Operational identity, communication standards, quality gates, and skill-routing hub for the `genealogy-workspace` repository.
+Workflow controller for `genealogy-workspace` development sessions.
 
-## 1. Identity & Communication Tone
+## When to Use
 
-- **Role:** Archival systems architect, Python automation specialist, and technical collaborator.
-- **Fluid Alignment:** Match operational tempo dynamically—crisp efficiency during heads-down technical execution; open to structured analysis, brainstorming, and technical discussion when planning.
-- **Direct Answers First:** Lead immediately with the primary answer, code deliverable, or technical verdict. Eliminate pleasantries, meta-announcements, conversational filler, and repetitive parroting of settled context.
-- **Error Accountability:** When failures occur, explain the root cause plainly, reset the working context, and deliver the corrected solution immediately.
-- **Transparency First:** No unsupported assumptions. Flag inferences explicitly before proceeding.
-- **Context Integration:** Load operator preferences and developer conventions from `data/profiles/glenn_profile.json` and system task/backlog ledgers from `data/profiles/gda_profile.json` when relevant.
+- Starting or coordinating a development session in `genealogy-workspace`.
+- Enforcing session-level workflow safeguards, path anchors, and completion checks.
+- Routing specialized work to dedicated skills rather than duplicating their rules.
 
-## 2. Live Structure & Reference Delegation
+## Workflow Control
 
-Do not hardcode directory trees. Use `pyproject.toml` and live `gd-struct` output as the authoritative source of truth for workspace layout. For path anchors, coverage gates, CLI/logging rules, and execution safeguards, read `references/workspace-conventions.md`.
-
-### Active Skills Index
-
-Delegate specialized tasks to the corresponding workspace skill:
-
-- **Architecture & Subsystems:** `gda-library` (`src/gda/`), `gen-desk-tools` (`src/gen_desk_tools/`), `gda-system-cli` (`src/system/`, `src/cli/`).
-- **Coding & Testing Standards:** `python-module-standards`, `python-code-commenting`, `python-testing-standards`.
-- **Workstation Workflows:** `gsi-pipeline` (file routing & `gsi` intake), `gen-desk-backup` (`gdb` Safe Backups), `extract-coverage-gaps` (`gd-gaps`).
-- **Database Operations:** `create-database`, `update-database-schema`.
-- **Reviews & Audits:** `code-review-report`, `ground-up-code-audit`, `test-suite-audit`.
-
-## 3. Core Engineering Invariants
-
-- **Versioning Rule:** Never automatically change major, minor, or rev versions unless explicitly commanded. Increment only the PEP 440 local build counter (`<major>.<minor>.<rev>+build.<counter>`) on each regeneration of a Python module.
-- **Native File Emission:** Deliver all code, tests, schemas, and Markdown files directly in their native format with the required `gsi` routing header on Line 1. Wrapping deliverables inside secondary string-emitter scripts is prohibited.
-- **Test Collection Shielding:** When importing domain enums, models, or types whose names begin with `Test*` (e.g., `TestimonyMedium`) into test suites, explicitly declare `<Class>.__test__ = False` or import under an alias so pytest does not collect them as tests.
-- **Unified Definition of Done:** Every development task is a holistic unit of delivery encompassing implementation, 1:1 test harness meeting coverage gates, package `README.md` parity, Ruff/mypy cleanliness, and clean Git commits.
-- **Data Integrity & Clean Markdown:** Never silently compress or omit rows/entries from established tables or ledgers. Never embed inline citation tokens or unresolved bracketed markers inside generated Markdown files, schemas, or Python string literals.
+1. **Resolve Live Layout:** Read `pyproject.toml` and live `gd-struct` output for directory layout. Do not hardcode directory trees.
+2. **Load Context When Needed:** Read `references/workspace-conventions.md` for path anchors, coverage gates, and I/O safeguards. Load `data/profiles/glenn_profile.json` and `data/profiles/gda_profile.json` when operator or task/backlog context is needed.
+3. **Delegate to Specialized Skills:**
+   - **Code & Architecture:** `gda-library`, `gen-desk-tools`, `gda-system-cli`.
+   - **Code & Test Quality:** `python-module-standards`, `python-code-commenting`, `python-testing-standards`.
+   - **Intake, Backups & Coverage Gaps:** `gsi-pipeline`, `gen-desk-backup`, `extract-coverage-gaps`.
+   - **Databases:** `create-database`, `update-database-schema`.
+   - **Reviews & Audits:** `code-review-report`, `ground-up-code-audit`, `test-suite-audit`.
+4. **Enforce Workflow Guardrails:**
+   - Emit deliverables directly in native format with the `gsi` routing header on Line 1; never wrap deliverables in secondary string-emitter scripts.
+   - Keep Markdown and string literals free of unresolved bracketed markers and inline citation tokens.
+   - Treat implementation, tests, `README.md` updates, Ruff/mypy checks, and Git commits as one unit of work.
