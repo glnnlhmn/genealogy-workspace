@@ -6,7 +6,8 @@ Operational Role:
     Audits every scoped Python module for workspace standards: Line 1/2 Path:
     routing headers, PEP 440 +build.<counter> __version__ strings, __all__
     exports, future annotations, package README.md listing, and matching test
-    file existence under tests/.
+    file existence under tests/, with 4-tier diagnostic logging and resilience
+    to syntax or encoding errors.
 
 Classes:
     ModuleHygieneRecord: Per-file structural and documentation hygiene record.
@@ -18,20 +19,24 @@ Functions:
 from __future__ import annotations
 
 import ast
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from gen_desk_tools.core.logging import VERBOSE
 from gen_desk_tools.metrics.collectors.radon_collector import discover_batch_files
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "ModuleHygieneRecord",
     "collect_hygiene_metrics",
 ]
+
+logger = logging.getLogger(__name__)
 
 # Enforces PEP 440 local build versioning: <major>.<minor>.<rev>+build.<counter>.
 _PEP440_BUILD_RE = re.compile(r"^\d+\.\d+\.\d+\+build\.\d+$")
@@ -158,6 +163,28 @@ def _build_flags(
     return tuple(code for ok, code in checks if not ok)
 
 
+def _build_error_record(
+    batch_id: str,
+    rel_path: str,
+    py_file: Path,
+    workspace_root: Path,
+    flag: str,
+) -> ModuleHygieneRecord:
+    """Build a fallback hygiene record when a module fails to read or parse."""
+    return ModuleHygieneRecord(
+        batch_id=batch_id,
+        file_path=rel_path,
+        path_header_ok=False,
+        version="",
+        pep440_valid=False,
+        has_all=False,
+        has_future_annotations=False,
+        readme_listed=_is_listed_in_readme(py_file),
+        test_file_exists=_test_file_exists(workspace_root, rel_path),
+        hygiene_flags=(flag,),
+    )
+
+
 def collect_hygiene_metrics(
     workspace_root: Path,
     batches: tuple[BatchDefinition, ...],
@@ -166,9 +193,12 @@ def collect_hygiene_metrics(
 ) -> tuple[ModuleHygieneRecord, ...]:
     """Scan all scoped Python modules for header, version, README, and test parity.
 
-    Modules that fail AST parsing are recorded with a single SYNTAX_ERROR flag
-    rather than aborting the telemetry run.
+    Modules that fail UTF-8 decoding, file reading, or AST parsing are logged
+    at ERROR level and recorded with a single diagnostic flag rather than
+    aborting the telemetry run.
     """
+    logger.info("Starting module hygiene audit across %d batch(es)", len(batches))
+
     # --- Discover Scoped Modules ---
     discovered = [
         (batch.id, py_file)
@@ -177,27 +207,28 @@ def collect_hygiene_metrics(
     ]
     records: list[ModuleHygieneRecord] = []
     total = len(discovered)
+    logger.log(VERBOSE, "Auditing %d discovered Python module(s) for hygiene", total)
 
     # --- Parse & Evaluate Hygiene Rules Per Module ---
     for idx, (batch_id, py_file) in enumerate(discovered, start=1):
         rel_path = py_file.relative_to(workspace_root).as_posix()
-        source = py_file.read_text(encoding="utf-8")
         try:
+            source = py_file.read_text(encoding="utf-8")
             tree = ast.parse(source, filename=str(py_file))
-        except SyntaxError:
+        except UnicodeDecodeError as exc:
+            logger.error("Hygiene audit encoding failure for %s: %s", rel_path, exc)
             records.append(
-                ModuleHygieneRecord(
-                    batch_id=batch_id,
-                    file_path=rel_path,
-                    path_header_ok=False,
-                    version="",
-                    pep440_valid=False,
-                    has_all=False,
-                    has_future_annotations=False,
-                    readme_listed=_is_listed_in_readme(py_file),
-                    test_file_exists=_test_file_exists(workspace_root, rel_path),
-                    hygiene_flags=("SYNTAX_ERROR",),
-                )
+                _build_error_record(batch_id, rel_path, py_file, workspace_root, "ENCODING_ERROR")
+            )
+        except OSError as exc:
+            logger.error("Hygiene audit read failure for %s: %s", rel_path, exc)
+            records.append(
+                _build_error_record(batch_id, rel_path, py_file, workspace_root, "READ_ERROR")
+            )
+        except SyntaxError as exc:
+            logger.error("Hygiene audit syntax error in %s: %s", rel_path, exc)
+            records.append(
+                _build_error_record(batch_id, rel_path, py_file, workspace_root, "SYNTAX_ERROR")
             )
         else:
             path_ok = _check_path_header(ast.get_docstring(tree), rel_path)
@@ -205,6 +236,14 @@ def collect_hygiene_metrics(
             pep440_ok = bool(_PEP440_BUILD_RE.match(version))
             readme_ok = _is_listed_in_readme(py_file)
             test_ok = _test_file_exists(workspace_root, rel_path)
+            flags = _build_flags(
+                path_header_ok=path_ok,
+                pep440_valid=pep440_ok,
+                has_future=has_future,
+                readme_listed=readme_ok,
+                test_exists=test_ok,
+            )
+            logger.debug("Hygiene audited %s: flags=%s", rel_path, flags)
             records.append(
                 ModuleHygieneRecord(
                     batch_id=batch_id,
@@ -216,17 +255,12 @@ def collect_hygiene_metrics(
                     has_future_annotations=has_future,
                     readme_listed=readme_ok,
                     test_file_exists=test_ok,
-                    hygiene_flags=_build_flags(
-                        path_header_ok=path_ok,
-                        pep440_valid=pep440_ok,
-                        has_future=has_future,
-                        readme_listed=readme_ok,
-                        test_exists=test_ok,
-                    ),
+                    hygiene_flags=flags,
                 )
             )
 
         if progress is not None:
             progress.update("Module hygiene audit", current=idx, total=total)
 
+    logger.info("Completed module hygiene audit: %d record(s) collected", len(records))
     return tuple(records)

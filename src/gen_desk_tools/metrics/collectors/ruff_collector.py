@@ -6,7 +6,8 @@ Operational Role:
     Invokes ruff check in JSON output mode via
     gen_desk_tools.core.process.run_command against existing source paths
     across active audit batches, parses rule findings with fixability metadata,
-    and maps each diagnostic back to its owning batch ID.
+    and maps each diagnostic back to its owning batch ID with 4-tier
+    diagnostic logging and timeout/encoding resilience.
 
 Classes:
     RuffDiagnostic: Single parsed Ruff lint finding with location and fix flag.
@@ -20,6 +21,7 @@ Functions:
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import sys
 from collections.abc import Callable
@@ -27,11 +29,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from gen_desk_tools.core.logging import VERBOSE
 from gen_desk_tools.core.process import run_command
 from gen_desk_tools.metrics.config import BatchDefinition, MetricsConfig
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "RuffDiagnostic",
@@ -39,6 +42,8 @@ __all__ = [
     "parse_ruff_json",
     "run_ruff_check",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -101,7 +106,8 @@ def parse_ruff_json(
         return ()
     try:
         items = json.loads(output)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as exc:
+        logger.error("Failed to parse Ruff JSON output: %s", exc)
         return ()
 
     records: list[RuffDiagnostic] = []
@@ -147,24 +153,43 @@ def run_ruff_check(
     """Execute ruff check --output-format json against active batch paths.
 
     Returns a skipped result with returncode 0 when no batch targets exist, or
-    a degraded result with returncode 1 if ruff cannot be launched.
+    a degraded result with returncode 1 if ruff cannot be launched, times out,
+    or emits undecodable console bytes.
 
     Args:
+        config: Active MetricsConfig for the workspace.
+        batches: Scoped BatchDefinition records to lint.
         progress: Optional reporter receiving status updates.
         runner: Subprocess callable (defaults to subprocess.run) for testing.
     """
+    logger.info("Starting ruff lint check across %d batch(es)", len(batches))
+
     # --- Resolve Existing Source Targets ---
     targets = _collect_existing_targets(config.workspace_root, batches)
     if not targets:
+        logger.log(VERBOSE, "Skipping ruff lint check: no existing batch targets found")
         return RuffRunResult(diagnostics=(), summary_note="skipped (no targets)", returncode=0)
 
+    logger.log(VERBOSE, "Running ruff lint check on %d target(s)", len(targets))
     if progress is not None:
         progress.update("Running ruff lint check")
 
     # --- Invoke Ruff Subprocess & Parse JSON ---
     cmd = [sys.executable, "-m", "ruff", "check", "--output-format", "json", *targets]
-    res = run_command(cmd, cwd=config.workspace_root, runner=runner)
+    logger.debug("Executing ruff command: %s", cmd)
+    try:
+        res = run_command(cmd, cwd=config.workspace_root, runner=runner)
+    except subprocess.TimeoutExpired as exc:
+        msg = f"ruff timed out after {exc.timeout}s"
+        logger.error("Ruff check failed: %s", msg)
+        return RuffRunResult(diagnostics=(), summary_note=msg, returncode=1)
+    except UnicodeDecodeError as exc:
+        msg = f"ruff output encoding error: {exc}"
+        logger.error("Ruff check failed: %s", msg)
+        return RuffRunResult(diagnostics=(), summary_note=msg, returncode=1)
+
     if res.error:
+        logger.error("Ruff check unavailable: %s", res.error)
         return RuffRunResult(
             diagnostics=(),
             summary_note=f"ruff unavailable: {res.error}",
@@ -172,6 +197,11 @@ def run_ruff_check(
         )
 
     diagnostics = parse_ruff_json(res.stdout, config.workspace_root, batches)
+    logger.info(
+        "Completed ruff lint check: %d diagnostic(s) (returncode=%d)",
+        len(diagnostics),
+        res.returncode,
+    )
     return RuffRunResult(
         diagnostics=diagnostics,
         summary_note=f"{len(diagnostics)} diagnostic(s)",

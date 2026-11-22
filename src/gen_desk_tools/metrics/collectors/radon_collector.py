@@ -6,7 +6,7 @@ Operational Role:
     Discovers Python modules per configured audit batch, computes per-file
     Radon raw line counts, maintainability index (MI), cyclomatic complexity
     (CC), and Grade C+ complexity hotspots (CC >= 11), and aggregates
-    batch-level rollups for telemetry reporting.
+    batch-level rollups for telemetry reporting with 4-tier diagnostic logging.
 
 Classes:
     ComplexityHotspot: Code block with cyclomatic complexity >= 11 (Grade C+).
@@ -21,6 +21,7 @@ Functions:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -29,10 +30,11 @@ from radon.complexity import cc_rank, cc_visit
 from radon.metrics import mi_rank, mi_visit
 from radon.raw import analyze
 
+from gen_desk_tools.core.logging import VERBOSE
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "BatchRadonRollup",
@@ -42,6 +44,8 @@ __all__ = [
     "collect_radon_metrics",
     "discover_batch_files",
 ]
+
+logger = logging.getLogger(__name__)
 
 COMPLEXITY_HOTSPOT_THRESHOLD = 11
 
@@ -106,21 +110,30 @@ def discover_batch_files(workspace_root: Path, batch: BatchDefinition) -> tuple[
     """Return sorted, deduplicated Python files belonging to a batch.
 
     Supports both individual .py paths and recursive directory entries while
-    excluding __pycache__ artifacts and non-existent paths.
+    excluding __pycache__ artifacts, non-existent paths, and circular symlink
+    traversal errors.
     """
     found: set[Path] = set()
     for rel_path in batch.paths:
         target = workspace_root / rel_path
         if not target.exists():
+            logger.debug("Batch %s path does not exist (skipping): %s", batch.id, target)
             continue
         if target.is_file():
             if target.suffix == ".py":
                 found.add(target)
             continue
-        for py_file in target.rglob("*.py"):
-            if "__pycache__" not in py_file.parts:
-                found.add(py_file)
-    return tuple(sorted(found))
+        try:
+            for py_file in target.rglob("*.py"):
+                if "__pycache__" not in py_file.parts:
+                    found.add(py_file)
+        except (RecursionError, OSError) as exc:
+            logger.error("Failed to traverse directory %s for batch %s: %s", target, batch.id, exc)
+            continue
+
+    discovered = tuple(sorted(found))
+    logger.log(VERBOSE, "Discovered %d Python file(s) for batch %s", len(discovered), batch.id)
+    return discovered
 
 
 def _format_block_symbol(block: Any) -> tuple[str, str]:
@@ -154,18 +167,28 @@ def analyze_file_radon(
 
     Empty modules without callable blocks report avg_cc=0.0, max_cc=0,
     max_cc_grade="A", and max_cc_symbol="-".
-    """
-    # --- Raw Counts & Maintainability Index ---
-    source = file_path.read_text(encoding="utf-8")
-    rel_path = file_path.relative_to(workspace_root).as_posix()
 
-    raw = analyze(source)
+    Raises:
+        OSError: If file_path cannot be read (e.g., missing file or directory).
+        UnicodeDecodeError: If file_path contains non-UTF-8 bytes.
+        ValueError: If file_path lies outside workspace_root.
+        SyntaxError: If file_path contains unparseable Python syntax.
+    """
+    # --- Read Source & Resolve Workspace-Relative Path ---
+    try:
+        source = file_path.read_text(encoding="utf-8")
+        rel_path = file_path.relative_to(workspace_root).as_posix()
+        raw = analyze(source)
+        mi_score = round(float(mi_visit(source, multi=True)), 2)
+        blocks = list(cc_visit(source))
+    except (OSError, UnicodeDecodeError, ValueError, SyntaxError) as exc:
+        logger.error("Radon analysis failed for %s: %s", file_path, exc)
+        raise
+
     doc_pct = _safe_doc_pct(int(raw.comments), int(raw.multi), int(raw.sloc))
-    mi_score = round(float(mi_visit(source, multi=True)), 2)
     mi_grade = str(mi_rank(mi_score))
 
     # --- Cyclomatic Complexity & Peak Block Summary ---
-    blocks = list(cc_visit(source))
     if blocks:
         avg_cc = _safe_mean([float(b.complexity) for b in blocks], 2)
         top_block = max(blocks, key=lambda b: b.complexity)
@@ -195,6 +218,16 @@ def analyze_file_radon(
                     grade=str(cc_rank(block.complexity)),
                 )
             )
+
+    logger.debug(
+        "Analyzed %s: sloc=%d, mi=%.2f (%s), avg_cc=%.2f, hotspots=%d",
+        rel_path,
+        int(raw.sloc),
+        mi_score,
+        mi_grade,
+        avg_cc,
+        len(hotspots),
+    )
 
     return FileRadonMetrics(
         batch_id=batch_id,
@@ -268,8 +301,12 @@ def collect_radon_metrics(
 ) -> tuple[tuple[FileRadonMetrics, ...], tuple[BatchRadonRollup, ...]]:
     """Run Radon analysis across all selected batches with optional progress.
 
-    Returns a (file_metrics, batch_rollups) tuple preserving batch ordering.
+    Skips individual files that fail to read or parse (logging an ERROR) so
+    remaining modules still produce metrics. Returns a (file_metrics,
+    batch_rollups) tuple preserving batch ordering.
     """
+    logger.info("Starting Radon metrics collection across %d batch(es)", len(batches))
+
     # --- Pre-Discover Files for Accurate Progress Denominator ---
     batch_file_map = [(batch, discover_batch_files(workspace_root, batch)) for batch in batches]
     total_files = sum(len(files) for _, files in batch_file_map)
@@ -282,12 +319,21 @@ def collect_radon_metrics(
     for batch, files in batch_file_map:
         batch_metrics: list[FileRadonMetrics] = []
         for py_file in files:
-            metric = analyze_file_radon(py_file, workspace_root, batch.id)
-            batch_metrics.append(metric)
-            all_files.append(metric)
+            try:
+                metric = analyze_file_radon(py_file, workspace_root, batch.id)
+            except (OSError, UnicodeDecodeError, SyntaxError):
+                logger.log(VERBOSE, "Skipping unanalyzable file %s in batch %s", py_file, batch.id)
+            else:
+                batch_metrics.append(metric)
+                all_files.append(metric)
             processed += 1
             if progress is not None:
                 progress.update(f"Radon ({batch.id})", current=processed, total=total_files)
         rollups.append(_build_batch_rollup(batch, batch_metrics))
 
+    logger.info(
+        "Completed Radon metrics collection: %d file(s) scored across %d batch(es)",
+        len(all_files),
+        len(rollups),
+    )
     return tuple(all_files), tuple(rollups)
