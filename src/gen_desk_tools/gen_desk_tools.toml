@@ -1,0 +1,46 @@
+# Path: src/gen_desk_tools/gen_desk_tools.toml
+# Package-level configuration for GenDesk Tools (GDT).
+
+[workspace]
+root = "."
+download_dir = "download"
+archive_dir = "archive"
+logs_dir = "logs"
+reports_dir = "reports"
+gtemp_dir = "gtemp"
+
+[logging]
+log_level = "INFO"
+
+[code_domains]
+protected_domains = ["src", "tests", "schemas", "data/setup"]
+
+[backup_routing]
+"src/gda" = "backups_gda"
+"tests/test_gda" = "backups_gda"
+"src/gen_desk_tools" = "backups_gen_desk_tools"
+"tests/test_gen_desk_tools" = "backups_gen_desk_tools"
+"src/ancestry_desk" = "backups_ancestry_desk"
+"tests/test_ancestry_desk" = "backups_ancestry_desk"
+"src/cli" = "backups_cli"
+"tests/test_cli" = "backups_cli"
+"src/system" = "backups_system"
+"tests/test_system" = "backups_system"
+"schemas" = "backups_schemas"
+"data/setup" = "backups_data_setup"
+"default" = "backups_gen_desk_tools"
+
+[retention]
+max_versions = 5
+max_age_days = 90
+
+[metrics.telemetry]
+default_scopes = ["gda"]
+sync_sheets_by_default = true
+write_local_report = true
+
+[metrics.gates.coverage]
+gda = 95.0
+cli = 95.0
+system = 100.0
+ancestry_desk = 85.0
