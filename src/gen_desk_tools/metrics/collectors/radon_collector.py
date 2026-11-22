@@ -143,7 +143,7 @@ def _format_block_symbol(block: Any) -> tuple[str, str]:
     class name when available.
     """
     kind = "M" if getattr(block, "is_method", False) else str(block.letter)
-    classname = getattr(block, "classname", None)
+    classname: str | None = getattr(block, "classname", None)
     name = f"{classname}.{block.name}" if classname else str(block.name)
     return kind, name
 
@@ -322,7 +322,7 @@ def collect_radon_metrics(
             try:
                 metric = analyze_file_radon(py_file, workspace_root, batch.id)
             except (OSError, UnicodeDecodeError, SyntaxError):
-                logger.log(VERBOSE, "Skipping unanalyzable file %s in batch %s", py_file, batch.id)
+                logger.log(VERBOSE, "Skipping nonanalyzable file %s in batch %s", py_file, batch.id)
             else:
                 batch_metrics.append(metric)
                 all_files.append(metric)

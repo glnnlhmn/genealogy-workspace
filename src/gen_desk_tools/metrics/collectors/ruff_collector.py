@@ -14,7 +14,7 @@ Classes:
     RuffRunResult: Aggregated diagnostics, summary note, and exit code.
 
 Functions:
-    parse_ruff_json: Parse Ruff --output-format json stdout into records.
+    parse_ruff_json: Parse Ruff --output-format JSON stdout into records.
     run_ruff_check: Execute ruff check against active batch paths.
 """
 
@@ -98,7 +98,7 @@ def parse_ruff_json(
     workspace_root: Path,
     batches: tuple[BatchDefinition, ...],
 ) -> tuple[RuffDiagnostic, ...]:
-    """Parse Ruff --output-format json stdout into RuffDiagnostic records.
+    """Parse Ruff --output-format JSON stdout into RuffDiagnostic records.
 
     Returns an empty tuple when output is blank or contains malformed JSON.
     """
@@ -150,7 +150,7 @@ def run_ruff_check(
     progress: ProgressReporter | None = None,
     runner: Callable[..., Any] = subprocess.run,
 ) -> RuffRunResult:
-    """Execute ruff check --output-format json against active batch paths.
+    """Execute ruff check --output-format JSON against active batch paths.
 
     Returns a skipped result with returncode 0 when no batch targets exist, or
     a degraded result with returncode 1 if ruff cannot be launched, times out,

@@ -24,7 +24,7 @@ from gen_desk_tools.metrics.progress import ProgressReporter
 
 __version__ = "1.0.0+build.6"
 
-_UTC_LINE_RE = re.compile(r"^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\] .+$")
+_UTC_LINE_RE = re.compile(r"^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z] .+$")
 
 # ==========================================================================
 # GROUP 1: Smoke & Primary Entry Points

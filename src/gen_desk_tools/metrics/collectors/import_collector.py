@@ -29,7 +29,7 @@ from gen_desk_tools.metrics.collectors.radon_collector import discover_batch_fil
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 __all__ = [
     "ImportEdgeRecord",
@@ -197,12 +197,12 @@ def collect_import_graph(
         source_mod = _module_name_from_path(rel_path)
         source_layer = _classify_layer(source_mod)
         is_package = py_file.name == "__init__.py"
+        tree: ast.Module | None = None
         try:
             source = py_file.read_text(encoding="utf-8")
             tree = ast.parse(source, filename=str(py_file))
         except (SyntaxError, UnicodeDecodeError, OSError) as exc:
             logger.error("Import graph analysis failed for %s: %s", rel_path, exc)
-            tree = None
 
         if tree is not None:
             targets = _extract_imports(tree, source_mod, is_package)

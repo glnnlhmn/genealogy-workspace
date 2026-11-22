@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 # Matches "path:line[:col]: severity: message [optional-error-code]".
 _MYPY_LINE_RE = re.compile(
-    r"^(.+?):(\d+)(?::\d+)?:\s*(error|warning|note):\s*(.+?)(?:\s+\[([^\]]+)\])?$"
+    r"^(.+?):(\d+)(?::\d+)?:\s*(error|warning|note):\s*(.+?)(?:\s+\[([^]]+)])?$"
 )
 
 
