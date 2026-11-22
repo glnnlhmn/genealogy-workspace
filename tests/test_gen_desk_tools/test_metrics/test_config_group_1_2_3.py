@@ -17,7 +17,7 @@ import pytest
 from gen_desk_tools.metrics import config as config_mod
 from gen_desk_tools.metrics.config import load_config, resolve_batches
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 
 # ==========================================================================
@@ -255,8 +255,21 @@ def test_resolve_batches_explicit_batch_filter_matches_id(tmp_path: Path) -> Non
 
 # ==========================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Env boolean whitespace/case handling, blank fallbacks, and filter precedence.
+# Note: Empty custom TOML, env boolean whitespace/case, blank fallbacks, precedence.
 # ==========================================================================
+
+
+@pytest.mark.regression
+def test_load_config_accepts_empty_explicit_custom_toml_file(tmp_path: Path) -> None:
+    """Verify an empty explicit custom TOML file preserves defaults without error."""
+    empty_toml = tmp_path / "empty_override.toml"
+    empty_toml.write_text("", encoding="utf-8")
+
+    cfg = load_config(workspace_root=tmp_path, config_path=empty_toml, env={})
+
+    assert cfg.config_path == empty_toml
+    assert cfg.scopes == ("gda",)
+    assert cfg.sync_sheets is True
 
 
 @pytest.mark.regression

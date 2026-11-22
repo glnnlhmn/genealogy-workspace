@@ -4,10 +4,11 @@ Command-line interface and 7-stage pipeline orchestrator for gd_metrics.
 
 Operational Role:
     Defines the gd-metrics CLI parser (incorporating shared flags from
-    gen_desk_tools.core.cli.add_common_args), coordinates the seven telemetry
-    stages (batch resolution, Radon analysis, pytest coverage, AST pytest suite
-    inspection, mypy/Ruff diagnostics, module hygiene/import graph, and report
-    export), and ensures ProgressReporter log handles close cleanly on exit.
+    gen_desk_tools.core.cli.add_common_args), validates Google Sheets export
+    prerequisites before running expensive collectors (GAP-05), logs
+    workspace/basetemp isolation boundaries (RARE-03), emits 4-tier diagnostic
+    logging, coordinates the seven telemetry stages, and ensures
+    ProgressReporter log handles close cleanly on exit.
 
 Functions:
     build_parser: Construct the standard gd-metrics ArgumentParser.
@@ -18,11 +19,13 @@ Functions:
 from __future__ import annotations
 
 import argparse
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from gen_desk_tools.core.cli import add_common_args
+from gen_desk_tools.core.logging import VERBOSE
 from gen_desk_tools.metrics.collectors.coverage_collector import (
     FileCoverageMetrics,
     run_pytest_coverage,
@@ -39,9 +42,11 @@ from gen_desk_tools.metrics.exporters.report_exporter import write_local_json_re
 from gen_desk_tools.metrics.exporters.sheets_exporter import sync_to_google_sheets
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = ["build_parser", "main", "run_pipeline"]
+
+logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -81,6 +86,16 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _validate_preflight(config: MetricsConfig) -> str | None:
+    """Validate export preconditions before running expensive analysis stages (GAP-05)."""
+    if config.sync_sheets and not config.sheet_url and not config.sheet_id:
+        return (
+            "Google Sheets sync is enabled without sheet_url or sheet_id; "
+            "set a target or pass --no-sheets before running collectors."
+        )
+    return None
+
+
 def run_pipeline(
     config: MetricsConfig,
     progress: ProgressReporter,
@@ -93,14 +108,32 @@ def run_pipeline(
     """Execute the 7-stage gd_metrics telemetry pipeline and return 0 on success.
 
     Args:
+        config: Immutable runtime configuration for this telemetry run.
+        progress: Progress reporter streaming stage updates and log output.
         skip_pytest: Skip pytest-cov execution and leave coverage_map empty.
         skip_mypy: Skip mypy static type checking.
         skip_ruff: Skip Ruff lint collection.
         client_factory: Optional gspread client factory injected for hermetic testing.
     """
+    logger.info("Starting gd_metrics pipeline for scopes=%s", ",".join(config.scopes))
+    logger.log(
+        VERBOSE,
+        "Run isolation roots: workspace=%s basetemp=%s reports=%s",
+        config.workspace_root,
+        config.pytest_basetemp,
+        config.local_report_dir,
+    )
+
+    preflight_error = _validate_preflight(config)
+    if preflight_error is not None:
+        logger.error("%s", preflight_error)
+        progress.error(preflight_error)
+        return 1
+
     # --- Stage 1: Batch Resolution ---
     progress.start_stage("Resolving batches")
     batches = resolve_batches(config)
+    logger.debug("Resolved %d batch(es)", len(batches))
     progress.finish_stage(f"{len(batches)} batch(es)")
 
     # --- Stage 2: Radon Static Metrics ---
@@ -112,6 +145,7 @@ def run_pipeline(
     progress.start_stage("Collecting pytest coverage")
     coverage_map: dict[str, FileCoverageMetrics] = {}
     if skip_pytest:
+        logger.debug("Skipping pytest coverage stage (--no-pytest)")
         progress.finish_stage("skipped (--no-pytest)")
     else:
         cov_result = run_pytest_coverage(config, batches, progress=progress)
@@ -160,6 +194,7 @@ def run_pipeline(
     )
     if config.write_local_report:
         report_path = write_local_json_report(config, payloads)
+        logger.debug("Wrote local JSON snapshot: %s", report_path)
         progress.update(f"Wrote local report: {report_path}")
     if config.sync_sheets:
         sheet_target = sync_to_google_sheets(
@@ -168,8 +203,10 @@ def run_pipeline(
             progress=progress,
             client_factory=client_factory,
         )
+        logger.debug("Synced Google Sheet target: %s", sheet_target)
         progress.update(f"Synced Google Sheet: {sheet_target}")
     progress.finish_stage("export complete")
+    logger.info("Completed gd_metrics pipeline successfully")
     return 0
 
 

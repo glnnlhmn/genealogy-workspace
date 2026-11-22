@@ -38,7 +38,14 @@ from gen_desk_tools.metrics.exporters.sheets_exporter import (
 )
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
+
+
+class _WorksheetNotFoundError(Exception):
+    """Test double matching gspread.exceptions.WorksheetNotFound by class name."""
+
+
+_WorksheetNotFoundError.__name__ = "WorksheetNotFound"
 
 
 class _FakeWorksheet:
@@ -67,7 +74,7 @@ class _FakeSpreadsheet:
 
     def worksheet(self, name: str) -> _FakeWorksheet:
         if name not in self.sheets:
-            raise KeyError(name)
+            raise _WorksheetNotFoundError(name)
         return self.sheets[name]
 
     def add_worksheet(self, title: str, rows: int, cols: int) -> _FakeWorksheet:
