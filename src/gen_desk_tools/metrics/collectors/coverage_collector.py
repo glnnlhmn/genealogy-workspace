@@ -6,7 +6,8 @@ Operational Role:
     Executes pytest-cov scoped to active audit batches via
     gen_desk_tools.core.process.run_command, parses the resulting coverage.json
     artifact into normalized per-file metrics, and formats uncovered line
-    numbers into compact range notation.
+    numbers into compact range notation with 4-tier diagnostic logging and
+    timeout, encoding, and corrupt-JSON resilience.
 
 Classes:
     FileCoverageMetrics: Statement and branch coverage metrics for one module.
@@ -21,17 +22,19 @@ Functions:
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from gen_desk_tools.core.logging import VERBOSE
 from gen_desk_tools.core.process import run_command
 from gen_desk_tools.metrics.config import BatchDefinition, MetricsConfig
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "CoverageRunResult",
@@ -40,6 +43,8 @@ __all__ = [
     "parse_coverage_json",
     "run_pytest_coverage",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -108,13 +113,20 @@ def parse_coverage_json(
 ) -> dict[str, FileCoverageMetrics]:
     """Parse a pytest-cov JSON report into normalized FileCoverageMetrics.
 
-    Returns an empty dictionary when json_path does not exist. Modules with
-    zero statements or zero branches report 100.0% for those dimensions.
+    Returns an empty dictionary when json_path does not exist or cannot be
+    decoded. Modules with zero statements or zero branches report 100.0% for
+    those dimensions.
     """
     if not json_path.exists():
+        logger.debug("Coverage JSON artifact not found: %s", json_path)
         return {}
 
-    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(json_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        logger.error("Failed to parse coverage JSON %s: %s", json_path, exc)
+        return {}
+
     parsed: dict[str, FileCoverageMetrics] = {}
 
     # --- Compute Per-File Statement, Branch & Combined Percentages ---
@@ -145,6 +157,7 @@ def parse_coverage_json(
             total_cov_pct=total_pct,
         )
 
+    logger.debug("Parsed coverage metrics for %d file(s) from %s", len(parsed), json_path)
     return parsed
 
 
@@ -174,15 +187,22 @@ def run_pytest_coverage(
 ) -> CoverageRunResult:
     """Execute pytest-cov for the selected batches and parse coverage.json.
 
-    Skips execution cleanly when no configured test directories exist on disk.
+    Skips execution cleanly when no configured test directories exist on disk,
+    and degrades cleanly when pytest cannot be launched, times out, or emits
+    undecodable console bytes.
 
     Args:
+        config: Active MetricsConfig for the workspace.
+        batches: Scoped BatchDefinition records to test.
         progress: Optional reporter receiving execution status updates.
         runner: Optional subprocess.run replacement injected for hermetic testing.
     """
+    logger.info("Starting pytest coverage collection across %d batch(es)", len(batches))
+
     # --- Resolve Existing Test & Coverage Targets ---
     test_targets, cov_targets = _collect_existing_targets(config.workspace_root, batches)
     if not test_targets:
+        logger.log(VERBOSE, "Skipping pytest coverage: no matching test directories found")
         return CoverageRunResult(
             exit_code=0,
             summary_note="No matching test directories found",
@@ -205,11 +225,35 @@ def run_pytest_coverage(
     for target in cov_targets:
         cmd.append(f"--cov={target}")
 
+    logger.log(
+        VERBOSE,
+        "Running pytest across %d test target(s) and %d coverage target(s)",
+        len(test_targets),
+        len(cov_targets),
+    )
     if progress is not None:
         progress.update(f"Running pytest across {len(test_targets)} target(s)")
 
+    logger.debug("Executing pytest command: %s", cmd)
     exec_fn = subprocess.run if runner is None else runner
-    completed = run_command(cmd, cwd=config.workspace_root, runner=exec_fn)
+    try:
+        completed = run_command(cmd, cwd=config.workspace_root, runner=exec_fn)
+    except subprocess.TimeoutExpired as exc:
+        msg = f"pytest timed out after {exc.timeout}s"
+        logger.error("Pytest coverage failed: %s", msg)
+        return CoverageRunResult(exit_code=1, summary_note=msg, files={})
+    except UnicodeDecodeError as exc:
+        msg = f"pytest output encoding error: {exc}"
+        logger.error("Pytest coverage failed: %s", msg)
+        return CoverageRunResult(exit_code=1, summary_note=msg, files={})
+
+    if completed.error:
+        logger.error("Pytest coverage unavailable: %s", completed.error)
+        return CoverageRunResult(
+            exit_code=1,
+            summary_note=f"pytest unavailable: {completed.error}",
+            files={},
+        )
 
     # --- Extract Final Summary Line & Parse JSON Artifact ---
     last_line = ""
@@ -221,6 +265,11 @@ def run_pytest_coverage(
     summary_note = last_line or f"pytest exited with code {completed.returncode}"
     files = parse_coverage_json(cov_json_path, config.workspace_root)
 
+    logger.info(
+        "Completed pytest coverage: %d file(s) measured (exit_code=%d)",
+        len(files),
+        completed.returncode,
+    )
     return CoverageRunResult(
         exit_code=completed.returncode,
         summary_note=summary_note,

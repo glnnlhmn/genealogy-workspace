@@ -3,9 +3,11 @@
 AST-based import dependency graph and architectural boundary violation collector.
 
 Operational Role:
-    Parses non-stdlib imports across all scoped Python modules, maps source and
-    target modules to architectural subsystem layers, and flags unidirectional
-    GDA dependency boundary violations.
+    Parses non-stdlib imports across all scoped Python modules (including
+    multi-level relative, star, and string-literal dynamic imports), maps
+    source and target modules to architectural subsystem layers, and flags
+    unidirectional GDA dependency boundary violations with 4-tier diagnostic
+    logging and syntax/encoding resilience.
 
 Classes:
     ImportEdgeRecord: Single directed import edge with boundary evaluation.
@@ -17,20 +19,24 @@ Functions:
 from __future__ import annotations
 
 import ast
+import logging
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from gen_desk_tools.core.logging import VERBOSE
 from gen_desk_tools.metrics.collectors.radon_collector import discover_batch_files
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "ImportEdgeRecord",
     "collect_import_graph",
 ]
+
+logger = logging.getLogger(__name__)
 
 # Ordered from most specific to most general so sub-layers match before "gda".
 _LAYER_PREFIXES: tuple[tuple[str, str], ...] = (
@@ -100,15 +106,65 @@ def _is_stdlib(module_name: str) -> bool:
     return module_name.split(".", 1)[0] in sys.stdlib_module_names
 
 
-def _extract_imports(tree: ast.Module) -> tuple[str, ...]:
+def _resolve_relative_import(
+    source_module: str,
+    is_package: bool,
+    level: int,
+    module: str | None,
+) -> str | None:
+    """Resolve a relative ImportFrom node to an absolute dotted module name."""
+    pkg_parts = source_module.split(".") if is_package else source_module.split(".")[:-1]
+    up = level - 1
+    if up > len(pkg_parts):
+        return module
+    base_parts = pkg_parts[: len(pkg_parts) - up] if up > 0 else pkg_parts
+    if module:
+        return ".".join([*base_parts, module])
+    return ".".join(base_parts) if base_parts else None
+
+
+def _extract_dynamic_import_target(node: ast.Call) -> str | None:
+    """Extract a string-literal module name from importlib.import_module or __import__."""
+    is_import_call = (
+        isinstance(node.func, ast.Attribute) and node.func.attr == "import_module"
+    ) or (isinstance(node.func, ast.Name) and node.func.id in {"import_module", "__import__"})
+    if not is_import_call or not node.args:
+        return None
+    first_arg = node.args[0]
+    if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
+        target = first_arg.value.strip()
+        return target or None
+    return None
+
+
+def _extract_imports(
+    tree: ast.Module,
+    source_module: str,
+    is_package: bool,
+) -> tuple[str, ...]:
     """Extract sorted unique non-stdlib imported module names from an AST."""
     imported: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imported.add(alias.name)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imported.add(node.module)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level > 0:
+                resolved = _resolve_relative_import(
+                    source_module,
+                    is_package,
+                    node.level,
+                    node.module,
+                )
+                if resolved:  # pragma: no branch
+                    imported.add(resolved)
+            else:
+                assert node.module is not None
+                imported.add(node.module)
+        elif isinstance(node, ast.Call):
+            dynamic_target = _extract_dynamic_import_target(node)
+            if dynamic_target:
+                imported.add(dynamic_target)
     return tuple(sorted(mod for mod in imported if not _is_stdlib(mod)))
 
 
@@ -120,9 +176,11 @@ def collect_import_graph(
 ) -> tuple[ImportEdgeRecord, ...]:
     """Build the directed import dependency graph and flag layer boundary violations.
 
-    Files with syntax errors are skipped gracefully so remaining modules in the
-    batch are still analyzed.
+    Files with syntax, encoding, or read errors are logged at ERROR level and
+    skipped gracefully so remaining modules in the batch are still analyzed.
     """
+    logger.info("Starting import dependency graph collection across %d batch(es)", len(batches))
+
     # --- Discover Scoped Modules ---
     discovered = [
         (batch.id, py_file)
@@ -131,19 +189,25 @@ def collect_import_graph(
     ]
     edges: list[ImportEdgeRecord] = []
     total = len(discovered)
+    logger.log(VERBOSE, "Analyzing imports across %d discovered Python module(s)", total)
 
     # --- Extract Imports & Evaluate Layer Boundaries ---
     for idx, (batch_id, py_file) in enumerate(discovered, start=1):
         rel_path = py_file.relative_to(workspace_root).as_posix()
         source_mod = _module_name_from_path(rel_path)
         source_layer = _classify_layer(source_mod)
+        is_package = py_file.name == "__init__.py"
         try:
-            tree = ast.parse(py_file.read_text(encoding="utf-8"), filename=str(py_file))
-        except SyntaxError:
+            source = py_file.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(py_file))
+        except (SyntaxError, UnicodeDecodeError, OSError) as exc:
+            logger.error("Import graph analysis failed for %s: %s", rel_path, exc)
             tree = None
 
         if tree is not None:
-            for target_mod in _extract_imports(tree):
+            targets = _extract_imports(tree, source_mod, is_package)
+            logger.debug("Extracted %d non-stdlib import(s) from %s", len(targets), rel_path)
+            for target_mod in targets:
                 target_layer = _classify_layer(target_mod)
                 violation, reason = _check_boundary(source_layer, target_layer)
                 edges.append(
@@ -161,4 +225,5 @@ def collect_import_graph(
         if progress is not None:
             progress.update("Import dependency graph", current=idx, total=total)
 
+    logger.info("Completed import dependency graph: %d edge(s) collected", len(edges))
     return tuple(edges)

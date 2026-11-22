@@ -6,7 +6,8 @@ Operational Role:
     Invokes mypy in machine-readable output mode via
     gen_desk_tools.core.process.run_command against existing source paths
     across active audit batches, parses line-level error/warning/note records,
-    and maps each diagnostic back to its owning batch ID.
+    and maps each diagnostic back to its owning batch ID with 4-tier
+    diagnostic logging and timeout/encoding resilience.
 
 Classes:
     MypyDiagnostic: Single parsed mypy error, warning, or note record.
@@ -19,6 +20,7 @@ Functions:
 
 from __future__ import annotations
 
+import logging
 import re
 import subprocess
 import sys
@@ -27,11 +29,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from gen_desk_tools.core.logging import VERBOSE
 from gen_desk_tools.core.process import run_command
 from gen_desk_tools.metrics.config import BatchDefinition, MetricsConfig
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "MypyDiagnostic",
@@ -39,6 +42,8 @@ __all__ = [
     "parse_mypy_output",
     "run_mypy_check",
 ]
+
+logger = logging.getLogger(__name__)
 
 # Matches "path:line[:col]: severity: message [optional-error-code]".
 _MYPY_LINE_RE = re.compile(
@@ -146,17 +151,24 @@ def run_mypy_check(
     """Execute mypy against active batch paths and parse diagnostics.
 
     Returns a skipped result with returncode 0 when no batch targets exist, or
-    a degraded result with returncode 1 if mypy cannot be launched.
+    a degraded result with returncode 1 if mypy cannot be launched, times out,
+    or emits undecodable console bytes.
 
     Args:
+        config: Active MetricsConfig for the workspace.
+        batches: Scoped BatchDefinition records to type-check.
         progress: Optional reporter receiving status updates.
         runner: Subprocess callable (defaults to subprocess.run) for testing.
     """
+    logger.info("Starting mypy static type check across %d batch(es)", len(batches))
+
     # --- Resolve Existing Source Targets ---
     targets = _collect_existing_targets(config.workspace_root, batches)
     if not targets:
+        logger.log(VERBOSE, "Skipping mypy check: no existing batch targets found")
         return MypyRunResult(diagnostics=(), summary_note="skipped (no targets)", returncode=0)
 
+    logger.log(VERBOSE, "Running mypy static type check on %d target(s)", len(targets))
     if progress is not None:
         progress.update("Running mypy static type check")
 
@@ -171,8 +183,20 @@ def run_mypy_check(
         "--no-error-summary",
         *targets,
     ]
-    res = run_command(cmd, cwd=config.workspace_root, runner=runner)
+    logger.debug("Executing mypy command: %s", cmd)
+    try:
+        res = run_command(cmd, cwd=config.workspace_root, runner=runner)
+    except subprocess.TimeoutExpired as exc:
+        msg = f"mypy timed out after {exc.timeout}s"
+        logger.error("Mypy check failed: %s", msg)
+        return MypyRunResult(diagnostics=(), summary_note=msg, returncode=1)
+    except UnicodeDecodeError as exc:
+        msg = f"mypy output encoding error: {exc}"
+        logger.error("Mypy check failed: %s", msg)
+        return MypyRunResult(diagnostics=(), summary_note=msg, returncode=1)
+
     if res.error:
+        logger.error("Mypy check unavailable: %s", res.error)
         return MypyRunResult(
             diagnostics=(),
             summary_note=f"mypy unavailable: {res.error}",
@@ -180,6 +204,11 @@ def run_mypy_check(
         )
 
     diagnostics = parse_mypy_output(res.stdout, config.workspace_root, batches)
+    logger.info(
+        "Completed mypy static type check: %d diagnostic(s) (returncode=%d)",
+        len(diagnostics),
+        res.returncode,
+    )
     return MypyRunResult(
         diagnostics=diagnostics,
         summary_note=f"{len(diagnostics)} diagnostic(s)",

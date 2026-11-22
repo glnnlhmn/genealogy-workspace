@@ -5,8 +5,8 @@ Unit, regression, integration, and invariant tests for hygiene_collector.
 Operational Role:
     Verifies AST-based module hygiene checks (Path header, PEP 440 version,
     __all__, future annotations, README.md listing, test parity), __init__
-    and __main__ exemptions, GAP-10 resilience to SyntaxError and non-UTF-8
-    files, 4-tier logging emission, and ModuleHygieneRecord immutability.
+    and __main__ exemptions, GAP-10 resilience to SyntaxError, OSError, and
+    non-UTF-8 files, 4-tier logging emission, and ModuleHygieneRecord immutability.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from gen_desk_tools.metrics.collectors.hygiene_collector import (
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 _HYGIENE_LOGGER = "gen_desk_tools.metrics.collectors.hygiene_collector"
 
@@ -135,7 +135,7 @@ def test_collect_hygiene_metrics_empty_batches_returns_empty_tuple(tmp_path: Pat
 
 # ==========================================================================
 # GROUP 4: Error Handling & Validation Failures
-# Note: Missing metadata flags and GAP-10 resilience (SyntaxError / non-UTF-8).
+# Note: Missing metadata flags and GAP-10 resilience (SyntaxError / non-UTF-8 / OSError).
 # ==========================================================================
 
 
@@ -189,6 +189,39 @@ def test_collect_hygiene_metrics_handles_non_utf8_file_without_crashing(
     assert "src/gda/core/good.py" in by_path
     assert "ENCODING_ERROR" in by_path["src/gda/core/corrupt.py"].hygiene_flags
     assert any(r.levelname == "ERROR" and "corrupt.py" in r.message for r in caplog.records)
+
+
+@pytest.mark.regression
+@pytest.mark.integration
+def test_collect_hygiene_metrics_handles_os_error_without_crashing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verify OSError during file read logs ERROR, flags READ_ERROR, and continues."""
+    pkg = tmp_path / "src" / "gda" / "core"
+    pkg.mkdir(parents=True)
+    (pkg / "good.py").write_text("x = 1\n", encoding="utf-8")
+    locked = pkg / "locked.py"
+    locked.write_text("x = 2\n", encoding="utf-8")
+    batches = (BatchDefinition("B1", "gda", "T0", ("src/gda/core",), ()),)
+
+    original_read_text = Path.read_text
+
+    def _guarded_read_text(self: Path, *args: object, **kwargs: object) -> str:
+        if self == locked:
+            raise PermissionError("access denied")
+        return original_read_text(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "read_text", _guarded_read_text)
+
+    with caplog.at_level(logging.ERROR, logger=_HYGIENE_LOGGER):
+        records = collect_hygiene_metrics(tmp_path, batches, progress=None)
+
+    by_path = {r.file_path: r for r in records}
+    assert "src/gda/core/good.py" in by_path
+    assert by_path["src/gda/core/locked.py"].hygiene_flags == ("READ_ERROR",)
+    assert any(r.levelname == "ERROR" and "locked.py" in r.message for r in caplog.records)
 
 
 # ==========================================================================
