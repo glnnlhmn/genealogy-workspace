@@ -189,7 +189,7 @@ def test_progress_reporter_non_positive_total_stages_raises_value_error(bad_stag
 def test_progress_reporter_invalid_type_total_stages_raises_error(
     bad_type_stages: Any,
 ) -> None:
-    """Verify non-integer, symbol, float, or boolean total_stages values are rejected."""
+    """Verify noninteger, symbol, float, or boolean total_stages values are rejected."""
     # Strengthened contract: floats and booleans must fail alongside non-comparable types.
     with pytest.raises((TypeError, ValueError)):
         ProgressReporter(total_stages=bad_type_stages)

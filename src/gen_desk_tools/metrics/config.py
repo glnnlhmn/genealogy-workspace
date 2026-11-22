@@ -32,7 +32,7 @@ from typing import Any
 from gen_desk_tools.core.config import deep_merge, load_gdt_config
 from gen_desk_tools.core.logging import VERBOSE
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "BatchDefinition",
@@ -277,6 +277,7 @@ def load_config(
         cli_no_sheets: When True, forces Google Sheets sync off regardless of config/env.
 
     Raises:
+        FileNotFoundError: If an explicit config_path or GDA_METRICS_CONFIG path does not exist.
         KeyError: If an unknown [telemetry] setting, unknown GDA_METRICS_* env var,
             or incomplete [[batches]] entry is encountered.
         ValueError: If an environment boolean, coverage gate, or scope is invalid.
@@ -318,6 +319,10 @@ def load_config(
         explicit_path = Path(env_cfg) if env_cfg else None
 
     if explicit_path is not None:
+        if not explicit_path.exists():
+            msg = f"Explicit config file not found: {explicit_path}"
+            logger.error(msg)
+            raise FileNotFoundError(msg)
         custom_data = _read_toml_file(explicit_path)
         if custom_data:
             merged_metrics = deep_merge(merged_metrics, custom_data)

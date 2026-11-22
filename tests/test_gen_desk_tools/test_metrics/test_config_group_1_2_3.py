@@ -17,7 +17,7 @@ import pytest
 from gen_desk_tools.metrics import config as config_mod
 from gen_desk_tools.metrics.config import load_config, resolve_batches
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 
 # ==========================================================================
@@ -176,6 +176,12 @@ def test_load_config_env_zero_boolean_disables_sheets(tmp_path: Path) -> None:
 @pytest.mark.unit
 def test_load_config_cli_overrides_take_highest_precedence(tmp_path: Path) -> None:
     """Verify explicit CLI flags override both TOML files and ENV values."""
+    override_toml = tmp_path / "override.toml"
+    override_toml.write_text(
+        '[telemetry]\ndefault_scopes = ["gda"]\nsync_sheets_by_default = true\n'
+        'sheet_url = "https://sheets.local/toml"\n',
+        encoding="utf-8",
+    )
     env = {
         "GDA_METRICS_SCOPE": "system",
         "GDA_METRICS_SYNC_SHEETS": "true",
@@ -184,7 +190,7 @@ def test_load_config_cli_overrides_take_highest_precedence(tmp_path: Path) -> No
 
     cfg = load_config(
         workspace_root=tmp_path,
-        config_path=tmp_path / "missing.toml",
+        config_path=override_toml,
         env=env,
         cli_scopes=("all",),
         cli_batches=("GDA-Batch-1",),
@@ -192,6 +198,7 @@ def test_load_config_cli_overrides_take_highest_precedence(tmp_path: Path) -> No
         cli_no_sheets=True,
     )
 
+    assert cfg.config_path == override_toml
     assert cfg.scopes == ("all",)
     assert cfg.batch_filter == ("GDA-Batch-1",)
     assert cfg.sheet_url == "https://sheets.local/cli"
@@ -284,8 +291,8 @@ def test_load_config_empty_env_values_fall_back_to_file_config(tmp_path: Path) -
         encoding="utf-8",
     )
     env = {
-        "GDA_METRICS_SCOPE": "   ",
-        "GDA_METRICS_SYNC_SHEETS": "  ",
+        "GDA_METRICS_SCOPE": " ",
+        "GDA_METRICS_SYNC_SHEETS": " ",
     }
 
     cfg = load_config(workspace_root=tmp_path, config_path=custom_cfg, env=env)

@@ -3,10 +3,10 @@
 Error handling, 4-tier logging, runtime discovery, and invariants for gd_metrics config.
 
 Operational Role:
-    Verifies validation failures (ValueError vs. KeyError), malformed/unreadable
-    TOML handling, 4-tier logging (ERROR, INFO, VERBOSE, DEBUG), live
-    cwd/os.environ resolution, and dataclass immutability invariants in
-    gen_desk_tools.metrics.config.
+    Verifies validation failures (ValueError vs. KeyError), missing explicit
+    config paths (GAP-07), malformed/unreadable TOML handling, 4-tier logging
+    (ERROR, INFO, VERBOSE, DEBUG), live cwd/os.environ resolution, and
+    dataclass immutability invariants in gen_desk_tools.metrics.config.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from gen_desk_tools.metrics.config import (
     resolve_batches,
 )
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 _CONFIG_LOGGER = "gen_desk_tools.metrics.config"
 
@@ -117,6 +117,21 @@ def test_load_config_directory_path_raises_os_error(tmp_path: Path) -> None:
 
     with pytest.raises(OSError):
         load_config(workspace_root=tmp_path, config_path=blocked_dir, env={})
+
+
+@pytest.mark.regression
+def test_load_config_missing_explicit_config_path_raises_file_not_found(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verify GAP-07: a nonexistent explicit config_path logs ERROR and raises FileNotFoundError."""
+    missing_cfg = tmp_path / "does_not_exist.toml"
+
+    with caplog.at_level(logging.ERROR, logger=_CONFIG_LOGGER):
+        with pytest.raises(FileNotFoundError, match="Explicit config file not found"):
+            load_config(workspace_root=tmp_path, config_path=missing_cfg, env={})
+
+    assert any(record.levelname == "ERROR" for record in caplog.records)
 
 
 @pytest.mark.regression
