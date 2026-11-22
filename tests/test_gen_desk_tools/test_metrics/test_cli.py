@@ -15,7 +15,7 @@ import pytest
 
 from gen_desk_tools.metrics.cli import main
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 
 class _DummyWorksheet:
@@ -58,7 +58,7 @@ def test_cli_main_runs_full_pipeline_with_sheets_and_skip_flags(tmp_path: Path) 
     (tmp_path / "src" / "gda" / "core" / "mod.py").write_text("x = 1\n", encoding="utf-8")
     cfg_dir = tmp_path / "src" / "gen_desk_tools" / "metrics"
     cfg_dir.mkdir(parents=True)
-    (cfg_dir / "config.toml").write_text(
+    (cfg_dir / "metrics.toml").write_text(
         '[telemetry]\ndefault_scopes = ["gda"]\nsync_sheets_by_default = true\n'
         '[[batches]]\nid = "GDA-Batch-1"\nscope = "gda"\ntier = "T0"\n'
         'paths = ["src/gda/core"]\ntest_paths = ["tests/test_gda/test_core"]\n',

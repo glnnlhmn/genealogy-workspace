@@ -18,7 +18,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TextIO
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = ["ProgressReporter"]
 
@@ -34,6 +34,7 @@ class ProgressReporter:
         log_file: Optional UTF-8 append log path; parent directories are created automatically.
 
     Raises:
+        TypeError: If total_stages is not a strict integer (rejects bool, float, str, None).
         ValueError: If total_stages is less than 1.
     """
 
@@ -47,6 +48,10 @@ class ProgressReporter:
         log_file: Path | None = None,
     ) -> None:
         """Initialize the progress reporter and open the optional log sink."""
+        # Reject booleans explicitly because bool subclasses int in Python.
+        if isinstance(total_stages, bool) or not isinstance(total_stages, int):
+            msg = f"total_stages must be an integer, got {type(total_stages).__name__}"
+            raise TypeError(msg)
         if total_stages < 1:
             msg = "total_stages must be at least 1"
             raise ValueError(msg)
