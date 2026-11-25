@@ -1,6 +1,7 @@
 """Path: src/gda/core/types.py
 
-Authoritative regex patterns, format tokens, and primitive scalar definitions.
+Authoritative regex patterns, format tokens, primitive scalar definitions,
+and strict numeric type guards.
 
 Operational Role:
     Provides the code-first declarative repository for RFC 4122 UUIDv4 patterns,
@@ -9,15 +10,17 @@ Operational Role:
     across all documentary domains, SQL identifier patterns, enum key separator
     patterns, gender code sets, historical year bounds, coordinate bounds, scalar
     metric bounds/patterns, military domain scalar bounds, enumerated schedule
-    year sets/bounds, and SHA-256 hexadecimal hash patterns across the GDA core
-    infrastructure.
+    year sets/bounds, SHA-256 hexadecimal hash patterns, and CIU-B1-001 strict
+    numeric guards (is_strict_int, is_finite_number).
 """
 
 from __future__ import annotations
 
+import math
 import re
+from typing import Any
 
-__version__ = "1.0.0+build.7"
+__version__ = "1.0.0+build.8"
 
 __all__ = [
     "ATOM_ID_PATTERN",
@@ -91,6 +94,8 @@ __all__ = [
     "UUID_V4_REGEX",
     "WWII_DRAFT_YEARS",
     "WWI_DRAFT_YEARS",
+    "is_finite_number",
+    "is_strict_int",
 ]
 
 # ------------------------------------------------------------------------------
@@ -283,3 +288,22 @@ URN_PATTERNS: dict[str, str] = {
 URN_REGEXES: dict[str, re.Pattern[str]] = {
     nid: re.compile(pattern) for nid, pattern in URN_PATTERNS.items()
 }
+
+
+# ------------------------------------------------------------------------------
+# 11. Strict Numeric Validation Guards (CIU-B1-001)
+# ------------------------------------------------------------------------------
+def is_strict_int(value: Any) -> bool:
+    """Return True iff value is a true int and not a bool (bool subclasses int)."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def is_finite_number(value: Any) -> bool:
+    """Return True iff value is a non-bool int or a finite (non-NaN, non-Inf) float."""
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return True
+    if isinstance(value, float):
+        return math.isfinite(value)
+    return False

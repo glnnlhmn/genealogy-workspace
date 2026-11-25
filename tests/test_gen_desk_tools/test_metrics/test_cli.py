@@ -5,8 +5,9 @@ Unit, regression, integration, and invariant tests for gen_desk_tools.metrics.cl
 Operational Role:
     Verifies CLI argument parsing, 7-stage telemetry pipeline orchestration,
     __main__ import/runpy behavior, GAP-05 pre-flight validation before
-    expensive stages execute, RARE-03 isolated multi-run execution, 4-tier
-    diagnostic logging, and progress log handle cleanup on errors.
+    expensive stages execute, RARE-03 isolated multi-run execution, clean
+    exit codes on exporter failures, 4-tier diagnostic logging, and progress
+    log handle cleanup on errors.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from gen_desk_tools.metrics.cli import main, run_pipeline
 from gen_desk_tools.metrics.config import load_config
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 _CLI_LOGGER = "gen_desk_tools.metrics.cli"
 
@@ -54,6 +55,13 @@ class _DummyClient:
 
     def open_by_url(self, _url: str) -> _DummySpreadsheet:
         return _DummySpreadsheet()
+
+
+class _DeniedClient:
+    """gspread client double raising a bare PermissionError."""
+
+    def open_by_url(self, _url: str) -> _DummySpreadsheet:
+        raise PermissionError()
 
 
 # ==========================================================================
@@ -205,7 +213,7 @@ def test_cli_main_supports_isolated_basetemp_across_multiple_runs(tmp_path: Path
 
 # ==========================================================================
 # GROUP 4: Error Handling & Validation Failures
-# Note: GAP-05 pre-flight validation before expensive stages execute.
+# Note: GAP-05 pre-flight validation and clean exit code 1 on Sheets errors.
 # ==========================================================================
 
 
@@ -238,6 +246,34 @@ def test_cli_main_fails_fast_before_collectors_when_sheets_enabled_without_targe
     assert exit_code != 0
     assert called_stages == []
     assert any(r.levelname == "ERROR" for r in caplog.records)
+
+
+@pytest.mark.regression
+def test_cli_main_returns_exit_code_1_without_traceback_on_sheets_auth_failure(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Verify Google Sheets RuntimeError logs ERROR and returns exit code 1 cleanly."""
+    with caplog.at_level(logging.ERROR, logger=_CLI_LOGGER):
+        exit_code = main(
+            [
+                "--root",
+                str(tmp_path),
+                "--sheet-url",
+                "https://sheets.local/denied",
+                "--no-pytest",
+                "--no-mypy",
+                "--no-ruff",
+            ],
+            client_factory=lambda _creds: _DeniedClient(),
+        )
+
+    assert exit_code == 1
+    assert any(
+        r.levelname == "ERROR"
+        and r.getMessage().endswith("verify credentials and edit permissions")
+        for r in caplog.records
+    )
 
 
 # ==========================================================================

@@ -18,7 +18,7 @@ from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
-from gda.core.enums.vital import MaritalHistoryDissolution, MaritalStatus, UnionType
+from gda.core.enums.vital import MaritalStatus, UnionDissolutionType, UnionType
 from gda.core.errors import ModelFormatError
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID
 from gda.model.atom.urn import ArchivalURN, SourceURN, VitalCertificateUrn
@@ -30,7 +30,7 @@ from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 from gda.util.enums import coerce_enum
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "MarriageRecord",
@@ -189,9 +189,9 @@ class MarriageRecord(SourceRecord):
         default=None,
         description="Prior marital status of the groom.",
     )
-    groom_prior_dissolution: MaritalHistoryDissolution | None = Field(
+    groom_prior_dissolution: UnionDissolutionType | None = Field(
         default=None,
-        description="How groom's prior marriage ended (Death, Divorce, Annulment, None).",
+        description="How groom's prior marriage ended (Death, Divorce, Annulment, Separation, Desertion, Unknown).",
     )
     groom_residence_raw: str | None = Field(
         default=None,
@@ -213,9 +213,9 @@ class MarriageRecord(SourceRecord):
         default=None,
         description="Prior marital status of the bride.",
     )
-    bride_prior_dissolution: MaritalHistoryDissolution | None = Field(
+    bride_prior_dissolution: UnionDissolutionType | None = Field(
         default=None,
-        description="How bride's prior marriage ended (Death, Divorce, Annulment, None).",
+        description="How bride's prior marriage ended (Death, Divorce, Annulment, Separation, Desertion, Unknown).",
     )
     bride_residence_raw: str | None = Field(
         default=None,
@@ -299,13 +299,13 @@ class MarriageRecord(SourceRecord):
         groom_id: IndividualID | str | None = None,
         groom_age: Age | dict[str, Any] | int | str | None = None,
         groom_marital_status: MaritalStatus | str | None = None,
-        groom_prior_dissolution: MaritalHistoryDissolution | str | None = None,
+        groom_prior_dissolution: UnionDissolutionType | str | None = None,
         groom_residence_raw: str | None = None,
         bride_id: IndividualID | str | None = None,
         bride_maiden_name_raw: str | None = None,
         bride_age: Age | dict[str, Any] | int | str | None = None,
         bride_marital_status: MaritalStatus | str | None = None,
-        bride_prior_dissolution: MaritalHistoryDissolution | str | None = None,
+        bride_prior_dissolution: UnionDissolutionType | str | None = None,
         bride_residence_raw: str | None = None,
         date_of_marriage: EventDate | dict[str, Any] | str | None = None,
         place_of_marriage_raw: str | None = None,
@@ -345,7 +345,7 @@ class MarriageRecord(SourceRecord):
                 MaritalStatus, groom_marital_status, "groom_marital_status"
             ),
             groom_prior_dissolution=_opt_enum(
-                MaritalHistoryDissolution,
+                UnionDissolutionType,
                 groom_prior_dissolution,
                 "groom_prior_dissolution",
             ),
@@ -357,7 +357,7 @@ class MarriageRecord(SourceRecord):
                 MaritalStatus, bride_marital_status, "bride_marital_status"
             ),
             bride_prior_dissolution=_opt_enum(
-                MaritalHistoryDissolution,
+                UnionDissolutionType,
                 bride_prior_dissolution,
                 "bride_prior_dissolution",
             ),

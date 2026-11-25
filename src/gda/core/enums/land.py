@@ -9,9 +9,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "DeedPartyRole",
@@ -19,14 +19,14 @@ __all__ = [
 ]
 
 
-class DeedPartyRole(StrEnum):
+class DeedPartyRole(GDAStrEnum):
     """Conveyance capacity of a party named in a deed or real-property instrument."""
 
     GRANTOR = "GRANTOR"
     GRANTEE = "GRANTEE"
 
 
-class LandGrantBasis(StrEnum):
+class LandGrantBasis(GDAStrEnum):
     """Statutory or customary basis for sovereign land patents, warrants, and grants."""
 
     CASH_ENTRY = "CASH_ENTRY"

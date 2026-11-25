@@ -14,7 +14,7 @@ import pytest
 
 from gda.core.enums.core import AssociatedRole
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
-from gda.core.enums.vital import MaritalHistoryDissolution, MaritalStatus, UnionType
+from gda.core.enums.vital import MaritalStatus, UnionDissolutionType, UnionType
 from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, MediaID, RepositoryID, SourceID
@@ -26,7 +26,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.tombstone import Tombstone
 from gda.model.source.vital import MarriageRecord
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 _SID = "11111111-1111-4111-8111-111111111111"
 _SID_2 = "22222222-2222-4222-8222-222222222222"
@@ -59,8 +59,8 @@ def test_marriage_record_create_and_roundtrip() -> None:
         source_urn=VitalCertificateUrn(_URN),
         description="Marriage License and Return of John H. Abbott and Mary E. Colby.",
         repository_id="REP-000001",
-        groom_name_raw="  John H. Abbott  ",
-        bride_name_raw="  Mary E. Colby  ",
+        groom_name_raw=" John H. Abbott ",
+        bride_name_raw=" Mary E. Colby ",
         record_category="vital",
         record_type="marriage_license",
         union_type="married",
@@ -70,7 +70,7 @@ def test_marriage_record_create_and_roundtrip() -> None:
         groom_id="IND-000001",
         groom_age=Age(raw_text="27 years, 3 months", years=27, months=3, days=4),
         groom_marital_status="single",
-        groom_prior_dissolution="none",
+        groom_prior_dissolution="unknown",
         groom_residence_raw="Concord, NH",
         bride_id="IND-000002",
         bride_maiden_name_raw="Colby",
@@ -98,8 +98,8 @@ def test_marriage_record_create_and_roundtrip() -> None:
     assert rec.bride_age == Age(years=24)
     assert rec.groom_marital_status is MaritalStatus.SINGLE
     assert rec.bride_marital_status is MaritalStatus.WIDOWED
-    assert rec.groom_prior_dissolution is MaritalHistoryDissolution.NONE
-    assert rec.bride_prior_dissolution is MaritalHistoryDissolution.DEATH
+    assert rec.groom_prior_dissolution is UnionDissolutionType.UNKNOWN
+    assert rec.bride_prior_dissolution is UnionDissolutionType.DEATH
     assert str(rec) == "MarriageRecord [John H. Abbott & Mary E. Colby]"
 
     payload = rec.to_dict()
@@ -179,8 +179,8 @@ def test_marriage_record_validation_and_minimal_roundtrip() -> None:
         description="Direct trim test",
         repository_id=RepositoryID("REP-000001"),
         audit=minimal.audit,
-        groom_name_raw="  Trimmed Groom  ",
-        bride_name_raw="  Trimmed Bride  ",
+        groom_name_raw=" Trimmed Groom ",
+        bride_name_raw=" Trimmed Bride ",
     )
     assert direct.groom_name_raw == "Trimmed Groom"
     assert direct.bride_name_raw == "Trimmed Bride"

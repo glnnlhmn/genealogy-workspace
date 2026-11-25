@@ -226,6 +226,7 @@ def test_metrics_config_and_batch_definition_are_immutable(tmp_path: Path) -> No
         test_paths=("tests/test_gda/test_core",),
     )
 
+    # TODO: correct these two lines of code
     with pytest.raises(dataclasses.FrozenInstanceError):
         cfg.sync_sheets = False  # type: ignore[misc]
 

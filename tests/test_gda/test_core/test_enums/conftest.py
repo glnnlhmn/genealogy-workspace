@@ -4,7 +4,7 @@ Shared pytest fixtures for the gda.core.enums verification suite.
 
 Operational Role:
     Supplies handcrafted in-memory fixtures including comprehensive enum class
-    registries, exact public export contract bounds, and Pydantic validation
+    registries, representative coercible enum tuples, and Pydantic validation
     harness models for testing serialization, coercion, and rejection boundaries
     without disk I/O.
 """
@@ -20,7 +20,22 @@ from pydantic import BaseModel
 
 import gda.core.enums as ge
 
-__version__ = "1.0.0+build.7"
+__version__ = "1.0.0+build.8"
+
+__all__ = [
+    "SampleEnumModel",
+    "all_enum_classes",
+    "pydantic_enum_model_cls",
+    "sample_coercible_enums",
+    "standardized_enum_payload",
+    "valid_enum_payload",
+]
+
+
+# ==============================================================================
+# SECTION 1: ENUM REGISTRY & COERCION FIXTURES
+# Note: Session-scoped enum collections for contract and coercion testing.
+# ==============================================================================
 
 
 @pytest.fixture(scope="session")
@@ -38,9 +53,21 @@ def all_enum_classes() -> tuple[type[Enum], ...]:
 
 
 @pytest.fixture(scope="session")
-def all_exported_symbols_count() -> int:
-    """Return the exact count of items declared in gda.core.enums.__all__."""
-    return 84
+def sample_coercible_enums() -> tuple[type[Enum], ...]:
+    """Provide a representative tuple of StrEnum and IntEnum classes for coercion tests."""
+    return (
+        ge.Sex,
+        ge.FactType,
+        ge.DateModifier,
+        ge.QuayScore,
+        ge.CensusYearUS,
+    )
+
+
+# ==============================================================================
+# SECTION 2: PYDANTIC ENUM VALIDATION HARNESS
+# Note: Synthetic Pydantic model and standardized UPPER_SNAKE_CASE target payload.
+# ==============================================================================
 
 
 class SampleEnumModel(BaseModel):
@@ -88,8 +115,42 @@ def pydantic_enum_model_cls() -> type[BaseModel]:
 
 
 @pytest.fixture
+def standardized_enum_payload() -> dict[str, Any]:
+    """Provide the target UPPER_SNAKE_CASE payload for post-Phase 3 enum validation."""
+    return {
+        "sex": "MALE",
+        "quay": 3,
+        "fact_type": "BIRTH",
+        "record_cat": "VITAL",
+        "census_year": 1880,
+        "date_modifier": "ABT",
+        "union_type": "MARRIED",
+        "manner_of_death": "NATURAL",
+        "historic_name_type": "PRIMARY",
+        "vital_modifier": "STILLBORN",
+        "location_type": "COUNTY",
+        "jurisdiction_cat": "COUNTY_EQUIVALENT",
+        "site_type": "CEMETERY",
+        "note_type": "RESEARCH",
+        "document_side": "FRONT",
+        "text_quality": "VERBATIM",
+        "legibility": "CLEAR",
+        "taxpayer_class": "FREEHOLDER",
+        "optional_sex": None,
+        "optional_quay": None,
+    }
+
+
+# ==============================================================================
+# SECTION 3: LEGACY FIXTURES (TO BE RETIRED IN PHASE 3)
+# Note: Retains pre-standardization mixed-case values (Male, Natural, Freeholder)
+# so existing suites remain green until Phase 3 enum casing migration completes.
+# ==============================================================================
+
+
+@pytest.fixture
 def valid_enum_payload() -> dict[str, Any]:
-    """Provide a raw dictionary with valid strings and integers matching SampleEnumModel."""
+    """Provide the legacy mixed-case payload matching pre-Phase 3 enum definitions."""
     return {
         "sex": "Male",
         "quay": 3,

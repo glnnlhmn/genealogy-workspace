@@ -1,17 +1,18 @@
 """Path: src/gda/core/enums/fiscal.py
 
-Economic, real property tenure, directory status, and tax classification enums.
+Fiscal, taxation, housing tenure, and citizenship status enumerations.
 
 Operational Role:
-    Defines economic classifications, historical tax rolls, residential statuses,
-    and citizenship/naturalization statuses recorded on federal census and fiscal returns.
+    Defines canonical enumerations for taxpayer classifications, home ownership
+    and mortgage tenure, citizenship/naturalization status, and residential
+    directory occupancy classifications.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "CitizenshipStatus",
@@ -21,42 +22,42 @@ __all__ = [
 ]
 
 
-class TaxpayerClassification(StrEnum):
-    """Historical tax roll classifications for individuals."""
+class TaxpayerClassification(GDAStrEnum):
+    """Historical tax roll assessment classifications."""
 
-    FREEHOLDER = "Freeholder"
-    TENANT = "Tenant"
-    SINGLE_FREEMAN = "Single Freeman"
-    INMATE = "Inmate"
-    WIDOW = "Widow"
-
-
-class HomeOwnership(StrEnum):
-    """Tenure status of home recorded on federal census schedules."""
-
-    OWNED = "Owned"
-    RENTED = "Rented"
-    FREE = "Free"
-    MORTGAGED = "Mortgaged"
-    UNKNOWN = "Unknown"
+    FREEHOLDER = "FREEHOLDER"
+    TENANT = "TENANT"
+    SINGLE_FREEMAN = "SINGLE_FREEMAN"
+    INMATE = "INMATE"
+    WIDOW = "WIDOW"
 
 
-class CitizenshipStatus(StrEnum):
-    """Naturalization and legal residency classification on census returns."""
+class HomeOwnership(GDAStrEnum):
+    """Census and property housing tenure classifications."""
 
-    NATIVE_BORN = "Native Born"
-    NATURALIZED = "Naturalized"
-    ALIEN = "Alien"
-    DECLARANT = "Declarant"
-    NON_DECLARANT = "Non-Declarant"
-    UNKNOWN = "Unknown"
+    OWNED = "OWNED"
+    RENTED = "RENTED"
+    FREE = "FREE"
+    MORTGAGED = "MORTGAGED"
+    UNKNOWN = "UNKNOWN"
 
 
-class ResidentialStatus(StrEnum):
-    """Residential status reported on historical city and business directories."""
+class CitizenshipStatus(GDAStrEnum):
+    """Recorded national citizenship and naturalization status."""
 
-    HOUSEHOLDER = "Householder"
-    BOARDER = "Boarder"
-    ROOMS = "Rooms"
-    TENANT = "Tenant"
-    WIDOW = "Widow"
+    NATIVE_BORN = "NATIVE_BORN"
+    NATURALIZED = "NATURALIZED"
+    ALIEN = "ALIEN"
+    DECLARANT = "DECLARANT"
+    NON_DECLARANT = "NON_DECLARANT"
+    UNKNOWN = "UNKNOWN"
+
+
+class ResidentialStatus(GDAStrEnum):
+    """City directory and household occupancy status classifications."""
+
+    HOUSEHOLDER = "HOUSEHOLDER"
+    BOARDER = "BOARDER"
+    ROOMS = "ROOMS"
+    TENANT = "TENANT"
+    WIDOW = "WIDOW"

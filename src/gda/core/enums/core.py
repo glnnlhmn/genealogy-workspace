@@ -9,9 +9,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import IntEnum, StrEnum
+from gda.core.enums.base import GDAIntEnum, GDAStrEnum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "AssociatedRole",
@@ -24,19 +24,19 @@ __all__ = [
 ]
 
 
-class IDType(StrEnum):
+class IDType(GDAStrEnum):
     """Authoritative identifier format categories."""
 
     SMART_ID = "SMART_ID"
     UUID = "UUID"
 
 
-class Sex(StrEnum):
+class Sex(GDAStrEnum):
     """Biological or recorded sex classification on historical records."""
 
-    MALE = "Male"
-    FEMALE = "Female"
-    UNKNOWN = "Unknown"
+    MALE = "MALE"
+    FEMALE = "FEMALE"
+    UNKNOWN = "UNKNOWN"
 
     @classmethod
     def from_input(cls, val: str) -> Sex:
@@ -58,7 +58,7 @@ class Sex(StrEnum):
         raise ValueError(f"Cannot map '{val}' to a valid Sex enum member.")
 
 
-class FactType(StrEnum):
+class FactType(GDAStrEnum):
     """Authoritative event classification for life assertions."""
 
     ASSOCIATION = "ASSOCIATION"
@@ -93,7 +93,7 @@ class FactType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class AssociatedRole(StrEnum):
+class AssociatedRole(GDAStrEnum):
     """Standardized participant roles for associated individuals."""
 
     # Primary Kinship
@@ -129,7 +129,7 @@ class AssociatedRole(StrEnum):
     WITNESS = "WITNESS"
 
 
-class SmartIDPrefix(StrEnum):
+class SmartIDPrefix(GDAStrEnum):
     """Canonical 3-letter prefix classifications for smart entity identifiers."""
 
     IND = "IND"  # Individual
@@ -143,7 +143,7 @@ class SmartIDPrefix(StrEnum):
     ORG = "ORG"  # Organization
 
 
-class QuayScore(IntEnum):
+class QuayScore(GDAIntEnum):
     """Standardized genealogical evidence certainty score (0-3)."""
 
     UNRELIABLE = 0
@@ -152,7 +152,7 @@ class QuayScore(IntEnum):
     DIRECT_PRIMARY = 3
 
 
-class QualityAssessment(StrEnum):
+class QualityAssessment(GDAStrEnum):
     """Archival evidence certainty textual ratings."""
 
     DIRECT_PRIMARY = "DIRECT_PRIMARY"

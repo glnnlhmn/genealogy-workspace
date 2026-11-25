@@ -10,9 +10,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "ArrivalPassageClass",
@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 
-class ArrivalPassageClass(StrEnum):
+class ArrivalPassageClass(GDAStrEnum):
     """Passenger or crew passage classification on maritime and overland arrival manifests."""
 
     STEERAGE = "STEERAGE"
@@ -31,7 +31,7 @@ class ArrivalPassageClass(StrEnum):
     OTHER = "OTHER"
 
 
-class NaturalizationStage(StrEnum):
+class NaturalizationStage(GDAStrEnum):
     """Procedural stage within a historical naturalization proceeding."""
 
     DECLARATION_OF_INTENTION = "DECLARATION_OF_INTENTION"

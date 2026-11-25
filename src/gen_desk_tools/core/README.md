@@ -15,7 +15,7 @@ Shared internal primitives for GenDesk Tools providing workspace root resolution
 | `backup.py` | `1.0.0+build.1` | Atomic file writes, protected-domain checks, and Safe Backup routing primitives. |
 | `cli.py` | `1.0.0+build.2` | Shared CLI argument registration and interactive confirmation helpers for GDT. |
 | `config.py` | `1.0.0+build.1` | Layered TOML configuration loader for GenDesk Tools (GDT). |
-| `logging.py` | `1.0.0+build.1` | Standardized dual-handler UTF-8 logging setup for GenDesk Tools (GDT). |
+| `logging.py` | `1.0.0+build.2` | Standardized 4-tier dual-handler UTF-8 logging setup for GenDesk Tools (GDT). |
 | `process.py` | `1.0.0+build.2` | Standardized subprocess execution wrapper for GenDesk Tools. |
 | `workspace.py` | `1.0.0+build.4` | Workspace root discovery, POSIX path normalization, file discovery, and report routing. |
 
@@ -24,4 +24,4 @@ Exports: `CommandResult`, `DEFAULT_GDT_CONFIG`, `MANDATORY_EXCLUSIONS`, `MODE_TA
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 3aca12339583e903 -->
+<!-- gdrm-hash: a048f6b61eee41f2 -->

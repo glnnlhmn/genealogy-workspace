@@ -9,9 +9,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "JurisdictionCategory",
@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-class LocationType(StrEnum):
+class LocationType(GDAStrEnum):
     """Administrative and jurisdictional level of a geographic place."""
 
     CIVIL_JURISDICTION = "CIVIL_JURISDICTION"
@@ -35,7 +35,7 @@ class LocationType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class JurisdictionCategory(StrEnum):
+class JurisdictionCategory(GDAStrEnum):
     """Hierarchical administrative categorization for civil jurisdictions."""
 
     COUNTRY = "COUNTRY"

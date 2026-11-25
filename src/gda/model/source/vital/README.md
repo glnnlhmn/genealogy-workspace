@@ -16,11 +16,11 @@ Civil and parish birth, baptism, marriage, divorce, and death certificates and r
 | `birth.py` | `1.0.0+build.4` | Civil and hospital birth certificate and birth register domain models. |
 | `death.py` | `1.0.0+build.5` | Civil death certificate, coroner inquest, transit permit, and death register models. |
 | `divorce.py` | `1.0.0+build.3` | Civil divorce decree, divorce report, docket entry, and annulment models. |
-| `marriage.py` | `1.0.0+build.5` | Civil and ecclesiastical marriage license, certificate, bond, and register models. |
+| `marriage.py` | `1.0.0+build.6` | Civil and ecclesiastical marriage license, certificate, bond, and register models. |
 
 ## Public Exports & Consumption Contract
 Exports: `BaptismRecord`, `BirthRecord`, `DeathRecord`, `DivorceRecord`, `MarriageRecord`.
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 6b78befe0abf6064 -->
+<!-- gdrm-hash: a6cfc84ae5a36e6c -->

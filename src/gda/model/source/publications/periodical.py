@@ -18,7 +18,8 @@ from typing import Any, ClassVar, cast
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
-from gda.core.enums.sources import EducationLevel, SourceRecordCategory, SourceRecordType
+from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
+from gda.core.enums.vital import EducationLevel
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.core.types import PUB_CODE_REGEX

@@ -126,7 +126,7 @@ def test_format_missing_lines_handles_empty_and_ranges() -> None:
 
 @pytest.mark.integration
 def test_parse_coverage_json_normalizes_paths_and_computes_percentages(tmp_path: Path) -> None:
-    """Verify parse_coverage_json handles relative, inside-root, and outside-root paths."""
+    """Verify parse_coverage_JSON handles relative, inside-root, and outside-root paths."""
     inside = (tmp_path / "src" / "a.py").resolve()
     outside = (tmp_path.parent / "external_other.py").resolve()
     payload = {
@@ -181,7 +181,7 @@ def test_parse_coverage_json_normalizes_paths_and_computes_percentages(tmp_path:
 
 @pytest.mark.unit
 def test_parse_coverage_json_missing_file_returns_empty_dict(tmp_path: Path) -> None:
-    """Verify parse_coverage_json returns an empty dict when JSON does not exist."""
+    """Verify parse_coverage_JSON returns an empty dict when JSON does not exist."""
     assert parse_coverage_json(tmp_path / "missing.json", tmp_path) == {}
 
 
@@ -377,6 +377,7 @@ def test_run_pytest_coverage_emits_info_verbose_and_debug_log_records(
 # ==========================================================================
 
 
+# TODO:  Fix error in this test
 @pytest.mark.integrity
 def test_coverage_dataclasses_are_immutable() -> None:
     """Verify FileCoverageMetrics and CoverageRunResult reject in-place mutation."""

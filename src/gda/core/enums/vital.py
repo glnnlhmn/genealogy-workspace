@@ -1,35 +1,39 @@
 """Path: src/gda/core/enums/vital.py
 
-Demographic statuses, vital event assertions, and domestic relations enums.
+Demographic statuses, vital event assertions, biographical traits, and domestic relations enums.
 
 Operational Role:
     Defines controlled vocabularies for vital life events, domestic unions,
-    marital dissolutions, pedigree linkages, and mortuary disposition types.
+    marital dissolutions, pedigree linkages, mortuary disposition types,
+    educational attainment, and physical trait classifications.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "BirthPlurality",
     "DispositionType",
     "DivorceDecreeType",
+    "EducationLevel",
+    "EyeColor",
+    "HairColor",
     "HistoricNameType",
     "LegalPlaintiff",
     "MannerOfDeath",
-    "MaritalHistoryDissolution",
     "MaritalStatus",
     "PedigreeType",
+    "PhysicalBuild",
     "UnionDissolutionType",
     "UnionType",
     "VitalModifier",
 ]
 
 
-class UnionType(StrEnum):
+class UnionType(GDAStrEnum):
     """Classification of union or domestic partnership inception."""
 
     MARRIED = "MARRIED"
@@ -39,7 +43,7 @@ class UnionType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class UnionDissolutionType(StrEnum):
+class UnionDissolutionType(GDAStrEnum):
     """Classification of union dissolution, separation, or termination."""
 
     DIVORCE = "DIVORCE"
@@ -50,85 +54,76 @@ class UnionDissolutionType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class PedigreeType(StrEnum):
+class PedigreeType(GDAStrEnum):
     """Lineage pedigree classification connecting a child to a family unit."""
 
-    BIRTH = "Birth"
-    ADOPTED = "Adopted"
-    STEP = "Step"
-    FOSTER = "Foster"
-    UNKNOWN = "Unknown"
+    BIRTH = "BIRTH"
+    ADOPTED = "ADOPTED"
+    STEP = "STEP"
+    FOSTER = "FOSTER"
+    UNKNOWN = "UNKNOWN"
 
 
-class MaritalStatus(StrEnum):
+class MaritalStatus(GDAStrEnum):
     """Marital status recorded on historical schedules and vital certificates."""
 
-    SINGLE = "Single"
-    MARRIED = "Married"
-    WIDOWED = "Widowed"
-    DIVORCED = "Divorced"
-    UNKNOWN = "Unknown"
+    SINGLE = "SINGLE"
+    MARRIED = "MARRIED"
+    WIDOWED = "WIDOWED"
+    DIVORCED = "DIVORCED"
+    UNKNOWN = "UNKNOWN"
 
 
-class MannerOfDeath(StrEnum):
+class MannerOfDeath(GDAStrEnum):
     """Categorical manner of death classification."""
 
-    NATURAL = "Natural"
-    ACCIDENT = "Accident"
-    SUICIDE = "Suicide"
-    HOMICIDE = "Homicide"
-    PENDING = "Pending"
-    UNKNOWN = "Unknown"
+    NATURAL = "NATURAL"
+    ACCIDENT = "ACCIDENT"
+    SUICIDE = "SUICIDE"
+    HOMICIDE = "HOMICIDE"
+    PENDING = "PENDING"
+    UNKNOWN = "UNKNOWN"
 
 
-class BirthPlurality(StrEnum):
+class BirthPlurality(GDAStrEnum):
     """Birth plurality recorded on vital birth registers."""
 
-    SINGLE = "Single"
-    TWIN = "Twin"
-    TRIPLET = "Triplet"
-    QUADRUPLET = "Quadruplet"
+    SINGLE = "SINGLE"
+    TWIN = "TWIN"
+    TRIPLET = "TRIPLET"
+    QUADRUPLET = "QUADRUPLET"
 
 
-class DispositionType(StrEnum):
+class DispositionType(GDAStrEnum):
     """Manner of mortal disposition on death certificates."""
 
-    BURIAL = "Burial"
-    CREMATION = "Cremation"
-    REMOVAL = "Removal"
-    ENTOMBMENT = "Entombment"
-    DONATION = "Donation"
-    OTHER = "Other"
+    BURIAL = "BURIAL"
+    CREMATION = "CREMATION"
+    REMOVAL = "REMOVAL"
+    ENTOMBMENT = "ENTOMBMENT"
+    DONATION = "DONATION"
+    OTHER = "OTHER"
 
 
-class DivorceDecreeType(StrEnum):
+class DivorceDecreeType(GDAStrEnum):
     """Legal classifications for divorce and dissolution decrees."""
 
-    ABSOLUTE = "Absolute (A Vinculo Matrimonii)"
-    BED_AND_BOARD = "Bed and Board (A Mensa Et Thoro)"
-    ANNULMENT = "Annulment"
-    DISMISSED = "Dismissed"
-    OTHER = "Other"
+    ABSOLUTE = "ABSOLUTE"
+    BED_AND_BOARD = "BED_AND_BOARD"
+    ANNULMENT = "ANNULMENT"
+    DISMISSED = "DISMISSED"
+    OTHER = "OTHER"
 
 
-class LegalPlaintiff(StrEnum):
+class LegalPlaintiff(GDAStrEnum):
     """Designation of plaintiff party in civil proceedings."""
 
-    HUSBAND = "Husband"
-    WIFE = "Wife"
-    OTHER = "Other"
+    HUSBAND = "HUSBAND"
+    WIFE = "WIFE"
+    OTHER = "OTHER"
 
 
-class MaritalHistoryDissolution(StrEnum):
-    """Prior marriage dissolution grounds reported on marriage applications."""
-
-    DEATH = "Death"
-    DIVORCE = "Divorce"
-    ANNULMENT = "Annulment"
-    NONE = "None"
-
-
-class HistoricNameType(StrEnum):
+class HistoricNameType(GDAStrEnum):
     """Functional classification of historical naming variants and cultural contexts."""
 
     PRIMARY = "PRIMARY"
@@ -138,7 +133,7 @@ class HistoricNameType(StrEnum):
     INDIGENOUS = "INDIGENOUS"
 
 
-class VitalModifier(StrEnum):
+class VitalModifier(GDAStrEnum):
     """Vital condition modifiers for birth and infant death assertions."""
 
     STILLBORN = "STILLBORN"
@@ -146,3 +141,43 @@ class VitalModifier(StrEnum):
     ILLEGITIMATE = "ILLEGITIMATE"
     POSTHUMOUS = "POSTHUMOUS"
     LEGITIMATED = "LEGITIMATED"
+
+
+class PhysicalBuild(GDAStrEnum):
+    """Physical build classifications extracted from historical draft records."""
+
+    SLENDER = "SLENDER"
+    MEDIUM = "MEDIUM"
+    STOUT = "STOUT"
+
+
+class EyeColor(GDAStrEnum):
+    """Eye color categories extracted from historical draft or identification cards."""
+
+    BLUE = "BLUE"
+    BROWN = "BROWN"
+    GREY = "GREY"
+    HAZEL = "HAZEL"
+    BLACK = "BLACK"
+
+
+class HairColor(GDAStrEnum):
+    """Hair color categories extracted from historical draft or identification cards."""
+
+    BLONDE = "BLONDE"
+    BROWN = "BROWN"
+    BLACK = "BLACK"
+    RED = "RED"
+    GREY = "GREY"
+    BALD = "BALD"
+
+
+class EducationLevel(GDAStrEnum):
+    """Standard educational attainment tokens."""
+
+    ELEM = "ELEM"
+    HS = "HS"
+    COLL = "COLL"
+    GRAD = "GRAD"
+    VOC = "VOC"
+    OTHER = "OTHER"

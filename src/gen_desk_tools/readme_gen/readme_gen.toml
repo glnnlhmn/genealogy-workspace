@@ -12,7 +12,7 @@ default_root = "."
 [[packages]]
 path = "src/gda/core/enums"
 title = "Authoritative Enumeration Domains (src/gda/core/enums)"
-role = "Authoritative genealogical enumerations inheriting from StrEnum and IntEnum, governing biological sex, evidentiary certainty (QuayScore), events, jurisdictions, organizations, and archival classifications."
+role = "Authoritative genealogical enumerations inheriting from GDAStrEnum and GDAIntEnum with canonical coercion primitives, governing biological sex, evidentiary certainty (QuayScore), events, jurisdictions, organizations, military, vital, and archival classifications."
 test_path = "tests/test_gda/test_core/test_enums"
 quality_gate = "100.0% Statement & Branch Coverage"
 

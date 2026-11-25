@@ -3,7 +3,7 @@
 Military domain enumerations across service, awards, casualty, pension, and draft records.
 
 Operational Role:
-    Provides standardized StrEnum definitions for armed forces branches, service
+    Provides standardized GDAStrEnum definitions for armed forces branches, service
     components, discharge characterizations, muster roll types, valor award tiers,
     casualty classifications, POW camp categories, cemetery jurisdictions, pension
     claimant roles, bounty land acts, and historical conscription/draft classifications.
@@ -11,9 +11,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "AwardScope",
@@ -27,6 +27,8 @@ __all__ = [
     "IntermentCemeteryType",
     "MilitaryAwardTier",
     "MilitaryBranch",
+    "MilitaryDraftType",
+    "MilitaryWar",
     "ModernDraftEra",
     "MusterRollType",
     "PensionClaimantRole",
@@ -36,6 +38,7 @@ __all__ = [
     "SeparationFormType",
     "ServiceComponent",
     "SssClassification",
+    "WwiCardType",
     "WwiCitizenshipStatus",
     "WwiiDraftWave",
 ]
@@ -46,7 +49,7 @@ __all__ = [
 # ==============================================================================
 
 
-class MilitaryBranch(StrEnum):
+class MilitaryBranch(GDAStrEnum):
     """Armed force branch designation across historical periods."""
 
     ARMY = "ARMY"
@@ -63,7 +66,7 @@ class MilitaryBranch(StrEnum):
     OTHER = "OTHER"
 
 
-class ServiceComponent(StrEnum):
+class ServiceComponent(GDAStrEnum):
     """Component classification of armed forces service."""
 
     REGULAR = "REGULAR"
@@ -73,7 +76,7 @@ class ServiceComponent(StrEnum):
     SELECTIVE_SERVICE_CONSCRIPT = "SELECTIVE_SERVICE_CONSCRIPT"
 
 
-class SeparationCharacter(StrEnum):
+class SeparationCharacter(GDAStrEnum):
     """Character of discharge or release from military active duty."""
 
     HONORABLE = "HONORABLE"
@@ -85,7 +88,7 @@ class SeparationCharacter(StrEnum):
     DIED_IN_SERVICE = "DIED_IN_SERVICE"
 
 
-class MusterRollType(StrEnum):
+class MusterRollType(GDAStrEnum):
     """Specific form or administrative type of muster roll."""
 
     ENLISTMENT_CONTRACT = "ENLISTMENT_CONTRACT"
@@ -97,7 +100,7 @@ class MusterRollType(StrEnum):
     SPECIAL_REPRESENTATION = "SPECIAL_REPRESENTATION"
 
 
-class SeparationFormType(StrEnum):
+class SeparationFormType(GDAStrEnum):
     """Statutory or administrative certificate form type."""
 
     DD_214 = "DD_214"
@@ -109,12 +112,35 @@ class SeparationFormType(StrEnum):
     OTHER = "OTHER"
 
 
+class MilitaryWar(GDAStrEnum):
+    """Major historical wars and armed conflicts."""
+
+    REVOLUTIONARY = "REVOLUTIONARY"
+    WAR_OF_1812 = "WAR_OF_1812"
+    CIVIL_WAR = "CIVIL_WAR"
+    SPANISH_AMERICAN = "SPANISH_AMERICAN"
+    WWI = "WWI"
+    WWII = "WWII"
+    KOREAN = "KOREAN"
+    VIETNAM = "VIETNAM"
+    OTHER = "OTHER"
+
+
+class MilitaryDraftType(GDAStrEnum):
+    """Classification of historical military draft and conscription records."""
+
+    DRAFT_REGISTRATION = "DRAFT_REGISTRATION"
+    ENROLLMENT_LIST = "ENROLLMENT_LIST"
+    CONSCRIPTION_CARD = "CONSCRIPTION_CARD"
+    MUSTERING_ROLL = "MUSTERING_ROLL"
+
+
 # ==============================================================================
 # AWARDS & DECORATIONS ENUMERATIONS
 # ==============================================================================
 
 
-class MilitaryAwardTier(StrEnum):
+class MilitaryAwardTier(GDAStrEnum):
     """Precedence hierarchy and classification of armed forces awards."""
 
     MEDAL_OF_HONOR = "MEDAL_OF_HONOR"
@@ -135,7 +161,7 @@ class MilitaryAwardTier(StrEnum):
     OTHER = "OTHER"
 
 
-class AwardScope(StrEnum):
+class AwardScope(GDAStrEnum):
     """Operational or commemorative scope of military recognition."""
 
     VALOR_IN_COMBAT = "VALOR_IN_COMBAT"
@@ -152,7 +178,7 @@ class AwardScope(StrEnum):
 # ==============================================================================
 
 
-class CasualtyCategory(StrEnum):
+class CasualtyCategory(GDAStrEnum):
     """Classification of military casualty event."""
 
     KILLED_IN_ACTION = "KILLED_IN_ACTION"
@@ -167,7 +193,7 @@ class CasualtyCategory(StrEnum):
     OTHER = "OTHER"
 
 
-class PowCampType(StrEnum):
+class PowCampType(GDAStrEnum):
     """Prisoner of war camp administrative category."""
 
     OFFICER_CAMP = "OFFICER_CAMP"
@@ -178,7 +204,7 @@ class PowCampType(StrEnum):
     OTHER = "OTHER"
 
 
-class IntermentCemeteryType(StrEnum):
+class IntermentCemeteryType(GDAStrEnum):
     """Type or jurisdiction of military burial facility."""
 
     NATIONAL_CEMETERY = "NATIONAL_CEMETERY"
@@ -195,7 +221,7 @@ class IntermentCemeteryType(StrEnum):
 # ==============================================================================
 
 
-class PensionClaimantRole(StrEnum):
+class PensionClaimantRole(GDAStrEnum):
     """Relationship of the pension claimant to the veteran."""
 
     VETERAN = "VETERAN"
@@ -206,7 +232,7 @@ class PensionClaimantRole(StrEnum):
     OTHER_DEPENDENT = "OTHER_DEPENDENT"
 
 
-class PensionPaymentAuthority(StrEnum):
+class PensionPaymentAuthority(GDAStrEnum):
     """Statutory or administrative authority governing pension disbursement."""
 
     US_BUREAU_OF_PENSIONS = "US_BUREAU_OF_PENSIONS"
@@ -218,7 +244,7 @@ class PensionPaymentAuthority(StrEnum):
     OTHER = "OTHER"
 
 
-class BountyLandAct(StrEnum):
+class BountyLandAct(GDAStrEnum):
     """Congressional acts authorizing military bounty land warrant grants."""
 
     REVOLUTIONARY_WAR_ACTS = "REVOLUTIONARY_WAR_ACTS"
@@ -235,7 +261,7 @@ class BountyLandAct(StrEnum):
 # ==============================================================================
 
 
-class DraftCardTier(StrEnum):
+class DraftCardTier(GDAStrEnum):
     """Controlled classification of US military draft registration rounds."""
 
     WWI_FIRST = "WWI_FIRST"
@@ -245,7 +271,7 @@ class DraftCardTier(StrEnum):
     OTHER = "OTHER"
 
 
-class ColonialWarPeriod(StrEnum):
+class ColonialWarPeriod(GDAStrEnum):
     """Historical conflict or statutory period governing colonial enrollment."""
 
     COLONIAL_INTERCOLONIAL = "COLONIAL_INTERCOLONIAL"
@@ -254,7 +280,7 @@ class ColonialWarPeriod(StrEnum):
     EARLY_REPUBLIC = "EARLY_REPUBLIC"
 
 
-class ColonialMilitiaClass(StrEnum):
+class ColonialMilitiaClass(GDAStrEnum):
     """Statutory readiness or service classification in colonial militia law."""
 
     TRAINBAND = "TRAINBAND"
@@ -264,14 +290,14 @@ class ColonialMilitiaClass(StrEnum):
     TOWN_CLASS = "TOWN_CLASS"
 
 
-class CivilWarConscriptionAllegiance(StrEnum):
+class CivilWarConscriptionAllegiance(GDAStrEnum):
     """Allegiance authority governing Civil War draft enrollment."""
 
     UNION = "UNION"
     CONFEDERATE = "CONFEDERATE"
 
 
-class CivilWarEnrollmentClass(StrEnum):
+class CivilWarEnrollmentClass(GDAStrEnum):
     """Statutory enrollment classification under Civil War Conscription/Enrollment Acts."""
 
     CLASS_1 = "CLASS_1"
@@ -280,7 +306,16 @@ class CivilWarEnrollmentClass(StrEnum):
     CONFEDERATE_GENERAL = "CONFEDERATE_GENERAL"
 
 
-class WwiCitizenshipStatus(StrEnum):
+class WwiCardType(GDAStrEnum):
+    """World War I Selective Service registration card formats."""
+
+    CARD_A = "CARD_A"
+    CARD_B = "CARD_B"
+    CARD_C = "CARD_C"
+    UNKNOWN = "UNKNOWN"
+
+
+class WwiCitizenshipStatus(GDAStrEnum):
     """Controlled classification of citizenship declared on WWI registration cards."""
 
     NATIVE_BORN = "NATIVE_BORN"
@@ -290,7 +325,7 @@ class WwiCitizenshipStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class WwiiDraftWave(StrEnum):
+class WwiiDraftWave(GDAStrEnum):
     """Selective Training and Service Act registration waves."""
 
     FIRST = "FIRST"
@@ -301,7 +336,7 @@ class WwiiDraftWave(StrEnum):
     SIXTH = "SIXTH"
 
 
-class ModernDraftEra(StrEnum):
+class ModernDraftEra(GDAStrEnum):
     """Statutory draft administration era under modern Selective Service."""
 
     POST_WWII_1948 = "POST_WWII_1948"
@@ -310,7 +345,7 @@ class ModernDraftEra(StrEnum):
     POST_1980_REGISTRATION = "POST_1980_REGISTRATION"
 
 
-class SssClassification(StrEnum):
+class SssClassification(GDAStrEnum):
     """Selective Service board classification designation."""
 
     ONE_A = "1-A"

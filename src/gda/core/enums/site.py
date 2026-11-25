@@ -10,9 +10,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "MarkerCondition",
@@ -23,7 +23,7 @@ __all__ = [
 ]
 
 
-class SiteType(StrEnum):
+class SiteType(GDAStrEnum):
     """Classification of physical venues, structures, landmarks, and cemeteries."""
 
     BUSINESS = "BUSINESS"
@@ -42,7 +42,7 @@ class SiteType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class OperationalStatus(StrEnum):
+class OperationalStatus(GDAStrEnum):
     """Operational lifecycle status of physical sites and facilities."""
 
     ACTIVE = "ACTIVE"
@@ -52,40 +52,40 @@ class OperationalStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class MarkerType(StrEnum):
+class MarkerType(GDAStrEnum):
     """Typology of cemetery headstones, monuments, and memorial markers."""
 
-    UPRIGHT_HEADSTONE = "Upright Headstone"
-    FLAT_MARKER = "Flat Marker"
-    SLANT = "Slant"
-    OBELISK = "Obelisk"
-    LEDGER = "Ledger"
-    TABLE_TOMB = "Table Tomb"
-    FOOTSTONE = "Footstone"
-    MONUMENT = "Monument"
-    OTHER = "Other"
+    UPRIGHT_HEADSTONE = "UPRIGHT_HEADSTONE"
+    FLAT_MARKER = "FLAT_MARKER"
+    SLANT = "SLANT"
+    OBELISK = "OBELISK"
+    LEDGER = "LEDGER"
+    TABLE_TOMB = "TABLE_TOMB"
+    FOOTSTONE = "FOOTSTONE"
+    MONUMENT = "MONUMENT"
+    OTHER = "OTHER"
 
 
-class MarkerMaterial(StrEnum):
+class MarkerMaterial(GDAStrEnum):
     """Material composition of cemetery headstones and markers."""
 
-    MARBLE = "Marble"
-    GRANITE = "Granite"
-    SANDSTONE = "Sandstone"
-    LIMESTONE = "Limestone"
-    SLATE = "Slate"
-    FIELDSTONE = "Fieldstone"
-    BRONZE = "Bronze"
-    OTHER = "Other"
+    MARBLE = "MARBLE"
+    GRANITE = "GRANITE"
+    SANDSTONE = "SANDSTONE"
+    LIMESTONE = "LIMESTONE"
+    SLATE = "SLATE"
+    FIELDSTONE = "FIELDSTONE"
+    BRONZE = "BRONZE"
+    OTHER = "OTHER"
 
 
-class MarkerCondition(StrEnum):
+class MarkerCondition(GDAStrEnum):
     """Preservation and physical condition of cemetery markers."""
 
-    SOUND = "Sound"
-    WEATHERED = "Weathered"
-    BROKEN = "Broken"
-    BROKEN_REPAIRED = "Broken/Repaired"
-    SUNKEN = "Sunken"
-    ILLEGIBLE = "Illegible"
-    OVERGROWN = "Overgrown"
+    SOUND = "SOUND"
+    WEATHERED = "WEATHERED"
+    BROKEN = "BROKEN"
+    BROKEN_REPAIRED = "BROKEN_REPAIRED"
+    SUNKEN = "SUNKEN"
+    ILLEGIBLE = "ILLEGIBLE"
+    OVERGROWN = "OVERGROWN"

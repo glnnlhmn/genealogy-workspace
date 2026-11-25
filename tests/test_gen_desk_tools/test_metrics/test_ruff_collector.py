@@ -82,7 +82,7 @@ def test_ruff_collector_exposes_expected_public_interface() -> None:
 
 @pytest.mark.unit
 def test_parse_ruff_json_extracts_findings_and_batches(tmp_path: Path) -> None:
-    """Verify parse_ruff_json parses relative, absolute, and external filenames."""
+    """Verify parse_ruff_JSON parses relative, absolute, and external filenames."""
     batches = (BatchDefinition("B1", "gda", "T0", ("src/gda/core",), ()),)
     abs_in_ws = (tmp_path / "src" / "gda" / "core" / "a.py").as_posix()
     external_path = Path("/outside/other.py").resolve().as_posix()
@@ -129,7 +129,7 @@ def test_parse_ruff_json_extracts_findings_and_batches(tmp_path: Path) -> None:
 
 @pytest.mark.regression
 def test_parse_ruff_json_handles_empty_and_invalid_json(tmp_path: Path) -> None:
-    """Verify parse_ruff_json returns empty tuple on blank or invalid JSON."""
+    """Verify parse_ruff_JSON returns empty tuple on blank or invalid JSON."""
     assert parse_ruff_json("   ", tmp_path, ()) == ()
     assert parse_ruff_json("{bad json", tmp_path, ()) == ()
 

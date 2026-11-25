@@ -6,7 +6,8 @@ Unit and integration tests for AcademicCredentialRepository
 
 from __future__ import annotations
 
-from gda.core.enums.sources import EducationLevel, SourceRecordType
+from gda.core.enums.sources import SourceRecordType
+from gda.core.enums.vital import EducationLevel
 from gda.db.session import DatabaseSessionManager
 from gda.model.atom.id import IndividualID, LocationID, RepositoryID, SourceID
 from gda.model.atom.urn import SourceURN

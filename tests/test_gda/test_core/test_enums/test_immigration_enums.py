@@ -3,8 +3,14 @@
 Targeted behavioral test suite verifying immigration and naturalization enums.
 
 Operational Role:
-    Validates ArrivalPassageClass and NaturalizationStage enum member tokens,
-    StrEnum inheritance, and package re-export parity.
+    Validates gda.core.enums.immigration public exports, package re-export
+    parity, ArrivalPassageClass and NaturalizationStage tokens, and strict
+    invalid-value rejection.
+
+Test Structure & Protocol:
+    - Atomized & parametrized tests: 1:1 behavioral contract mapping.
+    - Fully decorated: 5-marker taxonomy (smoke, unit, regression).
+    - Dependencies: In-memory only; zero physical disk I/O.
 """
 
 from __future__ import annotations
@@ -18,33 +24,61 @@ from gda.core.enums.immigration import (
     NaturalizationStage,
 )
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
-@pytest.mark.unit
+# ==============================================================================
+# GROUP 1: Smoke & Primary Entrypoints
+# Note: Single smoke gate verifying sorted exports and package re-export parity.
+# ==============================================================================
+
+
 @pytest.mark.smoke
-def test_arrival_passage_class_tokens() -> None:
-    """Verify passenger and crew passage classifications on arrival manifests."""
-    assert ArrivalPassageClass.STEERAGE == "STEERAGE"
-    assert ArrivalPassageClass.CABIN == "CABIN"
-    assert ArrivalPassageClass.SECOND_CABIN == "SECOND_CABIN"
-    assert ArrivalPassageClass.CREW == "CREW"
-    assert ArrivalPassageClass.OVERLAND == "OVERLAND"
-    assert ArrivalPassageClass.OTHER == "OTHER"
-    assert len(ArrivalPassageClass) == 6
-
-
 @pytest.mark.unit
-def test_naturalization_stage_tokens_and_reexports() -> None:
-    """Verify procedural naturalization stage tokens and package re-export parity."""
+def test_immigration_enums_exports_and_reexport_parity() -> None:
+    """Verify gda.core.enums.immigration.__all__ is sorted and re-exported."""
     assert imm_enums.__all__ == sorted(imm_enums.__all__)
+    assert set(imm_enums.__all__) == {"ArrivalPassageClass", "NaturalizationStage"}
     for name in imm_enums.__all__:
         assert getattr(enums_pkg, name) is getattr(imm_enums, name)
 
-    assert NaturalizationStage.DECLARATION_OF_INTENTION == "DECLARATION_OF_INTENTION"
-    assert NaturalizationStage.PETITION == "PETITION"
-    assert NaturalizationStage.DEPOSITION_OF_WITNESS == "DEPOSITION_OF_WITNESS"
-    assert NaturalizationStage.OATH_OF_ALLEGIANCE == "OATH_OF_ALLEGIANCE"
-    assert NaturalizationStage.CERTIFICATE == "CERTIFICATE"
-    assert NaturalizationStage.DENIAL_OR_DISMISSAL == "DENIAL_OR_DISMISSAL"
-    assert len(NaturalizationStage) == 6
+
+# ==============================================================================
+# GROUP 2: Core Logic & Happy Paths
+# Note: Canonical UPPER_SNAKE_CASE members for passage and naturalization.
+# ==============================================================================
+
+
+@pytest.mark.unit
+def test_immigration_enums_canonical_tokens() -> None:
+    """Verify ArrivalPassageClass and NaturalizationStage canonical tokens."""
+    assert {m.value for m in ArrivalPassageClass} == {
+        "STEERAGE",
+        "CABIN",
+        "SECOND_CABIN",
+        "CREW",
+        "OVERLAND",
+        "OTHER",
+    }
+    assert {m.value for m in NaturalizationStage} == {
+        "DECLARATION_OF_INTENTION",
+        "PETITION",
+        "DEPOSITION_OF_WITNESS",
+        "OATH_OF_ALLEGIANCE",
+        "CERTIFICATE",
+        "DENIAL_OR_DISMISSAL",
+    }
+
+
+# ==============================================================================
+# GROUP 4: Error Handling & Validation Failures
+# Note: Strict invalid-value rejection on immigration enums.
+# ==============================================================================
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize("bad_value", ["FIRST_CLASS", "steerage", " CABIN ", ""])
+def test_arrival_passage_class_rejects_invalid_values(bad_value: str) -> None:
+    """Verify ArrivalPassageClass strictly rejects unregistered and untrimmed tokens."""
+    with pytest.raises(ValueError):
+        ArrivalPassageClass(bad_value)

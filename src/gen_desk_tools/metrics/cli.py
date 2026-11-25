@@ -42,7 +42,7 @@ from gen_desk_tools.metrics.exporters.report_exporter import write_local_json_re
 from gen_desk_tools.metrics.exporters.sheets_exporter import sync_to_google_sheets
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = ["build_parser", "main", "run_pipeline"]
 
@@ -197,12 +197,17 @@ def run_pipeline(
         logger.debug("Wrote local JSON snapshot: %s", report_path)
         progress.update(f"Wrote local report: {report_path}")
     if config.sync_sheets:
-        sheet_target = sync_to_google_sheets(
-            config,
-            payloads,
-            progress=progress,
-            client_factory=client_factory,
-        )
+        try:
+            sheet_target = sync_to_google_sheets(
+                config,
+                payloads,
+                progress=progress,
+                client_factory=client_factory,
+            )
+        except RuntimeError as exc:
+            logger.error("%s", exc)
+            progress.error(str(exc))
+            return 1
         logger.debug("Synced Google Sheet target: %s", sheet_target)
         progress.update(f"Synced Google Sheet: {sheet_target}")
     progress.finish_stage("export complete")

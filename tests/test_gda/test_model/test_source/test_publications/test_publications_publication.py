@@ -27,7 +27,7 @@ from gda.model.base.name import HistoricVariant, NameThing
 from gda.model.base.tombstone import Tombstone
 from gda.model.source.publications import Publication
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 _SID = "11111111-1111-4111-8111-111111111111"
 _SID_2 = "22222222-2222-4222-8222-222222222222"
@@ -74,7 +74,7 @@ def test_publication_create_and_roundtrip() -> None:
         description="Microfilm run of the Concord Daily Monitor (1864-1923).",
         repository_id="REP-000001",
         title=title,
-        pub_code="  concord_monitor  ",
+        pub_code=" concord_monitor ",
         record_category="news",
         record_type="misc",
         frequency="Daily",
@@ -103,7 +103,7 @@ def test_publication_create_and_roundtrip() -> None:
 
     payload = pub.to_dict()
     assert payload["pub_code"] == "CONCORD_MONITOR"
-    assert payload["frequency"] == "Daily"
+    assert payload["frequency"] == "DAILY"
     assert payload["publisher_raw"] == "Monitor & Statesman Co."
     assert payload["place_of_publication_raw"] == "Concord, NH"
     assert payload["location_id"] == "LOC-000001"
@@ -173,7 +173,7 @@ def test_publication_validation_and_minimal_roundtrip() -> None:
         repository_id=RepositoryID("REP-000001"),
         audit=minimal.audit,
         title=NameThing.create(raw="Direct Title", canonical="Direct Title"),
-        pub_code="  nh_patriot  ",
+        pub_code=" nh_patriot ",
     )
     assert direct.pub_code == "NH_PATRIOT"
 

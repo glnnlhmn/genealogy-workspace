@@ -11,9 +11,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import IntEnum, StrEnum
+from gda.core.enums.base import GDAIntEnum, GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "CensusYearUS",
@@ -23,7 +23,7 @@ __all__ = [
 ]
 
 
-class CensusYearUS(IntEnum):
+class CensusYearUS(GDAIntEnum):
     """Valid US Federal Decennial Census enumeration years (1790 to 1950)."""
 
     Y1790 = 1790
@@ -44,7 +44,7 @@ class CensusYearUS(IntEnum):
     Y1950 = 1950
 
 
-class DateModifier(StrEnum):
+class DateModifier(GDAStrEnum):
     """Standardized genealogical date approximations and qualifiers."""
 
     EXACT = "EXACT"

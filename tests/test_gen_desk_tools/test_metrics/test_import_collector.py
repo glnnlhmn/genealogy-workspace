@@ -239,6 +239,7 @@ def test_collect_import_graph_emits_info_verbose_and_debug_log_records(
 # ==========================================================================
 
 
+# TODO: repair test test_import_edge_record_is_immutable
 @pytest.mark.integrity
 def test_import_edge_record_is_immutable() -> None:
     """Verify ImportEdgeRecord rejects in-place attribute mutation."""

@@ -25,7 +25,7 @@ from gda.core.config import LoggingConfig
 from gda.core.dates import utc_now_iso
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.0.0+build.10"
 
 __all__ = [
     "ConsoleFormatter",
@@ -39,6 +39,10 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """Serialize a log record into a single-line JSON string.
+
+        Uses default=str for non-JSON-native objects (e.g., Path, set, opaque
+        tokens) and falls back to repr() on details/error if a circular
+        reference prevents standard JSON encoding.
 
         Args:
             record: Logging record instance.
@@ -75,7 +79,21 @@ class JsonFormatter(logging.Formatter):
                 "traceback": self.formatException(record.exc_info),
             }
 
-        return json.dumps(payload, ensure_ascii=False)
+        try:
+            return json.dumps(payload, ensure_ascii=False, default=str)
+        except ValueError:
+            # Degrade gracefully on circular references while preserving core log fields
+            safe_payload: dict[str, Any] = {
+                "timestamp": payload["timestamp"],
+                "level": payload["level"],
+                "logger": payload["logger"],
+                "message": payload["message"],
+            }
+            if "details" in payload:
+                safe_payload["details"] = repr(payload["details"])
+            if "error" in payload:
+                safe_payload["error"] = repr(payload["error"])
+            return json.dumps(safe_payload, ensure_ascii=False, default=str)
 
 
 class ConsoleFormatter(logging.Formatter):

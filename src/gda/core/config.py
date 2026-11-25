@@ -28,8 +28,9 @@ from urllib.parse import quote_plus
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from gda.core.errors import ConfigParseError, ConfigValidationError
+from gda.core.types import is_finite_number
 
-__version__ = "1.0.0+build.19"
+__version__ = "1.0.0+build.20"
 
 __all__ = [
     "AppConfig",
@@ -109,8 +110,10 @@ class DatabaseConfig(ImmutableBaseModel):
 
         mutable = dict(data)
         if "timeout_seconds" in mutable and "busy_timeout" not in mutable:
-            sec = float(mutable.pop("timeout_seconds"))
-            mutable["busy_timeout"] = int(sec * 1000)
+            raw_sec = mutable.pop("timeout_seconds")
+            if not is_finite_number(raw_sec):
+                raise ValueError(f"Invalid timeout_seconds value: {raw_sec!r}")
+            mutable["busy_timeout"] = int(float(raw_sec) * 1000)
         else:
             mutable.pop("timeout_seconds", None)
 

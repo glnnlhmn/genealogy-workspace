@@ -6,24 +6,23 @@ Operational Role:
     Provides standardized classifications, evidentiary confidence metrics,
     kinship roles, onomastic classifications, temporal qualifiers, military
     classifications, organization taxonomies, probate/land/immigration
-    classifications, and archival categories.
+    classifications, archival categories, and enum base/coercion primitives.
 """
 
 from __future__ import annotations
 
 from gda.core.enums.archival import (
     DocumentSide,
-    EyeColor,
-    HairColor,
     Legibility,
     NoteType,
-    PhysicalBuild,
     PublicationFrequency,
-    SelectiveServiceClass,
     TestimonyMedium,
     TextQuality,
-    TranscriptLegibility,
-    WwiCardType,
+)
+from gda.core.enums.base import (
+    GDAIntEnum,
+    GDAStrEnum,
+    coerce_enum,
 )
 from gda.core.enums.core import (
     AssociatedRole,
@@ -70,6 +69,8 @@ from gda.core.enums.military import (
     IntermentCemeteryType,
     MilitaryAwardTier,
     MilitaryBranch,
+    MilitaryDraftType,
+    MilitaryWar,
     ModernDraftEra,
     MusterRollType,
     PensionClaimantRole,
@@ -79,6 +80,7 @@ from gda.core.enums.military import (
     SeparationFormType,
     ServiceComponent,
     SssClassification,
+    WwiCardType,
     WwiCitizenshipStatus,
     WwiiDraftWave,
 )
@@ -100,10 +102,6 @@ from gda.core.enums.site import (
     SiteType,
 )
 from gda.core.enums.sources import (
-    EducationLevel,
-    MilitaryConflict,
-    MilitaryDraftType,
-    MilitaryWar,
     SourceRecordCategory,
     SourceRecordType,
 )
@@ -111,18 +109,21 @@ from gda.core.enums.vital import (
     BirthPlurality,
     DispositionType,
     DivorceDecreeType,
+    EducationLevel,
+    EyeColor,
+    HairColor,
     HistoricNameType,
     LegalPlaintiff,
     MannerOfDeath,
-    MaritalHistoryDissolution,
     MaritalStatus,
     PedigreeType,
+    PhysicalBuild,
     UnionDissolutionType,
     UnionType,
     VitalModifier,
 )
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.10"
 
 __all__ = [
     "AffiliationType",  # orgs.py
@@ -145,11 +146,13 @@ __all__ = [
     "DivorceDecreeType",  # vital.py
     "DocumentSide",  # archival.py
     "DraftCardTier",  # military.py
-    "EducationLevel",  # sources.py
+    "EducationLevel",  # vital.py
     "EstatePropertyCategory",  # probate.py
-    "EyeColor",  # archival.py
+    "EyeColor",  # vital.py
     "FactType",  # core.py
-    "HairColor",  # archival.py
+    "GDAIntEnum",  # base.py
+    "GDAStrEnum",  # base.py
+    "HairColor",  # vital.py
     "HistoricNameType",  # vital.py
     "HomeOwnership",  # fiscal.py
     "IDType",  # core.py
@@ -161,7 +164,6 @@ __all__ = [
     "LocationType",  # location.py
     "MODIFIER_ALIASES",  # date.py
     "MannerOfDeath",  # vital.py
-    "MaritalHistoryDissolution",  # vital.py
     "MaritalStatus",  # vital.py
     "MarkerCondition",  # site.py
     "MarkerMaterial",  # site.py
@@ -169,9 +171,8 @@ __all__ = [
     "MembershipStatus",  # orgs.py
     "MilitaryAwardTier",  # military.py
     "MilitaryBranch",  # military.py
-    "MilitaryConflict",  # sources.py
-    "MilitaryDraftType",  # sources.py
-    "MilitaryWar",  # sources.py
+    "MilitaryDraftType",  # military.py
+    "MilitaryWar",  # military.py
     "ModernDraftEra",  # military.py
     "MusterRollType",  # military.py
     "NaturalizationStage",  # immigration.py
@@ -181,14 +182,13 @@ __all__ = [
     "PedigreeType",  # vital.py
     "PensionClaimantRole",  # military.py
     "PensionPaymentAuthority",  # military.py
-    "PhysicalBuild",  # archival.py
+    "PhysicalBuild",  # vital.py
     "PowCampType",  # military.py
     "ProbateLedgerEntryKind",  # probate.py
     "PublicationFrequency",  # archival.py
     "QualityAssessment",  # core.py
     "QuayScore",  # core.py
     "ResidentialStatus",  # fiscal.py
-    "SelectiveServiceClass",  # archival.py
     "SeparationCharacter",  # military.py
     "SeparationFormType",  # military.py
     "ServiceComponent",  # military.py
@@ -201,12 +201,12 @@ __all__ = [
     "TaxpayerClassification",  # fiscal.py
     "TestimonyMedium",  # archival.py
     "TextQuality",  # archival.py
-    "TranscriptLegibility",  # archival.py
     "UnionDissolutionType",  # vital.py
     "UnionType",  # vital.py
     "VitalModifier",  # vital.py
-    "WwiCardType",  # archival.py
+    "WwiCardType",  # military.py
     "WwiCitizenshipStatus",  # military.py
     "WwiiDraftWave",  # military.py
+    "coerce_enum",  # base.py
     "normalize_modifier",  # date.py
 ]

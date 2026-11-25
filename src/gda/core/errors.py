@@ -1,31 +1,22 @@
 """Path: src/gda/core/errors.py
 
-Exception hierarchy and error contracts for GDA Core.
+Structured exception hierarchy and diagnostic serialization for GDA.
 
 Operational Role:
-    Defines the root exception tree, structured error details serialization,
-    CLI exit code mapping, and diagnostic error codes across domain validation,
-    configuration parsing, and runtime subsystem boundaries.
-
-Classes:
-    GenealogyDeskError: Canonical base exception with structured error metadata.
-    ConfigError: Root exception for configuration-layer failures.
-    ConfigValidationError: Raised when configuration payloads violate constraints.
-    ConfigParseError: Raised when configuration file formats or TOML syntax fail.
-    ModelError: Root base exception for all model validation failures.
-    ModelFormatError: Raised when format, pattern, or string syntax fails.
-    ModelRangeError: Raised when numerical or temporal boundaries are exceeded.
-    ModelPrefixMismatchError: Raised when an identifier prefix conflicts with its type.
+    Defines the Tier 0 root exception (GenealogyDeskError) and cross-cutting
+    configuration and model validation exception hierarchies. Every exception
+    captures a UTC ISO-8601 timestamp, canonical error_code, CLI exit_code,
+    and defensively isolated diagnostic details for structured logging.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from gda.core.types import ISO_TIMESTAMP_FMT
 
-__version__ = "1.0.0+build.13"
+__version__ = "1.0.0+build.14"
 
 __all__ = [
     "ConfigError",
@@ -39,159 +30,121 @@ __all__ = [
 ]
 
 
-# ==============================================================================
-# SECTION 1: ROOT EXCEPTION CONTRACT
-# ==============================================================================
-
-
 class GenealogyDeskError(Exception):
-    """Canonical base exception for all Genealogy Digital Archive components.
+    """Root exception for all Genealogy Desk Assistant (GDA) domain errors.
 
-    Attributes:
-        message: Human-readable error diagnostic message.
-        error_code: Standardized system error code string.
-        details: Structured dictionary carrying contextual diagnostic state.
-        timestamp: ISO 8601 UTC timestamp string ending with Z.
-        exit_code: Process exit code mapped for CLI termination.
+    Subclasses override DEFAULT_ERROR_CODE and DEFAULT_EXIT_CODE via ClassVar
+    declarations rather than duplicating __init__ boilerplate.
     """
+
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_GENERIC"
+    DEFAULT_EXIT_CODE: ClassVar[int] = 1
 
     def __init__(
         self,
         message: str,
-        error_code: str = "ERR_GENERIC",
+        *,
+        error_code: str | None = None,
         details: dict[str, Any] | None = None,
-        exit_code: int = 1,
+        exit_code: int | None = None,
     ) -> None:
-        """Initialize GenealogyDeskError with diagnostic context and UTC timestamp.
+        """Initialize a structured GDA exception without raising secondary errors.
 
         Args:
-            message: Human-readable diagnostic description of the failure.
-            error_code: Canonical uppercase error identifier.
-            details: Optional dictionary of contextual diagnostic attributes.
-            exit_code: Process exit code for CLI application termination.
+            message: Human-readable description of the failure.
+            error_code: Machine-readable error identifier; defaults to the
+                class's DEFAULT_ERROR_CODE when None.
+            details: Optional diagnostic key-value mapping; shallow-copied to
+                isolate internal error state from caller mutations.
+            exit_code: Process exit status code; defaults to the class's
+                DEFAULT_EXIT_CODE when None.
         """
         super().__init__(message)
-        self.message = message
-        self.error_code = error_code
-        self.details = details or {}
-        self.exit_code = exit_code
-        # Format timestamp using canonical ISO_TIMESTAMP_FMT (%Y-%m-%dT%H:%M:%SZ)
-        self.timestamp = datetime.now(UTC).strftime(ISO_TIMESTAMP_FMT)
+        self.message: str = message
+        # Use explicit `is None` checks so callers can pass "" or 0 intentionally.
+        self.error_code: str = self.DEFAULT_ERROR_CODE if error_code is None else error_code
+        self.details: dict[str, Any] = dict(details) if details is not None else {}
+        self.exit_code: int = self.DEFAULT_EXIT_CODE if exit_code is None else exit_code
+        self.timestamp: str = datetime.now(UTC).strftime(ISO_TIMESTAMP_FMT)
 
     def __str__(self) -> str:
+        """Return the raw human-readable error message."""
         return self.message
 
+    def __repr__(self) -> str:
+        """Return an unambiguous diagnostic representation for logs and test diffs."""
+        return (
+            f"{type(self).__name__}("
+            f"message={self.message!r}, "
+            f"error_code={self.error_code!r}, "
+            f"exit_code={self.exit_code!r})"
+        )
+
     def to_dict(self) -> dict[str, Any]:
-        """Serialize exception metadata into structured JSON-compatible payload.
+        """Serialize error metadata to a dictionary with defensively copied details.
 
         Returns:
-            Dictionary containing error_code, message, details, timestamp, and exit_code.
+            A 5-key dictionary containing error_code, message, details,
+            timestamp, and exit_code.
         """
         return {
             "error_code": self.error_code,
             "message": self.message,
-            "details": self.details,
+            "details": dict(self.details),
             "timestamp": self.timestamp,
             "exit_code": self.exit_code,
         }
 
 
 # ==============================================================================
-# SECTION 2: CONFIGURATION SUBSYSTEM EXCEPTIONS
+# Configuration Exceptions (Exit Code 2)
 # ==============================================================================
 
 
 class ConfigError(GenealogyDeskError):
-    """Root exception for configuration load, validation, and parsing defects."""
+    """Base exception for configuration loading, parsing, and validation failures."""
 
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "ERR_CONFIG",
-        details: dict[str, Any] | None = None,
-        exit_code: int = 2,
-    ) -> None:
-        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_CONFIG"
+    DEFAULT_EXIT_CODE: ClassVar[int] = 2
 
 
 class ConfigValidationError(ConfigError):
-    """Raised when configuration values violate data types or domain bounds."""
+    """Raised when loaded configuration violates schema or domain constraints."""
 
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "ERR_CONFIG_VALIDATION",
-        details: dict[str, Any] | None = None,
-        exit_code: int = 2,
-    ) -> None:
-        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_CONFIG_VALIDATION"
 
 
 class ConfigParseError(ConfigError):
-    """Raised when configuration files cannot be located, decoded, or parsed."""
+    """Raised when a configuration file cannot be parsed (e.g., malformed TOML)."""
 
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "ERR_CONFIG_PARSE",
-        details: dict[str, Any] | None = None,
-        exit_code: int = 2,
-    ) -> None:
-        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_CONFIG_PARSE"
 
 
 # ==============================================================================
-# SECTION 3: MODEL VALIDATION EXCEPTIONS
+# Model Validation Exceptions (Exit Code 3)
 # ==============================================================================
 
 
 class ModelError(GenealogyDeskError):
-    """Root base exception for all domain model validation failures."""
+    """Base exception for domain model validation and invariant violations."""
 
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "ERR_MODEL_VALIDATION",
-        details: dict[str, Any] | None = None,
-        exit_code: int = 3,
-    ) -> None:
-        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_MODEL_VALIDATION"
+    DEFAULT_EXIT_CODE: ClassVar[int] = 3
 
 
 class ModelFormatError(ModelError):
-    """Raised when string syntax, regex patterns, or structural formats are violated."""
+    """Raised when a field value fails canonical format or regex validation."""
 
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "ERR_MODEL_FORMAT",
-        details: dict[str, Any] | None = None,
-        exit_code: int = 3,
-    ) -> None:
-        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_MODEL_FORMAT"
 
 
 class ModelRangeError(ModelError):
-    """Raised when numerical, scalar, or temporal boundaries are exceeded."""
+    """Raised when a numeric or temporal value falls outside permitted bounds."""
 
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "ERR_MODEL_RANGE",
-        details: dict[str, Any] | None = None,
-        exit_code: int = 3,
-    ) -> None:
-        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_MODEL_RANGE"
 
 
 class ModelPrefixMismatchError(ModelError):
-    """Raised when an entity identifier prefix does not match the target model class."""
+    """Raised when an entity identifier prefix does not match its expected type."""
 
-    def __init__(
-        self,
-        message: str,
-        error_code: str = "ERR_MODEL_PREFIX_MISMATCH",
-        details: dict[str, Any] | None = None,
-        exit_code: int = 3,
-    ) -> None:
-        super().__init__(message, error_code=error_code, details=details, exit_code=exit_code)
+    DEFAULT_ERROR_CODE: ClassVar[str] = "ERR_MODEL_PREFIX_MISMATCH"

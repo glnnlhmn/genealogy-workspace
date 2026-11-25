@@ -20,11 +20,13 @@ from typing import Any
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.0.0+build.10"
 
 __all__ = [
     "IntrospectableMixin",
 ]
+
+_MISSING = object()
 
 
 def _render_property_help(
@@ -79,9 +81,9 @@ def _render_member_help(
     clean_name: str,
 ) -> str:
     """Inspect and format documentation for a single named member on cls."""
-    cls_attr = getattr(cls, clean_name, None)
-    # Guard against requests for non-existent class attributes
-    if cls_attr is None:
+    cls_attr = getattr(cls, clean_name, _MISSING)
+    # Guard against requests for non-existent class attributes while allowing None values
+    if cls_attr is _MISSING:
         raise GenealogyDeskError(
             f"'{clean_name}' is not a recognized member of {cls.__name__}.",
             error_code="ERR_MEMBER_NOT_FOUND",
@@ -163,9 +165,17 @@ class _HybridHelpDescriptor:
                 Formatted documentation string if as_str=True; None otherwise.
 
             Raises:
-                GenealogyDeskError: If member_name does not exist on the owner class.
+                GenealogyDeskError: If member_name is not a string/None or does not
+                    exist on the owner class.
             """
-            clean_name = member_name.strip() if member_name else ""
+            if member_name is not None and not isinstance(member_name, str):
+                raise GenealogyDeskError(
+                    f"member_name must be a string or None, got {type(member_name).__name__}.",
+                    error_code="ERR_INVALID_MEMBER_NAME",
+                    details={"class": cls.__name__, "member_type": type(member_name).__name__},
+                )
+
+            clean_name = member_name.strip() if member_name is not None else ""
             result = (
                 _render_member_help(cls, instance, clean_name)
                 if clean_name

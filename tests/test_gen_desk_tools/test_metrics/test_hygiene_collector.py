@@ -254,6 +254,7 @@ def test_collect_hygiene_metrics_emits_info_verbose_and_debug_log_records(
 # ==========================================================================
 
 
+# TODO: Repair test execute GDA-Batch-4c
 @pytest.mark.integrity
 def test_module_hygiene_record_is_immutable() -> None:
     """Verify ModuleHygieneRecord rejects in-place attribute mutation."""

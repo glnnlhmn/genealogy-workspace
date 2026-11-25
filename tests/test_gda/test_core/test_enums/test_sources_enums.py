@@ -3,12 +3,14 @@
 Targeted behavioral test suite verifying bibliographic and source enums.
 
 Operational Role:
-    Validates documentary categories, granular source records,
-    educational attainments, military draft types, and conflict taxonomies.
+    Validates gda.core.enums.sources public exports (SourceRecordCategory and
+    SourceRecordType) following Phase 3 retirement of MilitaryConflict and
+    relocation of MilitaryDraftType/MilitaryWar to military.py and
+    EducationLevel to vital.py.
 
 Test Structure & Protocol:
-    - Atomized tests: 1:1 verification per behavioral contract.
-    - Fully decorated: Strictly unit and regression markers.
+    - Atomized & parametrized tests: 1:1 behavioral contract mapping.
+    - Fully decorated: 5-marker taxonomy (smoke, unit, regression).
     - Dependencies: In-memory only; zero physical disk I/O.
 """
 
@@ -16,24 +18,35 @@ from __future__ import annotations
 
 import pytest
 
+import gda.core.enums.sources as sources_enums
 from gda.core.enums.sources import (
-    EducationLevel,
-    MilitaryConflict,
-    MilitaryDraftType,
-    MilitaryWar,
     SourceRecordCategory,
     SourceRecordType,
 )
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
+
 
 # ==============================================================================
-# GROUP 1: Document Classifications
+# GROUP 1: Smoke & Primary Entrypoints
+# Note: Single smoke gate freezing the 2 authoritative source exports (Phase 3).
+# ==============================================================================
+
+
+@pytest.mark.smoke
+@pytest.mark.unit
+def test_sources_enums_exposes_expected_public_interface() -> None:
+    """Verify gda.core.enums.sources exports only SourceRecordCategory and SourceRecordType."""
+    assert set(sources_enums.__all__) == {"SourceRecordCategory", "SourceRecordType"}
+
+
+# ==============================================================================
+# GROUP 2: Core Logic & Happy Paths
+# Note: High-level source categories and granular document type tokens.
 # ==============================================================================
 
 
 @pytest.mark.unit
-@pytest.mark.smoke
 def test_source_record_category_tokens() -> None:
     """Verify high-level archival category classifications."""
     assert SourceRecordCategory.VITAL == "VITAL"
@@ -55,29 +68,14 @@ def test_source_record_type_vital_and_probate() -> None:
 
 
 # ==============================================================================
-# GROUP 2: Education, Draft Types & Military Conflict Taxonomies
+# GROUP 4: Error Handling & Validation Failures
+# Note: Strict invalid-value rejection on source enums.
 # ==============================================================================
 
 
-@pytest.mark.unit
-def test_education_level_tokens() -> None:
-    """Verify educational attainment tokens."""
-    assert EducationLevel.ELEM == "ELEM"
-    assert EducationLevel.HS == "HS"
-    assert EducationLevel.COLL == "COLL"
-    assert EducationLevel.GRAD == "GRAD"
-    assert EducationLevel.VOC == "VOC"
-    assert EducationLevel.OTHER == "OTHER"
-
-
-@pytest.mark.unit
-def test_military_draft_and_conflicts() -> None:
-    """Verify military draft classifications and historical conflict codes."""
-    assert MilitaryDraftType.DRAFT_REGISTRATION == "DRAFT_REGISTRATION"
-    assert MilitaryDraftType.ENROLLMENT_LIST == "ENROLLMENT_LIST"
-    assert MilitaryDraftType.CONSCRIPTION_CARD == "CONSCRIPTION_CARD"
-    assert MilitaryDraftType.MUSTERING_ROLL == "MUSTERING_ROLL"
-    assert MilitaryConflict.CW == "CW"
-    assert MilitaryWar.CIVIL_WAR == "CIVIL_WAR"
-    assert MilitaryWar.WWI == "WWI"
-    assert MilitaryWar.WWII == "WWII"
+@pytest.mark.regression
+@pytest.mark.parametrize("bad_value", ["UNKNOWN_CAT", "vital", " CENSUS ", ""])
+def test_source_record_category_rejects_invalid_values(bad_value: str) -> None:
+    """Verify SourceRecordCategory strictly rejects unregistered and untrimmed tokens."""
+    with pytest.raises(ValueError):
+        SourceRecordCategory(bad_value)

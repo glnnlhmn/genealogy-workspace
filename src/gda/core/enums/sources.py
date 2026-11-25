@@ -1,29 +1,25 @@
 """Path: src/gda/core/enums/sources.py
 
-Source record categories, document classifications, and historical schedules.
+Source record categories and granular document classifications.
 
 Operational Role:
-    Defines authoritative archival source categories, granular document types,
-    educational attainments, and military conflict taxonomies.
+    Defines authoritative archival source categories and granular document
+    type tokens for historical records.
 """
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
-    "EducationLevel",
-    "MilitaryConflict",
-    "MilitaryDraftType",
-    "MilitaryWar",
     "SourceRecordCategory",
     "SourceRecordType",
 ]
 
 
-class SourceRecordCategory(StrEnum):
+class SourceRecordCategory(GDAStrEnum):
     """High-level archival domain classification for historical sources."""
 
     CEMETERY = "CEMETERY"
@@ -54,7 +50,7 @@ class SourceRecordCategory(StrEnum):
     VITAL = "VITAL"
 
 
-class SourceRecordType(StrEnum):
+class SourceRecordType(GDAStrEnum):
     """Granular archival classification for source documents."""
 
     # Vital
@@ -180,49 +176,3 @@ class SourceRecordType(StrEnum):
     MEMBERSHIP_ROSTER = "MEMBERSHIP_ROSTER"
     RECEIPT = "RECEIPT"
     MISC = "MISC"
-
-
-class EducationLevel(StrEnum):
-    """Standard educational attainment tokens."""
-
-    ELEM = "ELEM"
-    HS = "HS"
-    COLL = "COLL"
-    GRAD = "GRAD"
-    VOC = "VOC"
-    OTHER = "OTHER"
-
-
-class MilitaryConflict(StrEnum):
-    """Conflict codes used on draft and military service schedules."""
-
-    CW = "CW"
-    SPANAM = "SPANAM"
-    WWI = "WWI"
-    WWII = "WWII"
-    KOREA = "KOREA"
-    VIETNAM = "VIETNAM"
-    PEACETIME = "PEACETIME"
-
-
-class MilitaryDraftType(StrEnum):
-    """Military draft registration list classifications."""
-
-    DRAFT_REGISTRATION = "DRAFT_REGISTRATION"
-    ENROLLMENT_LIST = "ENROLLMENT_LIST"
-    CONSCRIPTION_CARD = "CONSCRIPTION_CARD"
-    MUSTERING_ROLL = "MUSTERING_ROLL"
-
-
-class MilitaryWar(StrEnum):
-    """Standardized military historical conflicts."""
-
-    REVOLUTIONARY = "REVOLUTIONARY"
-    WAR_OF_1812 = "WAR_OF_1812"
-    CIVIL_WAR = "CIVIL_WAR"
-    SPANISH_AMERICAN = "SPANISH_AMERICAN"
-    WWI = "WWI"
-    WWII = "WWII"
-    KOREAN = "KOREAN"
-    VIETNAM = "VIETNAM"
-    OTHER = "OTHER"

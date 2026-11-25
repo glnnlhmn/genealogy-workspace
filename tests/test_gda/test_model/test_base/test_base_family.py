@@ -19,7 +19,7 @@ from gda.model.atom.id import IndividualID
 from gda.model.base.date import EventDate, TimePeriod
 from gda.model.base.family import ChildLink, FamilyUnion
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 
 # ==============================================================================
@@ -37,7 +37,7 @@ def test_child_link_creation_ordering_and_mutators(sample_individual_id: Individ
 
     assert c1.child_id == sample_individual_id
     assert c1.pedigree == PedigreeType.BIRTH
-    assert str(c1) == "IND-000101 (Birth)"
+    assert str(c1) == "IND-000101 (BIRTH)"
     assert "ChildLink(" in repr(c1)
 
     # Total ordering by child_id then pedigree.value
@@ -64,7 +64,7 @@ def test_child_link_serialization_round_trip(sample_individual_id: IndividualID)
     """Verify ChildLink to_dict, from_dict, to_json, and from_json round-trip fidelity."""
     link = ChildLink.create("IND-000101", pedigree="adopted")
     payload = link.to_dict()
-    assert payload == {"child_id": "IND-000101", "pedigree": "Adopted"}
+    assert payload == {"child_id": "IND-000101", "pedigree": "ADOPTED"}
     assert ChildLink.from_dict(payload) == link
     assert ChildLink.from_dict({"child_id": sample_individual_id}).child_id == sample_individual_id
     assert ChildLink.from_json(link.to_json()) == link
@@ -72,7 +72,7 @@ def test_child_link_serialization_round_trip(sample_individual_id: IndividualID)
     with pytest.raises(ModelFormatError, match="ChildLink payload must be a dictionary"):
         ChildLink.from_dict("bad")  # type: ignore[arg-type]
     with pytest.raises(ModelFormatError, match="Missing required field 'child_id'"):
-        ChildLink.from_dict({"pedigree": "Birth"})
+        ChildLink.from_dict({"pedigree": "BIRTH"})
     with pytest.raises(ModelFormatError, match="Failed to parse ChildLink JSON"):
         ChildLink.from_json("{bad-json")
 

@@ -38,6 +38,8 @@ max_age_days = 90
 default_scopes = ["gda"]
 sync_sheets_by_default = true
 write_local_report = true
+sheet_id = "1_TP32cyKTjTeTb5SKrnEFZBIMHLQ2kKop_zIk9gIN3E"
+sheet_url = "https://docs.google.com/spreadsheets/d/1_TP32cyKTjTeTb5SKrnEFZBIMHLQ2kKop_zIk9gIN3E/edit"
 
 [metrics.gates.coverage]
 gda = 95.0

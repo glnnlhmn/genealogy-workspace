@@ -1,84 +1,41 @@
 """Path: tests/test_gda/test_core/test_enums/test_enums_contract.py
 
-Comprehensive behavioral test suite verifying all authoritative enumeration contracts.
+Authoritative package-level facade and invariant contract suite for gda.core.enums.
 
 Operational Role:
-    Verifies that all StrEnum and IntEnum definitions in gda.core.enums conform to
-    their expected tokens, base classes, exact sealed public interface contracts,
-    JSON serializability, Pydantic V2 validation, and strict rejection boundaries.
+    Freezes the sealed 83-item public interface of gda.core.enums.__all__,
+    verifies native JSON/string serialization and cross-domain boundaries,
+    and enforces Phase 3 architectural invariants: GDAStrEnum/GDAIntEnum
+    inheritance, authoritative submodule placement, unique member values,
+    and universal UPPER_SNAKE_CASE StrEnum tokens.
 
 Test Structure & Protocol:
-    - Atomized tests: 1:1 verification per behavioral contract.
-    - Fully decorated: Explicitly decorated with registered pytest markers.
-    - Dependencies: In-memory only; zero physical disk I/O.
+    - Atomized tests: 1:1 structural contract assertions.
+    - Fully decorated: 5-marker taxonomy (smoke, unit, integrity).
+    - Companion module: test_enums_coercion.py (coercion, Pydantic, Hypothesis).
 """
 
 from __future__ import annotations
 
 import json
+import re
 from enum import Enum, IntEnum, StrEnum
-from typing import Any
 
 import pytest
-from pydantic import BaseModel, ValidationError
 
 import gda.core.enums as ge
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
+_MEMBER_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
+_UPPER_TOKEN_RE = re.compile(r"^[A-Z0-9][A-Z0-9_-]*$")
 
-# ==============================================================================
-# GROUP 1: General Enum Invariants & Structural Integrity
-# ==============================================================================
-
-
-@pytest.mark.unit
-@pytest.mark.integrity
-def test_all_enums_inherit_proper_base_types(
-    all_enum_classes: tuple[type[Enum], ...],
-) -> None:
-    """Verify every registered enum inherits strictly from StrEnum or IntEnum."""
-    for enum_cls in all_enum_classes:
-        is_str = issubclass(enum_cls, StrEnum)
-        is_int = issubclass(enum_cls, IntEnum)
-        assert is_str or is_int, f"{enum_cls.__name__} does not inherit from StrEnum or IntEnum"
-
-
-@pytest.mark.unit
-@pytest.mark.integrity
-def test_all_enum_canonical_values_are_unique(
-    all_enum_classes: tuple[type[Enum], ...],
-) -> None:
-    """Verify unique values exist across canonical members within each enum class."""
-    for enum_cls in all_enum_classes:
-        values = [member.value for member in enum_cls]
-        unique_values = set(values)
-        assert len(values) == len(unique_values), (
-            f"{enum_cls.__name__} contains duplicate member values across canonical definitions"
-        )
-
-
-@pytest.mark.unit
-@pytest.mark.integrity
-def test_all_enum_classes_are_exported_in_dunder_all(
-    all_enum_classes: tuple[type[Enum], ...],
-) -> None:
-    """Verify that every unique enum class is represented in gda.core.enums.__all__."""
-    exported_names = set(ge.__all__)
-    for enum_cls in all_enum_classes:
-        assert enum_cls.__name__ in exported_names, f"{enum_cls.__name__} missing from __all__"
-
-
-# ==============================================================================
-# GROUP 2: Exact Sealed Public Interface Contract (84 Items)
-# ==============================================================================
-
-
-@pytest.mark.smoke
-@pytest.mark.integrity
-def test_enums_package_exact_public_interface() -> None:
-    """Verify gda.core.enums.__all__ matches the exact sealed public contract of 84 items."""
-    exact_expected_contract = {
+AUTHORITATIVE_ENUM_EXPORTS: frozenset[str] = frozenset(
+    {
+        # Base & Coercion (3)
+        "GDAIntEnum",
+        "GDAStrEnum",
+        "coerce_enum",
         # Core Domain (7)
         "AssociatedRole",
         "FactType",
@@ -92,16 +49,19 @@ def test_enums_package_exact_public_interface() -> None:
         "DateModifier",
         "MODIFIER_ALIASES",
         "normalize_modifier",
-        # Vital Domain (12)
+        # Vital Domain (15 — includes relocated EyeColor, HairColor, PhysicalBuild, EducationLevel)
         "BirthPlurality",
         "DispositionType",
         "DivorceDecreeType",
+        "EducationLevel",
+        "EyeColor",
+        "HairColor",
         "HistoricNameType",
         "LegalPlaintiff",
         "MannerOfDeath",
-        "MaritalHistoryDissolution",
         "MaritalStatus",
         "PedigreeType",
+        "PhysicalBuild",
         "UnionDissolutionType",
         "UnionType",
         "VitalModifier",
@@ -129,27 +89,17 @@ def test_enums_package_exact_public_interface() -> None:
         "BequestType",
         "EstatePropertyCategory",
         "ProbateLedgerEntryKind",
-        # Archival Domain (12)
+        # Archival Domain (6)
         "DocumentSide",
-        "EyeColor",
-        "HairColor",
         "Legibility",
         "NoteType",
-        "PhysicalBuild",
         "PublicationFrequency",
-        "SelectiveServiceClass",
         "TestimonyMedium",
         "TextQuality",
-        "TranscriptLegibility",
-        "WwiCardType",
-        # Sources Domain (6)
-        "EducationLevel",
-        "MilitaryConflict",
-        "MilitaryDraftType",
-        "MilitaryWar",
+        # Sources Domain (2)
         "SourceRecordCategory",
         "SourceRecordType",
-        # Military Domain (22)
+        # Military Domain (25 — includes relocated WwiCardType, MilitaryDraftType, MilitaryWar)
         "AwardScope",
         "BountyLandAct",
         "CasualtyCategory",
@@ -161,6 +111,8 @@ def test_enums_package_exact_public_interface() -> None:
         "IntermentCemeteryType",
         "MilitaryAwardTier",
         "MilitaryBranch",
+        "MilitaryDraftType",
+        "MilitaryWar",
         "ModernDraftEra",
         "MusterRollType",
         "PensionClaimantRole",
@@ -170,6 +122,7 @@ def test_enums_package_exact_public_interface() -> None:
         "SeparationFormType",
         "ServiceComponent",
         "SssClassification",
+        "WwiCardType",
         "WwiCitizenshipStatus",
         "WwiiDraftWave",
         # Orgs Domain (3)
@@ -177,190 +130,140 @@ def test_enums_package_exact_public_interface() -> None:
         "MembershipStatus",
         "OrganizationCategory",
     }
+)
 
-    actual_exported = set(ge.__all__)
-    missing = exact_expected_contract - actual_exported
-    extra = actual_exported - exact_expected_contract
 
+# ==============================================================================
+# GROUP 1: Smoke & Primary Entrypoints
+# Note: Single smoke gate freezing gda.core.enums.__all__ (83 items).
+# ==============================================================================
+
+
+@pytest.mark.smoke
+@pytest.mark.integrity
+def test_enums_package_exact_public_interface() -> None:
+    """Verify gda.core.enums.__all__ matches the exact sealed 83-item contract."""
+    actual = set(ge.__all__)
+    missing = AUTHORITATIVE_ENUM_EXPORTS - actual
+    extra = actual - AUTHORITATIVE_ENUM_EXPORTS
     assert not missing and not extra, (
-        f"Public interface drift in gda.core.enums:\n"
-        f"  Missing expected: {missing}\n"
-        f"  Unexpected additions: {extra}"
+        f"Public interface drift in gda.core.enums:\n  Missing: {missing}\n  Extra: {extra}"
     )
-    assert len(ge.__all__) == len(exact_expected_contract)
+    assert len(ge.__all__) == len(AUTHORITATIVE_ENUM_EXPORTS)
     assert ge.__all__ == sorted(ge.__all__)
 
 
 # ==============================================================================
-# GROUP 3: Cross-Domain Boundary Specifications
+# GROUP 2: Core Logic & Happy Paths
+# Note: Native JSON serialization, str formatting, and cross-domain boundaries.
 # ==============================================================================
 
 
 @pytest.mark.unit
-def test_location_type_and_site_type_boundary() -> None:
-    """Verify LocationType (jurisdictions) is strictly partitioned from SiteType (venues)."""
-    assert ge.LocationType.COUNTY == "COUNTY"
-    assert ge.LocationType.STATE == "STATE"
-    assert ge.SiteType.CEMETERY == "CEMETERY"
-    assert ge.SiteType.CHURCH == "CHURCH"
-    assert "COUNTY" not in [m.value for m in ge.SiteType]
-    assert "STATE" not in [m.value for m in ge.SiteType]
+def test_strenum_and_intenum_native_json_and_str_behavior() -> None:
+    """Verify StrEnum emits UPPER_SNAKE_CASE strings and IntEnum emits raw ints in JSON."""
+    payload = {
+        "sex": ge.Sex.MALE,
+        "fact": ge.FactType.BIRTH,
+        "marker": ge.MarkerType.UPRIGHT_HEADSTONE,
+        "quay": ge.QuayScore.DIRECT_PRIMARY,
+        "census_year": ge.CensusYearUS.Y1850,
+    }
+    decoded = json.loads(json.dumps(payload))
+    assert decoded["sex"] == "MALE"
+    assert decoded["fact"] == "BIRTH"
+    assert decoded["marker"] == "UPRIGHT_HEADSTONE"
+    assert decoded["quay"] == 3
+    assert decoded["census_year"] == 1850
+    assert f"Sex is {ge.Sex.FEMALE}" == "Sex is FEMALE"
 
 
 @pytest.mark.unit
-def test_census_years_are_strictly_valid_historical_integers() -> None:
-    """Verify CensusYearUS members evaluate to canonical decennial census integers."""
-    assert ge.CensusYearUS.Y1790 == 1790
-    assert ge.CensusYearUS.Y1880 == 1880
-    assert ge.CensusYearUS.Y1950 == 1950
+def test_location_site_boundary_and_census_year_bounds() -> None:
+    """Verify LocationType/SiteType disjointness and CensusYearUS integer bounds."""
+    assert ge.LocationType.COUNTY == "COUNTY"
+    assert ge.SiteType.CEMETERY == "CEMETERY"
+    site_values = {m.value for m in ge.SiteType}
+    assert "COUNTY" not in site_values
+    assert "STATE" not in site_values
+
     for year in ge.CensusYearUS:
         assert isinstance(year.value, int)
         assert 1790 <= year.value <= 1950
 
 
-@pytest.mark.unit
-def test_fiscal_taxpayer_classification_tokens() -> None:
-    """Verify TaxpayerClassification matches historical tax roll categories."""
-    assert ge.TaxpayerClassification.FREEHOLDER == "Freeholder"
-    assert ge.TaxpayerClassification.TENANT == "Tenant"
-    assert ge.TaxpayerClassification.SINGLE_FREEMAN == "Single Freeman"
-    assert ge.TaxpayerClassification.INMATE == "Inmate"
-    assert ge.TaxpayerClassification.WIDOW == "Widow"
-
-
 # ==============================================================================
-# GROUP 4: Native JSON Serialization & String Formats
+# GROUP 6: Integrity & Invariants
+# Note: Base classes, submodule placement, UPPER_SNAKE_CASE, and uniqueness.
 # ==============================================================================
 
 
+@pytest.mark.integrity
 @pytest.mark.unit
-def test_strenum_native_json_dump_emits_raw_string() -> None:
-    """Verify that StrEnum members serialize directly to raw strings in JSON."""
-    payload = {
-        "sex": ge.Sex.MALE,
-        "fact": ge.FactType.BIRTH,
-        "marker": ge.MarkerType.UPRIGHT_HEADSTONE,
+def test_all_enums_inherit_gda_base_classes(
+    all_enum_classes: tuple[type[Enum], ...],
+) -> None:
+    """Verify every enum inherits from GDAStrEnum or GDAIntEnum (Phase 3 TDD Red)."""
+    gda_str = getattr(ge, "GDAStrEnum", None)
+    gda_int = getattr(ge, "GDAIntEnum", None)
+    assert gda_str is not None and issubclass(gda_str, StrEnum), "GDAStrEnum missing"
+    assert gda_int is not None and issubclass(gda_int, IntEnum), "GDAIntEnum missing"
+
+    for enum_cls in all_enum_classes:
+        if enum_cls in (gda_str, gda_int):
+            continue
+        assert issubclass(enum_cls, (gda_str, gda_int)), (
+            f"{enum_cls.__name__} must inherit from GDAStrEnum or GDAIntEnum"
+        )
+
+
+@pytest.mark.integrity
+@pytest.mark.unit
+def test_relocated_enums_reside_in_authoritative_submodules() -> None:
+    """Verify relocated enums live in their target domain submodules (Phase 3 TDD Red)."""
+    expected_modules = {
+        "WwiCardType": "gda.core.enums.military",
+        "MilitaryDraftType": "gda.core.enums.military",
+        "MilitaryWar": "gda.core.enums.military",
+        "EyeColor": "gda.core.enums.vital",
+        "HairColor": "gda.core.enums.vital",
+        "PhysicalBuild": "gda.core.enums.vital",
+        "EducationLevel": "gda.core.enums.vital",
     }
-    encoded = json.dumps(payload)
-    decoded = json.loads(encoded)
-
-    assert decoded["sex"] == "Male"
-    assert decoded["fact"] == "BIRTH"
-    assert decoded["marker"] == "Upright Headstone"
-
-
-@pytest.mark.unit
-def test_intenum_native_json_dump_emits_raw_integer() -> None:
-    """Verify that IntEnum members serialize directly to numeric integers in JSON."""
-    payload = {
-        "quay": ge.QuayScore.DIRECT_PRIMARY,
-        "census_year": ge.CensusYearUS.Y1850,
+    mismatches = {
+        name: getattr(ge, name).__module__
+        for name, target_mod in expected_modules.items()
+        if getattr(ge, name).__module__ != target_mod
     }
-    encoded = json.dumps(payload)
-    decoded = json.loads(encoded)
-
-    assert decoded["quay"] == 3
-    assert decoded["census_year"] == 1850
+    assert not mismatches, f"Enums in wrong submodules: {mismatches}"
 
 
+@pytest.mark.integrity
 @pytest.mark.unit
-def test_strenum_str_comparison_and_formatting() -> None:
-    """Verify StrEnum members behave identically to native str in equality and formatting."""
-    assert ge.Sex.MALE == "Male"
-    assert f"Sex is {ge.Sex.FEMALE}" == "Sex is Female"
-    assert ge.Sex.MALE.startswith("M")
-
-
-# ==============================================================================
-# GROUP 5: Pydantic V2 Validation & Coercion
-# ==============================================================================
-
-
-@pytest.mark.unit
-def test_pydantic_validates_raw_string_into_enum_instance(
-    pydantic_enum_model_cls: type[BaseModel],
-    valid_enum_payload: dict[str, Any],
+def test_all_strenum_members_use_upper_snake_case(
+    all_enum_classes: tuple[type[Enum], ...],
 ) -> None:
-    """Verify Pydantic coerces raw strings and ints into corresponding enum instances."""
-    instance = pydantic_enum_model_cls(**valid_enum_payload)
+    """Verify all StrEnum names and values use uppercase tokens with no whitespace (Phase 3)."""
+    violations: list[str] = []
+    for enum_cls in all_enum_classes:
+        if not issubclass(enum_cls, StrEnum):
+            continue
+        for member in enum_cls:
+            if not _MEMBER_NAME_RE.match(member.name):
+                violations.append(f"{enum_cls.__name__}.{member.name} (name)")
+            if not _UPPER_TOKEN_RE.match(member.value):
+                violations.append(f"{enum_cls.__name__}.{member.name}={member.value!r}")
+    assert not violations, f"Non-UPPER_SNAKE_CASE StrEnum tokens: {violations[:10]}"
 
-    assert instance.sex is ge.Sex.MALE
-    assert instance.quay is ge.QuayScore.DIRECT_PRIMARY
-    assert instance.fact_type is ge.FactType.BIRTH
-    assert instance.census_year is ge.CensusYearUS.Y1880
-    assert instance.location_type is ge.LocationType.COUNTY
-    assert instance.vital_modifier is ge.VitalModifier.STILLBORN
 
-
+@pytest.mark.integrity
 @pytest.mark.unit
-def test_pydantic_accepts_enum_instances_directly(
-    pydantic_enum_model_cls: type[BaseModel],
-    valid_enum_payload: dict[str, Any],
+def test_all_enum_canonical_values_are_unique(
+    all_enum_classes: tuple[type[Enum], ...],
 ) -> None:
-    """Verify Pydantic accepts pre-instantiated enum members directly."""
-    payload = dict(valid_enum_payload)
-    payload["sex"] = ge.Sex.FEMALE
-    payload["quay"] = ge.QuayScore.SECONDARY
-
-    instance = pydantic_enum_model_cls(**payload)
-    assert instance.sex is ge.Sex.FEMALE
-    assert instance.quay is ge.QuayScore.SECONDARY
-
-
-@pytest.mark.unit
-def test_pydantic_rejects_invalid_token_with_validation_error(
-    pydantic_enum_model_cls: type[BaseModel],
-    valid_enum_payload: dict[str, Any],
-) -> None:
-    """Verify Pydantic raises ValidationError when encountering unregistered tokens."""
-    payload = dict(valid_enum_payload)
-    payload["sex"] = "NonExistentSex"
-
-    with pytest.raises(ValidationError):
-        pydantic_enum_model_cls(**payload)
-
-
-@pytest.mark.unit
-def test_pydantic_handles_optional_and_none_values(
-    pydantic_enum_model_cls: type[BaseModel],
-    valid_enum_payload: dict[str, Any],
-) -> None:
-    """Verify Pydantic accepts None for nullable/optional enum fields."""
-    payload = dict(valid_enum_payload)
-    payload["optional_sex"] = None
-    payload["optional_quay"] = None
-
-    instance = pydantic_enum_model_cls(**payload)
-    assert instance.optional_sex is None
-    assert instance.optional_quay is None
-
-    payload["optional_sex"] = "Unknown"
-    instance_with_val = pydantic_enum_model_cls(**payload)
-    assert instance_with_val.optional_sex is ge.Sex.UNKNOWN
-
-
-# ==============================================================================
-# GROUP 6: Defensive Boundaries & Strictness
-# ==============================================================================
-
-
-@pytest.mark.unit
-@pytest.mark.regression
-def test_strenum_strict_case_sensitivity_rejection() -> None:
-    """Verify StrEnum raises ValueError on lowercase or invalid casing."""
-    with pytest.raises(ValueError):
-        ge.Sex("male")
-
-    with pytest.raises(ValueError):
-        ge.FactType("birth")
-
-
-@pytest.mark.unit
-@pytest.mark.regression
-def test_strenum_whitespace_tolerance_rejection() -> None:
-    """Verify StrEnum rejects untrimmed whitespace to enforce upstream sanitization."""
-    with pytest.raises(ValueError):
-        ge.Sex(" Male ")
-
-    with pytest.raises(ValueError):
-        ge.FactType("BIRTH ")
+    """Verify unique values exist across canonical members within each enum class."""
+    for enum_cls in all_enum_classes:
+        values = [member.value for member in enum_cls]
+        assert len(values) == len(set(values)), (
+            f"{enum_cls.__name__} contains duplicate member values"
+        )

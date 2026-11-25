@@ -1,17 +1,17 @@
 """Path: tests/test_gda/test_core/test_core_contract.py
 
-Authoritative public interface and contract verification suite for gda.core.
+Authoritative package-level facade and API surface contract suite for gda.core.
 
 Operational Role:
-    Freezes and validates the public API surface of the core framework.
-    Ensures symbol parity, prevents unintended surface changes, validates class
-    hierarchies, member signatures, immutability guarantees, and ensures that
-    the current export format is the only valid format.
+    Freezes and validates the Tier 0 package facade (gda.core.__init__),
+    ensuring exact __all__ export parity (CTR-001), alphabetical ordering,
+    Pydantic schema field and property surfaces (CTR-002, CTR-003), and
+    public callable signatures for downstream Tier 1-4 consumers.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 structural contract assertions.
-    - Fully decorated: Strictly unit and integrity markers.
-    - Zero production disk I/O.
+    - Fully decorated: 5-marker taxonomy (smoke, unit, integrity).
+    - Zero disk I/O; submodule behavior is tested in dedicated module suites.
 """
 
 from __future__ import annotations
@@ -19,31 +19,21 @@ from __future__ import annotations
 import inspect
 
 import pytest
-from pydantic import BaseModel
 
 import gda.core
 from gda.core import (
     AppConfig,
-    ConfigError,
-    ConfigParseError,
-    ConfigValidationError,
     DatabaseConfig,
     GDALogger,
-    GenealogyDeskError,
-    ImmutableBaseModel,
     IntrospectableMixin,
     LoggingConfig,
-    ModelError,
-    ModelFormatError,
-    ModelPrefixMismatchError,
-    ModelRangeError,
 )
 
-__version__ = "1.0.0+build.11"
+__version__ = "1.0.0+build.12"
 
 # ==============================================================================
 # AUTHORITATIVE CONTRACT SPECIFICATION
-# Note: Defines the strict, immutable contract for gda.core exports (100 symbols)
+# Note: Strict, immutable contract for gda.core.__all__ (102 symbols w/ CIU-B1-001).
 # ==============================================================================
 
 AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
@@ -84,7 +74,7 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "ConsoleFormatter",
         "GDALogger",
         "JsonFormatter",
-        # types.py (71)
+        # types.py (73 — includes CIU-B1-001 numeric guards)
         "ATOM_ID_PATTERN",
         "ATOM_ID_REGEX",
         "CENSUS_SHEET_SIDES",
@@ -156,12 +146,15 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "UUID_V4_REGEX",
         "WWI_DRAFT_YEARS",
         "WWII_DRAFT_YEARS",
+        "is_finite_number",
+        "is_strict_int",
     }
 )
 
 
 # ==============================================================================
-# GROUP 1: PUBLIC EXPORT SURFACE INTEGRITY
+# GROUP 1: Smoke & Primary Entrypoints
+# Note: Single smoke gate freezing gda.core.__all__ against drift (CTR-001).
 # ==============================================================================
 
 
@@ -172,96 +165,41 @@ def test_core_exports_exact_authoritative_symbols() -> None:
     """Verify gda.core exports exactly the authoritative symbol set with zero drift (CTR-001)."""
     actual_symbols = frozenset(gda.core.__all__)
     assert actual_symbols == AUTHORITATIVE_EXPORTS
-    assert len(gda.core.__all__) == 100
+    assert len(gda.core.__all__) == len(AUTHORITATIVE_EXPORTS)
 
 
-@pytest.mark.integrity
-@pytest.mark.unit
-def test_core_all_is_sorted_alphabetically() -> None:
-    """Verify gda.core.__all__ is formatted strictly in alphabetical order."""
-    assert gda.core.__all__ == sorted(gda.core.__all__)
+# ==============================================================================
+# GROUP 2: Core Logic & Happy Paths
+# Note: Verifies every exported facade symbol resolves to a non-None attribute.
+# ==============================================================================
 
 
 @pytest.mark.unit
 def test_all_symbols_exist_as_module_attributes() -> None:
-    """Verify every symbol declared in __all__ exists as an accessible attribute."""
+    """Verify every symbol declared in AUTHORITATIVE_EXPORTS is accessible on gda.core."""
     for symbol_name in AUTHORITATIVE_EXPORTS:
         assert hasattr(gda.core, symbol_name), f"Missing symbol {symbol_name} in gda.core"
-        attr = getattr(gda.core, symbol_name)
-        assert attr is not None
+        assert getattr(gda.core, symbol_name) is not None
 
 
 # ==============================================================================
-# GROUP 2: EXCEPTION INHERITANCE HIERARCHIES
-# ==============================================================================
-
-
-@pytest.mark.integrity
-@pytest.mark.unit
-def test_exception_tree_hierarchy_contracts() -> None:
-    """Verify strict inheritance hierarchy of all exported core exception classes."""
-    # Root
-    assert issubclass(GenealogyDeskError, Exception)
-
-    # Config subsystem branch
-    assert issubclass(ConfigError, GenealogyDeskError)
-    assert issubclass(ConfigValidationError, ConfigError)
-    assert issubclass(ConfigParseError, ConfigError)
-
-    # Model subsystem branch
-    assert issubclass(ModelError, GenealogyDeskError)
-    assert issubclass(ModelFormatError, ModelError)
-    assert issubclass(ModelRangeError, ModelError)
-    assert issubclass(ModelPrefixMismatchError, ModelError)
-
-
-@pytest.mark.unit
-def test_exception_serialization_contract() -> None:
-    """Verify all exceptions implement to_dict returning standard keys including exit_code."""
-    err = GenealogyDeskError("Base", error_code="ERR_BASE", details={"ctx": 1})
-    payload = err.to_dict()
-    assert set(payload.keys()) == {
-        "error_code",
-        "message",
-        "details",
-        "timestamp",
-        "exit_code",
-    }
-
-
-# ==============================================================================
-# GROUP 3: PYDANTIC SCHEMA IMMUTABILITY & CONTRACTS
+# GROUP 6: Integrity & Invariants
+# Note: Alphabetical __all__, schema field/property freeze, and callable signatures.
 # ==============================================================================
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_config_models_inherit_immutable_base() -> None:
-    """Verify all configuration models inherit from ImmutableBaseModel."""
-    assert issubclass(ImmutableBaseModel, BaseModel)
-    assert issubclass(DatabaseConfig, ImmutableBaseModel)
-    assert issubclass(LoggingConfig, ImmutableBaseModel)
-    assert issubclass(AppConfig, ImmutableBaseModel)
-
-
-@pytest.mark.integrity
-@pytest.mark.unit
-def test_config_models_enforce_frozen_and_forbid_extra() -> None:
-    """Verify immutable config base strictly forbids extra attributes and mutation."""
-    assert ImmutableBaseModel.model_config.get("frozen") is True
-    assert ImmutableBaseModel.model_config.get("extra") == "forbid"
-    assert DatabaseConfig.model_config.get("frozen") is True
-    assert DatabaseConfig.model_config.get("extra") == "forbid"
-    assert LoggingConfig.model_config.get("frozen") is True
-    assert LoggingConfig.model_config.get("extra") == "forbid"
-    assert AppConfig.model_config.get("frozen") is True
-    assert AppConfig.model_config.get("extra") == "forbid"
+def test_core_all_is_sorted_and_unique() -> None:
+    """Verify gda.core.__all__ is strictly sorted with no duplicate entries."""
+    assert gda.core.__all__ == sorted(gda.core.__all__)
+    assert len(gda.core.__all__) == len(set(gda.core.__all__))
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_config_models_field_names_and_types() -> None:
-    """Verify expected field names exist across configuration models (CTR-002)."""
+    """Verify expected field names remain frozen across configuration models (CTR-002)."""
     assert {
         "engine",
         "db_name",
@@ -291,60 +229,37 @@ def test_config_models_field_names_and_types() -> None:
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_app_config_derived_property_accessors() -> None:
-    """Verify derived directory and environment property accessors remain declared on AppConfig (CTR-003)."""
+def test_app_and_database_config_derived_property_accessors() -> None:
+    """Verify derived directory, env, and connection property accessors remain declared (CTR-003)."""
     for prop in ("env_code", "data_path", "logs_path", "backups_path"):
-        assert hasattr(AppConfig, prop)
-        assert isinstance(getattr(AppConfig, prop), property)
+        assert isinstance(getattr(AppConfig, prop, None), property)
 
     for db_prop in ("is_in_memory", "resolved_db_name", "connection_string"):
-        assert hasattr(DatabaseConfig, db_prop)
-        assert isinstance(getattr(DatabaseConfig, db_prop), property)
-
-
-# ==============================================================================
-# GROUP 4: CALLABLE SERVICE & DESCRIPTOR SIGNATURES
-# ==============================================================================
+        assert isinstance(getattr(DatabaseConfig, db_prop, None), property)
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_gda_logger_public_interface_methods() -> None:
     """Verify GDALogger preserves all expected public logging methods and signatures."""
-    expected_methods = ["debug", "info", "warning", "error", "critical"]
-    for method_name in expected_methods:
+    for method_name in ("debug", "info", "warning", "error", "critical"):
         method = getattr(GDALogger, method_name, None)
         assert callable(method), f"GDALogger.{method_name} must be callable"
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
-        assert "self" in params
-        assert "msg" in params
-        assert "details" in params
+        params = list(inspect.signature(method).parameters.keys())
+        assert {"self", "msg", "details"}.issubset(params)
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_introspectable_mixin_contract() -> None:
-    """Verify IntrospectableMixin maintains the .help descriptor contract."""
+def test_introspectable_mixin_and_app_config_load_signatures() -> None:
+    """Verify IntrospectableMixin and AppConfig.load/for_environment preserve callable contracts."""
     assert hasattr(IntrospectableMixin, "help")
-    assert hasattr(IntrospectableMixin, "_get_public_members")
     assert inspect.ismethod(IntrospectableMixin._get_public_members)
 
-
-@pytest.mark.integrity
-@pytest.mark.unit
-def test_app_config_load_signature() -> None:
-    """Verify AppConfig.load and AppConfig.for_environment preserve required classmethod signatures."""
     load_method = getattr(AppConfig, "load", None)
     assert callable(load_method)
-    sig = inspect.signature(load_method)
-    params = list(sig.parameters.keys())
-    assert "config_path" in params
-    assert "root_path" in params
-    assert "env_prefix" in params
-    assert "env_vars" in params
-    assert "overrides" in params
-    assert "env_name" in params
-
-    for_env_method = getattr(AppConfig, "for_environment", None)
-    assert callable(for_env_method)
+    load_params = set(inspect.signature(load_method).parameters.keys())
+    assert {"config_path", "root_path", "env_prefix", "env_vars", "overrides", "env_name"}.issubset(
+        load_params
+    )
+    assert callable(getattr(AppConfig, "for_environment", None))

@@ -25,7 +25,7 @@ from gen_desk_tools.metrics.config import MetricsConfig
 from gen_desk_tools.metrics.exporters.payload_builders import TAB_NAMES, build_sheet_payloads
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "TAB_NAMES",
@@ -68,6 +68,14 @@ def _sanitize_rows(rows: list[list[Any]]) -> list[list[Any]]:
     return sanitized
 
 
+def _format_exception_detail(exc: BaseException) -> str:
+    """Return a clean diagnostic detail string, falling back to __cause__ if empty."""
+    detail = str(exc).strip()
+    if not detail and exc.__cause__ is not None:
+        detail = str(exc.__cause__).strip()
+    return f" ({detail})" if detail else ""
+
+
 def _open_target_spreadsheet(
     config: MetricsConfig,
     factory: Callable[[str], Any],
@@ -84,12 +92,12 @@ def _open_target_spreadsheet(
     except Exception as exc:
         if type(exc).__name__ == "SpreadsheetNotFound":
             msg = f"Target Google Sheet not found: {target_label}"
-            logger.error("%s (%s)", msg, exc)
+            logger.error("%s%s", msg, _format_exception_detail(exc))
             raise RuntimeError(msg) from exc
         if isinstance(exc, (PermissionError, FileNotFoundError)) or "403" in str(exc):
             msg = (
                 f"Google Sheets authorization failed for {target_label}: "
-                f"verify credentials and edit permissions ({exc})"
+                f"verify credentials and edit permissions{_format_exception_detail(exc)}"
             )
             logger.error("%s", msg)
             raise RuntimeError(msg) from exc

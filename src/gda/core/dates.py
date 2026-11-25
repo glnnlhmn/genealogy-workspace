@@ -15,12 +15,14 @@ from typing import Any
 
 from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.core.types import (
+    ISO_DATE_FMT,
     ISO_DATE_REGEX,
     ISO_TIMESTAMP_FMT,
     ISO_TIMESTAMP_REGEX,
+    is_strict_int,
 )
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 __all__ = [
     "calculate_age_years",
@@ -34,8 +36,8 @@ __all__ = [
 ]
 
 
-def validate_iso_date(value: str) -> bool:
-    """Validate whether a string matches canonical ISO-8601 partial or full date patterns.
+def validate_iso_date(value: Any) -> bool:
+    """Validate whether a value matches canonical ISO-8601 partial or full date patterns.
 
     Enforces both structural regex syntax ('YYYY', 'YYYY-MM', 'YYYY-MM-DD') and
     real Gregorian calendar day bounds (rejecting impossible dates such as
@@ -45,7 +47,8 @@ def validate_iso_date(value: str) -> bool:
         value: Date string candidate to validate.
 
     Returns:
-        True if string matches canonical ISO date format and calendar bounds; False otherwise.
+        True if value is a string matching canonical ISO date format and
+        calendar bounds; False otherwise.
     """
     if not isinstance(value, str):
         return False
@@ -64,18 +67,32 @@ def validate_iso_date(value: str) -> bool:
     return True
 
 
-def validate_iso_timestamp(value: str) -> bool:
-    """Validate whether a string matches canonical ISO-8601 timestamp formats.
+def validate_iso_timestamp(value: Any) -> bool:
+    """Validate whether a value matches canonical ISO-8601 timestamp formats.
+
+    Enforces both structural regex syntax and real Gregorian calendar/clock
+    bounds (rejecting impossible dates such as '2026-02-30T12:00:00Z').
 
     Args:
         value: Timestamp string candidate to validate.
 
     Returns:
-        True if string matches canonical ISO timestamp format; False otherwise.
+        True if value is a string matching canonical ISO timestamp format and
+        calendar bounds; False otherwise.
     """
     if not isinstance(value, str):
         return False
-    return ISO_TIMESTAMP_REGEX.match(value.strip()) is not None
+
+    cleaned = value.strip()
+    if ISO_TIMESTAMP_REGEX.match(cleaned) is None:
+        return False
+
+    try:
+        datetime.fromisoformat(cleaned.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+
+    return True
 
 
 def format_utc_timestamp(dt: datetime | None = None) -> str:
@@ -110,7 +127,7 @@ def utc_today_iso() -> str:
     Returns:
         Canonical ISO-8601 calendar date string.
     """
-    return datetime.now(UTC).strftime("%Y-%m-%d")
+    return datetime.now(UTC).strftime(ISO_DATE_FMT)
 
 
 def parse_iso_timestamp(value: str) -> datetime:
@@ -128,7 +145,6 @@ def parse_iso_timestamp(value: str) -> datetime:
     if not validate_iso_timestamp(value):
         raise ModelFormatError(
             f"Invalid ISO timestamp format: '{value}'",
-            error_code="ERR_MODEL_FORMAT",
             details={"value": value},
         )
     clean = value.strip().replace("Z", "+00:00")
@@ -150,7 +166,6 @@ def parse_iso_date_parts(value: str) -> tuple[int, int | None, int | None]:
     if not validate_iso_date(value):
         raise ModelFormatError(
             f"Invalid ISO date format: '{value}'",
-            error_code="ERR_MODEL_FORMAT",
             details={"value": value},
         )
 
@@ -167,13 +182,12 @@ def _coerce_date_components(
 ) -> tuple[int, int | None, int | None]:
     """Unwrap and parse a date representation into (year, month, day) components."""
     raw = value.value if hasattr(value, "value") and not isinstance(value, int) else value
-    if isinstance(raw, int) and not isinstance(raw, bool):
+    if is_strict_int(raw):
         return int(raw), None, None
     if isinstance(raw, str):
         return parse_iso_date_parts(raw)
     raise ModelFormatError(
         f"Unsupported {field_label} type: {type(value).__name__}",
-        error_code="ERR_MODEL_FORMAT",
         details={field_label.replace(" ", "_"): str(value)},
     )
 
@@ -212,7 +226,6 @@ def calculate_age_years(
     if age < 0:
         raise ModelRangeError(
             f"Target date '{target_date}' precedes birth date '{birth_date}'.",
-            error_code="ERR_MODEL_RANGE",
             details={"birth_date": str(birth_date), "target_date": str(target_date)},
         )
 

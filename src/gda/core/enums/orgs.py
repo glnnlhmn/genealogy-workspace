@@ -10,9 +10,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "AffiliationType",
@@ -21,7 +21,7 @@ __all__ = [
 ]
 
 
-class OrganizationCategory(StrEnum):
+class OrganizationCategory(GDAStrEnum):
     """Taxonomic classification of human associations, societies, and institutions."""
 
     FRATERNAL = "FRATERNAL"
@@ -36,7 +36,7 @@ class OrganizationCategory(StrEnum):
     OTHER = "OTHER"
 
 
-class MembershipStatus(StrEnum):
+class MembershipStatus(GDAStrEnum):
     """Standing or lifecycle status of an individual's affiliation with an organization."""
 
     ACTIVE = "ACTIVE"
@@ -51,7 +51,7 @@ class MembershipStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class AffiliationType(StrEnum):
+class AffiliationType(GDAStrEnum):
     """Functional capacity in which an individual participated in an organization."""
 
     MEMBER = "MEMBER"

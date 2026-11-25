@@ -122,9 +122,11 @@ from gda.core.types import (
     UUID_V4_REGEX,
     WWI_DRAFT_YEARS,
     WWII_DRAFT_YEARS,
+    is_finite_number,
+    is_strict_int,
 )
 
-__version__ = "1.0.0+build.12"
+__version__ = "1.0.0+build.13"
 
 __all__ = [
     "ATOM_ID_PATTERN",  # types.py
@@ -217,6 +219,8 @@ __all__ = [
     "calculate_age_years",  # dates.py
     "enums",  # enums/
     "format_utc_timestamp",  # dates.py
+    "is_finite_number",  # types.py
+    "is_strict_int",  # types.py
     "is_valid_sha256",  # hashes.py
     "parse_iso_date_parts",  # dates.py
     "parse_iso_timestamp",  # dates.py

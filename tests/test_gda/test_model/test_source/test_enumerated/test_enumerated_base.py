@@ -26,7 +26,7 @@ from gda.model.source.enumerated.base import (
     serialize_primitive_value,
 )
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 
 @pytest.mark.unit
@@ -55,9 +55,9 @@ def test_enumerated_roll_smoke_valid_initialization_and_roundtrip(
         audit=valid_audit,
         tombstone=tomb,
         enumeration_year=HistoricalYear(1880),
-        jurisdiction_raw="  Concord, Merrimack County, New Hampshire  ",
+        jurisdiction_raw=" Concord, Merrimack County, New Hampshire ",
         jurisdiction_id=loc_id,
-        enumerator_or_assessor_raw="  John A. White  ",
+        enumerator_or_assessor_raw=" John A. White ",
         transcript_id=trn_id,
     )
     assert rec.jurisdiction_raw == "Concord, Merrimack County, New Hampshire"
@@ -127,7 +127,7 @@ def test_enumerated_roll_validation_and_coercion_helpers(
     assert serialize_primitive_value(None) is None
     assert serialize_primitive_value(_CustomScalar()) == "custom-scalar"
     assert serialize_primitive_value(set()) == "set()"
-    assert serialize_primitive_value([1, CitizenshipStatus.NATIVE_BORN]) == [1, "Native Born"]
+    assert serialize_primitive_value([1, CitizenshipStatus.NATIVE_BORN]) == [1, "NATIVE_BORN"]
     assert coerce_field_value("SourceID", None) is None
     loc = LocationID("LOC-000042")
     assert coerce_field_value("LocationID", loc) is loc

@@ -1,0 +1,300 @@
+_path = "src/gen_desk_tools/metrics/metrics.toml"
+
+[telemetry]
+default_scopes = ["gda"]
+sync_sheets_by_default = true
+
+[gates.coverage]
+gda = 95.0
+cli = 95.0
+system = 100.0
+ancestry_desk = 85.0
+
+[[batches]]
+id = "GDA-Batch-1"
+scope = "gda"
+tier = "Tier 0 (Foundation)"
+paths = ["src/gda/core"]
+test_paths = ["tests/test_gda/test_core"]
+
+[[batches]]
+id = "GDA-Batch-2"
+scope = "gda"
+tier = "Tier 1 (I/O & Utilities)"
+paths = [
+    "src/gda/io",
+    "src/gda/util",
+]
+test_paths = [
+    "tests/test_gda/test_io",
+    "tests/test_gda/test_util",
+]
+
+[[batches]]
+id = "GDA-Batch-3a"
+scope = "gda"
+tier = "Tier 2a (Atoms & Base Models)"
+paths = [
+    "src/gda/__init__.py",
+    "src/gda/model/__init__.py",
+    "src/gda/model/atom",
+    "src/gda/model/base",
+]
+test_paths = [
+    "tests/test_gda/test_gda_contract.py",
+    "tests/test_gda/test_model/test_model_contract.py",
+    "tests/test_gda/test_model/test_atom",
+    "tests/test_gda/test_model/test_base",
+]
+
+[[batches]]
+id = "GDA-Batch-3b"
+scope = "gda"
+tier = "Tier 2b (Entity & Xref Models)"
+paths = [
+    "src/gda/model/entity",
+    "src/gda/model/xref",
+]
+test_paths = [
+    "tests/test_gda/test_model/test_entity",
+    "tests/test_gda/test_model/test_xref",
+]
+
+[[batches]]
+id = "GDA-Batch-4a"
+scope = "gda"
+tier = "Tier 3a (Vital, Cemetery, Publications & Manuscripts)"
+paths = [
+    "src/gda/model/source/vital",
+    "src/gda/model/source/cemetery",
+    "src/gda/model/source/publications",
+    "src/gda/model/source/manuscripts",
+]
+test_paths = [
+    "tests/test_gda/test_model/test_source/test_vital",
+    "tests/test_gda/test_model/test_source/test_cemetery",
+    "tests/test_gda/test_model/test_source/test_publications",
+    "tests/test_gda/test_model/test_source/test_manuscripts",
+]
+
+[[batches]]
+id = "GDA-Batch-4b"
+scope = "gda"
+tier = "Tier 3b (Enumerated Sources)"
+paths = ["src/gda/model/source/enumerated"]
+test_paths = ["tests/test_gda/test_model/test_source/test_enumerated"]
+
+[[batches]]
+id = "GDA-Batch-4c"
+scope = "gda"
+tier = "Tier 3c (Military Sources)"
+paths = ["src/gda/model/source/military"]
+test_paths = ["tests/test_gda/test_model/test_source/test_military"]
+
+[[batches]]
+id = "GDA-Batch-4d"
+scope = "gda"
+tier = "Tier 3d (Immigration, Land, Probate & Other Sources)"
+paths = [
+    "src/gda/model/source/__init__.py",
+    "src/gda/model/source/immigration",
+    "src/gda/model/source/land",
+    "src/gda/model/source/probate",
+    "src/gda/model/source/education",
+    "src/gda/model/source/orgs",
+    "src/gda/model/source/other",
+]
+test_paths = [
+    "tests/test_gda/test_model/test_source/test_source_contract.py",
+    "tests/test_gda/test_model/test_source/test_immigration",
+    "tests/test_gda/test_model/test_source/test_land",
+    "tests/test_gda/test_model/test_source/test_probate",
+    "tests/test_gda/test_model/test_source/test_education",
+    "tests/test_gda/test_model/test_source/test_orgs",
+    "tests/test_gda/test_model/test_source/test_other",
+]
+
+[[batches]]
+id = "GDA-Batch-5a"
+scope = "gda"
+tier = "Tier 4a (Core Entity Managers)"
+paths = [
+    "src/gda/entity/__init__.py",
+    "src/gda/entity/individuals",
+    "src/gda/entity/families",
+    "src/gda/entity/facts",
+]
+test_paths = [
+    "tests/test_gda/test_entity/test_entity_contract.py",
+    "tests/test_gda/test_entity/test_individuals",
+    "tests/test_gda/test_entity/test_families",
+    "tests/test_gda/test_entity/test_facts",
+]
+
+[[batches]]
+id = "GDA-Batch-5b"
+scope = "gda"
+tier = "Tier 4b (Place & Org Entity Managers)"
+paths = [
+    "src/gda/entity/locations",
+    "src/gda/entity/sites",
+    "src/gda/entity/organizations",
+]
+test_paths = [
+    "tests/test_gda/test_entity/test_locations",
+    "tests/test_gda/test_entity/test_sites",
+    "tests/test_gda/test_entity/test_organizations",
+]
+
+[[batches]]
+id = "GDA-Batch-6a"
+scope = "gda"
+tier = "Tier 5a (Database Session & Schema)"
+paths = [
+    "src/gda/db/__init__.py",
+    "src/gda/db/exceptions.py",
+    "src/gda/db/session.py",
+    "src/gda/db/schema",
+]
+test_paths = [
+    "tests/test_gda/test_db/test_db_contract.py",
+    "tests/test_gda/test_db/test_exceptions.py",
+    "tests/test_gda/test_db/test_session.py",
+    "tests/test_gda/test_db/test_schema",
+]
+
+[[batches]]
+id = "GDA-Batch-6b"
+scope = "gda"
+tier = "Tier 5b (Database Mappers)"
+paths = ["src/gda/db/mapper"]
+test_paths = ["tests/test_gda/test_db/test_mapper"]
+
+[[batches]]
+id = "GDA-Batch-7a"
+scope = "gda"
+tier = "Tier 6a (Core & Vital Repositories)"
+paths = [
+    "src/gda/repository/__init__.py",
+    "src/gda/repository/base.py",
+    "src/gda/repository/collection.py",
+    "src/gda/repository/errors.py",
+    "src/gda/repository/query.py",
+    "src/gda/repository/entity",
+    "src/gda/repository/xref",
+    "src/gda/repository/vital",
+    "src/gda/repository/cemetery",
+    "src/gda/repository/publications",
+]
+test_paths = [
+    "tests/test_gda/test_repository/test_base.py",
+    "tests/test_gda/test_repository/test_collection.py",
+    "tests/test_gda/test_repository/test_errors.py",
+    "tests/test_gda/test_repository/test_query.py",
+    "tests/test_gda/test_repository/test_entity",
+    "tests/test_gda/test_repository/test_xref",
+    "tests/test_gda/test_repository/test_vital",
+    "tests/test_gda/test_repository/test_cemetery",
+    "tests/test_gda/test_repository/test_publications",
+]
+
+[[batches]]
+id = "GDA-Batch-7b"
+scope = "gda"
+tier = "Tier 6b (Domain Source Repositories)"
+paths = [
+    "src/gda/repository/enumerated",
+    "src/gda/repository/military",
+    "src/gda/repository/immigration",
+    "src/gda/repository/land",
+    "src/gda/repository/probate",
+    "src/gda/repository/education",
+    "src/gda/repository/manuscripts",
+    "src/gda/repository/orgs",
+    "src/gda/repository/other",
+]
+test_paths = [
+    "tests/test_gda/test_repository/test_enumerated",
+    "tests/test_gda/test_repository/test_military",
+    "tests/test_gda/test_repository/test_immigration",
+    "tests/test_gda/test_repository/test_land",
+    "tests/test_gda/test_repository/test_probate",
+    "tests/test_gda/test_repository/test_education",
+    "tests/test_gda/test_repository/test_manuscripts",
+    "tests/test_gda/test_repository/test_orgs",
+    "tests/test_gda/test_repository/test_other",
+]
+
+[[batches]]
+id = "GDA-Batch-8"
+scope = "gda"
+tier = "Tier 7 (Engines & Managers)"
+paths = [
+    "src/gda/engine",
+    "src/gda/manager",
+]
+test_paths = ["tests/test_gda/test_engine"]
+
+[[batches]]
+id = "Group-S-System"
+scope = "system"
+tier = "System Hooks & DB"
+paths = ["src/system"]
+test_paths = ["tests/test_system"]
+
+[[batches]]
+id = "Group-S-Metrics"
+scope = "system"
+tier = "GDT Telemetry Metrics"
+paths = ["src/gen_desk_tools/metrics"]
+test_paths = ["tests/test_gen_desk_tools/test_metrics"]
+
+[[batches]]
+id = "Group-S-GDT-Core"
+scope = "system"
+tier = "GDT Core, Menu & Backup"
+paths = [
+    "src/gen_desk_tools/__init__.py",
+    "src/gen_desk_tools/__main__.py",
+    "src/gen_desk_tools/menu.py",
+    "src/gen_desk_tools/core",
+    "src/gen_desk_tools/backup_mgr",
+]
+test_paths = [
+    "tests/test_gen_desk_tools/test_menu.py",
+    "tests/test_gen_desk_tools/test_core",
+    "tests/test_gen_desk_tools/test_backup_mgr",
+]
+
+[[batches]]
+id = "Group-S-GDT-Tools"
+scope = "system"
+tier = "GDT Utility Tools"
+paths = [
+    "src/gen_desk_tools/coverage_gaps",
+    "src/gen_desk_tools/radon_report",
+    "src/gen_desk_tools/readme_gen",
+    "src/gen_desk_tools/script_importer",
+    "src/gen_desk_tools/structure",
+]
+test_paths = [
+    "tests/test_gen_desk_tools/test_coverage_gaps",
+    "tests/test_gen_desk_tools/test_radon_report",
+    "tests/test_gen_desk_tools/test_readme_gen",
+    "tests/test_gen_desk_tools/test_script_importer",
+    "tests/test_gen_desk_tools/test_structure",
+]
+
+[[batches]]
+id = "Group-CLI"
+scope = "cli"
+tier = "Operational CLI"
+paths = ["src/cli"]
+test_paths = ["tests/test_cli"]
+
+[[batches]]
+id = "Group-GenDesk"
+scope = "ancestry_desk"
+tier = "Desktop Presentation"
+paths = ["src/ancestry_desk"]
+test_paths = ["tests/test_ancestry_desk"]

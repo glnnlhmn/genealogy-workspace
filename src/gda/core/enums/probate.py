@@ -10,9 +10,9 @@ Operational Role:
 
 from __future__ import annotations
 
-from enum import StrEnum
+from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "BequestType",
@@ -21,7 +21,7 @@ __all__ = [
 ]
 
 
-class BequestType(StrEnum):
+class BequestType(GDAStrEnum):
     """Classification of testamentary devises, legacies, and guardianship provisions."""
 
     REAL_ESTATE = "REAL_ESTATE"
@@ -32,7 +32,7 @@ class BequestType(StrEnum):
     OTHER = "OTHER"
 
 
-class EstatePropertyCategory(StrEnum):
+class EstatePropertyCategory(GDAStrEnum):
     """Taxonomic asset classifications on historical estate appraisal inventories."""
 
     REAL_ESTATE = "REAL_ESTATE"
@@ -44,7 +44,7 @@ class EstatePropertyCategory(StrEnum):
     OTHER = "OTHER"
 
 
-class ProbateLedgerEntryKind(StrEnum):
+class ProbateLedgerEntryKind(GDAStrEnum):
     """Accounting line classifications in estate administration and guardian accounts."""
 
     RECEIPT = "RECEIPT"

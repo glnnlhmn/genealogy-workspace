@@ -24,7 +24,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.tombstone import Tombstone
 from gda.model.source.vital import DivorceRecord
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 _SID = "11111111-1111-4111-8111-111111111111"
 _SID_2 = "22222222-2222-4222-8222-222222222222"
@@ -58,9 +58,9 @@ def test_divorce_record_create_and_roundtrip() -> None:
         source_urn=_URN,
         description="Divorce Decree of Charles E. Marston and Clara B. Marston.",
         repository_id="REP-000001",
-        court_name="  Superior Court, Merrimack County  ",
-        husband_name_raw="  Charles E. Marston  ",
-        wife_name_raw="  Clara B. Marston  ",
+        court_name=" Superior Court, Merrimack County ",
+        husband_name_raw=" Charles E. Marston ",
+        wife_name_raw=" Clara B. Marston ",
         date_decree_granted=granted,
         record_category="legal",
         record_type="divorce_decree",
@@ -99,7 +99,7 @@ def test_divorce_record_create_and_roundtrip() -> None:
 
     payload = rec.to_dict()
     assert payload["docket_number"] == "EQ-1921-114"
-    assert payload["decree_type"] == "Absolute (A Vinculo Matrimonii)"
+    assert payload["decree_type"] == "ABSOLUTE"
 
     restored = DivorceRecord.from_dict(payload)
     assert restored == rec
@@ -159,9 +159,9 @@ def test_divorce_record_validation_and_minimal_roundtrip() -> None:
         description="Direct trim test",
         repository_id=RepositoryID("REP-000001"),
         audit=minimal.audit,
-        court_name="  Trimmed Court  ",
-        husband_name_raw="  Trimmed Husband  ",
-        wife_name_raw="  Trimmed Wife  ",
+        court_name=" Trimmed Court ",
+        husband_name_raw=" Trimmed Husband ",
+        wife_name_raw=" Trimmed Wife ",
         date_decree_granted=EventDate.create("1922-04-05"),
     )
     assert direct.court_name == "Trimmed Court"

@@ -14,7 +14,8 @@ from gda.core.enums.orgs import (
     MembershipStatus,
     OrganizationCategory,
 )
-from gda.core.enums.sources import EducationLevel, SourceRecordType
+from gda.core.enums.sources import SourceRecordType
+from gda.core.enums.vital import EducationLevel
 from gda.db.exceptions import EntityMappingError
 from gda.db.mapper.education_manuscripts_orgs_other import (
     AcademicCredentialRecordMapper,

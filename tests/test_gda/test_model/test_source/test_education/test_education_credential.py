@@ -13,7 +13,8 @@ from __future__ import annotations
 import pytest
 
 from gda.core.enums.core import AssociatedRole
-from gda.core.enums.sources import EducationLevel, SourceRecordCategory, SourceRecordType
+from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
+from gda.core.enums.vital import EducationLevel
 from gda.core.errors import ModelFormatError
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, LocationID, MediaID, RepositoryID, SourceID

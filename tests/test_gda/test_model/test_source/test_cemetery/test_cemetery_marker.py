@@ -28,7 +28,7 @@ from gda.model.base.date import EventDate
 from gda.model.base.tombstone import Tombstone
 from gda.model.source.cemetery import CemeteryMarkerRecord, MarkerInterment
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 _SID = "11111111-1111-4111-8111-111111111111"
 _SID_2 = "22222222-2222-4222-8222-222222222222"
@@ -58,7 +58,7 @@ def test_marker_interment_and_record_roundtrip() -> None:
     )
 
     m1 = MarkerInterment.create(
-        inscribed_name="  John H. Abbott  ",
+        inscribed_name=" John H. Abbott ",
         individual_id="IND-000001",
         birth_date=dob,
         death_date=dod,
@@ -85,7 +85,7 @@ def test_marker_interment_and_record_roundtrip() -> None:
         source_urn=CemeteryPlotUrn(_URN),
         description="Abbott Family Granite Obelisk at Blossom Hill Cemetery.",
         repository_id="REP-000001",
-        cemetery_name_raw="  Blossom Hill Cemetery  ",
+        cemetery_name_raw=" Blossom Hill Cemetery ",
         interments=[m1, m2],
         record_type="family_monument",
         cemetery_site_id="SID-000001",
@@ -97,7 +97,7 @@ def test_marker_interment_and_record_roundtrip() -> None:
         marker_type="Obelisk",
         material="GRANITE",
         carver="Cummings Bros., Concord, NH",
-        physical_condition="Broken/Repaired",
+        physical_condition="BROKEN_REPAIRED",
         inscription_verbatim="ABBOTT / John H. Abbott 1867-1942 / Mary E. Colby His Wife",
         survey_date=survey,
         audit=audit,
@@ -118,13 +118,13 @@ def test_marker_interment_and_record_roundtrip() -> None:
     flat = rec.flatten_interments()
     assert len(flat) == 2
     assert flat[0]["inscribed_name"] == "John H. Abbott"
-    assert flat[0]["marker_type"] == "Obelisk"
+    assert flat[0]["marker_type"] == "OBELISK"
     assert flat[1]["inscribed_name"] == "Mary E. Colby"
 
     payload = rec.to_dict()
-    assert payload["marker_type"] == "Obelisk"
-    assert payload["material"] == "Granite"
-    assert payload["physical_condition"] == "Broken/Repaired"
+    assert payload["marker_type"] == "OBELISK"
+    assert payload["material"] == "GRANITE"
+    assert payload["physical_condition"] == "BROKEN_REPAIRED"
 
     restored = CemeteryMarkerRecord.from_dict(payload)
     assert restored == rec
@@ -185,7 +185,7 @@ def test_marker_validation_and_minimal_roundtrip() -> None:
         description="Direct trim test",
         repository_id=RepositoryID("REP-000001"),
         audit=minimal.audit,
-        cemetery_name_raw="  Trimmed Cemetery  ",
+        cemetery_name_raw=" Trimmed Cemetery ",
         interments=(MarkerInterment.create(inscribed_name="Hannah Kimball"),),
     )
     assert direct.cemetery_name_raw == "Trimmed Cemetery"
