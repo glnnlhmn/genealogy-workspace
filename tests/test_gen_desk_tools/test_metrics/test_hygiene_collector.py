@@ -26,7 +26,7 @@ from gen_desk_tools.metrics.collectors.hygiene_collector import (
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 _HYGIENE_LOGGER = "gen_desk_tools.metrics.collectors.hygiene_collector"
 
@@ -84,7 +84,7 @@ def test_collect_hygiene_metrics_passes_compliant_module_and_init(tmp_path: Path
 
 # ==========================================================================
 # GROUP 2: Core Logic & Happy Paths
-# Note: Public interface exports and __main__.py exemption behavior.
+# Note: Public interface exports, __main__.py exemptions, and test-file matching.
 # ==========================================================================
 
 
@@ -119,6 +119,42 @@ def test_collect_hygiene_metrics_exempts_main_module_from_readme_and_tests(
     assert records[0].readme_listed is True
     assert records[0].test_file_exists is True
     assert records[0].hygiene_flags == ()
+
+
+@pytest.mark.regression
+@pytest.mark.integration
+def test_collect_hygiene_metrics_matches_suffixed_domain_test_files(
+    tmp_path: Path,
+) -> None:
+    """Verify AUD-B1-004: test_<stem>_<suffix>.py (e.g. test_archival_enums.py) satisfies parity."""
+    pkg = tmp_path / "src" / "gda" / "core" / "enums"
+    pkg.mkdir(parents=True)
+    (pkg / "README.md").write_text("# Enums\n- archival.py\n- orphan.py\n", encoding="utf-8")
+    (pkg / "archival.py").write_text(
+        '"""Path: src/gda/core/enums/archival.py\n\nArchival enums.\n"""\n'
+        "from __future__ import annotations\n"
+        '__version__ = "1.0.0+build.1"\n',
+        encoding="utf-8",
+    )
+    (pkg / "orphan.py").write_text(
+        '"""Path: src/gda/core/enums/orphan.py\n\nOrphan enums.\n"""\n'
+        "from __future__ import annotations\n"
+        '__version__ = "1.0.0+build.1"\n',
+        encoding="utf-8",
+    )
+
+    test_dir = tmp_path / "tests" / "test_gda" / "test_core" / "test_enums"
+    test_dir.mkdir(parents=True)
+    (test_dir / "test_archival_enums.py").write_text("def test_ok(): pass\n", encoding="utf-8")
+
+    batches = (BatchDefinition("B1", "gda", "T0", ("src/gda/core/enums",), ()),)
+    records = collect_hygiene_metrics(tmp_path, batches, progress=None)
+    by_path = {r.file_path: r for r in records}
+
+    assert by_path["src/gda/core/enums/archival.py"].test_file_exists is True
+    assert by_path["src/gda/core/enums/archival.py"].hygiene_flags == ()
+    assert by_path["src/gda/core/enums/orphan.py"].test_file_exists is False
+    assert by_path["src/gda/core/enums/orphan.py"].hygiene_flags == ("MISSING_TEST_FILE",)
 
 
 # ==========================================================================

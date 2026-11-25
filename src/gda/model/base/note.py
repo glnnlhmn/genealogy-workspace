@@ -18,13 +18,13 @@ from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
 from gda.core.dates import utc_now_iso
+from gda.core.enums import coerce_enum
 from gda.core.enums.archival import NoteType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import NoteID, SourceID
 from gda.model.base.audit import AuditStamp
-from gda.util.enums import coerce_enum
 from gda.util.text import clean_unique_strings
 
 __version__ = "1.0.0+build.5"

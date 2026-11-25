@@ -25,6 +25,7 @@ from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
 from gda.core.dates import utc_now_iso
+from gda.core.enums import coerce_enum
 from gda.core.enums.archival import NoteType
 from gda.core.enums.core import SmartIDPrefix
 from gda.core.errors import ModelFormatError
@@ -35,7 +36,6 @@ from gda.model.atom.id import AtomID, NoteID, SourceID
 from gda.model.base.audit import AuditStamp
 from gda.model.base.note import Note
 from gda.model.base.tombstone import Tombstone
-from gda.util.enums import coerce_enum
 from gda.util.ids import extract_max_smart_id, mint_smart_id
 
 __version__ = "1.0.0+build.7"

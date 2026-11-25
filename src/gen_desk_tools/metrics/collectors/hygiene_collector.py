@@ -29,7 +29,7 @@ from gen_desk_tools.metrics.collectors.radon_collector import discover_batch_fil
 from gen_desk_tools.metrics.config import BatchDefinition
 from gen_desk_tools.metrics.progress import ProgressReporter
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 __all__ = [
     "ModuleHygieneRecord",
@@ -117,11 +117,13 @@ def _is_listed_in_readme(py_file: Path) -> bool:
 
 
 def _test_file_exists(workspace_root: Path, rel_path: str) -> bool:
-    """Check whether a corresponding test file (test_*<stem>.py) exists under tests/.
+    """Check whether a corresponding test file exists under tests/.
 
-    Supports both direct mirrored paths (tests/test_<subsys>/<pkg>/) and
-    prefixed subdirectories (tests/test_<subsys>/test_<pkg>/). Exempts
-    __init__.py and __main__.py.
+    Matches both exact/prefixed names (test_*<stem>.py) and suffixed domain or
+    split test suites (test_*<stem>_*.py, e.g. test_archival_enums.py).
+    Supports direct mirrored paths (tests/test_<subsys>/<pkg>/) and prefixed
+    subdirectories (tests/test_<subsys>/test_<pkg>/). Exempts __init__.py and
+    __main__.py.
     """
     parts = Path(rel_path).parts
     if parts[-1] in _EXEMPT_FILES:
@@ -131,7 +133,8 @@ def _test_file_exists(workspace_root: Path, rel_path: str) -> bool:
 
     subsys = parts[1]
     middle = parts[2:-1]
-    pattern = f"test_*{Path(parts[-1]).stem}.py"
+    stem = Path(parts[-1]).stem
+    patterns = (f"test_*{stem}.py", f"test_*{stem}_*.py")
     direct_dir = workspace_root.joinpath("tests", f"test_{subsys}", *middle)
     prefixed_dir = workspace_root.joinpath(
         "tests",
@@ -139,7 +142,7 @@ def _test_file_exists(workspace_root: Path, rel_path: str) -> bool:
         *(f"test_{part}" for part in middle),
     )
     return any(
-        candidate.is_dir() and any(candidate.glob(pattern))
+        candidate.is_dir() and any(any(candidate.glob(pat)) for pat in patterns)
         for candidate in (direct_dir, prefixed_dir)
     )
 

@@ -19,6 +19,7 @@ from typing import Any, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums import coerce_enum
 from gda.core.enums.fiscal import (
     CitizenshipStatus,
     HomeOwnership,
@@ -38,7 +39,6 @@ from gda.model.atom.urn import ArchivalURN, CensusUrn, SourceURN
 from gda.model.atom.year import HistoricalYear
 from gda.model.base.audit import AuditStamp
 from gda.model.base.source import SourceRecord, _resolve_archival_urn
-from gda.util.enums import coerce_enum
 
 __version__ = "1.0.0+build.9"
 

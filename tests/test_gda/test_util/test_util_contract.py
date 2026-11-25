@@ -15,16 +15,13 @@ import inspect
 import pytest
 
 import gda.util
-import gda.util.enums as util_enums
 import gda.util.ids as util_ids
 import gda.util.text as util_text
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 AUTHORITATIVE_UTIL_EXPORTS: frozenset[str] = frozenset(
     {
-        # enums.py (1)
-        "coerce_enum",
         # ids.py (10)
         "extract_max_smart_id",
         "mint_smart_id",
@@ -53,9 +50,9 @@ AUTHORITATIVE_UTIL_EXPORTS: frozenset[str] = frozenset(
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_util_exports_exact_authoritative_symbols() -> None:
-    """Verify gda.util exports the exact 19 authoritative symbols with zero drift."""
+    """Verify gda.util exports the exact 18 authoritative symbols with zero drift."""
     assert frozenset(gda.util.__all__) == AUTHORITATIVE_UTIL_EXPORTS
-    assert len(gda.util.__all__) == 19
+    assert len(gda.util.__all__) == 18
     for symbol in AUTHORITATIVE_UTIL_EXPORTS:
         fn = getattr(gda.util, symbol, None)
         assert callable(fn), f"Symbol {symbol} in gda.util must be callable"
@@ -66,7 +63,7 @@ def test_util_exports_exact_authoritative_symbols() -> None:
 def test_util_all_and_submodule_alls_are_sorted_alphabetically() -> None:
     """Verify gda.util and its submodules declare alphabetically sorted __all__ lists."""
     assert gda.util.__all__ == sorted(gda.util.__all__)
-    for mod in (util_enums, util_ids, util_text):
+    for mod in (util_ids, util_text):
         assert hasattr(mod, "__all__")
         assert mod.__all__ == sorted(mod.__all__)
         assert hasattr(mod, "__version__")
@@ -77,11 +74,6 @@ def test_util_all_and_submodule_alls_are_sorted_alphabetically() -> None:
 @pytest.mark.unit
 def test_util_callable_signatures_contract() -> None:
     """Verify parameter signatures of all public functions in gda.util."""
-    assert list(inspect.signature(gda.util.coerce_enum).parameters) == [
-        "enum_cls",
-        "raw",
-        "field_name",
-    ]
     assert list(inspect.signature(gda.util.normalize_id).parameters) == ["val"]
     assert list(inspect.signature(gda.util.unwrap_value).parameters) == ["val"]
     assert list(inspect.signature(gda.util.unwrap_int).parameters) == ["val"]

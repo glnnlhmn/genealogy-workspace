@@ -16,6 +16,7 @@ from typing import Any, ClassVar, cast
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums import coerce_enum
 from gda.core.enums.core import Sex
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.enums.vital import BirthPlurality, VitalModifier
@@ -27,7 +28,6 @@ from gda.model.base.audit import AuditStamp
 from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
-from gda.util.enums import coerce_enum
 
 __version__ = "1.0.0+build.4"
 

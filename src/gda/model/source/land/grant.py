@@ -18,6 +18,7 @@ from typing import Any, ClassVar, cast
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums import coerce_enum
 from gda.core.enums.land import LandGrantBasis
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
@@ -30,7 +31,6 @@ from gda.model.base.date import EventDate
 from gda.model.base.source import SourceRecord
 from gda.model.base.tombstone import Tombstone
 from gda.model.source.land.deed import LandParcel
-from gda.util.enums import coerce_enum
 
 __version__ = "1.0.0+build.6"
 

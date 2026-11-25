@@ -18,6 +18,7 @@ from typing import Any, ClassVar, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums import coerce_enum
 from gda.core.enums.orgs import AffiliationType, MembershipStatus, OrganizationCategory
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
@@ -30,7 +31,6 @@ from gda.model.source.enumerated.base import (
     coerce_field_value,
     serialize_primitive_value,
 )
-from gda.util.enums import coerce_enum
 
 __version__ = "1.0.0+build.3"
 

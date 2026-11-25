@@ -24,6 +24,7 @@ from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
 from gda.core.dates import parse_iso_date_parts, utc_now_iso
+from gda.core.enums import coerce_enum
 from gda.core.enums.archival import NoteType
 from gda.core.enums.core import AssociatedRole, FactType
 from gda.core.errors import ModelFormatError
@@ -37,7 +38,6 @@ from gda.model.base.entity import BaseEntity
 from gda.model.base.note import Note
 from gda.model.base.source import SourceReference
 from gda.model.base.tombstone import Tombstone
-from gda.util.enums import coerce_enum
 
 __version__ = "1.0.0+build.7"
 

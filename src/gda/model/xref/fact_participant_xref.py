@@ -18,13 +18,13 @@ from typing import Any
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums import coerce_enum
 from gda.core.enums.core import AssociatedRole, FactType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import FactID, IndividualID, LocationID, SiteID
 from gda.model.atom.year import HistoricalYear
 from gda.model.entity.fact import Fact
-from gda.util.enums import coerce_enum
 
 __version__ = "1.0.0+build.4"
 

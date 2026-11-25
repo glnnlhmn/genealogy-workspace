@@ -20,6 +20,7 @@ from typing import Any
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.enums import coerce_enum
 from gda.core.enums.orgs import (
     AffiliationType,
     MembershipStatus,
@@ -30,7 +31,6 @@ from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import IndividualID, OrganizationID
 from gda.model.atom.year import HistoricalYear
 from gda.model.entity.organization import Organization
-from gda.util.enums import coerce_enum
 
 __version__ = "1.0.0+build.2"
 
