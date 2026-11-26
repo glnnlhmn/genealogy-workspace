@@ -26,17 +26,16 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, Field, field_validator
 from pydantic.dataclasses import dataclass
 
-from gda.core.errors import ModelFormatError, ModelRangeError
-from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import (
+from gda.core.constants import (
     MAX_CONFIDENCE_SCORE,
     MAX_QUAY_SCORE,
     MIN_AHNENTAFEL,
     MIN_CONFIDENCE_SCORE,
     MIN_QUAY_SCORE,
-    NEWS_CATEGORY_REGEX,
-    PUB_CODE_REGEX,
 )
+from gda.core.errors import ModelFormatError, ModelRangeError
+from gda.core.introspectable import IntrospectableMixin
+from gda.core.types import NEWS_CATEGORY_REGEX, PUB_CODE_REGEX
 
 __version__ = "1.0.0+build.8"
 

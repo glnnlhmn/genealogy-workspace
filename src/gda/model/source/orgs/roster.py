@@ -18,12 +18,12 @@ from typing import Any, ClassVar, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import MAX_CENSUS_LINE_NUMBER
 from gda.core.enums import coerce_enum
 from gda.core.enums.orgs import AffiliationType, MembershipStatus, OrganizationCategory
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import MAX_CENSUS_LINE_NUMBER
 from gda.model.atom.id import IndividualID, OrganizationID, SourceID
 from gda.model.atom.urn import SourceURN
 from gda.model.source.enumerated.base import (

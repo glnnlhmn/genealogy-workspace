@@ -15,10 +15,10 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import MAX_BOUNTY_LAND_ACREAGE
 from gda.core.enums.military import BountyLandAct, PensionClaimantRole
 from gda.core.enums.sources import SourceRecordCategory
 from gda.core.errors import ModelFormatError
-from gda.core.types import MAX_BOUNTY_LAND_ACREAGE
 from gda.model.atom.id import IndividualID, LocationID, TranscriptID
 from gda.model.atom.year import HistoricalYear
 from gda.model.base.source import SourceRecord

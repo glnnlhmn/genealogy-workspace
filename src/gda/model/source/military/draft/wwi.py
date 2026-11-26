@@ -15,10 +15,10 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import WWI_DRAFT_YEARS
 from gda.core.enums.military import DraftCardTier, WwiCitizenshipStatus
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import WWI_DRAFT_YEARS
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 
 __version__ = "1.0.0+build.2"

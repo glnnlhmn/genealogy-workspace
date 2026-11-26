@@ -13,9 +13,9 @@ from __future__ import annotations
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import MAX_ENLISTMENT_TERM_MONTHS, MIN_ENLISTMENT_TERM_MONTHS
 from gda.core.enums.military import MusterRollType
 from gda.core.errors import ModelFormatError
-from gda.core.types import MAX_ENLISTMENT_TERM_MONTHS, MIN_ENLISTMENT_TERM_MONTHS
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.service.base import MilitaryServiceRecord
 

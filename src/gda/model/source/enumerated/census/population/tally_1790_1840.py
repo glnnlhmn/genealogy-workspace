@@ -12,8 +12,8 @@ from __future__ import annotations
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import US_FEDERAL_CENSUS_TALLY_YEARS
 from gda.core.errors import ModelFormatError
-from gda.core.types import US_FEDERAL_CENSUS_TALLY_YEARS
 from gda.model.source.enumerated.census.base import CensusLineEntry
 from gda.model.source.enumerated.census.population.base import PopulationScheduleRecord
 

@@ -20,10 +20,10 @@ from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
 from gda.core import format_utc_timestamp
+from gda.core.constants import CENSUS_SHEET_SIDES, MAX_CENSUS_LINE_NUMBER
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import CENSUS_SHEET_SIDES, MAX_CENSUS_LINE_NUMBER
 from gda.model.atom.date import IsoTimestamp
 from gda.model.atom.id import IndividualID, SourceID
 from gda.model.atom.urn import CensusUrn

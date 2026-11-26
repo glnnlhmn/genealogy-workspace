@@ -15,13 +15,13 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import COLONIAL_MILITIA_MAX_YEAR, COLONIAL_MILITIA_MIN_YEAR
 from gda.core.enums.military import (
     ColonialMilitiaClass,
     ColonialWarPeriod,
     DraftCardTier,
 )
 from gda.core.errors import ModelFormatError
-from gda.core.types import COLONIAL_MILITIA_MAX_YEAR, COLONIAL_MILITIA_MIN_YEAR
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 

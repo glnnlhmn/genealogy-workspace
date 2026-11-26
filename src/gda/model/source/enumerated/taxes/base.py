@@ -17,11 +17,11 @@ from typing import Any, ClassVar, Self
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import TAX_ASSESSMENT_MIN_YEAR
 from gda.core.enums.fiscal import TaxpayerClassification
 from gda.core.enums.sources import SourceRecordCategory, SourceRecordType
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import TAX_ASSESSMENT_MIN_YEAR
 from gda.model.atom.id import IndividualID
 from gda.model.source.enumerated.base import (
     EnumeratedRollRecord,

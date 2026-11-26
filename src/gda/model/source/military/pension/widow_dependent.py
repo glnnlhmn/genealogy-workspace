@@ -15,9 +15,9 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import MAX_MINOR_CHILDREN_COUNT
 from gda.core.enums.military import PensionClaimantRole
 from gda.core.errors import ModelFormatError
-from gda.core.types import MAX_MINOR_CHILDREN_COUNT
 from gda.model.atom.id import IndividualID, LocationID
 from gda.model.atom.year import HistoricalYear
 from gda.model.source.military.pension.base import MilitaryPensionRecord

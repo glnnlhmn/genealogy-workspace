@@ -38,7 +38,7 @@ from gda.core.errors import (
 )
 from gda.core.types import ISO_TIMESTAMP_REGEX
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.9"
 
 
 # ==============================================================================
@@ -230,7 +230,7 @@ def test_genealogy_desk_error_empty_or_none_diagnostics() -> None:
 
 @pytest.mark.regression
 def test_genealogy_desk_error_defensively_copies_details_dict() -> None:
-    """Verify mutating caller or serialized dicts cannot corrupt err.details (Phase 4)."""
+    """Verify mutating caller or serialized dicts cannot corrupt err.details."""
     caller_details: dict[str, Any] = {"field": "source_urn"}
     err = GenealogyDeskError("Missing URN", details=caller_details)
 

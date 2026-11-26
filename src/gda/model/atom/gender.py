@@ -18,9 +18,9 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import GENDER_CODES
 from gda.core.errors import ModelFormatError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import GENDER_CODES
 
 __version__ = "1.0.0+build.7"
 

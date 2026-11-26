@@ -15,9 +15,9 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import US_VETERANS_SCHEDULE_YEAR
 from gda.core.enums.sources import SourceRecordType
 from gda.core.errors import ModelFormatError
-from gda.core.types import US_VETERANS_SCHEDULE_YEAR
 from gda.model.source.enumerated.census.base import CensusLineEntry, CensusScheduleRecord
 
 __version__ = "1.0.0+build.2"

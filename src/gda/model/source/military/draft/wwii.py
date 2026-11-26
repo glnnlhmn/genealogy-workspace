@@ -15,16 +15,16 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
-from gda.core.enums.military import DraftCardTier, WwiiDraftWave
-from gda.core.errors import ModelFormatError
-from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import (
+from gda.core.constants import (
     MAX_HEIGHT_INCHES,
     MAX_WEIGHT_LBS,
     MIN_HEIGHT_INCHES,
     MIN_WEIGHT_LBS,
     WWII_DRAFT_YEARS,
 )
+from gda.core.enums.military import DraftCardTier, WwiiDraftWave
+from gda.core.errors import ModelFormatError
+from gda.core.introspectable import IntrospectableMixin
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 

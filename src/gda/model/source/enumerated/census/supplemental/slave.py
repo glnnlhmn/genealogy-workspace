@@ -14,9 +14,9 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import US_SLAVE_SCHEDULE_YEARS
 from gda.core.enums.sources import SourceRecordType
 from gda.core.errors import ModelFormatError
-from gda.core.types import US_SLAVE_SCHEDULE_YEARS
 from gda.model.atom.id import IndividualID
 from gda.model.source.enumerated.census.base import CensusLineEntry, CensusScheduleRecord
 

@@ -22,9 +22,9 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import MAX_HISTORICAL_YEAR, MIN_HISTORICAL_YEAR
 from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import MAX_HISTORICAL_YEAR, MIN_HISTORICAL_YEAR
 
 __version__ = "1.0.0+build.5"
 

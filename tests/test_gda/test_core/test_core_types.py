@@ -3,10 +3,10 @@
 Comprehensive unit, regression, and property-based test suite for gda.core.types.
 
 Operational Role:
-    Verifies declarative regex patterns, compiled regular expressions, ISO
-    format directives, entity/archival URN patterns across all 14 namespaces,
-    SQL identifier patterns, enum key separator patterns, domain scalar
-    invariants, and CIU-B1-001 strict numeric guards (is_strict_int,
+    Verifies declarative regex patterns, compiled regular expressions, read-only
+    MappingProxyType registries, ISO format directives, entity/archival URN
+    patterns across all 14 namespaces, SQL identifier patterns, enum key
+    separator patterns, and strict numeric guards (is_strict_int,
     is_finite_number).
 
 Test Structure & Protocol:
@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 from decimal import Decimal
 from enum import IntEnum, StrEnum
+from types import MappingProxyType
 from typing import Any
 
 import pytest
@@ -36,7 +37,7 @@ from tests.test_gda.test_core.strategies import (
 
 import gda.core.types as prim
 
-__version__ = "1.0.0+build.12"
+__version__ = "1.0.0+build.14"
 
 
 class _SampleIntEnum(IntEnum):
@@ -144,14 +145,14 @@ URN_NAMESPACE_CASES: list[tuple[str, str, str]] = [
 
 # ==============================================================================
 # GROUP 1: Smoke & Primary Entrypoints
-# Note: Verifies gda.core.types exposes its core regexes, bounds, and guards.
+# Note: Verifies gda.core.types exposes its core regexes and numeric guards.
 # ==============================================================================
 
 
 @pytest.mark.smoke
 @pytest.mark.unit
 def test_types_exposes_expected_public_interface() -> None:
-    """Verify gda.core.types exports canonical patterns, bounds, and CIU-B1-001 guards."""
+    """Verify gda.core.types exports canonical patterns, registries, and strict guards."""
     required_exports = {
         "ENTITY_ID_REGEXES",
         "ENTITY_URN_REGEXES",
@@ -325,13 +326,13 @@ def test_urn_base_regex_enforces_archival_urn_envelope(
 @pytest.mark.unit
 @given(value=strict_ints())
 def test_is_strict_int_accepts_true_integers(value: int) -> None:
-    """Verify is_strict_int returns True for all true integers (CIU-B1-001)."""
+    """Verify is_strict_int returns True for all true integers."""
     assert prim.is_strict_int(value) is True
 
 
 @pytest.mark.unit
 def test_is_strict_int_accepts_int_enum_instances() -> None:
-    """Verify is_strict_int returns True for IntEnum values (CIU-B1-001)."""
+    """Verify is_strict_int returns True for IntEnum values."""
     assert prim.is_strict_int(_SampleIntEnum.ONE) is True
 
 
@@ -343,13 +344,13 @@ def test_is_strict_int_accepts_int_enum_instances() -> None:
     )
 )
 def test_is_finite_number_accepts_finite_ints_and_floats(value: int | float) -> None:
-    """Verify is_finite_number returns True for all finite ints and floats (CIU-B1-001)."""
+    """Verify is_finite_number returns True for all finite ints and floats."""
     assert prim.is_finite_number(value) is True
 
 
 # ==============================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Strict digit-width boundaries and all 14 archival URN namespaces (GAP-CORE-11).
+# Note: Strict digit-width boundaries and all 14 archival URN namespaces.
 # ==============================================================================
 
 
@@ -370,7 +371,7 @@ def test_entity_id_patterns_enforce_strict_six_digit_identifiers() -> None:
 
 @pytest.mark.unit
 def test_urn_regexes_cover_all_fourteen_namespaces() -> None:
-    """Verify URN_PATTERNS and URN_REGEXES declare all 14 archival URN namespaces (GAP-CORE-11)."""
+    """Verify URN_PATTERNS and URN_REGEXES declare all 14 archival URN namespaces."""
     assert set(prim.URN_PATTERNS.keys()) == ALL_14_URN_NAMESPACES
     assert set(prim.URN_REGEXES.keys()) == ALL_14_URN_NAMESPACES
 
@@ -382,7 +383,7 @@ def test_urn_regexes_accept_valid_samples_across_all_14_namespaces(
     valid_urn: str,
     _invalid_urn: str,
 ) -> None:
-    """Verify each of the 14 URN_REGEXES entries matches its valid sample URN (GAP-CORE-11)."""
+    """Verify each of the 14 URN_REGEXES entries matches its valid sample URN."""
     assert prim.URN_REGEXES[namespace].match(valid_urn) is not None
 
 
@@ -393,7 +394,7 @@ def test_urn_regexes_reject_malformed_samples_across_all_14_namespaces(
     _valid_urn: str,
     invalid_urn: str,
 ) -> None:
-    """Verify each of the 14 URN_REGEXES entries rejects malformed URNs (GAP-CORE-11)."""
+    """Verify each of the 14 URN_REGEXES entries rejects malformed URNs."""
     assert prim.URN_REGEXES[namespace].match(invalid_urn) is None
 
 
@@ -492,7 +493,7 @@ def test_is_strict_int_rejects_explicit_non_int_types(non_strict_val: Any) -> No
 @pytest.mark.regression
 @given(value=bool_or_non_int())
 def test_is_strict_int_rejects_booleans_and_non_integers(value: Any) -> None:
-    """Verify is_strict_int rejects booleans, floats, strings, None, and containers (CIU-B1-001)."""
+    """Verify is_strict_int rejects booleans, floats, strings, None, and containers."""
     assert prim.is_strict_int(value) is False
 
 
@@ -518,60 +519,34 @@ def test_is_finite_number_rejects_explicit_booleans_and_non_finite_values(
     )
 )
 def test_is_finite_number_rejects_booleans_and_non_finite_floats(value: Any) -> None:
-    """Verify is_finite_number rejects booleans, NaN, Inf, -Inf, strings, and None (CIU-B1-001)."""
+    """Verify is_finite_number rejects booleans, NaN, Inf, -Inf, strings, and None."""
     assert prim.is_finite_number(value) is False
 
 
 # ==============================================================================
 # GROUP 6: Integrity & Invariants
-# Note: Authoritative domain scalar bounds, military eras, and census year sets.
+# Note: Read-only MappingProxyType enforcement across all 6 regex registries.
 # ==============================================================================
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_centralized_domain_bounds_and_code_sets() -> None:
-    """Verify canonical gender codes, historical year bounds, coordinate bounds, and scalar limits."""
-    assert prim.GENDER_CODES == frozenset({"M", "F", "U"})
-    assert (prim.MIN_HISTORICAL_YEAR, prim.MAX_HISTORICAL_YEAR) == (1000, 2100)
-    assert (prim.MIN_LATITUDE, prim.MAX_LATITUDE) == (-90.0, 90.0)
-    assert (prim.MIN_LONGITUDE, prim.MAX_LONGITUDE) == (-180.0, 180.0)
-    assert (prim.MIN_QUAY_SCORE, prim.MAX_QUAY_SCORE) == (0, 3)
-    assert prim.MIN_AHNENTAFEL == 1
-    assert (prim.MIN_CONFIDENCE_SCORE, prim.MAX_CONFIDENCE_SCORE) == (0.0, 1.0)
-
-
-@pytest.mark.integrity
-@pytest.mark.unit
-def test_military_domain_bounds_and_era_year_sets() -> None:
-    """Verify centralized military scalar bounds and historical draft era year sets."""
-    assert (prim.MIN_ENLISTMENT_TERM_MONTHS, prim.MAX_ENLISTMENT_TERM_MONTHS) == (1, 120)
-    assert prim.MAX_FOREIGN_SERVICE_MONTHS == 600
-    assert prim.MAX_BOUNTY_LAND_ACREAGE == 1000
-    assert prim.MAX_MINOR_CHILDREN_COUNT == 25
-    assert (prim.MIN_VIETNAM_LOTTERY_NUMBER, prim.MAX_VIETNAM_LOTTERY_NUMBER) == (1, 366)
-    assert (prim.MIN_HEIGHT_INCHES, prim.MAX_HEIGHT_INCHES) == (36, 96)
-    assert (prim.MIN_WEIGHT_LBS, prim.MAX_WEIGHT_LBS) == (50, 500)
-    assert (prim.COLONIAL_MILITIA_MIN_YEAR, prim.COLONIAL_MILITIA_MAX_YEAR) == (1607, 1815)
-    assert prim.CIVIL_WAR_DRAFT_YEARS == frozenset({1862, 1863, 1864, 1865})
-    assert prim.WWI_DRAFT_YEARS == frozenset({1917, 1918})
-    assert prim.WWII_DRAFT_YEARS == frozenset({1940, 1941, 1942, 1943, 1944, 1945, 1946})
-    assert prim.MODERN_SSS_MIN_YEAR == 1948
-
-
-@pytest.mark.integrity
-@pytest.mark.unit
-def test_enumerated_schedule_bounds_and_era_year_sets() -> None:
-    """Verify centralized census and tax assessment bounds and historical year sets."""
-    assert prim.CENSUS_SHEET_SIDES == frozenset({"A", "B"})
-    assert prim.MAX_CENSUS_LINE_NUMBER == 200
-    assert prim.TAX_ASSESSMENT_MIN_YEAR == 1600
-    assert prim.US_FEDERAL_CENSUS_TALLY_YEARS == frozenset({1790, 1800, 1810, 1820, 1830, 1840})
-    assert prim.US_FEDERAL_CENSUS_1850_1870_YEARS == frozenset({1850, 1860, 1870})
-    assert prim.US_FEDERAL_CENSUS_1900_1910_YEARS == frozenset({1900, 1910})
-    assert len(prim.US_FEDERAL_CENSUS_YEARS) == 17
-    assert prim.US_MORTALITY_SCHEDULE_YEARS == frozenset({1850, 1860, 1870, 1880, 1885})
-    assert prim.US_AGRICULTURAL_SCHEDULE_YEARS == frozenset({1850, 1860, 1870, 1880})
-    assert prim.US_MANUFACTURING_SCHEDULE_YEARS == frozenset({1810, 1820, 1850, 1860, 1870, 1880})
-    assert prim.US_SLAVE_SCHEDULE_YEARS == frozenset({1850, 1860})
-    assert prim.US_VETERANS_SCHEDULE_YEAR == 1890
+@pytest.mark.parametrize(
+    "registry_name",
+    [
+        "ENTITY_ID_PATTERNS",
+        "ENTITY_ID_REGEXES",
+        "ENTITY_URN_PATTERNS",
+        "ENTITY_URN_REGEXES",
+        "URN_PATTERNS",
+        "URN_REGEXES",
+    ],
+)
+def test_exported_regex_registries_are_immutable_mapping_proxies(
+    registry_name: str,
+) -> None:
+    """Verify all 6 exported regex registries are MappingProxyType and reject mutation."""
+    registry: Any = getattr(prim, registry_name)
+    assert isinstance(registry, MappingProxyType)
+    with pytest.raises(TypeError):
+        registry["__MUTATION_TEST__"] = "invalid"  # type: ignore[index]

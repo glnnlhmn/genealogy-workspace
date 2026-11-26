@@ -13,9 +13,9 @@ from __future__ import annotations
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import MAX_FOREIGN_SERVICE_MONTHS
 from gda.core.enums.military import SeparationFormType
 from gda.core.errors import ModelFormatError
-from gda.core.types import MAX_FOREIGN_SERVICE_MONTHS
 from gda.model.atom.id import LocationID
 from gda.model.source.military.service.base import MilitaryServiceRecord
 

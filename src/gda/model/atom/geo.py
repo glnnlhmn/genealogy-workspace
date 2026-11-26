@@ -17,14 +17,9 @@ from typing import Any, ClassVar
 from pydantic import ConfigDict, Field, field_validator
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import MAX_LATITUDE, MAX_LONGITUDE, MIN_LATITUDE, MIN_LONGITUDE
 from gda.core.errors import ModelFormatError, ModelRangeError
 from gda.core.introspectable import IntrospectableMixin
-from gda.core.types import (
-    MAX_LATITUDE,
-    MAX_LONGITUDE,
-    MIN_LATITUDE,
-    MIN_LONGITUDE,
-)
 
 __version__ = "1.0.0+build.9"
 

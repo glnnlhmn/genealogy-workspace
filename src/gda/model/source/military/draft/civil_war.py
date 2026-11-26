@@ -15,13 +15,13 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import CIVIL_WAR_DRAFT_YEARS
 from gda.core.enums.military import (
     CivilWarConscriptionAllegiance,
     CivilWarEnrollmentClass,
     DraftCardTier,
 )
 from gda.core.errors import ModelFormatError
-from gda.core.types import CIVIL_WAR_DRAFT_YEARS
 from gda.model.atom.id import IndividualID
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 

@@ -13,9 +13,9 @@ from __future__ import annotations
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
+from gda.core.constants import US_FEDERAL_CENSUS_1900_1910_YEARS
 from gda.core.enums.fiscal import CitizenshipStatus, HomeOwnership
 from gda.core.errors import ModelFormatError
-from gda.core.types import US_FEDERAL_CENSUS_1900_1910_YEARS
 from gda.model.source.enumerated.census.population.base import (
     PopulationLineEntry,
     PopulationScheduleRecord,

@@ -4,9 +4,9 @@ Authoritative package-level facade and API surface contract suite for gda.core.
 
 Operational Role:
     Freezes and validates the Tier 0 package facade (gda.core.__init__),
-    ensuring exact __all__ export parity (CTR-001), alphabetical ordering,
-    Pydantic schema field and property surfaces (CTR-002, CTR-003), and
-    public callable signatures for downstream Tier 1-4 consumers.
+    ensuring exact __all__ export parity, alphabetical ordering, Pydantic
+    schema field and property surfaces, and public callable signatures for
+    downstream Tier 1-4 consumers.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 structural contract assertions.
@@ -29,11 +29,11 @@ from gda.core import (
     LoggingConfig,
 )
 
-__version__ = "1.0.0+build.12"
+__version__ = "1.0.0+build.13"
 
 # ==============================================================================
 # AUTHORITATIVE CONTRACT SPECIFICATION
-# Note: Strict, immutable contract for gda.core.__all__ (102 symbols w/ CIU-B1-001).
+# Note: Strict, immutable contract for gda.core.__all__ (62 symbols).
 # ==============================================================================
 
 AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
@@ -43,6 +43,8 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "DatabaseConfig",
         "ImmutableBaseModel",
         "LoggingConfig",
+        # constants/ (1)
+        "constants",
         # dates.py (8)
         "calculate_age_years",
         "format_utc_timestamp",
@@ -74,20 +76,15 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "ConsoleFormatter",
         "GDALogger",
         "JsonFormatter",
-        # types.py (73 — includes CIU-B1-001 numeric guards)
+        # types.py (32)
         "ATOM_ID_PATTERN",
         "ATOM_ID_REGEX",
-        "CENSUS_SHEET_SIDES",
-        "CIVIL_WAR_DRAFT_YEARS",
-        "COLONIAL_MILITIA_MAX_YEAR",
-        "COLONIAL_MILITIA_MIN_YEAR",
         "ENTITY_ID_PATTERNS",
         "ENTITY_ID_REGEXES",
         "ENTITY_URN_PATTERNS",
         "ENTITY_URN_REGEXES",
         "ENUM_KEY_SEPARATOR_PATTERN",
         "ENUM_KEY_SEPARATOR_REGEX",
-        "GENDER_CODES",
         "ISO_DATE_FMT",
         "ISO_DATE_PATTERN",
         "ISO_DATE_REGEX",
@@ -96,30 +93,6 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "ISO_TIMESTAMP_PATTERN",
         "ISO_TIMESTAMP_REGEX",
         "ISO_YEAR_FMT",
-        "MAX_BOUNTY_LAND_ACREAGE",
-        "MAX_CENSUS_LINE_NUMBER",
-        "MAX_CONFIDENCE_SCORE",
-        "MAX_ENLISTMENT_TERM_MONTHS",
-        "MAX_FOREIGN_SERVICE_MONTHS",
-        "MAX_HEIGHT_INCHES",
-        "MAX_HISTORICAL_YEAR",
-        "MAX_LATITUDE",
-        "MAX_LONGITUDE",
-        "MAX_MINOR_CHILDREN_COUNT",
-        "MAX_QUAY_SCORE",
-        "MAX_VIETNAM_LOTTERY_NUMBER",
-        "MAX_WEIGHT_LBS",
-        "MIN_AHNENTAFEL",
-        "MIN_CONFIDENCE_SCORE",
-        "MIN_ENLISTMENT_TERM_MONTHS",
-        "MIN_HEIGHT_INCHES",
-        "MIN_HISTORICAL_YEAR",
-        "MIN_LATITUDE",
-        "MIN_LONGITUDE",
-        "MIN_QUAY_SCORE",
-        "MIN_VIETNAM_LOTTERY_NUMBER",
-        "MIN_WEIGHT_LBS",
-        "MODERN_SSS_MIN_YEAR",
         "NEWS_CATEGORY_PATTERN",
         "NEWS_CATEGORY_REGEX",
         "PUB_CODE_PATTERN",
@@ -128,24 +101,12 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
         "SHA256_REGEX",
         "SQL_IDENTIFIER_PATTERN",
         "SQL_IDENTIFIER_REGEX",
-        "TAX_ASSESSMENT_MIN_YEAR",
         "URN_BASE_PATTERN",
         "URN_BASE_REGEX",
         "URN_PATTERNS",
         "URN_REGEXES",
-        "US_AGRICULTURAL_SCHEDULE_YEARS",
-        "US_FEDERAL_CENSUS_1850_1870_YEARS",
-        "US_FEDERAL_CENSUS_1900_1910_YEARS",
-        "US_FEDERAL_CENSUS_TALLY_YEARS",
-        "US_FEDERAL_CENSUS_YEARS",
-        "US_MANUFACTURING_SCHEDULE_YEARS",
-        "US_MORTALITY_SCHEDULE_YEARS",
-        "US_SLAVE_SCHEDULE_YEARS",
-        "US_VETERANS_SCHEDULE_YEAR",
         "UUID_V4_PATTERN",
         "UUID_V4_REGEX",
-        "WWI_DRAFT_YEARS",
-        "WWII_DRAFT_YEARS",
         "is_finite_number",
         "is_strict_int",
     }
@@ -154,7 +115,7 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
 
 # ==============================================================================
 # GROUP 1: Smoke & Primary Entrypoints
-# Note: Single smoke gate freezing gda.core.__all__ against drift (CTR-001).
+# Note: Single smoke gate freezing gda.core.__all__ against drift.
 # ==============================================================================
 
 
@@ -162,7 +123,7 @@ AUTHORITATIVE_EXPORTS: frozenset[str] = frozenset(
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_core_exports_exact_authoritative_symbols() -> None:
-    """Verify gda.core exports exactly the authoritative symbol set with zero drift (CTR-001)."""
+    """Verify gda.core exports exactly the authoritative symbol set with zero drift."""
     actual_symbols = frozenset(gda.core.__all__)
     assert actual_symbols == AUTHORITATIVE_EXPORTS
     assert len(gda.core.__all__) == len(AUTHORITATIVE_EXPORTS)
@@ -199,7 +160,7 @@ def test_core_all_is_sorted_and_unique() -> None:
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_config_models_field_names_and_types() -> None:
-    """Verify expected field names remain frozen across configuration models (CTR-002)."""
+    """Verify expected field names remain frozen across configuration models."""
     assert {
         "engine",
         "db_name",
@@ -230,7 +191,7 @@ def test_config_models_field_names_and_types() -> None:
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_app_and_database_config_derived_property_accessors() -> None:
-    """Verify derived directory, env, and connection property accessors remain declared (CTR-003)."""
+    """Verify derived directory, env, and connection property accessors remain declared."""
     for prop in ("env_code", "data_path", "logs_path", "backups_path"):
         assert isinstance(getattr(AppConfig, prop, None), property)
 

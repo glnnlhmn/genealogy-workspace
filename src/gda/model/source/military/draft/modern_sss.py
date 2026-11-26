@@ -15,13 +15,13 @@ from typing import ClassVar
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 
-from gda.core.enums.military import DraftCardTier, ModernDraftEra, SssClassification
-from gda.core.errors import ModelFormatError
-from gda.core.types import (
+from gda.core.constants import (
     MAX_VIETNAM_LOTTERY_NUMBER,
     MIN_VIETNAM_LOTTERY_NUMBER,
     MODERN_SSS_MIN_YEAR,
 )
+from gda.core.enums.military import DraftCardTier, ModernDraftEra, SssClassification
+from gda.core.errors import ModelFormatError
 from gda.model.source.military.draft.base import MilitaryDraftRecord
 
 __version__ = "1.0.0+build.2"
