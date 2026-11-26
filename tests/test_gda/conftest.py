@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from gda.model.atom.date import IsoTimestamp
     from gda.model.base.audit import AuditStamp
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "clean_gda_env",
@@ -51,7 +51,6 @@ __all__ = [
 @pytest.fixture(autouse=True)
 def clean_gda_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Strip host GDA_* environment variables before each test for hermetic runs."""
-    # Prevents workstation shell variables from leaking into AppConfig.load() (RARE-CORE-02).
     for key in list(os.environ):
         if key.startswith("GDA_"):
             monkeypatch.delenv(key, raising=False)
@@ -110,7 +109,11 @@ def managed_gda_logger(
     yield _make
 
     for gda_logger in created:
-        py_logger = getattr(gda_logger, "_logger", None)
+        close_fn = getattr(gda_logger, "close", None)
+        if callable(close_fn):
+            close_fn()
+            continue
+        py_logger = getattr(gda_logger, "logger", None)
         if py_logger is not None:
             for handler in list(py_logger.handlers):
                 handler.close()

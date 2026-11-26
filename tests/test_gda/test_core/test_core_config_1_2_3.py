@@ -7,13 +7,13 @@ Operational Role:
     - GROUP 1: Smoke & Primary Entrypoints (__all__ exports, default load).
     - GROUP 2: Core Logic & Happy Paths (DatabaseConfig, LoggingConfig,
       AppConfig defaults, multi-engine URIs, path derivation, and precedence).
-    - GROUP 3: Edge Cases & Boundary Conditions (password-only auth safety
-      per GAP-CORE-07, scalar nested env vars, and host GDA_* env isolation
-      per RARE-CORE-02).
+    - GROUP 3: Edge Cases & Boundary Conditions (password-only auth safety,
+      scalar nested env vars, GDA_ENVIRONMENT-only overlay activation, and
+      host GDA_* env isolation).
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
-    - Fully decorated: 5-marker taxonomy (smoke, unit, regression).
+    - Fully decorated: 5-marker taxonomy (smoke, unit, regression, integration).
     - Companion module: test_core_config_4_5_6.py (Groups 4-6).
 """
 
@@ -22,11 +22,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pydantic import SecretStr
 
 import gda.core.config as cfg_mod
 from gda.core.config import AppConfig, DatabaseConfig, LoggingConfig
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.3"
 
 
 # ==============================================================================
@@ -110,7 +111,7 @@ def test_database_config_multi_engine_connection_strings() -> None:
         host="db.internal",
         port=5432,
         username="gda_admin",
-        password="p@ss:word/1",
+        password=SecretStr("p@ss:word/1"),
         db_name="gda_prod",
     )
     assert pg_full.engine == "postgresql+psycopg"
@@ -226,17 +227,17 @@ def test_app_config_environment_variables_and_overrides_precedence(
 
 # ==============================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Password-only auth (GAP-CORE-07), scalar env keys, and env isolation (RARE-CORE-02).
+# Note: Password-only auth, scalar env keys, GDA_ENVIRONMENT overlay, and isolation.
 # ==============================================================================
 
 
 @pytest.mark.regression
 def test_database_config_password_without_username_omits_auth_segment() -> None:
-    """Verify password without username does not leak credentials into URI (GAP-CORE-07)."""
+    """Verify password without username does not leak credentials into URI."""
     cfg = DatabaseConfig(
         engine="postgresql",
         host="db.internal",
-        password="secret_password",
+        password=SecretStr("secret_password"),
         db_name="gda_dev",
     )
     assert cfg.connection_string == "postgresql://db.internal/gda_dev"
@@ -257,11 +258,36 @@ def test_app_config_env_nested_on_non_dict_section_ignored(tmp_path: Path) -> No
 
 
 @pytest.mark.regression
+@pytest.mark.integration
+def test_app_config_load_applies_env_overlay_from_gda_environment_var_alone(
+    tmp_path: Path,
+) -> None:
+    """Verify setting only GDA_ENVIRONMENT activates the matching TOML environment overlay."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text(
+        '[tool.gda]\napp_name = "Env Overlay Test"\n\n'
+        '[tool.gda.environments.PROD]\ndb_name = "gda_prod.db"\n'
+        'db_path = "data/db/gda_prod.db"\ntimeout_seconds = 40.0\n',
+        encoding="utf-8",
+    )
+
+    cfg = AppConfig.load(
+        config_path=pyproject,
+        root_path=tmp_path,
+        env_vars={"GDA_ENVIRONMENT": "PROD"},
+    )
+    assert cfg.environment == "production"
+    assert cfg.database.db_name == "gda_prod.db"
+    assert cfg.database.db_path == Path("data/db/gda_prod.db")
+    assert cfg.database.busy_timeout == 40000
+
+
+@pytest.mark.regression
 def test_app_config_host_env_vars_isolated_by_explicit_env_map(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify host GDA_* env vars apply by default and are isolated by env_vars={} (RARE-CORE-02)."""
+    """Verify host GDA_* env vars apply by default and are isolated by env_vars={}."""
     monkeypatch.setenv("GDA_APP_NAME", "HostLeakedArchive")
 
     cfg_from_host = AppConfig.load(root_path=tmp_path)

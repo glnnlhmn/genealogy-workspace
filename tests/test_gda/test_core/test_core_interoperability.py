@@ -12,22 +12,23 @@ Operational Role:
 Test Structure & Protocol:
     - Atomized tests: 1:1 cross-subsystem workflow mapping.
     - Fully decorated: 5-marker taxonomy (smoke, unit, regression, integration).
-    - Dependencies: Isolated tmp_path sandboxes with explicit handler teardown.
+    - Dependencies: Shared conftest.py fixtures (managed_gda_logger, SampleIntrospectableService).
 """
 
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from tests.test_gda.test_core.conftest import SampleIntrospectableService
 
 from gda.core import (
     AppConfig,
     ConfigParseError,
     ConfigValidationError,
     GDALogger,
-    IntrospectableMixin,
     LoggingConfig,
     is_valid_sha256,
     parse_iso_timestamp,
@@ -35,14 +36,7 @@ from gda.core import (
     validate_iso_timestamp,
 )
 
-__version__ = "1.0.0+build.10"
-
-
-def _close_logger(gda_logger: GDALogger) -> None:
-    """Close and detach all handlers on a GDALogger to release Windows file locks."""
-    for handler in list(gda_logger.logger.handlers):
-        handler.close()
-        gda_logger.logger.removeHandler(handler)
+__version__ = "1.0.0+build.11"
 
 
 # ==============================================================================
@@ -66,11 +60,8 @@ def test_app_config_drives_logger_persistence_smoke(tmp_path: Path) -> None:
     )
 
     app_cfg = AppConfig.load(config_path=cfg_file)
-    logger = GDALogger(name="gda.interop.smoke", config=app_cfg.logging, base_dir=tmp_path)
-    try:
+    with GDALogger(name="gda.interop.smoke", config=app_cfg.logging, base_dir=tmp_path) as logger:
         logger.debug("Testing interop trace", details={"module": "test_core"})
-    finally:
-        _close_logger(logger)
 
     target_log = tmp_path / "runtime" / "interop.log"
     assert target_log.exists()
@@ -96,8 +87,7 @@ def test_logger_serializes_config_validation_error_structure(tmp_path: Path) -> 
         log_to_file=True,
         log_file_path="interop_errors.log",
     )
-    logger = GDALogger(name="gda.errors.interop", config=log_cfg, base_dir=tmp_path)
-    try:
+    with GDALogger(name="gda.errors.interop", config=log_cfg, base_dir=tmp_path) as logger:
         try:
             raise ConfigValidationError(
                 message="Invalid database port specified",
@@ -106,8 +96,6 @@ def test_logger_serializes_config_validation_error_structure(tmp_path: Path) -> 
             )
         except ConfigValidationError as err:
             logger.error("Configuration failure encountered", exc=err)
-    finally:
-        _close_logger(logger)
 
     log_file = tmp_path / "interop_errors.log"
     payload = json.loads(log_file.read_text(encoding="utf-8").strip())
@@ -151,11 +139,8 @@ def test_log_record_timestamp_and_file_digest_interoperate_with_dates_and_hashes
         log_to_file=True,
         log_file_path="audit.log",
     )
-    logger = GDALogger(name="gda.audit.interop", config=log_cfg, base_dir=tmp_path)
-    try:
+    with GDALogger(name="gda.audit.interop", config=log_cfg, base_dir=tmp_path) as logger:
         logger.info("Audit event recorded", details={"seq": 1})
-    finally:
-        _close_logger(logger)
 
     log_file = tmp_path / "audit.log"
     payload = json.loads(log_file.read_text(encoding="utf-8").strip())
@@ -168,49 +153,23 @@ def test_log_record_timestamp_and_file_digest_interoperate_with_dates_and_hashes
 
 
 @pytest.mark.integration
-def test_introspectable_mixin_composes_with_core_services() -> None:
+def test_introspectable_mixin_composes_with_core_services(
+    managed_gda_logger: Callable[[str, LoggingConfig | None], GDALogger],
+) -> None:
     """Verify IntrospectableMixin functions when inherited by classes using GDALogger."""
-
-    class MonitoredService(IntrospectableMixin):
-        """A core monitored service utilizing configuration and logging."""
-
-        def __init__(self, logger: GDALogger) -> None:
-            """Initialize MonitoredService."""
-            self.logger = logger
-            self._status = "READY"
-
-        @property
-        def status(self) -> str:
-            """Return the current service operational status."""
-            return self._status
-
-        def execute_task(self, task_name: str) -> bool:
-            """Execute a named service task.
-
-            Args:
-                task_name: Unique task identifier.
-
-            Returns:
-                True if execution succeeded.
-            """
-            self.logger.info(f"Task executed: {task_name}")
-            return True
-
     cfg = LoggingConfig(log_to_console=False, log_to_file=False)
-    logger = GDALogger(name="service.test", config=cfg)
-    try:
-        service = MonitoredService(logger=logger)
-        dir_output = service.help(as_str=True)
-        assert dir_output is not None
-        assert "=== MonitoredService Public Directory ===" in dir_output
-        assert "status" in dir_output
-        assert "execute_task" in dir_output
+    logger = managed_gda_logger("service.test", cfg)
+    service = SampleIntrospectableService(logger=logger)
 
-        method_output = service.help("execute_task", as_str=True)
-        assert method_output is not None
-        assert "Help on method 'MonitoredService.execute_task':" in method_output
-        assert "task_name" in method_output
-        assert "Unique task identifier." in method_output
-        assert "True if execution succeeded." in method_output
-    finally:
-        _close_logger(logger)
+    dir_output = service.help(as_str=True)
+    assert dir_output is not None
+    assert "=== SampleIntrospectableService Public Directory ===" in dir_output
+    assert "status" in dir_output
+    assert "execute_task" in dir_output
+
+    method_output = service.help("execute_task", as_str=True)
+    assert method_output is not None
+    assert "Help on method 'SampleIntrospectableService.execute_task':" in method_output
+    assert "task_name" in method_output
+    assert "Unique task identifier." in method_output
+    assert "True if execution succeeded." in method_output

@@ -4,18 +4,18 @@ Error handling, integration, and integrity test suite for gda.core.config (Group
 
 Operational Role:
     Covers Groups 4-6 of the 6-group catalog for gda.core.config:
-    - GROUP 4: Error Handling & Validation Failures (schema bounds, GAP-CORE-07
-      port/backup_count guards, AUD-B1-003 / GAP-CORE-02 bool/NaN/Inf
-      timeout_seconds guards, and ConfigParseError / ConfigValidationError).
+    - GROUP 4: Error Handling & Validation Failures (schema bounds, empty db_path,
+      env coercion for binary strings and Unicode digits, bool/NaN/Inf guards,
+      and ConfigParseError / ConfigValidationError).
     - GROUP 5: Filesystem, CLI & Integration (directory provisioning, TOML and
-      pyproject.toml loading, for_environment, GDA_CONFIG_PATH, and RARE-CORE-01
-      symlinked/locked TOML handling).
-    - GROUP 6: Integrity & Invariants (GAP-CORE-06 frozen immutability and
-      extra='forbid' contracts across all config models).
+      pyproject.toml loading, for_environment, GDA_CONFIG_PATH, symlinked TOML,
+      and OSError wrapping).
+    - GROUP 6: Integrity & Invariants (SecretStr password masking, frozen
+      immutability, and extra='forbid' contracts across all config models).
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
-    - Fully decorated: 5-marker taxonomy (regression, integration, integrity).
+    - Fully decorated: 5-marker taxonomy (unit, regression, integration, integrity).
     - Companion module: test_core_config_1_2_3.py (Groups 1-3).
 """
 
@@ -25,17 +25,17 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from gda.core.config import AppConfig, DatabaseConfig, LoggingConfig
 from gda.core.errors import ConfigParseError, ConfigValidationError
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 # ==============================================================================
 # GROUP 4: Error Handling & Validation Failures
-# Note: Schema bounds, GAP-CORE-02/07, AUD-B1-003 TDD Red, and loader errors.
+# Note: Schema bounds, env coercion safety, and TOML/validation loader errors.
 # ==============================================================================
 
 
@@ -53,6 +53,15 @@ def test_database_config_invalid_fields_raise() -> None:
 
 
 @pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.parametrize("blank_path", ["", "   ", "\t\n"])
+def test_database_config_rejects_empty_or_whitespace_db_path(blank_path: str) -> None:
+    """Verify DatabaseConfig rejects empty or whitespace-only db_path values."""
+    with pytest.raises(ValidationError, match="db_path cannot be empty"):
+        DatabaseConfig(db_path=blank_path)
+
+
+@pytest.mark.regression
 @pytest.mark.parametrize("bad_timeout", [50, 70000])
 def test_database_config_busy_timeout_boundary_validation(bad_timeout: int) -> None:
     """Verify DatabaseConfig rejects busy_timeout outside 100-60000 ms."""
@@ -63,7 +72,7 @@ def test_database_config_busy_timeout_boundary_validation(bad_timeout: int) -> N
 @pytest.mark.regression
 @pytest.mark.parametrize("bad_port", [0, -1, 65536, 70000])
 def test_database_config_rejects_out_of_range_ports(bad_port: int) -> None:
-    """Verify DatabaseConfig rejects network ports outside 1-65535 (GAP-CORE-07)."""
+    """Verify DatabaseConfig rejects network ports outside 1-65535."""
     with pytest.raises(ValidationError):
         DatabaseConfig(port=bad_port)
 
@@ -76,9 +85,53 @@ def test_database_config_rejects_out_of_range_ports(bad_port: int) -> None:
 def test_database_config_rejects_bool_nan_inf_timeout_seconds(
     bad_timeout_sec: Any,
 ) -> None:
-    """Verify timeout_seconds rejects bool, NaN, and Inf (AUD-B1-003 / GAP-CORE-02)."""
+    """Verify timeout_seconds rejects bool, NaN, and Inf."""
     with pytest.raises(ValidationError):
         DatabaseConfig.model_validate({"timeout_seconds": bad_timeout_sec})
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("env_map", "expected_app_name", "expected_debug", "expected_log_to_file"),
+    [
+        (
+            {"GDA_APP_NAME": "1", "GDA_DEBUG": "1", "GDA_LOGGING__LOG_TO_FILE": "0"},
+            "1",
+            True,
+            False,
+        ),
+        (
+            {"GDA_APP_NAME": "0", "GDA_DEBUG": "0", "GDA_LOGGING__LOG_TO_FILE": "1"},
+            "0",
+            False,
+            True,
+        ),
+        (
+            {"GDA_APP_NAME": "²", "GDA_DEBUG": "false", "GDA_LOGGING__LOG_TO_FILE": "true"},
+            "²",
+            False,
+            True,
+        ),
+    ],
+)
+def test_app_config_env_coercion_preserves_binary_strings_and_unicode_digits(
+    tmp_path: Path,
+    env_map: dict[str, str],
+    expected_app_name: str,
+    expected_debug: bool,
+    expected_log_to_file: bool,
+) -> None:
+    """Verify '0'/'1' stay strings on str fields, coerce on bool fields, and '²' never crashes."""
+    cfg = AppConfig.load(
+        root_path=tmp_path,
+        env_vars={**env_map, "GDA_DATABASE__PASSWORD": "0"},
+    )
+    assert cfg.app_name == expected_app_name
+    assert cfg.debug is expected_debug
+    assert cfg.logging.log_to_file is expected_log_to_file
+    assert cfg.database.password is not None
+    assert cfg.database.password.get_secret_value() == "0"
 
 
 @pytest.mark.regression
@@ -91,7 +144,7 @@ def test_logging_config_rejects_invalid_levels(bad_level: Any) -> None:
 
 @pytest.mark.regression
 def test_logging_config_rejects_invalid_rotation_bounds() -> None:
-    """Verify LoggingConfig rejects max_bytes < 1024 and negative backup_count (GAP-CORE-07)."""
+    """Verify LoggingConfig rejects max_bytes < 1024 and negative backup_count."""
     with pytest.raises(ValidationError):
         LoggingConfig(max_bytes=512)
 
@@ -153,7 +206,7 @@ def test_app_config_invalid_merged_values_raise_config_validation_error(
 
 # ==============================================================================
 # GROUP 5: Filesystem, CLI & Integration
-# Note: Directory creation, TOML/pyproject discovery, and RARE-CORE-01 resilience.
+# Note: Directory creation, TOML/pyproject discovery, symlinks, and OSError wrapping.
 # ==============================================================================
 
 
@@ -252,7 +305,7 @@ def test_app_config_discovers_gda_config_pyproject_and_env_path(
 @pytest.mark.integration
 @pytest.mark.regression
 def test_app_config_load_follows_symlinked_toml_file(tmp_path: Path) -> None:
-    """Verify AppConfig.load reads configuration through a symlinked TOML file (RARE-CORE-01)."""
+    """Verify AppConfig.load reads configuration through a symlinked TOML file."""
     target = tmp_path / "real_config.toml"
     link = tmp_path / "linked_config.toml"
     target.write_text('app_name = "Symlinked Archive"\n', encoding="utf-8")
@@ -267,11 +320,19 @@ def test_app_config_load_follows_symlinked_toml_file(tmp_path: Path) -> None:
 
 @pytest.mark.integration
 @pytest.mark.regression
-def test_app_config_load_propagates_permission_error_on_locked_toml(
+def test_app_config_load_wraps_os_error_on_locked_or_directory_toml(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify AppConfig.load propagates PermissionError on a locked TOML file (RARE-CORE-01)."""
+    """Verify AppConfig.load wraps PermissionError and directory config_path in ConfigParseError."""
+    # Directory passed as config_path triggers OSError / IsADirectoryError on open.
+    dir_path = tmp_path / "config_dir"
+    dir_path.mkdir()
+    with pytest.raises(ConfigParseError) as exc_dir:
+        AppConfig.load(config_path=dir_path, root_path=tmp_path)
+    assert exc_dir.value.error_code == "ERR_CONFIG_TOML_PARSE"
+
+    # Simulated Windows file lock triggers PermissionError on open.
     locked_toml = tmp_path / "locked.toml"
     locked_toml.write_text('app_name = "Locked"\n', encoding="utf-8")
 
@@ -279,20 +340,33 @@ def test_app_config_load_propagates_permission_error_on_locked_toml(
         raise PermissionError(f"Access denied: {self}")
 
     monkeypatch.setattr(Path, "open", _deny_open)
-    with pytest.raises(PermissionError, match="Access denied"):
+    with pytest.raises(ConfigParseError, match="Access denied") as exc_perm:
         AppConfig.load(config_path=locked_toml, root_path=tmp_path)
+    assert exc_perm.value.error_code == "ERR_CONFIG_TOML_PARSE"
 
 
 # ==============================================================================
 # GROUP 6: Integrity & Invariants
-# Note: Frozen immutability and extra='forbid' enforcement (GAP-CORE-06).
+# Note: SecretStr password masking, frozen immutability, and extra='forbid'.
 # ==============================================================================
+
+
+@pytest.mark.integrity
+@pytest.mark.unit
+def test_database_config_password_masks_secret_value() -> None:
+    """Verify DatabaseConfig.password masks plaintext in repr/str/model_dump via SecretStr."""
+    cfg = DatabaseConfig.model_validate({"password": "top_secret_value"})
+    assert isinstance(cfg.password, SecretStr)
+    assert cfg.password.get_secret_value() == "top_secret_value"
+    assert "top_secret_value" not in repr(cfg)
+    assert "top_secret_value" not in str(cfg)
+    assert "top_secret_value" not in str(cfg.model_dump())
 
 
 @pytest.mark.integrity
 @pytest.mark.regression
 def test_config_models_enforce_frozen_immutability(tmp_path: Path) -> None:
-    """Verify DatabaseConfig, LoggingConfig, and AppConfig forbid post-init mutation (GAP-CORE-06)."""
+    """Verify DatabaseConfig, LoggingConfig, and AppConfig forbid post-init mutation."""
     db_cfg = DatabaseConfig()
     with pytest.raises(ValidationError):
         db_cfg.busy_timeout = 10000  # type: ignore[misc]
@@ -309,7 +383,7 @@ def test_config_models_enforce_frozen_immutability(tmp_path: Path) -> None:
 @pytest.mark.integrity
 @pytest.mark.regression
 def test_config_models_forbid_undeclared_extra_attributes() -> None:
-    """Verify all config models configured with extra='forbid' reject undeclared fields (GAP-CORE-06)."""
+    """Verify all config models configured with extra='forbid' reject undeclared fields."""
     with pytest.raises(ValidationError):
         DatabaseConfig(extra_param="disallowed")  # type: ignore[call-arg]
 

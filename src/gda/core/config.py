@@ -25,12 +25,20 @@ from pathlib import Path
 from typing import Any, Literal, Self
 from urllib.parse import quote_plus
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SecretStr,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from gda.core.errors import ConfigParseError, ConfigValidationError
 from gda.core.types import is_finite_number
 
-__version__ = "1.0.0+build.20"
+__version__ = "1.0.0+build.21"
 
 __all__ = [
     "AppConfig",
@@ -73,7 +81,7 @@ class DatabaseConfig(ImmutableBaseModel):
     host: str | None = Field(default=None)
     port: int | None = Field(default=None, ge=1, le=65535)
     username: str | None = Field(default=None)
-    password: str | None = Field(default=None)
+    password: SecretStr | None = Field(default=None)
     dsn_override: str | None = Field(default=None)
     busy_timeout: int = Field(default=5000, ge=100, le=60000)
     journal_mode: str = Field(default="WAL")
@@ -94,6 +102,8 @@ class DatabaseConfig(ImmutableBaseModel):
         """Coerce filesystem strings to Path instances while preserving in-memory tokens."""
         if isinstance(value, str):
             clean = value.strip()
+            if not clean:
+                raise ValueError("db_path cannot be empty or whitespace-only")
             if clean in (":memory:", "file::memory:"):
                 return clean
             return Path(clean)
@@ -163,7 +173,7 @@ class DatabaseConfig(ImmutableBaseModel):
             return ""
         user_enc = quote_plus(self.username)
         if self.password is not None:
-            return f"{user_enc}:{quote_plus(self.password)}@"
+            return f"{user_enc}:{quote_plus(self.password.get_secret_value())}@"
         return f"{user_enc}@"
 
 
@@ -304,9 +314,9 @@ class AppConfig(ImmutableBaseModel):
         try:
             with file_to_load.open("rb") as f:
                 raw_toml = tomllib.load(f)
-        except tomllib.TOMLDecodeError as exc:
+        except (OSError, tomllib.TOMLDecodeError) as exc:
             raise ConfigParseError(
-                f"Malformed TOML in {file_to_load}: {exc}",
+                f"Failed to read or parse TOML in {file_to_load}: {exc}",
                 error_code="ERR_CONFIG_TOML_PARSE",
                 details={"path": str(file_to_load)},
             ) from exc
@@ -394,7 +404,8 @@ class AppConfig(ImmutableBaseModel):
         Precedence (lowest to highest):
             1. Schema defaults
             2. gda_config.toml, pyproject.toml [tool.gda], or explicit TOML file
-            3. [tool.gda.environments.<ENV>] overlay (when env_name or environment matches)
+            3. [tool.gda.environments.<ENV>] overlay (when env_name, TOML environment,
+               or <env_prefix>ENVIRONMENT matches)
             4. Environment variables (GDA_*, GDA_DATABASE__*, GDA_LOGGING__*)
             5. Explicit dictionary overrides
 
@@ -410,7 +421,7 @@ class AppConfig(ImmutableBaseModel):
             Validated, immutable AppConfig instance.
 
         Raises:
-            ConfigParseError: If an explicit config_path is missing or TOML syntax fails.
+            ConfigParseError: If an explicit config_path is missing or TOML reading/parsing fails.
             ConfigValidationError: If merged settings fail Pydantic schema validation.
         """
         merged: dict[str, Any] = {"database": {}, "logging": {}}
@@ -431,10 +442,11 @@ class AppConfig(ImmutableBaseModel):
         if env_name is not None:
             merged["environment"] = env_name
 
-        if environments_table and (env_name is not None or "environment" in merged):
-            target_env_key = str(
-                env_source.get(f"{env_prefix}ENVIRONMENT") or merged["environment"]
-            )
+        env_var_key = f"{env_prefix}ENVIRONMENT"
+        if environments_table and (
+            env_name is not None or "environment" in merged or env_var_key in env_source
+        ):
+            target_env_key = str(env_source.get(env_var_key) or merged["environment"])
             merged["database"].update(
                 cls._extract_env_db_settings(environments_table, target_env_key)
             )
@@ -454,13 +466,11 @@ class AppConfig(ImmutableBaseModel):
             ) from exc
 
     @staticmethod
-    def _coerce_env_val(val: str) -> bool | int | str:
-        """Coerce raw environment variable string to boolean, integer, or string."""
+    def _coerce_env_val(val: str) -> bool | str:
+        """Coerce explicit boolean words; preserve numeric/string tokens for Pydantic validation."""
         lower = val.strip().lower()
-        if lower in ("true", "1", "yes"):
+        if lower in ("true", "yes"):
             return True
-        if lower in ("false", "0", "no"):
+        if lower in ("false", "no"):
             return False
-        if val.strip().isdigit():
-            return int(val.strip())
         return val

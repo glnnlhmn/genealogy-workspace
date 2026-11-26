@@ -6,8 +6,8 @@ Operational Role:
     Verifies pure stateless ISO calendar date and timestamp string validation
     predicates, Zulu UTC formatting, date component extraction, and
     chronological age calculation against valid formats, leap-day/century
-    boundaries, partial dates, IntEnum years, impossible calendar days, and
-    Hypothesis-generated historical date pairs.
+    boundaries, partial dates, IntEnum years, impossible calendar days,
+    year-zero rejection, and Hypothesis-generated historical date pairs.
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -30,7 +30,7 @@ import gda.core.dates as udate
 from gda.core.enums import CensusYearUS
 from gda.core.errors import ModelFormatError, ModelRangeError
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 
 # ==============================================================================
@@ -169,7 +169,7 @@ def test_calculate_age_years_handles_canonical_inputs(
 
 # ==============================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Leap-day birthdays, 1900 century non-leap year, and partial pairs (GAP-CORE-08).
+# Note: Leap-day birthdays, 1900 century non-leap year, and partial date pairs.
 # ==============================================================================
 
 
@@ -189,14 +189,22 @@ def test_calculate_age_years_leap_day_and_partial_date_boundaries(
     target: str,
     expected_age: int,
 ) -> None:
-    """Verify leap-day birthdays and partial YYYY-MM date pairs compute accurately (GAP-CORE-08)."""
+    """Verify leap-day birthdays and partial YYYY-MM date pairs compute accurately."""
     assert udate.calculate_age_years(birth, target) == expected_age
 
 
 @pytest.mark.regression
 def test_validate_iso_date_rejects_century_non_leap_year_1900() -> None:
-    """Verify 1900-02-29 is rejected as a Gregorian century non-leap year (GAP-CORE-08)."""
+    """Verify 1900-02-29 is rejected as a Gregorian century non-leap year."""
     assert udate.validate_iso_date("1900-02-29") is False
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+@pytest.mark.parametrize("year_zero_date", ["0000", "0000-01", "0000-01-01"])
+def test_validate_iso_date_rejects_year_zero_across_precisions(year_zero_date: str) -> None:
+    """Verify Gregorian year 0000 is rejected for YYYY, YYYY-MM, and YYYY-MM-DD."""
+    assert udate.validate_iso_date(year_zero_date) is False
 
 
 # ==============================================================================
@@ -239,7 +247,7 @@ def test_validate_iso_timestamp_rejects_malformed_and_empty_inputs(invalid_ts: A
 
 @pytest.mark.regression
 def test_validate_iso_timestamp_rejects_impossible_calendar_date() -> None:
-    """Verify validate_iso_timestamp rejects impossible Gregorian dates like Feb 30 (GAP-CORE-08)."""
+    """Verify validate_iso_timestamp rejects impossible Gregorian dates like Feb 30."""
     assert udate.validate_iso_timestamp("2026-02-30T12:00:00Z") is False
 
 
@@ -292,7 +300,7 @@ def test_calculate_age_years_raises_model_format_error_on_invalid_types(
 
 # ==============================================================================
 # GROUP 6: Integrity & Invariants
-# Note: Hypothesis property invariants across historical dates (GAP-CORE-04).
+# Note: Hypothesis property invariants across historical dates.
 # ==============================================================================
 
 
@@ -314,7 +322,7 @@ def test_validate_and_parse_iso_date_accept_all_hypothesis_iso_dates(
 def test_calculate_age_years_matches_gregorian_invariants_property(
     pair: tuple[date, date],
 ) -> None:
-    """Verify calculate_age_years is non-negative and matches exact Gregorian math (GAP-CORE-04)."""
+    """Verify calculate_age_years is non-negative and matches exact Gregorian math."""
     birth, target = pair
     expected = target.year - birth.year - ((target.month, target.day) < (birth.month, birth.day))
     actual = udate.calculate_age_years(birth.isoformat(), target.isoformat())

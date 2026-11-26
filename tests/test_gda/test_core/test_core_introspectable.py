@@ -4,10 +4,11 @@ Comprehensive unit, regression, and integrity test suite for gda.core.introspect
 
 Operational Role:
     Validates IntrospectableMixin and _HybridHelpDescriptor capabilities,
-    including public member directory generation, property inspection,
-    method signature extraction, docstring parsing, class/instance duality,
-    empty/undocumented class handling (GAP-CORE-10), and defensive error
-    boundaries for unknown or non-string member requests.
+    including public member directory generation (properties, public class
+    attributes, and callable methods), property inspection, method signature
+    extraction, docstring parsing, class/instance duality, empty/undocumented
+    class handling, and defensive error boundaries for unknown or non-string
+    member requests.
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
         SampleEntity,
     )
 
-__version__ = "1.0.0+build.9"
+__version__ = "1.0.0+build.11"
 
 
 # ==============================================================================
@@ -56,17 +57,19 @@ def test_introspectable_exposes_expected_public_interface(
 
 # ==============================================================================
 # GROUP 2: Core Logic & Happy Paths
-# Note: Directory rendering, property/method inspection, and MRO discovery.
+# Note: Directory rendering, property/attribute/method inspection, and MRO discovery.
 # ==============================================================================
 
 
 @pytest.mark.unit
 def test_directory_rendering_as_str(sample_entity_cls: type[SampleEntity]) -> None:
-    """Verify help() with as_str=True renders formatted public directory."""
+    """Verify help() with as_str=True renders formatted public directory including class attributes."""
     output = sample_entity_cls.help(as_str=True)
     assert output is not None
     assert "=== SampleEntity Public Directory ===" in output
     assert "Properties (Attributes & Paths):" in output
+    assert "CLASS_CONSTANT" in output
+    assert "Class attribute (str)" in output
     assert "display_name" in output
     assert "Return the formatted display name for the entity." in output
     assert "Callable Methods:" in output
@@ -91,7 +94,7 @@ def test_directory_rendering_prints_to_stdout(
 
 @pytest.mark.regression
 def test_introspectable_classmethod_and_staticmethod_discovery() -> None:
-    """Verify classmethods and staticmethods appear under callable methods (INT-001)."""
+    """Verify classmethods and staticmethods appear under callable methods."""
 
     class AdvancedEntity(IntrospectableMixin):
         @classmethod
@@ -144,7 +147,7 @@ def test_plain_attribute_help_on_class(sample_entity_cls: type[SampleEntity]) ->
 
 @pytest.mark.regression
 def test_introspectable_inherited_member_override() -> None:
-    """Verify subclass override docstring is rendered instead of parent docstring (INT-002)."""
+    """Verify subclass override docstring is rendered instead of parent docstring."""
 
     class BaseItem(IntrospectableMixin):
         @property
@@ -201,7 +204,7 @@ def test_method_help_prints_to_stdout(
 
 # ==============================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Empty/partial classes, undocumented members (GAP-CORE-10), and fallbacks.
+# Note: Empty/partial classes, undocumented members, and signature fallbacks.
 # ==============================================================================
 
 
@@ -233,7 +236,7 @@ def test_directory_rendering_with_no_methods(
 def test_directory_rendering_on_empty_class_omits_both_sections(
     empty_entity_cls: type[IntrospectableMixin],
 ) -> None:
-    """Verify help() on a class with no public members omits both sections (GAP-CORE-10)."""
+    """Verify help() on a class with no public members omits both sections."""
     output = empty_entity_cls.help(as_str=True)
     assert output is not None
     assert f"=== {empty_entity_cls.__name__} Public Directory ===" in output
@@ -246,7 +249,7 @@ def test_directory_rendering_on_empty_class_omits_both_sections(
 def test_undocumented_members_use_fallback_descriptions(
     undocumented_entity_cls: type[IntrospectableMixin],
 ) -> None:
-    """Verify undocumented properties and methods render clean fallback text (GAP-CORE-10)."""
+    """Verify undocumented properties and methods render clean fallback text."""
     directory = undocumented_entity_cls.help(as_str=True)
     assert directory is not None
     assert "No description available." in directory
@@ -265,8 +268,8 @@ def test_method_help_signature_fallback_on_uninspectable_callable(
     """Verify signature fallback '(...)' when inspect.signature raises ValueError."""
     with patch("inspect.signature", side_effect=ValueError("Cannot inspect signature")):
         output = sample_entity_cls.help("simple_action", as_str=True)
-    assert output is not None
-    assert "Signature:   simple_action(...)" in output
+        assert output is not None
+        assert "Signature:   simple_action(...)" in output
 
 
 @pytest.mark.regression
@@ -281,7 +284,7 @@ def test_whitespace_member_name_falls_back_to_directory(
 
 # ==============================================================================
 # GROUP 4: Error Handling & Validation Failures
-# Note: Failing properties, unknown members, and non-string member_name (GAP-CORE-10).
+# Note: Failing properties, unknown members, and non-string member_name.
 # ==============================================================================
 
 
@@ -318,7 +321,7 @@ def test_non_string_member_name_raises_genealogy_desk_error(
     sample_entity_cls: type[SampleEntity],
     bad_member_name: Any,
 ) -> None:
-    """Verify non-string member_name raises GenealogyDeskError instead of AttributeError (GAP-CORE-10)."""
+    """Verify non-string member_name raises GenealogyDeskError instead of AttributeError."""
     with pytest.raises(GenealogyDeskError):
         sample_entity_cls.help(bad_member_name)
 
@@ -334,18 +337,18 @@ def test_non_string_member_name_raises_genealogy_desk_error(
 def test_get_public_members_filters_private_and_returns_sorted_lists(
     sample_entity_cls: type[SampleEntity],
 ) -> None:
-    """Verify _get_public_members filters private/help names and returns sorted lists."""
+    """Verify _get_public_members includes public class attributes and filters private/help names."""
     props, meths = sample_entity_cls._get_public_members()
 
     assert props == sorted(props)
     assert meths == sorted(meths)
+    assert "CLASS_CONSTANT" in props
     assert "display_name" in props
     assert "failing_property" in props
     assert "execute_action" in meths
     assert "simple_action" in meths
     assert "_internal_helper" not in props
     assert "_internal_helper" not in meths
-    assert "CLASS_CONSTANT" not in props
     assert "CLASS_CONSTANT" not in meths
     assert "help" not in props
     assert "help" not in meths

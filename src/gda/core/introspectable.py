@@ -20,7 +20,7 @@ from typing import Any
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.10"
+__version__ = "1.0.0+build.11"
 
 __all__ = [
     "IntrospectableMixin",
@@ -105,7 +105,7 @@ def _render_member_help(
 
 
 def _render_directory_help(cls: type[IntrospectableMixin]) -> str:
-    """Format the full public directory of properties and callable methods for cls."""
+    """Format the full public directory of properties, class attributes, and methods for cls."""
     props, meths = cls._get_public_members()
     lines = [f"\n=== {cls.__name__} Public Directory ==="]
 
@@ -113,10 +113,11 @@ def _render_directory_help(cls: type[IntrospectableMixin]) -> str:
         lines.append("\nProperties (Attributes & Paths):")
         for p in props:
             prop_obj = getattr(cls, p, None)
-            prop_doc: str | None = (
-                inspect.getdoc(prop_obj.fget) if isinstance(prop_obj, property) else None
-            )
-            first_line = prop_doc.splitlines()[0] if prop_doc else "No description available."
+            if isinstance(prop_obj, property):
+                prop_doc = inspect.getdoc(prop_obj.fget)
+                first_line = prop_doc.splitlines()[0] if prop_doc else "No description available."
+            else:
+                first_line = f"Class attribute ({type(prop_obj).__name__})"
             lines.append(f"  • {p:<25} - {first_line}")
 
     if meths:
@@ -193,25 +194,26 @@ class IntrospectableMixin:
     """Provide dual class- and instance-level runtime directory inspection.
 
     Subclasses inherit the self-documenting .help() method, allowing operators
-    to inspect public properties, methods, call signatures, and live values.
+    to inspect public properties, class attributes, methods, call signatures,
+    and live values.
     """
 
     help = _HybridHelpDescriptor()
 
     @classmethod
     def _get_public_members(cls) -> tuple[list[str], list[str]]:
-        """Discover and categorize public properties and callable methods on the class.
+        """Discover and categorize public properties, class attributes, and callable methods.
 
         Excludes private/protected names (prefixed with '_') and the 'help'
         descriptor itself.
 
         Returns:
-            Tuple of (sorted property names, sorted callable method names).
+            Tuple of (sorted property/attribute names, sorted callable method names).
         """
         props: set[str] = set()
         meths: set[str] = set()
 
-        # Traverse the MRO to collect public descriptors and callables
+        # Traverse the MRO to collect public descriptors, class attributes, and callables
         for base in cls.__mro__:
             if base is object:
                 continue
@@ -223,5 +225,7 @@ class IntrospectableMixin:
                     props.add(name)
                 elif callable(resolved) or isinstance(raw_attr, (classmethod, staticmethod)):
                     meths.add(name)
+                else:
+                    props.add(name)
 
         return sorted(props), sorted(meths)

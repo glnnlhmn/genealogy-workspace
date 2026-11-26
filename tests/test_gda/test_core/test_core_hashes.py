@@ -7,8 +7,7 @@ Operational Role:
     Verifies pure stateless SHA-256 calculation for strings, bytes, bytearray
     buffers, and streaming disk files alongside chunk-size invariance,
     boundary/error handling, symlink/OS error resilience, hexadecimal
-    validation predicates, and AUD-B1-002 / CIU-B1-001 strict chunk_size
-    guards.
+    validation predicates, and strict chunk_size guards.
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -25,17 +24,17 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from tests.test_gda.test_core.strategies import binary_and_chunk_size, bool_or_non_int
 
 import gda.core.hashes as uhash
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 
 # ==============================================================================
 # GROUP 1: Smoke & Primary Entrypoints
-# Note: Single smoke contract check per AUD-B1-005.
+# Note: Single smoke contract check verifying gda.core.hashes public exports.
 # ==============================================================================
 
 
@@ -54,7 +53,7 @@ def test_hashes_exposes_expected_public_interface() -> None:
 
 # ==============================================================================
 # GROUP 2: Core Logic & Happy Paths
-# Note: Canonical digests for text, bytes, bytearray (GAP-CORE-12), and predicates.
+# Note: Canonical digests for text, bytes, bytearray, and hex validation predicates.
 # ==============================================================================
 
 
@@ -81,7 +80,7 @@ def test_sha256_bytes_matches_known_digest() -> None:
 
 @pytest.mark.unit
 def test_sha256_bytes_accepts_bytearray_identically_to_bytes() -> None:
-    """Verify sha256_bytes hashes bytearray payloads identically to bytes (GAP-CORE-12)."""
+    """Verify sha256_bytes hashes bytearray payloads identically to bytes."""
     raw = b"mutable archive buffer"
     mutable = bytearray(raw)
     assert uhash.sha256_bytes(mutable) == uhash.sha256_bytes(raw)
@@ -98,7 +97,7 @@ def test_is_valid_sha256_accepts_valid_lowercase_digest(padded: bool) -> None:
 
 # ==============================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Chunk-size invariance (GAP-CORE-05) and negative/zero chunk sizes (GAP-CORE-12).
+# Note: Zero and negative chunk sizes.
 # ==============================================================================
 
 
@@ -108,7 +107,7 @@ def test_sha256_file_rejects_zero_or_negative_chunk_size(
     tmp_path: Path,
     bad_chunk_size: int,
 ) -> None:
-    """Verify sha256_file raises ValueError when chunk_size is zero or negative (GAP-CORE-12)."""
+    """Verify sha256_file raises ValueError when chunk_size is zero or negative."""
     target = tmp_path / "sample.txt"
     target.write_text("data", encoding="utf-8")
     with pytest.raises(ValueError, match="chunk_size must be greater than zero"):
@@ -117,7 +116,7 @@ def test_sha256_file_rejects_zero_or_negative_chunk_size(
 
 # ==============================================================================
 # GROUP 4: Error Handling & Validation Failures
-# Note: Type guards, missing/directory targets, and AUD-B1-002 / CIU-B1-001 TDD checks.
+# Note: Type guards, missing/directory targets, and strict chunk_size checks.
 # ==============================================================================
 
 
@@ -156,7 +155,7 @@ def test_sha256_file_rejects_boolean_chunk_size(
     tmp_path: Path,
     bool_chunk: bool,
 ) -> None:
-    """Verify sha256_file rejects bool chunk_size via strict int guard (AUD-B1-002 / CIU-B1-001)."""
+    """Verify sha256_file rejects bool chunk_size via strict int guard."""
     target = tmp_path / "sample.txt"
     target.write_bytes(b"payload")
     with pytest.raises((TypeError, ValueError)):
@@ -166,7 +165,7 @@ def test_sha256_file_rejects_boolean_chunk_size(
 @pytest.mark.regression
 @given(bad_chunk=bool_or_non_int())
 def test_sha256_file_rejects_non_int_chunk_size_property(bad_chunk: Any) -> None:
-    """Verify sha256_file raises TypeError or ValueError for non-int chunk_size (CIU-B1-001)."""
+    """Verify sha256_file raises TypeError or ValueError for non-int chunk_size."""
     if isinstance(bad_chunk, int) and not isinstance(bad_chunk, bool):
         return
     with pytest.raises((TypeError, ValueError)):
@@ -216,7 +215,7 @@ def test_sha256_file_handles_custom_chunk_size(tmp_path: Path) -> None:
 @pytest.mark.integration
 @pytest.mark.regression
 def test_sha256_file_follows_symlink_to_target_file(tmp_path: Path) -> None:
-    """Verify sha256_file hashes the target file when given a symlink path (RARE-CORE-01)."""
+    """Verify sha256_file hashes the target file when given a symlink path."""
     target = tmp_path / "original.bin"
     link = tmp_path / "alias.bin"
     payload = b"symlinked archive payload"
@@ -235,7 +234,7 @@ def test_sha256_file_propagates_permission_error_on_open(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify sha256_file propagates PermissionError when opening a locked file (RARE-CORE-01)."""
+    """Verify sha256_file propagates PermissionError when opening a locked file."""
     locked_file = tmp_path / "locked.bin"
     locked_file.write_bytes(b"content")
 
@@ -249,18 +248,17 @@ def test_sha256_file_propagates_permission_error_on_open(
 
 # ==============================================================================
 # GROUP 6: Integrity & Invariants
-# Note: Chunk-size invariance property across arbitrary payloads (GAP-CORE-05).
+# Note: Chunk-size invariance property governed by active Hypothesis profile.
 # ==============================================================================
 
 
 @pytest.mark.integrity
 @pytest.mark.integration
-@settings(max_examples=25)
 @given(case=binary_and_chunk_size())
 def test_sha256_file_is_invariant_to_chunk_size(
     case: tuple[bytes, int],
 ) -> None:
-    """Verify sha256_file matches reference SHA-256 across payloads and chunk sizes (GAP-CORE-05)."""
+    """Verify sha256_file matches reference SHA-256 across payloads and chunk sizes."""
     payload, chunk_size = case
     with tempfile.TemporaryDirectory() as tmp_dir:
         target = Path(tmp_dir) / "prop_stream.bin"

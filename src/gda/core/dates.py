@@ -22,7 +22,7 @@ from gda.core.types import (
     is_strict_int,
 )
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 __all__ = [
     "calculate_age_years",
@@ -39,9 +39,9 @@ __all__ = [
 def validate_iso_date(value: Any) -> bool:
     """Validate whether a value matches canonical ISO-8601 partial or full date patterns.
 
-    Enforces both structural regex syntax ('YYYY', 'YYYY-MM', 'YYYY-MM-DD') and
-    real Gregorian calendar day bounds (rejecting impossible dates such as
-    February 30 or April 31).
+    Enforces structural regex syntax ('YYYY', 'YYYY-MM', 'YYYY-MM-DD'),
+    Gregorian year bounds (rejecting year 0000), and real calendar day bounds
+    (rejecting impossible dates such as February 30 or April 31).
 
     Args:
         value: Date string candidate to validate.
@@ -58,6 +58,9 @@ def validate_iso_date(value: Any) -> bool:
         return False
 
     parts = cleaned.split("-")
+    if int(parts[0]) == 0:
+        return False
+
     if len(parts) == 3:
         try:
             date(int(parts[0]), int(parts[1]), int(parts[2]))

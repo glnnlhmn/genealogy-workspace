@@ -5,7 +5,8 @@ Structured JSON and console logging subsystem for GDA Core.
 Operational Role:
     Implements standardized single-line JSON log formatting for machine ingestion
     and bracketed console formatting for operator terminals. Provides the GDALogger
-    service configured directly via LoggingConfig.
+    service configured directly via LoggingConfig, including explicit handler
+    teardown and context-manager lifecycle support.
 
 Classes:
     JsonFormatter: Formats LogRecord into canonical single-line JSON strings.
@@ -19,13 +20,14 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any
+from types import TracebackType
+from typing import Any, Self
 
 from gda.core.config import LoggingConfig
 from gda.core.dates import utc_now_iso
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.10"
+__version__ = "1.0.0+build.11"
 
 __all__ = [
     "ConsoleFormatter",
@@ -100,18 +102,30 @@ class ConsoleFormatter(logging.Formatter):
     """Format LogRecord into bracketed, readable console text."""
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format a log record into bracketed terminal line.
+        """Format a log record into bracketed terminal output.
+
+        Appends structured details and attached exception or traceback metadata
+        so console-only operators see full diagnostic context.
 
         Args:
             record: Logging record instance.
 
         Returns:
-            Formatted string: [LEVEL] [LOGGER] Message | details={...}.
+            Formatted string: [LEVEL] [LOGGER] Message [| details=...] [| error=...].
         """
         msg = f"[{record.levelname}] [{record.name}] {record.getMessage()}"
         details = getattr(record, "details", None)
         if details:
             msg += f" | details={details}"
+
+        exc = getattr(record, "exc", None)
+        if isinstance(exc, GenealogyDeskError):
+            msg += f" | error=[{exc.error_code}] {exc.message}"
+        elif isinstance(exc, Exception):
+            msg += f" | error={type(exc).__name__}: {exc}"
+        elif record.exc_info:
+            msg += f"\n{self.formatException(record.exc_info)}"
+
         return msg
 
 
@@ -140,9 +154,7 @@ class GDALogger:
         self.logger.setLevel(getattr(logging, self.config.level, logging.INFO))
 
         # Explicitly close and remove existing handlers to release Windows file locks
-        for existing_handler in list(self.logger.handlers):
-            existing_handler.close()
-            self.logger.removeHandler(existing_handler)
+        self.close()
         self.logger.propagate = False
 
         if self.config.log_to_console:
@@ -164,6 +176,25 @@ class GDALogger:
             )
             file_handler.setFormatter(JsonFormatter())
             self.logger.addHandler(file_handler)
+
+    def close(self) -> None:
+        """Close and detach all active handlers on the underlying logger."""
+        for handler in list(self.logger.handlers):
+            handler.close()
+            self.logger.removeHandler(handler)
+
+    def __enter__(self) -> Self:
+        """Enter context manager and return this GDALogger instance."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Close and detach all handlers when exiting a with-block."""
+        self.close()
 
     def _log(
         self,
