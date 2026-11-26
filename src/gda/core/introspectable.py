@@ -20,7 +20,7 @@ from typing import Any
 
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.11"
+__version__ = "1.0.0+build.12"
 
 __all__ = [
     "IntrospectableMixin",
@@ -104,6 +104,22 @@ def _render_member_help(
     return "\n".join(output_lines)
 
 
+def _format_member_summary_line(
+    cls: type[IntrospectableMixin], name: str, *, is_method: bool
+) -> str:
+    """Render a single bullet summary line for a property or callable method."""
+    member_obj = getattr(cls, name, None)
+    if is_method:
+        doc = inspect.getdoc(member_obj) if callable(member_obj) else None
+        first_line = doc.splitlines()[0] if doc else "No description available."
+    elif isinstance(member_obj, property):
+        doc = inspect.getdoc(member_obj.fget)
+        first_line = doc.splitlines()[0] if doc else "No description available."
+    else:
+        first_line = f"Class attribute ({type(member_obj).__name__})"
+    return f"  • {name:<25} - {first_line}"
+
+
 def _render_directory_help(cls: type[IntrospectableMixin]) -> str:
     """Format the full public directory of properties, class attributes, and methods for cls."""
     props, meths = cls._get_public_members()
@@ -111,25 +127,24 @@ def _render_directory_help(cls: type[IntrospectableMixin]) -> str:
 
     if props:
         lines.append("\nProperties (Attributes & Paths):")
-        for p in props:
-            prop_obj = getattr(cls, p, None)
-            if isinstance(prop_obj, property):
-                prop_doc = inspect.getdoc(prop_obj.fget)
-                first_line = prop_doc.splitlines()[0] if prop_doc else "No description available."
-            else:
-                first_line = f"Class attribute ({type(prop_obj).__name__})"
-            lines.append(f"  • {p:<25} - {first_line}")
+        lines.extend(_format_member_summary_line(cls, p, is_method=False) for p in props)
 
     if meths:
         lines.append("\nCallable Methods:")
-        for m in meths:
-            meth_obj = getattr(cls, m, None)
-            meth_doc: str | None = inspect.getdoc(meth_obj) if callable(meth_obj) else None
-            first_line = meth_doc.splitlines()[0] if meth_doc else "No description available."
-            lines.append(f"  • {m:<25} - {first_line}")
+        lines.extend(_format_member_summary_line(cls, m, is_method=True) for m in meths)
 
     lines.append("\nTip: Call .help('name') on your instance or class for full details.\n")
     return "\n".join(lines)
+
+
+def _classify_public_member(cls: type[IntrospectableMixin], name: str, raw_attr: Any) -> str:
+    """Classify a public class attribute as 'prop' or 'meth'."""
+    resolved = getattr(cls, name, None)
+    if isinstance(raw_attr, property) or isinstance(resolved, property):
+        return "prop"
+    if callable(resolved) or isinstance(raw_attr, (classmethod, staticmethod)):
+        return "meth"
+    return "prop"
 
 
 class _HybridHelpDescriptor:
@@ -140,15 +155,7 @@ class _HybridHelpDescriptor:
         instance: Any,
         owner: type[IntrospectableMixin] | None = None,
     ) -> Callable[..., str | None]:
-        """Bind the introspection dispatcher to the target class or instance.
-
-        Args:
-            instance: Active instance invoking help(), or None if called on the class.
-            owner: Class type declaring or inheriting IntrospectableMixin.
-
-        Returns:
-            Callable dispatcher executing member inspection or public directory listing.
-        """
+        """Bind the introspection dispatcher to the target class or instance."""
         cls: type[IntrospectableMixin] = owner if owner is not None else type(instance)
 
         def help_dispatcher(
@@ -156,19 +163,7 @@ class _HybridHelpDescriptor:
             *,
             as_str: bool = False,
         ) -> str | None:
-            """Inspect class members or render an indexed public directory.
-
-            Args:
-                member_name: Optional name of the specific property or method to inspect.
-                as_str: If True, returns the formatted string instead of printing.
-
-            Returns:
-                Formatted documentation string if as_str=True; None otherwise.
-
-            Raises:
-                GenealogyDeskError: If member_name is not a string/None or does not
-                    exist on the owner class.
-            """
+            """Inspect class members or render an indexed public directory."""
             if member_name is not None and not isinstance(member_name, str):
                 raise GenealogyDeskError(
                     f"member_name must be a string or None, got {type(member_name).__name__}.",
@@ -191,39 +186,23 @@ class _HybridHelpDescriptor:
 
 
 class IntrospectableMixin:
-    """Provide dual class- and instance-level runtime directory inspection.
-
-    Subclasses inherit the self-documenting .help() method, allowing operators
-    to inspect public properties, class attributes, methods, call signatures,
-    and live values.
-    """
+    """Provide dual class- and instance-level runtime directory inspection."""
 
     help = _HybridHelpDescriptor()
 
     @classmethod
     def _get_public_members(cls) -> tuple[list[str], list[str]]:
-        """Discover and categorize public properties, class attributes, and callable methods.
-
-        Excludes private/protected names (prefixed with '_') and the 'help'
-        descriptor itself.
-
-        Returns:
-            Tuple of (sorted property/attribute names, sorted callable method names).
-        """
+        """Discover and categorize public properties, class attributes, and callable methods."""
         props: set[str] = set()
         meths: set[str] = set()
 
-        # Traverse the MRO to collect public descriptors, class attributes, and callables
         for base in cls.__mro__:
             if base is object:
                 continue
             for name, raw_attr in base.__dict__.items():
                 if name.startswith("_") or name == "help":
                     continue
-                resolved = getattr(cls, name, None)
-                if isinstance(raw_attr, property) or isinstance(resolved, property):
-                    props.add(name)
-                elif callable(resolved) or isinstance(raw_attr, (classmethod, staticmethod)):
+                if _classify_public_member(cls, name, raw_attr) == "meth":
                     meths.add(name)
                 else:
                     props.add(name)

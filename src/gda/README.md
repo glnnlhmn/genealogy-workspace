@@ -18,7 +18,7 @@ Top-level shared domain framework uniting core primitives, controlled enumeratio
 - **[manager/](manager/README.md)**: Stateful data access coordinators, vocabulary governors, and reference authorities.
 - **[model/](model/README.md)**: Authoritative five-pillar domain model suite for the Genealogy Digital Archive.
 - **`repository/`**: Unified persistence, query, and in-memory collection layer for GDA.
-- **[util/](util/README.md)**: Stateless utility functions for identifier management, enum coercion, and text processing.
+- **[util/](util/README.md)**: Stateless utility functions for identifier management and text processing.
 
 ## Module Inventory & Descriptions
 | Module | Version | Canonical Description |
@@ -29,4 +29,4 @@ Exports: `core`, `db`, `entity`, `io`, `model`, `util`.
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: 0c4d00cbc9983671 -->
+<!-- gdrm-hash: 3a3dc46a6825c83b -->

@@ -20,6 +20,7 @@ Test Structure & Protocol:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic import SecretStr
@@ -27,7 +28,7 @@ from pydantic import SecretStr
 import gda.core.config as cfg_mod
 from gda.core.config import AppConfig, DatabaseConfig, LoggingConfig
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 
 # ==============================================================================
@@ -64,24 +65,30 @@ def test_config_exposes_public_interface_and_loads_defaults(tmp_path: Path) -> N
 
 
 @pytest.mark.unit
-def test_database_config_defaults() -> None:
+@pytest.mark.parametrize(
+    ("attr_name", "expected_val"),
+    [
+        ("engine", "sqlite"),
+        ("db_name", None),
+        ("resolved_db_name", "archive.db"),
+        ("db_path", Path("data/archive.db")),
+        ("host", None),
+        ("port", None),
+        ("username", None),
+        ("password", None),
+        ("dsn_override", None),
+        ("busy_timeout", 5000),
+        ("journal_mode", "WAL"),
+        ("foreign_keys", True),
+        ("synchronous", "NORMAL"),
+        ("is_in_memory", False),
+        ("connection_string", "sqlite:///data/archive.db"),
+    ],
+)
+def test_database_config_defaults(attr_name: str, expected_val: Any) -> None:
     """Verify default attributes and derived properties of DatabaseConfig."""
     cfg = DatabaseConfig()
-    assert cfg.engine == "sqlite"
-    assert cfg.db_name is None
-    assert cfg.resolved_db_name == "archive.db"
-    assert cfg.db_path == Path("data/archive.db")
-    assert cfg.host is None
-    assert cfg.port is None
-    assert cfg.username is None
-    assert cfg.password is None
-    assert cfg.dsn_override is None
-    assert cfg.busy_timeout == 5000
-    assert cfg.journal_mode == "WAL"
-    assert cfg.foreign_keys is True
-    assert cfg.synchronous == "NORMAL"
-    assert cfg.is_in_memory is False
-    assert cfg.connection_string == "sqlite:///data/archive.db"
+    assert getattr(cfg, attr_name) == expected_val
 
 
 @pytest.mark.unit

@@ -34,7 +34,7 @@ if TYPE_CHECKING:
         SampleEntity,
     )
 
-__version__ = "1.0.0+build.11"
+__version__ = "1.0.0+build.12"
 
 
 # ==============================================================================
@@ -66,15 +66,19 @@ def test_directory_rendering_as_str(sample_entity_cls: type[SampleEntity]) -> No
     """Verify help() with as_str=True renders formatted public directory including class attributes."""
     output = sample_entity_cls.help(as_str=True)
     assert output is not None
-    assert "=== SampleEntity Public Directory ===" in output
-    assert "Properties (Attributes & Paths):" in output
-    assert "CLASS_CONSTANT" in output
-    assert "Class attribute (str)" in output
-    assert "display_name" in output
-    assert "Return the formatted display name for the entity." in output
-    assert "Callable Methods:" in output
-    assert "execute_action" in output
-    assert "Execute a designated action against the entity." in output
+    expected_snippets = (
+        "=== SampleEntity Public Directory ===",
+        "Properties (Attributes & Paths):",
+        "CLASS_CONSTANT",
+        "Class attribute (str)",
+        "display_name",
+        "Return the formatted display name for the entity.",
+        "Callable Methods:",
+        "execute_action",
+        "Execute a designated action against the entity.",
+    )
+    for snippet in expected_snippets:
+        assert snippet in output
 
 
 @pytest.mark.unit
@@ -334,21 +338,25 @@ def test_non_string_member_name_raises_genealogy_desk_error(
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_get_public_members_filters_private_and_returns_sorted_lists(
+def test_get_public_members_returns_sorted_categorized_lists(
     sample_entity_cls: type[SampleEntity],
 ) -> None:
-    """Verify _get_public_members includes public class attributes and filters private/help names."""
+    """Verify _get_public_members returns sorted property and method lists."""
     props, meths = sample_entity_cls._get_public_members()
-
     assert props == sorted(props)
     assert meths == sorted(meths)
-    assert "CLASS_CONSTANT" in props
-    assert "display_name" in props
-    assert "failing_property" in props
-    assert "execute_action" in meths
-    assert "simple_action" in meths
-    assert "_internal_helper" not in props
-    assert "_internal_helper" not in meths
+    assert {"CLASS_CONSTANT", "display_name", "failing_property"}.issubset(set(props))
+    assert {"execute_action", "simple_action"}.issubset(set(meths))
+
+
+@pytest.mark.integrity
+@pytest.mark.unit
+def test_get_public_members_excludes_private_and_help_symbols(
+    sample_entity_cls: type[SampleEntity],
+) -> None:
+    """Verify _get_public_members omits private attributes and the help descriptor."""
+    props, meths = sample_entity_cls._get_public_members()
+    all_members = set(props) | set(meths)
+    assert "_internal_helper" not in all_members
+    assert "help" not in all_members
     assert "CLASS_CONSTANT" not in meths
-    assert "help" not in props
-    assert "help" not in meths

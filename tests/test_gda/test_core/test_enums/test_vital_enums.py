@@ -16,8 +16,6 @@ Test Structure & Protocol:
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 import gda.core.enums.vital as vital_enums
@@ -25,17 +23,21 @@ from gda.core.enums.vital import (
     BirthPlurality,
     DispositionType,
     DivorceDecreeType,
+    EducationLevel,
+    EyeColor,
+    HairColor,
     HistoricNameType,
     LegalPlaintiff,
     MannerOfDeath,
     MaritalStatus,
     PedigreeType,
+    PhysicalBuild,
     UnionDissolutionType,
     UnionType,
     VitalModifier,
 )
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 
 # ==============================================================================
@@ -75,21 +77,25 @@ def test_vital_enums_exposes_expected_public_interface() -> None:
 
 
 @pytest.mark.unit
-def test_historic_name_type_and_vital_modifier_values() -> None:
+@pytest.mark.parametrize(
+    ("enum_cls", "expected_values"),
+    [
+        (
+            HistoricNameType,
+            {"PRIMARY", "HISTORICAL", "COLLOQUIAL", "COLONIAL", "INDIGENOUS"},
+        ),
+        (
+            VitalModifier,
+            {"STILLBORN", "INFANT", "ILLEGITIMATE", "POSTHUMOUS", "LEGITIMATED"},
+        ),
+    ],
+)
+def test_historic_name_type_and_vital_modifier_values(
+    enum_cls: type[HistoricNameType] | type[VitalModifier],
+    expected_values: set[str],
+) -> None:
     """Verify HistoricNameType and VitalModifier canonical uppercase values."""
-    assert HistoricNameType.PRIMARY == "PRIMARY"
-    assert HistoricNameType.HISTORICAL == "HISTORICAL"
-    assert HistoricNameType.COLLOQUIAL == "COLLOQUIAL"
-    assert HistoricNameType.COLONIAL == "COLONIAL"
-    assert HistoricNameType.INDIGENOUS == "INDIGENOUS"
-    assert len(HistoricNameType) == 5
-
-    assert VitalModifier.STILLBORN == "STILLBORN"
-    assert VitalModifier.INFANT == "INFANT"
-    assert VitalModifier.ILLEGITIMATE == "ILLEGITIMATE"
-    assert VitalModifier.POSTHUMOUS == "POSTHUMOUS"
-    assert VitalModifier.LEGITIMATED == "LEGITIMATED"
-    assert len(VitalModifier) == 5
+    assert {m.value for m in enum_cls} == expected_values
 
 
 @pytest.mark.unit
@@ -111,34 +117,33 @@ def test_pedigree_type_upper_snake_case_values() -> None:
 
 
 @pytest.mark.unit
-def test_vital_and_mortuary_upper_snake_case_values() -> None:
+@pytest.mark.parametrize(
+    ("member", "expected_value"),
+    [
+        (MannerOfDeath.NATURAL, "NATURAL"),
+        (MannerOfDeath.ACCIDENT, "ACCIDENT"),
+        (BirthPlurality.SINGLE, "SINGLE"),
+        (BirthPlurality.TWIN, "TWIN"),
+        (DispositionType.BURIAL, "BURIAL"),
+        (DispositionType.CREMATION, "CREMATION"),
+        (MaritalStatus.MARRIED, "MARRIED"),
+        (MaritalStatus.WIDOWED, "WIDOWED"),
+        (LegalPlaintiff.HUSBAND, "HUSBAND"),
+        (DivorceDecreeType.ABSOLUTE, "ABSOLUTE"),
+    ],
+)
+def test_vital_and_mortuary_upper_snake_case_values(
+    member: str,
+    expected_value: str,
+) -> None:
     """Verify mortuary, marital, and decree enums use UPPER_SNAKE_CASE."""
-    assert MannerOfDeath.NATURAL == "NATURAL"
-    assert MannerOfDeath.ACCIDENT == "ACCIDENT"
-    assert BirthPlurality.SINGLE == "SINGLE"
-    assert BirthPlurality.TWIN == "TWIN"
-    assert DispositionType.BURIAL == "BURIAL"
-    assert DispositionType.CREMATION == "CREMATION"
-    assert MaritalStatus.MARRIED == "MARRIED"
-    assert MaritalStatus.WIDOWED == "WIDOWED"
-    assert LegalPlaintiff.HUSBAND == "HUSBAND"
-    assert DivorceDecreeType.ABSOLUTE == "ABSOLUTE"
+    assert member == expected_value
 
 
 @pytest.mark.unit
-def test_relocated_biographical_enums_in_vital_module() -> None:
-    """Verify EyeColor, HairColor, PhysicalBuild, and EducationLevel live in vital."""
-    eye_color: Any = getattr(vital_enums, "EyeColor", None)
-    hair_color: Any = getattr(vital_enums, "HairColor", None)
-    physical_build: Any = getattr(vital_enums, "PhysicalBuild", None)
-    education_level: Any = getattr(vital_enums, "EducationLevel", None)
-
-    assert eye_color is not None
-    assert hair_color is not None
-    assert physical_build is not None
-    assert education_level is not None
-
-    assert {m.value for m in eye_color} == {
+def test_relocated_biographical_enums_member_sets() -> None:
+    """Verify EyeColor and HairColor declare complete canonical member sets."""
+    assert {m.value for m in EyeColor} == {
         "BLUE",
         "BROWN",
         "GREY",
@@ -148,7 +153,7 @@ def test_relocated_biographical_enums_in_vital_module() -> None:
         "OTHER",
         "UNKNOWN",
     }
-    assert {m.value for m in hair_color} == {
+    assert {m.value for m in HairColor} == {
         "BLONDE",
         "BROWN",
         "BLACK",
@@ -159,12 +164,15 @@ def test_relocated_biographical_enums_in_vital_module() -> None:
         "OTHER",
         "UNKNOWN",
     }
-    assert eye_color.GREEN == "GREEN"
-    assert eye_color.from_raw("green") is eye_color.GREEN
-    assert hair_color.WHITE == "WHITE"
-    assert hair_color.from_raw("white") is hair_color.WHITE
-    assert physical_build.MEDIUM == "MEDIUM"
-    assert education_level.COLL == "COLL"
+
+
+@pytest.mark.unit
+def test_relocated_biographical_enums_coercion_and_samples() -> None:
+    """Verify relocated biographical enums support from_raw coercion and canonical members."""
+    assert EyeColor.from_raw("green") is EyeColor.GREEN
+    assert HairColor.from_raw("white") is HairColor.WHITE
+    assert PhysicalBuild.MEDIUM == "MEDIUM"
+    assert EducationLevel.COLL == "COLL"
 
 
 # ==============================================================================

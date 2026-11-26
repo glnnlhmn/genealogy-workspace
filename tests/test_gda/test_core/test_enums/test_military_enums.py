@@ -17,19 +17,18 @@ Test Structure & Protocol:
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
 
 import pytest
 
 import gda.core.enums as enums_pkg
 import gda.core.enums.military as mil_enums
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 
 # ==============================================================================
 # GROUP 1: Smoke & Primary Entrypoints
-# Note: Single smoke gate freezing the 25 sorted military exports (Phase 3).
+# Note: Single smoke gate freezing the 25 sorted military exports.
 # ==============================================================================
 
 
@@ -37,7 +36,7 @@ __version__ = "1.0.0+build.2"
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_military_enums_all_sorted_and_reexported() -> None:
-    """Verify gda.core.enums.military.__all__ has 25 sorted symbols re-exported (Phase 3)."""
+    """Verify gda.core.enums.military.__all__ has 25 sorted symbols re-exported."""
     assert mil_enums.__all__ == sorted(mil_enums.__all__)
     assert len(mil_enums.__all__) == 25
 
@@ -54,55 +53,65 @@ def test_military_enums_all_sorted_and_reexported() -> None:
 
 
 @pytest.mark.unit
-def test_military_enum_canonical_members() -> None:
+@pytest.mark.parametrize(
+    ("enum_name", "member_name", "expected_value"),
+    [
+        ("MilitaryBranch", "ARMY", "ARMY"),
+        ("ServiceComponent", "REGULAR", "REGULAR"),
+        ("SeparationCharacter", "HONORABLE", "HONORABLE"),
+        ("MusterRollType", "MUSTER_IN", "MUSTER_IN"),
+        ("SeparationFormType", "DD_214", "DD_214"),
+        ("MilitaryAwardTier", "MEDAL_OF_HONOR", "MEDAL_OF_HONOR"),
+        ("AwardScope", "VALOR_IN_COMBAT", "VALOR_IN_COMBAT"),
+        ("CasualtyCategory", "KILLED_IN_ACTION", "KILLED_IN_ACTION"),
+        ("PowCampType", "OFFICER_CAMP", "OFFICER_CAMP"),
+        ("IntermentCemeteryType", "NATIONAL_CEMETERY", "NATIONAL_CEMETERY"),
+        ("PensionClaimantRole", "VETERAN", "VETERAN"),
+        ("PensionPaymentAuthority", "US_BUREAU_OF_PENSIONS", "US_BUREAU_OF_PENSIONS"),
+        ("BountyLandAct", "ACT_OF_1855", "ACT_OF_1855"),
+        ("DraftCardTier", "WWI_FIRST", "WWI_FIRST"),
+        ("ColonialWarPeriod", "REVOLUTIONARY_WAR", "REVOLUTIONARY_WAR"),
+        ("ColonialMilitiaClass", "TRAINBAND", "TRAINBAND"),
+        ("CivilWarConscriptionAllegiance", "UNION", "UNION"),
+        ("CivilWarEnrollmentClass", "CLASS_1", "CLASS_1"),
+        ("WwiCitizenshipStatus", "NATIVE_BORN", "NATIVE_BORN"),
+        ("WwiiDraftWave", "FIRST", "FIRST"),
+        ("ModernDraftEra", "POST_1980_REGISTRATION", "POST_1980_REGISTRATION"),
+        ("SssClassification", "ONE_A", "1-A"),
+    ],
+)
+def test_military_enum_canonical_members(
+    enum_name: str,
+    member_name: str,
+    expected_value: str,
+) -> None:
     """Verify canonical members across all 5 military subdomains."""
-    assert mil_enums.MilitaryBranch.ARMY == "ARMY"
-    assert mil_enums.ServiceComponent.REGULAR == "REGULAR"
-    assert mil_enums.SeparationCharacter.HONORABLE == "HONORABLE"
-    assert mil_enums.MusterRollType.MUSTER_IN == "MUSTER_IN"
-    assert mil_enums.SeparationFormType.DD_214 == "DD_214"
-
-    assert mil_enums.MilitaryAwardTier.MEDAL_OF_HONOR == "MEDAL_OF_HONOR"
-    assert mil_enums.AwardScope.VALOR_IN_COMBAT == "VALOR_IN_COMBAT"
-
-    assert mil_enums.CasualtyCategory.KILLED_IN_ACTION == "KILLED_IN_ACTION"
-    assert mil_enums.PowCampType.OFFICER_CAMP == "OFFICER_CAMP"
-    assert mil_enums.IntermentCemeteryType.NATIONAL_CEMETERY == "NATIONAL_CEMETERY"
-
-    assert mil_enums.PensionClaimantRole.VETERAN == "VETERAN"
-    assert mil_enums.PensionPaymentAuthority.US_BUREAU_OF_PENSIONS == "US_BUREAU_OF_PENSIONS"
-    assert mil_enums.BountyLandAct.ACT_OF_1855 == "ACT_OF_1855"
-
-    assert mil_enums.DraftCardTier.WWI_FIRST == "WWI_FIRST"
-    assert mil_enums.ColonialWarPeriod.REVOLUTIONARY_WAR == "REVOLUTIONARY_WAR"
-    assert mil_enums.ColonialMilitiaClass.TRAINBAND == "TRAINBAND"
-    assert mil_enums.CivilWarConscriptionAllegiance.UNION == "UNION"
-    assert mil_enums.CivilWarEnrollmentClass.CLASS_1 == "CLASS_1"
-    assert mil_enums.WwiCitizenshipStatus.NATIVE_BORN == "NATIVE_BORN"
-    assert mil_enums.WwiiDraftWave.FIRST == "FIRST"
-    assert mil_enums.ModernDraftEra.POST_1980_REGISTRATION == "POST_1980_REGISTRATION"
-    assert mil_enums.SssClassification.ONE_A == "1-A"
+    enum_cls = getattr(mil_enums, enum_name)
+    assert getattr(enum_cls, member_name) == expected_value
 
 
 @pytest.mark.unit
-def test_relocated_military_enums_in_military_module() -> None:
-    """Verify WwiCardType, MilitaryDraftType, and MilitaryWar live in military (Phase 3)."""
-    wwi_card: Any = getattr(mil_enums, "WwiCardType", None)
-    draft_type: Any = getattr(mil_enums, "MilitaryDraftType", None)
-    military_war: Any = getattr(mil_enums, "MilitaryWar", None)
-
-    assert wwi_card is not None, "WwiCardType not yet relocated to military.py"
-    assert draft_type is not None, "MilitaryDraftType not yet relocated to military.py"
-    assert military_war is not None, "MilitaryWar not yet relocated to military.py"
-
-    assert wwi_card.CARD_A == "CARD_A"
-    assert wwi_card.CARD_B == "CARD_B"
-    assert wwi_card.CARD_C == "CARD_C"
-    assert wwi_card.UNKNOWN == "UNKNOWN"
-    assert draft_type.DRAFT_REGISTRATION == "DRAFT_REGISTRATION"
-    assert military_war.CIVIL_WAR == "CIVIL_WAR"
-    assert military_war.WWI == "WWI"
-    assert military_war.WWII == "WWII"
+@pytest.mark.parametrize(
+    ("enum_name", "member_name", "expected_value"),
+    [
+        ("WwiCardType", "CARD_A", "CARD_A"),
+        ("WwiCardType", "CARD_B", "CARD_B"),
+        ("WwiCardType", "CARD_C", "CARD_C"),
+        ("WwiCardType", "UNKNOWN", "UNKNOWN"),
+        ("MilitaryDraftType", "DRAFT_REGISTRATION", "DRAFT_REGISTRATION"),
+        ("MilitaryWar", "CIVIL_WAR", "CIVIL_WAR"),
+        ("MilitaryWar", "WWI", "WWI"),
+        ("MilitaryWar", "WWII", "WWII"),
+    ],
+)
+def test_relocated_military_enums_in_military_module(
+    enum_name: str,
+    member_name: str,
+    expected_value: str,
+) -> None:
+    """Verify WwiCardType, MilitaryDraftType, and MilitaryWar live in military."""
+    enum_cls = getattr(mil_enums, enum_name)
+    assert getattr(enum_cls, member_name) == expected_value
 
 
 # ==============================================================================

@@ -27,7 +27,7 @@ from gda.core.config import LoggingConfig
 from gda.core.dates import utc_now_iso
 from gda.core.errors import GenealogyDeskError
 
-__version__ = "1.0.0+build.11"
+__version__ = "1.0.0+build.12"
 
 __all__ = [
     "ConsoleFormatter",
@@ -36,22 +36,49 @@ __all__ = [
 ]
 
 
+def _serialize_exc_payload(
+    formatter: logging.Formatter,
+    record: logging.LogRecord,
+) -> dict[str, Any] | None:
+    """Serialize attached exc attribute or record.exc_info into a JSON-ready dict."""
+    exc = getattr(record, "exc", None)
+    if isinstance(exc, GenealogyDeskError):
+        return exc.to_dict()
+    if isinstance(exc, Exception):
+        return {"type": type(exc).__name__, "message": str(exc)}
+    if record.exc_info:
+        exc_type, exc_val, _ = record.exc_info
+        return {
+            "type": exc_type.__name__ if exc_type else "Exception",
+            "message": str(exc_val) if exc_val else "",
+            "traceback": formatter.formatException(record.exc_info),
+        }
+    return None
+
+
+def _dumps_json_safe(payload: dict[str, Any]) -> str:
+    """Serialize payload to single-line JSON, falling back to repr() on cycles."""
+    try:
+        return json.dumps(payload, ensure_ascii=False, default=str)
+    except ValueError:
+        safe_payload: dict[str, Any] = {
+            "timestamp": payload["timestamp"],
+            "level": payload["level"],
+            "logger": payload["logger"],
+            "message": payload["message"],
+        }
+        if "details" in payload:
+            safe_payload["details"] = repr(payload["details"])
+        if "error" in payload:
+            safe_payload["error"] = repr(payload["error"])
+        return json.dumps(safe_payload, ensure_ascii=False, default=str)
+
+
 class JsonFormatter(logging.Formatter):
     """Format LogRecord into deterministic, single-line JSON payloads."""
 
     def format(self, record: logging.LogRecord) -> str:
-        """Serialize a log record into a single-line JSON string.
-
-        Uses default=str for non-JSON-native objects (e.g., Path, set, opaque
-        tokens) and falls back to repr() on details/error if a circular
-        reference prevents standard JSON encoding.
-
-        Args:
-            record: Logging record instance.
-
-        Returns:
-            JSON-formatted string ending without newline.
-        """
+        """Serialize a log record into a single-line JSON string."""
         payload: dict[str, Any] = {
             "timestamp": utc_now_iso(),
             "level": record.levelname,
@@ -59,60 +86,22 @@ class JsonFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
-        # Attach structured diagnostic details when provided by caller
         details = getattr(record, "details", None)
         if isinstance(details, dict):
             payload["details"] = details
 
-        # Serialize structured GDA exceptions or standard Python exceptions
-        exc = getattr(record, "exc", None)
-        if isinstance(exc, GenealogyDeskError):
-            payload["error"] = exc.to_dict()
-        elif isinstance(exc, Exception):
-            payload["error"] = {
-                "type": type(exc).__name__,
-                "message": str(exc),
-            }
-        elif record.exc_info:
-            exc_type, exc_val, _ = record.exc_info
-            payload["error"] = {
-                "type": exc_type.__name__ if exc_type else "Exception",
-                "message": str(exc_val) if exc_val else "",
-                "traceback": self.formatException(record.exc_info),
-            }
+        exc_payload = _serialize_exc_payload(self, record)
+        if exc_payload is not None:
+            payload["error"] = exc_payload
 
-        try:
-            return json.dumps(payload, ensure_ascii=False, default=str)
-        except ValueError:
-            # Degrade gracefully on circular references while preserving core log fields
-            safe_payload: dict[str, Any] = {
-                "timestamp": payload["timestamp"],
-                "level": payload["level"],
-                "logger": payload["logger"],
-                "message": payload["message"],
-            }
-            if "details" in payload:
-                safe_payload["details"] = repr(payload["details"])
-            if "error" in payload:
-                safe_payload["error"] = repr(payload["error"])
-            return json.dumps(safe_payload, ensure_ascii=False, default=str)
+        return _dumps_json_safe(payload)
 
 
 class ConsoleFormatter(logging.Formatter):
     """Format LogRecord into bracketed, readable console text."""
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format a log record into bracketed terminal output.
-
-        Appends structured details and attached exception or traceback metadata
-        so console-only operators see full diagnostic context.
-
-        Args:
-            record: Logging record instance.
-
-        Returns:
-            Formatted string: [LEVEL] [LOGGER] Message [| details=...] [| error=...].
-        """
+        """Format a log record into bracketed terminal output."""
         msg = f"[{record.levelname}] [{record.name}] {record.getMessage()}"
         details = getattr(record, "details", None)
         if details:
@@ -138,16 +127,7 @@ class GDALogger:
         config: LoggingConfig | None = None,
         base_dir: str | Path | None = None,
     ) -> None:
-        """Initialize GDALogger with handlers governed by LoggingConfig.
-
-        Closes and detaches any pre-existing handlers on the underlying logger
-        to prevent duplicate log emissions and Windows file-handle locks.
-
-        Args:
-            name: Logger hierarchy namespace identifier.
-            config: LoggingConfig instance. Defaults to default LoggingConfig().
-            base_dir: Optional root anchor for resolving relative log_file_path.
-        """
+        """Initialize GDALogger with handlers governed by LoggingConfig."""
         self.name = name
         self.config = config or LoggingConfig()
         self.logger = logging.getLogger(name)
@@ -213,21 +193,11 @@ class GDALogger:
         self.logger.log(level, msg, extra=extra)
 
     def debug(self, msg: str, *, details: dict[str, Any] | None = None) -> None:
-        """Emit DEBUG level log record.
-
-        Args:
-            msg: Log message string.
-            details: Optional structured contextual attributes.
-        """
+        """Emit DEBUG level log record."""
         self._log(logging.DEBUG, msg, details=details)
 
     def info(self, msg: str, *, details: dict[str, Any] | None = None) -> None:
-        """Emit INFO level log record.
-
-        Args:
-            msg: Log message string.
-            details: Optional structured contextual attributes.
-        """
+        """Emit INFO level log record."""
         self._log(logging.INFO, msg, details=details)
 
     def warning(
@@ -237,13 +207,7 @@ class GDALogger:
         details: dict[str, Any] | None = None,
         exc: Exception | None = None,
     ) -> None:
-        """Emit WARNING level log record.
-
-        Args:
-            msg: Log message string.
-            details: Optional structured contextual attributes.
-            exc: Optional exception instance for diagnostic serialization.
-        """
+        """Emit WARNING level log record."""
         self._log(logging.WARNING, msg, details=details, exc=exc)
 
     def error(
@@ -253,13 +217,7 @@ class GDALogger:
         details: dict[str, Any] | None = None,
         exc: Exception | None = None,
     ) -> None:
-        """Emit ERROR level log record.
-
-        Args:
-            msg: Log message string.
-            details: Optional structured contextual attributes.
-            exc: Optional exception instance for diagnostic serialization.
-        """
+        """Emit ERROR level log record."""
         self._log(logging.ERROR, msg, details=details, exc=exc)
 
     def critical(
@@ -269,11 +227,5 @@ class GDALogger:
         details: dict[str, Any] | None = None,
         exc: Exception | None = None,
     ) -> None:
-        """Emit CRITICAL level log record.
-
-        Args:
-            msg: Log message string.
-            details: Optional structured contextual attributes.
-            exc: Optional exception instance for diagnostic serialization.
-        """
+        """Emit CRITICAL level log record."""
         self._log(logging.CRITICAL, msg, details=details, exc=exc)

@@ -9,19 +9,21 @@ Operational Role:
     (census.py).
 
 Test Structure & Protocol:
-    - Atomized tests: 1:1 behavioral contract mapping.
+    - Atomized & parametrized tests: 1:1 behavioral contract mapping.
     - Fully decorated: 5-marker taxonomy (smoke, unit, integrity).
     - Dependencies: Pure in-memory evaluation with zero disk I/O.
 """
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 import gda.core.constants as consts
 from gda.core.constants import census, domain, military
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 
 # ==============================================================================
@@ -66,35 +68,58 @@ def test_domain_constants_bounds_and_code_sets() -> None:
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_military_constants_bounds_and_era_year_sets() -> None:
+@pytest.mark.parametrize(
+    ("const_name", "expected_val"),
+    [
+        ("MIN_ENLISTMENT_TERM_MONTHS", 1),
+        ("MAX_ENLISTMENT_TERM_MONTHS", 120),
+        ("MAX_FOREIGN_SERVICE_MONTHS", 600),
+        ("MAX_BOUNTY_LAND_ACREAGE", 1000),
+        ("MAX_MINOR_CHILDREN_COUNT", 25),
+        ("MIN_VIETNAM_LOTTERY_NUMBER", 1),
+        ("MAX_VIETNAM_LOTTERY_NUMBER", 366),
+        ("MIN_HEIGHT_INCHES", 36),
+        ("MAX_HEIGHT_INCHES", 96),
+        ("MIN_WEIGHT_LBS", 50),
+        ("MAX_WEIGHT_LBS", 500),
+        ("COLONIAL_MILITIA_MIN_YEAR", 1607),
+        ("COLONIAL_MILITIA_MAX_YEAR", 1815),
+        ("CIVIL_WAR_DRAFT_YEARS", frozenset({1862, 1863, 1864, 1865})),
+        ("WWI_DRAFT_YEARS", frozenset({1917, 1918})),
+        ("WWII_DRAFT_YEARS", frozenset({1940, 1941, 1942, 1943, 1944, 1945, 1946})),
+        ("MODERN_SSS_MIN_YEAR", 1948),
+    ],
+)
+def test_military_constants_bounds_and_era_year_sets(
+    const_name: str,
+    expected_val: Any,
+) -> None:
     """Verify centralized military scalar bounds and historical draft era year sets."""
-    assert (consts.MIN_ENLISTMENT_TERM_MONTHS, consts.MAX_ENLISTMENT_TERM_MONTHS) == (1, 120)
-    assert consts.MAX_FOREIGN_SERVICE_MONTHS == 600
-    assert consts.MAX_BOUNTY_LAND_ACREAGE == 1000
-    assert consts.MAX_MINOR_CHILDREN_COUNT == 25
-    assert (consts.MIN_VIETNAM_LOTTERY_NUMBER, consts.MAX_VIETNAM_LOTTERY_NUMBER) == (1, 366)
-    assert (consts.MIN_HEIGHT_INCHES, consts.MAX_HEIGHT_INCHES) == (36, 96)
-    assert (consts.MIN_WEIGHT_LBS, consts.MAX_WEIGHT_LBS) == (50, 500)
-    assert (consts.COLONIAL_MILITIA_MIN_YEAR, consts.COLONIAL_MILITIA_MAX_YEAR) == (1607, 1815)
-    assert consts.CIVIL_WAR_DRAFT_YEARS == frozenset({1862, 1863, 1864, 1865})
-    assert consts.WWI_DRAFT_YEARS == frozenset({1917, 1918})
-    assert consts.WWII_DRAFT_YEARS == frozenset({1940, 1941, 1942, 1943, 1944, 1945, 1946})
-    assert consts.MODERN_SSS_MIN_YEAR == 1948
+    assert getattr(consts, const_name) == expected_val
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_census_constants_bounds_and_schedule_year_sets() -> None:
+@pytest.mark.parametrize(
+    ("const_name", "expected_val"),
+    [
+        ("CENSUS_SHEET_SIDES", frozenset({"A", "B"})),
+        ("MAX_CENSUS_LINE_NUMBER", 200),
+        ("TAX_ASSESSMENT_MIN_YEAR", 1600),
+        ("US_FEDERAL_CENSUS_TALLY_YEARS", frozenset({1790, 1800, 1810, 1820, 1830, 1840})),
+        ("US_FEDERAL_CENSUS_1850_1870_YEARS", frozenset({1850, 1860, 1870})),
+        ("US_FEDERAL_CENSUS_1900_1910_YEARS", frozenset({1900, 1910})),
+        ("US_MORTALITY_SCHEDULE_YEARS", frozenset({1850, 1860, 1870, 1880, 1885})),
+        ("US_AGRICULTURAL_SCHEDULE_YEARS", frozenset({1850, 1860, 1870, 1880})),
+        ("US_MANUFACTURING_SCHEDULE_YEARS", frozenset({1810, 1820, 1850, 1860, 1870, 1880})),
+        ("US_SLAVE_SCHEDULE_YEARS", frozenset({1850, 1860})),
+        ("US_VETERANS_SCHEDULE_YEAR", 1890),
+    ],
+)
+def test_census_constants_bounds_and_schedule_year_sets(
+    const_name: str,
+    expected_val: Any,
+) -> None:
     """Verify centralized census and tax assessment bounds and historical year sets."""
-    assert consts.CENSUS_SHEET_SIDES == frozenset({"A", "B"})
-    assert consts.MAX_CENSUS_LINE_NUMBER == 200
-    assert consts.TAX_ASSESSMENT_MIN_YEAR == 1600
-    assert consts.US_FEDERAL_CENSUS_TALLY_YEARS == frozenset({1790, 1800, 1810, 1820, 1830, 1840})
-    assert consts.US_FEDERAL_CENSUS_1850_1870_YEARS == frozenset({1850, 1860, 1870})
-    assert consts.US_FEDERAL_CENSUS_1900_1910_YEARS == frozenset({1900, 1910})
+    assert getattr(consts, const_name) == expected_val
     assert len(consts.US_FEDERAL_CENSUS_YEARS) == 17
-    assert consts.US_MORTALITY_SCHEDULE_YEARS == frozenset({1850, 1860, 1870, 1880, 1885})
-    assert consts.US_AGRICULTURAL_SCHEDULE_YEARS == frozenset({1850, 1860, 1870, 1880})
-    assert consts.US_MANUFACTURING_SCHEDULE_YEARS == frozenset({1810, 1820, 1850, 1860, 1870, 1880})
-    assert consts.US_SLAVE_SCHEDULE_YEARS == frozenset({1850, 1860})
-    assert consts.US_VETERANS_SCHEDULE_YEAR == 1890

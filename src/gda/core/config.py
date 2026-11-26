@@ -38,7 +38,7 @@ from pydantic import (
 from gda.core.errors import ConfigParseError, ConfigValidationError
 from gda.core.types import is_finite_number
 
-__version__ = "1.0.0+build.21"
+__version__ = "1.0.0+build.22"
 
 __all__ = [
     "AppConfig",
@@ -374,6 +374,29 @@ class AppConfig(ImmutableBaseModel):
                 merged[k] = v
 
     @classmethod
+    def _apply_environment_db_overlay(
+        cls,
+        merged: dict[str, Any],
+        environments_table: Mapping[str, Any],
+        env_name: str | None,
+        env_source: Mapping[str, str],
+        env_prefix: str,
+    ) -> None:
+        """Apply matching [tool.gda.environments.<ENV>] database settings if active."""
+        if env_name is not None:
+            merged["environment"] = env_name
+
+        env_var_key = f"{env_prefix}ENVIRONMENT"
+        has_env_selector = (
+            env_name is not None or "environment" in merged or env_var_key in env_source
+        )
+        if environments_table and has_env_selector:
+            target_env_key = str(env_source.get(env_var_key) or merged["environment"])
+            merged["database"].update(
+                cls._extract_env_db_settings(environments_table, target_env_key)
+            )
+
+    @classmethod
     def for_environment(
         cls,
         env_name: str,
@@ -399,31 +422,7 @@ class AppConfig(ImmutableBaseModel):
         env_vars: Mapping[str, str] | None = None,
         overrides: dict[str, Any] | None = None,
     ) -> Self:
-        """Load and validate configuration across TOML, environment variables, and overrides.
-
-        Precedence (lowest to highest):
-            1. Schema defaults
-            2. gda_config.toml, pyproject.toml [tool.gda], or explicit TOML file
-            3. [tool.gda.environments.<ENV>] overlay (when env_name, TOML environment,
-               or <env_prefix>ENVIRONMENT matches)
-            4. Environment variables (GDA_*, GDA_DATABASE__*, GDA_LOGGING__*)
-            5. Explicit dictionary overrides
-
-        Args:
-            config_path: Optional explicit TOML configuration file path.
-            root_path: Optional workspace root directory override.
-            env_name: Optional target environment name or code (DEV, TEST, STAGING, PROD).
-            env_prefix: Prefix for environment variable scanning (defaults to 'GDA_').
-            env_vars: Optional mapping of environment variables (defaults to os.environ).
-            overrides: Optional highest-precedence dictionary overrides.
-
-        Returns:
-            Validated, immutable AppConfig instance.
-
-        Raises:
-            ConfigParseError: If an explicit config_path is missing or TOML reading/parsing fails.
-            ConfigValidationError: If merged settings fail Pydantic schema validation.
-        """
+        """Load and validate configuration across TOML, environment variables, and overrides."""
         merged: dict[str, Any] = {"database": {}, "logging": {}}
         if root_path is not None:
             merged["root_path"] = root_path
@@ -431,29 +430,20 @@ class AppConfig(ImmutableBaseModel):
         resolved_root = Path(root_path) if root_path is not None else Path.cwd()
         env_source = env_vars if env_vars is not None else os.environ
 
-        # --- Layer 1: Discover and Parse TOML File ---
+        # Layer 1: Discover and parse TOML configuration if present
         file_to_load = cls._resolve_config_file(config_path, resolved_root, env_source, env_prefix)
         environments_table: dict[str, Any] = {}
         if file_to_load is not None:
             gda_section = cls._read_toml_file(file_to_load)
             environments_table = cls._apply_toml_section(merged, gda_section)
 
-        # --- Layer 2: [tool.gda.environments.<ENV>] Overlay & Environment Variables ---
-        if env_name is not None:
-            merged["environment"] = env_name
-
-        env_var_key = f"{env_prefix}ENVIRONMENT"
-        if environments_table and (
-            env_name is not None or "environment" in merged or env_var_key in env_source
-        ):
-            target_env_key = str(env_source.get(env_var_key) or merged["environment"])
-            merged["database"].update(
-                cls._extract_env_db_settings(environments_table, target_env_key)
-            )
-
+        # Layer 2: Apply target environment DB block and prefixed env vars
+        cls._apply_environment_db_overlay(
+            merged, environments_table, env_name, env_source, env_prefix
+        )
         cls._apply_env_vars(merged, env_source, env_prefix)
 
-        # --- Layer 3: Explicit Runtime Overrides & Validation ---
+        # Layer 3: Apply explicit runtime overrides and validate schema
         if overrides:
             cls._apply_overrides(merged, overrides)
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "BirthPlurality",
@@ -31,6 +31,11 @@ __all__ = [
     "UnionType",
     "VitalModifier",
 ]
+
+
+# ==============================================================================
+# Domestic Unions, Dissolutions & Lineage Pedigree
+# ==============================================================================
 
 
 class UnionType(GDAStrEnum):
@@ -74,6 +79,29 @@ class MaritalStatus(GDAStrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class DivorceDecreeType(GDAStrEnum):
+    """Legal classifications for divorce and dissolution decrees."""
+
+    ABSOLUTE = "ABSOLUTE"
+    BED_AND_BOARD = "BED_AND_BOARD"
+    ANNULMENT = "ANNULMENT"
+    DISMISSED = "DISMISSED"
+    OTHER = "OTHER"
+
+
+class LegalPlaintiff(GDAStrEnum):
+    """Designation of plaintiff party in civil proceedings."""
+
+    HUSBAND = "HUSBAND"
+    WIFE = "WIFE"
+    OTHER = "OTHER"
+
+
+# ==============================================================================
+# Vital Birth, Mortality & Disposition Assertions
+# ==============================================================================
+
+
 class MannerOfDeath(GDAStrEnum):
     """Categorical manner of death classification."""
 
@@ -105,22 +133,19 @@ class DispositionType(GDAStrEnum):
     OTHER = "OTHER"
 
 
-class DivorceDecreeType(GDAStrEnum):
-    """Legal classifications for divorce and dissolution decrees."""
+class VitalModifier(GDAStrEnum):
+    """Vital condition modifiers for birth and infant death assertions."""
 
-    ABSOLUTE = "ABSOLUTE"
-    BED_AND_BOARD = "BED_AND_BOARD"
-    ANNULMENT = "ANNULMENT"
-    DISMISSED = "DISMISSED"
-    OTHER = "OTHER"
+    STILLBORN = "STILLBORN"
+    INFANT = "INFANT"
+    ILLEGITIMATE = "ILLEGITIMATE"
+    POSTHUMOUS = "POSTHUMOUS"
+    LEGITIMATED = "LEGITIMATED"
 
 
-class LegalPlaintiff(GDAStrEnum):
-    """Designation of plaintiff party in civil proceedings."""
-
-    HUSBAND = "HUSBAND"
-    WIFE = "WIFE"
-    OTHER = "OTHER"
+# ==============================================================================
+# Onomastic Contexts & Biographical Traits
+# ==============================================================================
 
 
 class HistoricNameType(GDAStrEnum):
@@ -131,16 +156,6 @@ class HistoricNameType(GDAStrEnum):
     COLLOQUIAL = "COLLOQUIAL"
     COLONIAL = "COLONIAL"
     INDIGENOUS = "INDIGENOUS"
-
-
-class VitalModifier(GDAStrEnum):
-    """Vital condition modifiers for birth and infant death assertions."""
-
-    STILLBORN = "STILLBORN"
-    INFANT = "INFANT"
-    ILLEGITIMATE = "ILLEGITIMATE"
-    POSTHUMOUS = "POSTHUMOUS"
-    LEGITIMATED = "LEGITIMATED"
 
 
 class PhysicalBuild(GDAStrEnum):

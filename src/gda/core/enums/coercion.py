@@ -19,7 +19,7 @@ from typing import Any
 from gda.core.errors import ModelFormatError
 from gda.core.types import is_strict_int
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "coerce_enum",
@@ -68,6 +68,74 @@ def _match_by_name_or_value[E: Enum](enum_cls: type[E], normalized: str) -> E | 
     return None
 
 
+def _parse_strict_ascii_int(cleaned: str) -> int | None:
+    """Parse cleaned string as int only if ASCII and free of underscores."""
+    if not cleaned.isascii() or "_" in cleaned:
+        return None
+    try:
+        return int(cleaned)
+    except ValueError:
+        return None
+
+
+def _coerce_int_enum[E: IntEnum](
+    enum_cls: type[E],
+    raw_value: Any,
+    field_name: str | None,
+) -> E:
+    """Coerce strict int, integer-like ASCII string, or member name into an IntEnum member."""
+    if is_strict_int(raw_value):
+        try:
+            return enum_cls(raw_value)
+        except ValueError as exc:
+            raise _raise_coercion_error(enum_cls, raw_value, field_name) from exc
+
+    if not isinstance(raw_value, str):
+        raise _raise_coercion_error(enum_cls, raw_value, field_name)
+
+    cleaned = raw_value.strip()
+    if not cleaned:
+        raise _raise_coercion_error(enum_cls, raw_value, field_name)
+
+    parsed_int = _parse_strict_ascii_int(cleaned)
+    if parsed_int is not None:
+        try:
+            return enum_cls(parsed_int)
+        except ValueError as exc:
+            raise _raise_coercion_error(enum_cls, raw_value, field_name) from exc
+
+    matched = _match_by_name_or_value(enum_cls, _normalize_token(cleaned))
+    if matched is not None:
+        return matched
+
+    raise _raise_coercion_error(enum_cls, raw_value, field_name)
+
+
+def _coerce_str_enum[E: Enum](
+    enum_cls: type[E],
+    raw_value: Any,
+    field_name: str | None,
+) -> E:
+    """Coerce exact or normalized string tokens into a StrEnum or general Enum member."""
+    if not isinstance(raw_value, str):
+        raise _raise_coercion_error(enum_cls, raw_value, field_name)
+
+    cleaned = raw_value.strip()
+    if not cleaned:
+        raise _raise_coercion_error(enum_cls, raw_value, field_name)
+
+    try:
+        return enum_cls(cleaned)
+    except ValueError:
+        pass
+
+    matched = _match_by_name_or_value(enum_cls, _normalize_token(cleaned))
+    if matched is not None:
+        return matched
+
+    raise _raise_coercion_error(enum_cls, raw_value, field_name)
+
+
 def coerce_enum[E: Enum](
     enum_cls: type[E],
     raw_value: Any,
@@ -78,12 +146,8 @@ def coerce_enum[E: Enum](
 
     Resolution order:
         1. Direct passthrough if raw_value is already an instance of enum_cls.
-        2. Explicit rejection of bool, None, and non-(int|str) values.
-        3. For IntEnum subclasses: strict int lookup, strict ASCII integer string
-           parsing (rejecting underscores and non-ASCII digits), or normalized
-           member-name lookup.
-        4. For StrEnum / general Enum subclasses: exact value match, then
-           case- and separator-normalized lookup against member names and values.
+        2. Explicit rejection of bool and None values.
+        3. Delegate to IntEnum or StrEnum/general Enum coercion helpers.
 
     Args:
         enum_cls: Target Enum subclass to resolve against.
@@ -105,54 +169,6 @@ def coerce_enum[E: Enum](
         raise _raise_coercion_error(enum_cls, raw_value, field_name)
 
     if issubclass(enum_cls, IntEnum):
-        if is_strict_int(raw_value):
-            try:
-                return enum_cls(raw_value)
-            except ValueError as exc:
-                raise _raise_coercion_error(enum_cls, raw_value, field_name) from exc
+        return _coerce_int_enum(enum_cls, raw_value, field_name)
 
-        if isinstance(raw_value, str):
-            cleaned = raw_value.strip()
-            if not cleaned:
-                raise _raise_coercion_error(enum_cls, raw_value, field_name)
-
-            # Attempt strict ASCII integer string parsing first (e.g., "3", " 1880 ")
-            parsed_int: int | None = None
-            if cleaned.isascii() and "_" not in cleaned:
-                try:
-                    parsed_int = int(cleaned)
-                except ValueError:
-                    parsed_int = None
-
-            if parsed_int is not None:
-                try:
-                    return enum_cls(parsed_int)
-                except ValueError as exc:
-                    raise _raise_coercion_error(enum_cls, raw_value, field_name) from exc
-
-            # Fall back to member name lookup (e.g., "direct_primary", "DIRECT-PRIMARY")
-            int_matched = _match_by_name_or_value(enum_cls, _normalize_token(cleaned))
-            if int_matched is not None:
-                return int_matched
-
-        raise _raise_coercion_error(enum_cls, raw_value, field_name)
-
-    # StrEnum and general string-valued Enum path
-    if not isinstance(raw_value, str):
-        raise _raise_coercion_error(enum_cls, raw_value, field_name)
-
-    cleaned = raw_value.strip()
-    if not cleaned:
-        raise _raise_coercion_error(enum_cls, raw_value, field_name)
-
-    # Try exact stripped value match first, then normalized token match
-    try:
-        return enum_cls(cleaned)
-    except ValueError:
-        pass
-
-    str_matched = _match_by_name_or_value(enum_cls, _normalize_token(cleaned))
-    if str_matched is not None:
-        return str_matched
-
-    raise _raise_coercion_error(enum_cls, raw_value, field_name)
+    return _coerce_str_enum(enum_cls, raw_value, field_name)
