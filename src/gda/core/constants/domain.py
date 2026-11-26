@@ -1,7 +1,6 @@
 """Path: src/gda/core/constants/domain.py
 
-Canonical domain scalar sets, historical year limits, geographic bounds,
-and evidentiary scoring invariants.
+Domain bounds, year limits, coordinate ranges, and score invariants.
 
 Operational Role:
     Centralizes immutable scalar bounds for biological gender codes,

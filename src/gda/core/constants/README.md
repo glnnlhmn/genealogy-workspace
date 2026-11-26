@@ -13,7 +13,7 @@ Immutable bounds, code sets, and era year sets. Covers domain limits, military d
 | Module | Version | Canonical Description |
 | :--- | :--- | :--- |
 | `census.py` | `1.0.0+build.1` | Enumerated census schedule and tax assessment bounds and historical year sets. |
-| `domain.py` | `1.0.0+build.1` | Canonical domain scalar sets, historical year limits, geographic bounds, |
+| `domain.py` | `1.0.0+build.1` | Domain bounds, year limits, coordinate ranges, and score invariants. |
 | `military.py` | `1.0.0+build.1` | Military service, pension, and conscription scalar bounds and historical era year sets. |
 
 ## Public Exports & Consumption Contract
@@ -21,4 +21,4 @@ Exports: `CENSUS_SHEET_SIDES`, `CIVIL_WAR_DRAFT_YEARS`, `COLONIAL_MILITIA_MAX_YE
 
 ---
 Generated dynamically by `gen_desk_tools.readme_gen` (`gdrm`).
-<!-- gdrm-hash: e64acfa53339c7fe -->
+<!-- gdrm-hash: 1afcec6962d466dc -->
