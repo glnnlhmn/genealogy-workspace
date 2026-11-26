@@ -45,7 +45,7 @@ _NEWSPAPER_CATEGORIES: frozenset[SourceRecordCategory] = frozenset(
 
 _NEWSPAPER_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
     {
-        SourceRecordType.MISC,
+        SourceRecordType.MISCELLANEOUS,
         SourceRecordType.AFFIDAVIT,
         SourceRecordType.DOCKET_ENTRY,
         SourceRecordType.DEATH_CERTIFICATE,
@@ -77,7 +77,7 @@ class NewspaperClipRecord(SourceRecord):
         description="High-level archival domain category (NEWS, VITAL, LEGAL, OTHER).",
     )
     record_type: SourceRecordType = Field(
-        default=SourceRecordType.MISC,
+        default=SourceRecordType.MISCELLANEOUS,
         description="Specific documentary classification for the newspaper clipping.",
     )
     newspaper_name_raw: str = Field(
@@ -192,7 +192,7 @@ class NewspaperClipRecord(SourceRecord):
         issue_date: EventDate | dict[str, Any] | str,
         news_category: str = "GENERAL",
         record_category: SourceRecordCategory | str = SourceRecordCategory.NEWS,
-        record_type: SourceRecordType | str = SourceRecordType.MISC,
+        record_type: SourceRecordType | str = SourceRecordType.MISCELLANEOUS,
         parent_source_id: SourceID | str | None = None,
         pub_code: str | None = None,
         publication_location_raw: str | None = None,
@@ -306,7 +306,7 @@ class NewspaperClipRecord(SourceRecord):
             issue_date=cast(Any, raw_issue_date),
             news_category=str(data.get("news_category", "GENERAL")),
             record_category=data.get("record_category", SourceRecordCategory.NEWS),
-            record_type=data.get("record_type", SourceRecordType.MISC),
+            record_type=data.get("record_type", SourceRecordType.MISCELLANEOUS),
             parent_source_id=data.get("parent_source_id"),
             pub_code=data.get("pub_code"),
             publication_location_raw=data.get("publication_location_raw"),

@@ -5,9 +5,9 @@ Reusable Hypothesis property-testing strategies for Tier 0 (gda.core) suites.
 Operational Role:
     Centralizes deterministic, composable Hypothesis strategies for historical
     dates, UTC timestamps, strict/adversarial numeric inputs, binary streaming
-    payloads, enum casing/whitespace mutations, and exotic logging payloads.
-    Higher-tier test suites (model, entity, db) may import and compose these
-    Tier-0-safe generators directly.
+    payloads, enum casing/separator/whitespace mutations, and exotic logging
+    payloads. Higher-tier test suites (model, entity, db) may import and compose
+    these Tier-0-safe generators directly.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from typing import Any
 
 from hypothesis import strategies as st
 
-__version__ = "1.0.0+build.1"
+__version__ = "1.0.0+build.2"
 
 __all__ = [
     "binary_and_chunk_size",
@@ -91,7 +91,7 @@ def utc_timestamps(draw: st.DrawFn) -> str:
 
 # ==============================================================================
 # SECTION 2: STRICT NUMERIC & ADVERSARIAL INPUTS (types.py, config.py, hashes.py)
-# Note: Targets bool-as-int traps and NaN/Inf coercion bugs (CIU-B1-001).
+# Note: Targets bool-as-int traps and NaN/Inf coercion bugs.
 # ==============================================================================
 
 
@@ -134,8 +134,8 @@ def binary_and_chunk_size(draw: st.DrawFn) -> tuple[bytes, int]:
 
 
 # ==============================================================================
-# SECTION 4: ENUM TOKEN & CASING MUTATIONS (enums/coercion.py)
-# Note: Fuzzes coerce_enum against mixed casing and surrounding whitespace.
+# SECTION 4: ENUM TOKEN, SEPARATOR & CASING MUTATIONS (enums/coercion.py)
+# Note: Fuzzes coerce_enum against mixed casing, separators (-, space), and padding.
 # ==============================================================================
 
 
@@ -146,14 +146,20 @@ def enum_token_variants(draw: st.DrawFn, enum_cls: type[Enum]) -> tuple[Enum, An
     val = member.value
 
     if isinstance(val, str):
-        case_mode = draw(st.sampled_from(("exact", "lower", "upper", "title", "padded")))
-        if case_mode == "lower":
+        variant_mode = draw(
+            st.sampled_from(("exact", "lower", "upper", "title", "hyphen", "space", "padded"))
+        )
+        if variant_mode == "lower":
             mutated: Any = val.lower()
-        elif case_mode == "upper":
+        elif variant_mode == "upper":
             mutated = val.upper()
-        elif case_mode == "title":
+        elif variant_mode == "title":
             mutated = val.title()
-        elif case_mode == "padded":
+        elif variant_mode == "hyphen":
+            mutated = val.replace("_", "-").lower()
+        elif variant_mode == "space":
+            mutated = val.replace("_", " ").lower()
+        elif variant_mode == "padded":
             pad_left = draw(st.sampled_from(("", " ", "\t")))
             pad_right = draw(st.sampled_from(("", " ", "\n")))
             mutated = f"{pad_left}{val}{pad_right}"
@@ -161,13 +167,13 @@ def enum_token_variants(draw: st.DrawFn, enum_cls: type[Enum]) -> tuple[Enum, An
             mutated = val
         return member, mutated
 
-    # IntEnum or other non-string enum: return the raw value or member directly.
-    return member, draw(st.sampled_from((member, val)))
+    # IntEnum or other non-string enum: return member, raw int, or stringified int.
+    return member, draw(st.sampled_from((member, val, str(val), f" {val} ")))
 
 
 # ==============================================================================
 # SECTION 5: EXOTIC LOGGING PAYLOADS (logging.py)
-# Note: Exercises JsonFormatter against non-JSON-native types (RARE-CORE-04).
+# Note: Exercises JsonFormatter against non-JSON-native Python objects.
 # ==============================================================================
 
 

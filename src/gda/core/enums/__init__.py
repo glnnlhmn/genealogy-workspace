@@ -22,6 +22,8 @@ from gda.core.enums.archival import (
 from gda.core.enums.base import (
     GDAIntEnum,
     GDAStrEnum,
+)
+from gda.core.enums.coercion import (
     coerce_enum,
 )
 from gda.core.enums.core import (
@@ -123,7 +125,7 @@ from gda.core.enums.vital import (
     VitalModifier,
 )
 
-__version__ = "1.0.0+build.10"
+__version__ = "1.0.0+build.11"
 
 __all__ = [
     "AffiliationType",  # orgs.py
@@ -207,6 +209,6 @@ __all__ = [
     "WwiCardType",  # military.py
     "WwiCitizenshipStatus",  # military.py
     "WwiiDraftWave",  # military.py
-    "coerce_enum",  # base.py
+    "coerce_enum",  # coercion.py
     "normalize_modifier",  # date.py
 ]

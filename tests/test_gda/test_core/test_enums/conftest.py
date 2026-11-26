@@ -20,15 +20,15 @@ from pydantic import BaseModel
 
 import gda.core.enums as ge
 
-__version__ = "1.0.0+build.8"
+__version__ = "1.0.0+build.9"
 
 __all__ = [
     "SampleEnumModel",
     "all_enum_classes",
+    "legacy_mixed_case_enum_payload",
     "pydantic_enum_model_cls",
     "sample_coercible_enums",
     "standardized_enum_payload",
-    "valid_enum_payload",
 ]
 
 
@@ -116,7 +116,7 @@ def pydantic_enum_model_cls() -> type[BaseModel]:
 
 @pytest.fixture
 def standardized_enum_payload() -> dict[str, Any]:
-    """Provide the target UPPER_SNAKE_CASE payload for post-Phase 3 enum validation."""
+    """Provide the canonical UPPER_SNAKE_CASE payload for Pydantic enum validation."""
     return {
         "sex": "MALE",
         "quay": 3,
@@ -142,15 +142,14 @@ def standardized_enum_payload() -> dict[str, Any]:
 
 
 # ==============================================================================
-# SECTION 3: LEGACY FIXTURES (TO BE RETIRED IN PHASE 3)
-# Note: Retains pre-standardization mixed-case values (Male, Natural, Freeholder)
-# so existing suites remain green until Phase 3 enum casing migration completes.
+# SECTION 3: LEGACY DESERIALIZATION FIXTURE
+# Note: Explicit mixed-case payload retained for legacy JSON/SQLite coercion tests.
 # ==============================================================================
 
 
 @pytest.fixture
-def valid_enum_payload() -> dict[str, Any]:
-    """Provide the legacy mixed-case payload matching pre-Phase 3 enum definitions."""
+def legacy_mixed_case_enum_payload() -> dict[str, Any]:
+    """Provide a legacy mixed-case payload for historical deserialization coercion tests."""
     return {
         "sex": "Male",
         "quay": 3,

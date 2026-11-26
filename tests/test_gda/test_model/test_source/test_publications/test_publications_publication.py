@@ -76,7 +76,7 @@ def test_publication_create_and_roundtrip() -> None:
         title=title,
         pub_code=" concord_monitor ",
         record_category="news",
-        record_type="misc",
+        record_type="miscellaneous",
         frequency="Daily",
         publisher_raw="Monitor & Statesman Co.",
         place_of_publication_raw="Concord, NH",

@@ -9,9 +9,11 @@ Operational Role:
 
 from __future__ import annotations
 
+from types import MappingProxyType
+
 from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "JurisdictionCategory",
@@ -49,13 +51,17 @@ class JurisdictionCategory(GDAStrEnum):
     @property
     def administrative_rank(self) -> int:
         """Return numerical hierarchy ranking (lower number = higher administrative tier)."""
-        ranks = {
-            self.COUNTRY: 10,
-            self.STATOID: 20,
-            self.COUNTY_EQUIVALENT: 30,
-            self.CIVIL_TOWNSHIP: 40,
-            self.MUNICIPALITY: 50,
-            self.UNINCORPORATED_PLACE: 60,
-            self.SPECIAL_DISTRICT: 70,
-        }
-        return ranks[self]
+        return _ADMINISTRATIVE_RANKS[self]
+
+
+_ADMINISTRATIVE_RANKS: MappingProxyType[JurisdictionCategory, int] = MappingProxyType(
+    {
+        JurisdictionCategory.COUNTRY: 10,
+        JurisdictionCategory.STATOID: 20,
+        JurisdictionCategory.COUNTY_EQUIVALENT: 30,
+        JurisdictionCategory.CIVIL_TOWNSHIP: 40,
+        JurisdictionCategory.MUNICIPALITY: 50,
+        JurisdictionCategory.UNINCORPORATED_PLACE: 60,
+        JurisdictionCategory.SPECIAL_DISTRICT: 70,
+    }
+)

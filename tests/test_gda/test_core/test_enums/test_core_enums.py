@@ -3,10 +3,11 @@
 Targeted behavioral test suite verifying foundational gda.core.enums.core models.
 
 Operational Role:
-    Verifies public exports, Sex UPPER_SNAKE_CASE canonical values and input
-    normalizer, FactType domain tokens, AssociatedRole kinship mappings,
-    QuayScore integer certainty levels, QualityAssessment ratings, and
-    identifier category/prefix enums.
+    Verifies public exports, Sex UPPER_SNAKE_CASE canonical values, Sex.from_raw()
+    and Sex.from_input() normalization and ModelFormatError error contracts
+    (including optional field_name diagnostics), FactType domain tokens,
+    AssociatedRole kinship mappings, QuayScore integer certainty levels,
+    QualityAssessment ratings, and identifier enums.
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -15,6 +16,8 @@ Test Structure & Protocol:
 """
 
 from __future__ import annotations
+
+from typing import Any
 
 import pytest
 
@@ -28,8 +31,9 @@ from gda.core.enums.core import (
     Sex,
     SmartIDPrefix,
 )
+from gda.core.errors import ModelFormatError
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.9"
 
 
 # ==============================================================================
@@ -62,7 +66,7 @@ def test_core_enums_exposes_expected_public_interface() -> None:
 
 @pytest.mark.unit
 def test_sex_enum_canonical_values() -> None:
-    """Verify canonical Sex values use UPPER_SNAKE_CASE tokens (Phase 3 TDD Red)."""
+    """Verify canonical Sex values use UPPER_SNAKE_CASE tokens."""
     assert Sex.MALE == "MALE"
     assert Sex.FEMALE == "FEMALE"
     assert Sex.UNKNOWN == "UNKNOWN"
@@ -124,7 +128,7 @@ def test_id_type_and_smart_id_prefixes() -> None:
 
 # ==============================================================================
 # GROUP 3: Edge Cases & Boundary Conditions
-# Note: Transcription token normalization via Sex.from_input.
+# Note: Transcription token normalization via Sex.from_raw and Sex.from_input.
 # ==============================================================================
 
 
@@ -146,20 +150,39 @@ def test_id_type_and_smart_id_prefixes() -> None:
         ("undetermined", Sex.UNKNOWN),
     ],
 )
-def test_sex_from_input_maps_standard_tokens(raw_token: str, expected: Sex) -> None:
-    """Verify Sex.from_input maps typical transcription tokens into canonical instances."""
+def test_sex_from_raw_and_from_input_map_standard_tokens(
+    raw_token: str,
+    expected: Sex,
+) -> None:
+    """Verify Sex.from_raw and Sex.from_input map aliases to canonical Sex members."""
+    assert Sex.from_raw(raw_token) is expected
     assert Sex.from_input(raw_token) is expected
 
 
 # ==============================================================================
 # GROUP 4: Error Handling & Validation Failures
-# Note: Rejection of unsupported tokens in Sex.from_input.
+# Note: Rejection of invalid tokens and non-strings via ModelFormatError.
 # ==============================================================================
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("invalid_token", ["alien", "X", "Non-Binary", "non-binary", ""])
-def test_sex_from_input_rejects_invalid_tokens(invalid_token: str) -> None:
-    """Verify Sex.from_input raises ValueError on invalid or unsupported tokens."""
-    with pytest.raises(ValueError, match="Cannot map .* to a valid Sex enum member."):
+@pytest.mark.parametrize("invalid_token", ["alien", "X", "Non-Binary", "non-binary", "", 123, None])
+def test_sex_from_raw_and_from_input_raise_model_format_error(invalid_token: Any) -> None:
+    """Verify Sex.from_raw and Sex.from_input raise ModelFormatError on bad inputs."""
+    with pytest.raises(ModelFormatError) as exc_raw:
+        Sex.from_raw(invalid_token)
+    assert exc_raw.value.error_code == "ERR_MODEL_FORMAT"
+
+    with pytest.raises(ModelFormatError) as exc_input:
         Sex.from_input(invalid_token)
+    assert exc_input.value.error_code == "ERR_MODEL_FORMAT"
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+def test_sex_from_raw_includes_field_name_in_error_details() -> None:
+    """Verify Sex.from_raw attaches optional field_name to ModelFormatError details."""
+    with pytest.raises(ModelFormatError) as exc_info:
+        Sex.from_raw("bad_token", field_name="sex")
+    assert exc_info.value.error_code == "ERR_MODEL_FORMAT"
+    assert exc_info.value.details.get("field_name") == "sex"

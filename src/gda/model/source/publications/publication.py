@@ -69,7 +69,7 @@ class Publication(SourceRecord):
         description="High-level archival domain category (NEWS, EDUCATION, DIRECTORY, NARRATIVE, OTHER).",
     )
     record_type: SourceRecordType = Field(
-        default=SourceRecordType.MISC,
+        default=SourceRecordType.MISCELLANEOUS,
         description="Specific documentary record classification for the publication run.",
     )
     title: NameThing = Field(
@@ -165,7 +165,7 @@ class Publication(SourceRecord):
         title: NameThing | str,
         pub_code: str,
         record_category: SourceRecordCategory | str = SourceRecordCategory.NEWS,
-        record_type: SourceRecordType | str = SourceRecordType.MISC,
+        record_type: SourceRecordType | str = SourceRecordType.MISCELLANEOUS,
         frequency: PublicationFrequency | str | None = None,
         publisher_raw: str | None = None,
         place_of_publication_raw: str | None = None,
@@ -293,7 +293,7 @@ class Publication(SourceRecord):
             title=resolved_title,
             pub_code=str(pub_code),
             record_category=data.get("record_category", SourceRecordCategory.NEWS),
-            record_type=data.get("record_type", SourceRecordType.MISC),
+            record_type=data.get("record_type", SourceRecordType.MISCELLANEOUS),
             frequency=data.get("frequency"),
             publisher_raw=data.get("publisher_raw"),
             place_of_publication_raw=data.get("place_of_publication_raw"),

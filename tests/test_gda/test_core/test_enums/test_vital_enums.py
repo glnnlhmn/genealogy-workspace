@@ -35,19 +35,19 @@ from gda.core.enums.vital import (
     VitalModifier,
 )
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 
 # ==============================================================================
 # GROUP 1: Smoke & Primary Entrypoints
-# Note: Single smoke gate freezing the 15 authoritative vital exports (Phase 3).
+# Note: Single smoke gate freezing the 15 authoritative vital exports.
 # ==============================================================================
 
 
 @pytest.mark.smoke
 @pytest.mark.unit
 def test_vital_enums_exposes_expected_public_interface() -> None:
-    """Verify gda.core.enums.vital exports all 15 authoritative enums (Phase 3 TDD Red)."""
+    """Verify gda.core.enums.vital exports all 15 authoritative enums."""
     expected = {
         "BirthPlurality",
         "DispositionType",
@@ -103,7 +103,7 @@ def test_union_and_dissolution_types() -> None:
 
 @pytest.mark.unit
 def test_pedigree_type_upper_snake_case_values() -> None:
-    """Verify PedigreeType uses UPPER_SNAKE_CASE tokens (Phase 3 TDD Red)."""
+    """Verify PedigreeType uses UPPER_SNAKE_CASE tokens."""
     assert PedigreeType.BIRTH == "BIRTH"
     assert PedigreeType.ADOPTED == "ADOPTED"
     assert PedigreeType.STEP == "STEP"
@@ -112,7 +112,7 @@ def test_pedigree_type_upper_snake_case_values() -> None:
 
 @pytest.mark.unit
 def test_vital_and_mortuary_upper_snake_case_values() -> None:
-    """Verify mortuary, marital, and decree enums use UPPER_SNAKE_CASE (Phase 3 TDD Red)."""
+    """Verify mortuary, marital, and decree enums use UPPER_SNAKE_CASE."""
     assert MannerOfDeath.NATURAL == "NATURAL"
     assert MannerOfDeath.ACCIDENT == "ACCIDENT"
     assert BirthPlurality.SINGLE == "SINGLE"
@@ -127,19 +127,42 @@ def test_vital_and_mortuary_upper_snake_case_values() -> None:
 
 @pytest.mark.unit
 def test_relocated_biographical_enums_in_vital_module() -> None:
-    """Verify EyeColor, HairColor, PhysicalBuild, and EducationLevel live in vital (Phase 3)."""
+    """Verify EyeColor, HairColor, PhysicalBuild, and EducationLevel live in vital."""
     eye_color: Any = getattr(vital_enums, "EyeColor", None)
     hair_color: Any = getattr(vital_enums, "HairColor", None)
     physical_build: Any = getattr(vital_enums, "PhysicalBuild", None)
     education_level: Any = getattr(vital_enums, "EducationLevel", None)
 
-    assert eye_color is not None, "EyeColor not yet relocated to vital.py"
-    assert hair_color is not None, "HairColor not yet relocated to vital.py"
-    assert physical_build is not None, "PhysicalBuild not yet relocated to vital.py"
-    assert education_level is not None, "EducationLevel not yet relocated to vital.py"
+    assert eye_color is not None
+    assert hair_color is not None
+    assert physical_build is not None
+    assert education_level is not None
 
-    assert {m.value for m in eye_color} == {"BLUE", "BROWN", "GREY", "HAZEL", "BLACK"}
-    assert {m.value for m in hair_color} == {"BLONDE", "BROWN", "BLACK", "RED", "GREY", "BALD"}
+    assert {m.value for m in eye_color} == {
+        "BLUE",
+        "BROWN",
+        "GREY",
+        "HAZEL",
+        "BLACK",
+        "GREEN",
+        "OTHER",
+        "UNKNOWN",
+    }
+    assert {m.value for m in hair_color} == {
+        "BLONDE",
+        "BROWN",
+        "BLACK",
+        "RED",
+        "GREY",
+        "BALD",
+        "WHITE",
+        "OTHER",
+        "UNKNOWN",
+    }
+    assert eye_color.GREEN == "GREEN"
+    assert eye_color.from_raw("green") is eye_color.GREEN
+    assert hair_color.WHITE == "WHITE"
+    assert hair_color.from_raw("white") is hair_color.WHITE
     assert physical_build.MEDIUM == "MEDIUM"
     assert education_level.COLL == "COLL"
 

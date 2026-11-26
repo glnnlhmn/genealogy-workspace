@@ -92,7 +92,7 @@ class EventDate(IntrospectableMixin):
             if len(parts) == 2 and modifier in (None, DateModifier.EXACT):
                 try:
                     inferred_mod = normalize_modifier(parts[0])
-                except ValueError:
+                except (ValueError, ModelFormatError):
                     inferred_mod = None
             if inferred_mod is not None and inferred_mod != DateModifier.EXACT:
                 modifier = inferred_mod

@@ -190,6 +190,6 @@ def test_cemetery_registry_field_and_enum_contract() -> None:
         {
             SourceRecordType.REGISTER_ENTRY,
             SourceRecordType.CEMETERY_MARKER,
-            SourceRecordType.MISC,
+            SourceRecordType.MISCELLANEOUS,
         }
     )

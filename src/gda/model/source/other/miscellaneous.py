@@ -48,16 +48,16 @@ _OTHER_CATEGORIES: frozenset[SourceRecordCategory] = frozenset(
 
 _OTHER_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
     {
-        SourceRecordType.BIBLE,
+        SourceRecordType.BIBLE_RECORD,
         SourceRecordType.DIARY,
-        SourceRecordType.CORRESP,
-        SourceRecordType.FIN,
-        SourceRecordType.EPHEM,
+        SourceRecordType.CORRESPONDENCE,
+        SourceRecordType.FINANCIAL_RECORD,
+        SourceRecordType.EPHEMERA_ITEM,
         SourceRecordType.PHOTO,
         SourceRecordType.LODGE_RECORD,
         SourceRecordType.MEMBERSHIP_ROSTER,
         SourceRecordType.RECEIPT,
-        SourceRecordType.MISC,
+        SourceRecordType.MISCELLANEOUS,
     }
 )
 
@@ -101,7 +101,7 @@ class OtherMiscellaneousRecord(SourceRecord):
         description="High-level archival domain category (OTHER, FRATERNAL, CIVIC, EPHEMERA, FINANCIAL).",
     )
     record_type: SourceRecordType = Field(
-        default=SourceRecordType.MISC,
+        default=SourceRecordType.MISCELLANEOUS,
         description="Specific miscellaneous item classification.",
     )
     item_date: EventDate = Field(
@@ -155,7 +155,7 @@ class OtherMiscellaneousRecord(SourceRecord):
         repository_id: RepositoryID | str,
         item_date: EventDate | dict[str, Any] | str,
         record_category: SourceRecordCategory | str = SourceRecordCategory.OTHER,
-        record_type: SourceRecordType | str = SourceRecordType.MISC,
+        record_type: SourceRecordType | str = SourceRecordType.MISCELLANEOUS,
         organization_or_entity_name: str | None = None,
         organization_location_id: LocationID | str | None = None,
         custom_fields: dict[str, Any] | None = None,
@@ -255,7 +255,7 @@ class OtherMiscellaneousRecord(SourceRecord):
             repository_id=str(rep),
             item_date=cast(Any, raw_item_dt),
             record_category=data.get("record_category", SourceRecordCategory.OTHER),
-            record_type=data.get("record_type", SourceRecordType.MISC),
+            record_type=data.get("record_type", SourceRecordType.MISCELLANEOUS),
             organization_or_entity_name=data.get("organization_or_entity_name"),
             organization_location_id=data.get("organization_location_id"),
             custom_fields=raw_custom,

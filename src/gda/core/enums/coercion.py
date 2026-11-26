@@ -6,7 +6,8 @@ Operational Role:
     Provides a single, strict coercion pipeline (coerce_enum) for converting
     messy external inputs (CSV cells, CLI flags, JSON payloads) into validated
     GDA enum members while rejecting booleans, floats, None, empty strings,
-    and unmapped tokens with structured ModelFormatError diagnostics.
+    underscore-grouped or non-ASCII numeric strings, and unmapped tokens with
+    structured ModelFormatError diagnostics.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from typing import Any
 from gda.core.errors import ModelFormatError
 from gda.core.types import is_strict_int
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "coerce_enum",
@@ -78,8 +79,9 @@ def coerce_enum[E: Enum](
     Resolution order:
         1. Direct passthrough if raw_value is already an instance of enum_cls.
         2. Explicit rejection of bool, None, and non-(int|str) values.
-        3. For IntEnum subclasses: strict int lookup, numeric string parsing,
-           or normalized member-name lookup.
+        3. For IntEnum subclasses: strict int lookup, strict ASCII integer string
+           parsing (rejecting underscores and non-ASCII digits), or normalized
+           member-name lookup.
         4. For StrEnum / general Enum subclasses: exact value match, then
            case- and separator-normalized lookup against member names and values.
 
@@ -114,11 +116,13 @@ def coerce_enum[E: Enum](
             if not cleaned:
                 raise _raise_coercion_error(enum_cls, raw_value, field_name)
 
-            # Attempt integer string parsing first (e.g., "3", " 1880 ")
-            try:
-                parsed_int = int(cleaned)
-            except ValueError:
-                parsed_int = None
+            # Attempt strict ASCII integer string parsing first (e.g., "3", " 1880 ")
+            parsed_int: int | None = None
+            if cleaned.isascii() and "_" not in cleaned:
+                try:
+                    parsed_int = int(cleaned)
+                except ValueError:
+                    parsed_int = None
 
             if parsed_int is not None:
                 try:

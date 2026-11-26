@@ -4,8 +4,9 @@ Targeted behavioral test suite verifying historical temporal and date modifier e
 
 Operational Role:
     Validates gda.core.enums.date public exports, US Federal decennial census
-    schedule years (CensusYearUS), DateModifier canonical codes, MODIFIER_ALIASES
-    mapping parity, and normalize_modifier parsing and rejection boundaries.
+    schedule years (CensusYearUS), DateModifier canonical codes, DateModifier.from_raw()
+    (including optional field_name diagnostics), read-only MappingProxyType
+    MODIFIER_ALIASES, and normalize_modifier parsing and rejection boundaries.
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -14,6 +15,9 @@ Test Structure & Protocol:
 """
 
 from __future__ import annotations
+
+from types import MappingProxyType
+from typing import Any
 
 import pytest
 
@@ -24,8 +28,9 @@ from gda.core.enums.date import (
     DateModifier,
     normalize_modifier,
 )
+from gda.core.errors import ModelFormatError
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.5"
 
 
 # ==============================================================================
@@ -101,6 +106,7 @@ def test_normalize_modifier_none_and_enum_passthrough() -> None:
     assert normalize_modifier(None) is None
     for member in DateModifier:
         assert normalize_modifier(member) is member
+        assert DateModifier.from_raw(member) is member
 
 
 @pytest.mark.unit
@@ -143,38 +149,63 @@ def test_normalize_modifier_none_and_enum_passthrough() -> None:
         ("\tBEFORE\n", DateModifier.BEFORE),
     ],
 )
-def test_normalize_modifier_string_variants(
+def test_date_modifier_from_raw_and_normalize_modifier_string_variants(
     input_token: str,
     expected_modifier: DateModifier,
 ) -> None:
-    """Verify normalize_modifier parses uppercase, lowercase, and padded tokens."""
+    """Verify DateModifier.from_raw and normalize_modifier parse alias and case variants."""
+    assert DateModifier.from_raw(input_token) is expected_modifier
     assert normalize_modifier(input_token) is expected_modifier
 
 
 # ==============================================================================
 # GROUP 4: Error Handling & Validation Failures
-# Note: Rejection of unrecognized tokens in normalize_modifier.
+# Note: Rejection of unrecognized or non-string tokens via ModelFormatError.
 # ==============================================================================
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("invalid_token", ["", " ", "INVALID", "UNKNOWN", "CIRCA_1880", "123"])
-def test_normalize_modifier_invalid_raises_value_error(invalid_token: str) -> None:
-    """Verify normalize_modifier raises ValueError on unrecognized tokens."""
-    with pytest.raises(ValueError, match="Invalid DateModifier value"):
+@pytest.mark.parametrize(
+    "invalid_token",
+    ["", " ", "INVALID", "UNKNOWN", "CIRCA_1880", "123", 456],
+)
+def test_date_modifier_from_raw_and_normalize_modifier_raise_model_format_error(
+    invalid_token: Any,
+) -> None:
+    """Verify DateModifier.from_raw and normalize_modifier raise ModelFormatError."""
+    with pytest.raises(ModelFormatError) as exc_raw:
+        DateModifier.from_raw(invalid_token)
+    assert exc_raw.value.error_code == "ERR_MODEL_FORMAT"
+
+    with pytest.raises(ModelFormatError) as exc_norm:
         normalize_modifier(invalid_token)
+    assert exc_norm.value.error_code == "ERR_MODEL_FORMAT"
+
+
+@pytest.mark.regression
+@pytest.mark.unit
+def test_date_modifier_from_raw_includes_field_name_in_error_details() -> None:
+    """Verify DateModifier.from_raw attaches optional field_name to ModelFormatError details."""
+    with pytest.raises(ModelFormatError) as exc_info:
+        DateModifier.from_raw("bad_modifier", field_name="modifier")
+    assert exc_info.value.error_code == "ERR_MODEL_FORMAT"
+    assert exc_info.value.details.get("field_name") == "modifier"
 
 
 # ==============================================================================
 # GROUP 6: Integrity & Invariants
-# Note: MODIFIER_ALIASES target integrity.
+# Note: MODIFIER_ALIASES MappingProxyType immutability and target integrity.
 # ==============================================================================
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
-def test_modifier_aliases_mapping_targets_are_valid_enum_members() -> None:
-    """Verify every target in MODIFIER_ALIASES is an instance of DateModifier."""
+def test_modifier_aliases_is_immutable_and_targets_are_valid_enum_members() -> None:
+    """Verify MODIFIER_ALIASES is a MappingProxyType mapping to valid DateModifier members."""
+    assert isinstance(MODIFIER_ALIASES, MappingProxyType)
+    with pytest.raises(TypeError):
+        MODIFIER_ALIASES["BAD"] = DateModifier.EXACT  # type: ignore[index]
+
     for alias_key, enum_val in MODIFIER_ALIASES.items():
         assert isinstance(alias_key, str)
         assert isinstance(enum_val, DateModifier)

@@ -146,7 +146,7 @@ def test_newspaper_clip_record_field_and_enum_contract() -> None:
     )
     assert NewspaperClipRecord.ALLOWED_RECORD_TYPES == frozenset(
         {
-            SourceRecordType.MISC,
+            SourceRecordType.MISCELLANEOUS,
             SourceRecordType.AFFIDAVIT,
             SourceRecordType.DOCKET_ENTRY,
             SourceRecordType.DEATH_CERTIFICATE,
@@ -203,7 +203,7 @@ def test_periodical_and_entry_field_and_enum_contract() -> None:
             SourceRecordType.COMMENCEMENT_PROGRAM,
             SourceRecordType.CLASS_ROSTER,
             SourceRecordType.MEMOIR,
-            SourceRecordType.MISC,
+            SourceRecordType.MISCELLANEOUS,
             SourceRecordType.PHOTO,
         }
     )

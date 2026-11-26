@@ -6,8 +6,9 @@ for gda.core.enums.
 Operational Role:
     Validates gda.core.enums.coercion.coerce_enum, GDAStrEnum/GDAIntEnum
     classmethods (.from_raw(), .values()), Pydantic V2 validation with
-    UPPER_SNAKE_CASE payloads, Hypothesis token-mutation round-trips,
-    and strict rejection boundaries for invalid types and untrimmed input.
+    UPPER_SNAKE_CASE payloads, Hypothesis token/separator-mutation round-trips
+    across all exported enums, and strict rejection boundaries for invalid
+    types, underscore-grouped integers, and non-ASCII Unicode digits.
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -18,7 +19,7 @@ Test Structure & Protocol:
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import inspect
 from enum import Enum
 from typing import Any
 
@@ -29,16 +30,26 @@ from pydantic import BaseModel, ValidationError
 from tests.test_gda.test_core.strategies import enum_token_variants
 
 import gda.core.enums as ge
+from gda.core.enums import GDAIntEnum, GDAStrEnum, coerce_enum
 from gda.core.errors import ModelFormatError
 
-__version__ = "1.0.0+build.4"
+__version__ = "1.0.0+build.7"
+
+_ALL_CONCRETE_ENUMS: tuple[type[Enum], ...] = tuple(
+    attr
+    for name in ge.__all__
+    if inspect.isclass(attr := getattr(ge, name, None))
+    and issubclass(attr, Enum)
+    and attr not in (GDAStrEnum, GDAIntEnum)
+)
 
 
-def _get_coerce_enum() -> Callable[..., Any]:
-    """Return gda.core.enums.coerce_enum or fail cleanly as a Phase 3 TDD Red gate."""
-    fn: object = getattr(ge, "coerce_enum", None)
-    assert callable(fn), "gda.core.enums.coerce_enum not yet exported (Phase 3 TDD Red)"
-    return fn
+@st.composite
+def _any_enum_token_variant(draw: st.DrawFn) -> tuple[type[Enum], Enum, Any]:
+    """Select any concrete exported GDA enum and draw a mutated token variant for it."""
+    enum_cls = draw(st.sampled_from(_ALL_CONCRETE_ENUMS))
+    expected_member, raw_token = draw(enum_token_variants(enum_cls))
+    return enum_cls, expected_member, raw_token
 
 
 # ==============================================================================
@@ -51,9 +62,8 @@ def _get_coerce_enum() -> Callable[..., Any]:
 @pytest.mark.unit
 def test_coerce_enum_and_from_raw_smoke() -> None:
     """Verify coerce_enum and GDAStrEnum/GDAIntEnum.from_raw() resolve canonical tokens."""
-    coerce_fn = _get_coerce_enum()
-    assert coerce_fn(ge.Sex, "male") is ge.Sex.MALE
-    assert coerce_fn(ge.QuayScore, "3") is ge.QuayScore.DIRECT_PRIMARY
+    assert coerce_enum(ge.Sex, "male") is ge.Sex.MALE
+    assert coerce_enum(ge.QuayScore, "3") is ge.QuayScore.DIRECT_PRIMARY
 
     assert ge.Sex.from_raw("female") is ge.Sex.FEMALE
     assert ge.QuayScore.from_raw("3") is ge.QuayScore.DIRECT_PRIMARY
@@ -64,6 +74,18 @@ def test_coerce_enum_and_from_raw_smoke() -> None:
 # GROUP 2: Core Logic & Happy Paths
 # Note: Pydantic V2 standardized payload validation, direct passthrough, and .values().
 # ==============================================================================
+
+
+@pytest.mark.unit
+def test_coerce_enum_passthrough_and_value_fallback() -> None:
+    """Verify direct enum-instance passthrough and normalized value fallback when name != value."""
+
+    class _DistinctValueEnum(GDAStrEnum):
+        PRIMARY_KEY = "ALT_TOKEN"
+
+    assert coerce_enum(ge.Sex, ge.Sex.MALE) is ge.Sex.MALE
+    assert coerce_enum(ge.QuayScore, ge.QuayScore.DIRECT_PRIMARY) is ge.QuayScore.DIRECT_PRIMARY
+    assert coerce_enum(_DistinctValueEnum, "alt-token") is _DistinctValueEnum.PRIMARY_KEY
 
 
 @pytest.mark.unit
@@ -117,7 +139,8 @@ def test_enum_values_classmethod_returns_member_value_tuple(
     [
         ("direct_primary", ge.QuayScore.DIRECT_PRIMARY),
         ("direct-primary", ge.QuayScore.DIRECT_PRIMARY),
-        ("  SECONDARY  ", ge.QuayScore.SECONDARY),
+        ("direct primary", ge.QuayScore.DIRECT_PRIMARY),
+        (" SECONDARY ", ge.QuayScore.SECONDARY),
     ],
 )
 def test_coerce_enum_int_enum_resolves_member_name_strings(
@@ -125,33 +148,24 @@ def test_coerce_enum_int_enum_resolves_member_name_strings(
     expected: ge.QuayScore,
 ) -> None:
     """Verify coerce_enum resolves GDAIntEnum members by normalized member name."""
-    coerce_fn = _get_coerce_enum()
-    assert coerce_fn(ge.QuayScore, raw_token) is expected
+    assert coerce_enum(ge.QuayScore, raw_token) is expected
 
 
 # ==============================================================================
 # GROUP 3: Edge Cases & Boundary Conditions (Hypothesis Fuzzing)
-# Note: Mixed casing, hyphens, spaces, and surrounding whitespace via strategies.py.
+# Note: Mixed casing, hyphens, spaces, and whitespace across all exported enums.
 # ==============================================================================
 
 
+@pytest.mark.integrity
 @pytest.mark.unit
-@pytest.mark.regression
-@given(
-    token_pair=st.one_of(
-        enum_token_variants(ge.Sex).map(lambda t: (ge.Sex, t)),
-        enum_token_variants(ge.FactType).map(lambda t: (ge.FactType, t)),
-        enum_token_variants(ge.DateModifier).map(lambda t: (ge.DateModifier, t)),
-        enum_token_variants(ge.QuayScore).map(lambda t: (ge.QuayScore, t)),
-    )
-)
+@given(sample=_any_enum_token_variant())
 def test_coerce_enum_hypothesis_token_variants(
-    token_pair: tuple[type[Enum], tuple[Enum, Any]],
+    sample: tuple[type[Enum], Enum, Any],
 ) -> None:
-    """Verify coerce_enum resolves fuzzed casing and whitespace mutations."""
-    coerce_fn = _get_coerce_enum()
-    enum_cls, (expected_member, raw_token) = token_pair
-    assert coerce_fn(enum_cls, raw_token) is expected_member
+    """Verify coerce_enum resolves fuzzed casing, separator, and whitespace mutations."""
+    enum_cls, expected_member, raw_token = sample
+    assert coerce_enum(enum_cls, raw_token) is expected_member
 
 
 # ==============================================================================
@@ -188,7 +202,7 @@ def test_pydantic_rejects_invalid_token_with_validation_error(
         False,
         None,
         "",
-        "   ",
+        " ",
         99,
         "99",
         "BOGUS_QUAY",
@@ -200,19 +214,38 @@ def test_pydantic_rejects_invalid_token_with_validation_error(
 )
 def test_coerce_enum_rejects_bool_non_finite_and_invalid_types(bad_raw: Any) -> None:
     """Verify coerce_enum rejects booleans, None, blanks, out-of-range ints, and invalid types."""
-    coerce_fn = _get_coerce_enum()
     with pytest.raises(ModelFormatError) as exc_info:
-        coerce_fn(ge.QuayScore, bad_raw, field_name="quay")
+        coerce_enum(ge.QuayScore, bad_raw, field_name="quay")
     assert exc_info.value.error_code == "ERR_MODEL_FORMAT"
 
 
 @pytest.mark.regression
-@pytest.mark.parametrize("bad_raw", [123, "   ", "NOT_A_SEX"])
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("enum_cls", "bad_numeric_token"),
+    [
+        (ge.CensusYearUS, "1_880"),
+        (ge.CensusYearUS, "١٨٨٠"),
+        (ge.QuayScore, "٣"),
+        (ge.QuayScore, "0_3"),
+    ],
+)
+def test_coerce_enum_int_enum_rejects_underscores_and_non_ascii_digits(
+    enum_cls: type[GDAIntEnum],
+    bad_numeric_token: str,
+) -> None:
+    """Verify GDAIntEnum string coercion rejects underscore-grouped and non-ASCII digits."""
+    with pytest.raises(ModelFormatError) as exc_info:
+        coerce_enum(enum_cls, bad_numeric_token)
+    assert exc_info.value.error_code == "ERR_MODEL_FORMAT"
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize("bad_raw", [123, " ", "NOT_A_SEX"])
 def test_coerce_enum_strenum_rejects_non_string_blank_and_unmapped_without_field_name(
     bad_raw: Any,
 ) -> None:
     """Verify StrEnum coercion rejects non-strings, blanks, and unmapped tokens with field_name=None."""
-    coerce_fn = _get_coerce_enum()
     with pytest.raises(ModelFormatError) as exc_info:
-        coerce_fn(ge.Sex, bad_raw)
+        coerce_enum(ge.Sex, bad_raw)
     assert exc_info.value.error_code == "ERR_MODEL_FORMAT"

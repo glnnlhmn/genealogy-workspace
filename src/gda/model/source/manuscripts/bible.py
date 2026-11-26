@@ -49,7 +49,7 @@ _BIBLE_CATEGORIES: frozenset[SourceRecordCategory] = frozenset(
 
 _BIBLE_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
     {
-        SourceRecordType.BIBLE,
+        SourceRecordType.BIBLE_RECORD,
         SourceRecordType.BIBLE_RECORD,
     }
 )

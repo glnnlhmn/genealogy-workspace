@@ -5,9 +5,9 @@ Authoritative package-level facade and invariant contract suite for gda.core.enu
 Operational Role:
     Freezes the sealed 83-item public interface of gda.core.enums.__all__,
     verifies native JSON/string serialization and cross-domain boundaries,
-    and enforces Phase 3 architectural invariants: GDAStrEnum/GDAIntEnum
-    inheritance, authoritative submodule placement, unique member values,
-    and universal UPPER_SNAKE_CASE StrEnum tokens.
+    and enforces architectural invariants: GDAStrEnum/GDAIntEnum inheritance,
+    authoritative submodule placement, direct coerce_enum import sourcing,
+    unique member values, and universal UPPER_SNAKE_CASE StrEnum tokens.
 
 Test Structure & Protocol:
     - Atomized tests: 1:1 structural contract assertions.
@@ -17,15 +17,17 @@ Test Structure & Protocol:
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from enum import Enum, IntEnum, StrEnum
+from pathlib import Path
 
 import pytest
 
 import gda.core.enums as ge
 
-__version__ = "1.0.0+build.6"
+__version__ = "1.0.0+build.7"
 
 _MEMBER_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 _UPPER_TOKEN_RE = re.compile(r"^[A-Z0-9][A-Z0-9_-]*$")
@@ -49,7 +51,7 @@ AUTHORITATIVE_ENUM_EXPORTS: frozenset[str] = frozenset(
         "DateModifier",
         "MODIFIER_ALIASES",
         "normalize_modifier",
-        # Vital Domain (15 — includes relocated EyeColor, HairColor, PhysicalBuild, EducationLevel)
+        # Vital Domain (15)
         "BirthPlurality",
         "DispositionType",
         "DivorceDecreeType",
@@ -99,7 +101,7 @@ AUTHORITATIVE_ENUM_EXPORTS: frozenset[str] = frozenset(
         # Sources Domain (2)
         "SourceRecordCategory",
         "SourceRecordType",
-        # Military Domain (25 — includes relocated WwiCardType, MilitaryDraftType, MilitaryWar)
+        # Military Domain (25)
         "AwardScope",
         "BountyLandAct",
         "CasualtyCategory",
@@ -147,7 +149,7 @@ def test_enums_package_exact_public_interface() -> None:
     missing = AUTHORITATIVE_ENUM_EXPORTS - actual
     extra = actual - AUTHORITATIVE_ENUM_EXPORTS
     assert not missing and not extra, (
-        f"Public interface drift in gda.core.enums:\n  Missing: {missing}\n  Extra: {extra}"
+        f"Public interface drift in gda.core.enums:\n Missing: {missing}\n Extra: {extra}"
     )
     assert len(ge.__all__) == len(AUTHORITATIVE_ENUM_EXPORTS)
     assert ge.__all__ == sorted(ge.__all__)
@@ -194,8 +196,25 @@ def test_location_site_boundary_and_census_year_bounds() -> None:
 
 # ==============================================================================
 # GROUP 6: Integrity & Invariants
-# Note: Base classes, submodule placement, UPPER_SNAKE_CASE, and uniqueness.
+# Note: Base classes, submodule placement, import hygiene, casing, and uniqueness.
 # ==============================================================================
+
+
+@pytest.mark.integrity
+@pytest.mark.unit
+def test_coerce_enum_is_imported_directly_from_coercion_submodule() -> None:
+    """Verify gda.core.enums imports coerce_enum directly from coercion.py (not base.py)."""
+    assert ge.coerce_enum.__module__ == "gda.core.enums.coercion"
+    assert ge.__file__ is not None
+
+    tree = ast.parse(Path(ge.__file__).read_text(encoding="utf-8"))
+    coerce_sources = [
+        node.module
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        and any(alias.name == "coerce_enum" for alias in node.names)
+    ]
+    assert coerce_sources == ["gda.core.enums.coercion"]
 
 
 @pytest.mark.integrity
@@ -203,7 +222,7 @@ def test_location_site_boundary_and_census_year_bounds() -> None:
 def test_all_enums_inherit_gda_base_classes(
     all_enum_classes: tuple[type[Enum], ...],
 ) -> None:
-    """Verify every enum inherits from GDAStrEnum or GDAIntEnum (Phase 3 TDD Red)."""
+    """Verify every exported enum inherits from GDAStrEnum or GDAIntEnum."""
     gda_str = getattr(ge, "GDAStrEnum", None)
     gda_int = getattr(ge, "GDAIntEnum", None)
     assert gda_str is not None and issubclass(gda_str, StrEnum), "GDAStrEnum missing"
@@ -220,7 +239,7 @@ def test_all_enums_inherit_gda_base_classes(
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_relocated_enums_reside_in_authoritative_submodules() -> None:
-    """Verify relocated enums live in their target domain submodules (Phase 3 TDD Red)."""
+    """Verify domain enums reside in their authoritative target submodules."""
     expected_modules = {
         "WwiCardType": "gda.core.enums.military",
         "MilitaryDraftType": "gda.core.enums.military",
@@ -243,7 +262,7 @@ def test_relocated_enums_reside_in_authoritative_submodules() -> None:
 def test_all_strenum_members_use_upper_snake_case(
     all_enum_classes: tuple[type[Enum], ...],
 ) -> None:
-    """Verify all StrEnum names and values use uppercase tokens with no whitespace (Phase 3)."""
+    """Verify all StrEnum names and values use uppercase tokens with no whitespace."""
     violations: list[str] = []
     for enum_cls in all_enum_classes:
         if not issubclass(enum_cls, StrEnum):

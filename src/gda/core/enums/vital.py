@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.2"
+__version__ = "1.0.0+build.3"
 
 __all__ = [
     "BirthPlurality",
@@ -159,6 +159,9 @@ class EyeColor(GDAStrEnum):
     GREY = "GREY"
     HAZEL = "HAZEL"
     BLACK = "BLACK"
+    GREEN = "GREEN"
+    OTHER = "OTHER"
+    UNKNOWN = "UNKNOWN"
 
 
 class HairColor(GDAStrEnum):
@@ -170,6 +173,9 @@ class HairColor(GDAStrEnum):
     RED = "RED"
     GREY = "GREY"
     BALD = "BALD"
+    WHITE = "WHITE"
+    OTHER = "OTHER"
+    UNKNOWN = "UNKNOWN"
 
 
 class EducationLevel(GDAStrEnum):

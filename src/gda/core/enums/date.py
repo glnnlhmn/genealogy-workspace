@@ -11,9 +11,13 @@ Operational Role:
 
 from __future__ import annotations
 
-from gda.core.enums.base import GDAIntEnum, GDAStrEnum
+from types import MappingProxyType
+from typing import Any, Self
 
-__version__ = "1.0.0+build.2"
+from gda.core.enums.base import GDAIntEnum, GDAStrEnum
+from gda.core.errors import ModelFormatError
+
+__version__ = "1.0.0+build.5"
 
 __all__ = [
     "CensusYearUS",
@@ -24,7 +28,11 @@ __all__ = [
 
 
 class CensusYearUS(GDAIntEnum):
-    """Valid US Federal Decennial Census enumeration years (1790 to 1950)."""
+    """Valid US Federal Decennial Census enumeration years (1790 to 1950).
+
+    Note: 1890 is intentionally omitted because surviving population schedules
+    were destroyed by fire and water damage in 1921.
+    """
 
     Y1790 = 1790
     Y1800 = 1800
@@ -55,25 +63,65 @@ class DateModifier(GDAStrEnum):
     ESTIMATED = "EST"
     CALCULATED = "CAL"
 
+    @classmethod
+    def from_raw(cls, raw_value: Any, *, field_name: str | None = None) -> Self:
+        """Resolve a DateModifier member or alias token to a canonical DateModifier.
 
-MODIFIER_ALIASES: dict[str, DateModifier] = {
-    "EXACT": DateModifier.EXACT,
-    "ABT": DateModifier.ABOUT,
-    "ABOUT": DateModifier.ABOUT,
-    "CIRCA": DateModifier.ABOUT,
-    "C": DateModifier.ABOUT,
-    "CA": DateModifier.ABOUT,
-    "BEF": DateModifier.BEFORE,
-    "BEFORE": DateModifier.BEFORE,
-    "AFT": DateModifier.AFTER,
-    "AFTER": DateModifier.AFTER,
-    "BET": DateModifier.BETWEEN,
-    "BETWEEN": DateModifier.BETWEEN,
-    "EST": DateModifier.ESTIMATED,
-    "ESTIMATED": DateModifier.ESTIMATED,
-    "CAL": DateModifier.CALCULATED,
-    "CALCULATED": DateModifier.CALCULATED,
-}
+        Args:
+            raw_value: DateModifier member or string alias/code to resolve.
+            field_name: Optional domain field name included in error diagnostics.
+
+        Returns:
+            Canonical DateModifier enum member.
+
+        Raises:
+            ModelFormatError: If raw_value is not a string or is an unrecognized modifier.
+        """
+        if isinstance(raw_value, cls):
+            return raw_value
+
+        details: dict[str, Any] = {
+            "raw_value": repr(raw_value),
+            "raw_type": type(raw_value).__name__,
+        }
+        if field_name is not None:
+            details["field_name"] = field_name
+
+        if not isinstance(raw_value, str):
+            raise ModelFormatError(
+                f"Invalid DateModifier value: {raw_value!r}",
+                details=details,
+            )
+        token = raw_value.strip().upper()
+        matched = MODIFIER_ALIASES.get(token)
+        if matched is not None:
+            return matched
+        raise ModelFormatError(
+            f"Invalid DateModifier value: '{raw_value}'.",
+            details=details,
+        )
+
+
+MODIFIER_ALIASES: MappingProxyType[str, DateModifier] = MappingProxyType(
+    {
+        "EXACT": DateModifier.EXACT,
+        "ABT": DateModifier.ABOUT,
+        "ABOUT": DateModifier.ABOUT,
+        "CIRCA": DateModifier.ABOUT,
+        "C": DateModifier.ABOUT,
+        "CA": DateModifier.ABOUT,
+        "BEF": DateModifier.BEFORE,
+        "BEFORE": DateModifier.BEFORE,
+        "AFT": DateModifier.AFTER,
+        "AFTER": DateModifier.AFTER,
+        "BET": DateModifier.BETWEEN,
+        "BETWEEN": DateModifier.BETWEEN,
+        "EST": DateModifier.ESTIMATED,
+        "ESTIMATED": DateModifier.ESTIMATED,
+        "CAL": DateModifier.CALCULATED,
+        "CALCULATED": DateModifier.CALCULATED,
+    }
+)
 
 
 def normalize_modifier(modifier: DateModifier | str | None) -> DateModifier | None:
@@ -86,13 +134,8 @@ def normalize_modifier(modifier: DateModifier | str | None) -> DateModifier | No
         Canonical DateModifier member, or None if input is None.
 
     Raises:
-        ValueError: If modifier cannot be normalized to a recognized DateModifier.
+        ModelFormatError: If modifier cannot be normalized to a recognized DateModifier.
     """
     if modifier is None:
         return None
-    if isinstance(modifier, DateModifier):
-        return modifier
-    token = str(modifier).strip().upper()
-    if token in MODIFIER_ALIASES:
-        return MODIFIER_ALIASES[token]
-    raise ValueError(f"Invalid DateModifier value: '{modifier}'.")
+    return DateModifier.from_raw(modifier)

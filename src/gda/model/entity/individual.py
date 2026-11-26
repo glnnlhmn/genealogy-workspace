@@ -88,7 +88,7 @@ def _resolve_gender(gender: GenderAtom | Sex | str | None) -> GenderAtom:
     try:
         sex_member = Sex.from_input(token)
         return GenderAtom(sex_member.value[0])
-    except ValueError:
+    except (ValueError, ModelFormatError):
         return GenderAtom(token)
 
 

@@ -68,7 +68,7 @@ def test_publications_repositories(
     clip = NewspaperClipRecord(
         source_id=SourceID("00000000-0000-4000-8000-000000000017"),
         source_urn=SourceURN("URN:SRC:1922:US_PA:CLIP_OBIT_017"),
-        record_type=SourceRecordType.MISC,
+        record_type=SourceRecordType.MISCELLANEOUS,
         description="Obituary of John Lehman",
         repository_id=RepositoryID("REP-000001"),
         audit=_audit(),

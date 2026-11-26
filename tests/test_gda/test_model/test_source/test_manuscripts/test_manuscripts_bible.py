@@ -97,7 +97,7 @@ def test_bible_entry_and_record_roundtrip() -> None:
         repository_id="REP-000001",
         family_surname="  Abbott  ",
         record_category="manuscript",
-        record_type="bible",
+        record_type="bible_record",
         edition_imprint="Philadelphia: Jesper Harding, 1842",
         publication_year=1842,
         original_owner_raw="Samuel H. Abbott",
@@ -158,7 +158,7 @@ def test_bible_validation_and_minimal_roundtrip() -> None:
         repository_id=RepositoryID("REP-000001"),
         family_surname="Kimball",
         record_category=SourceRecordCategory.VITAL,
-        record_type=SourceRecordType.BIBLE,
+        record_type=SourceRecordType.BIBLE_RECORD,
         media_ids=[MediaID(_MID)],
     )
     assert minimal.entry_count == 0

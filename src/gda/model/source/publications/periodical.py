@@ -56,7 +56,7 @@ _PERIODICAL_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
         SourceRecordType.COMMENCEMENT_PROGRAM,
         SourceRecordType.CLASS_ROSTER,
         SourceRecordType.MEMOIR,
-        SourceRecordType.MISC,
+        SourceRecordType.MISCELLANEOUS,
         SourceRecordType.PHOTO,
     }
 )

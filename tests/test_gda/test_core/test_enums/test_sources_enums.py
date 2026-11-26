@@ -4,9 +4,9 @@ Targeted behavioral test suite verifying bibliographic and source enums.
 
 Operational Role:
     Validates gda.core.enums.sources public exports (SourceRecordCategory and
-    SourceRecordType) following Phase 3 retirement of MilitaryConflict and
-    relocation of MilitaryDraftType/MilitaryWar to military.py and
-    EducationLevel to vital.py.
+    SourceRecordType), canonical record type tokens including BIBLE_RECORD,
+    CORRESPONDENCE, FINANCIAL_RECORD, EPHEMERA_ITEM, and MISCELLANEOUS, and
+    removal of duplicate BIBLE and abbreviated tokens.
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -24,12 +24,12 @@ from gda.core.enums.sources import (
     SourceRecordType,
 )
 
-__version__ = "1.0.0+build.5"
+__version__ = "1.0.0+build.6"
 
 
 # ==============================================================================
 # GROUP 1: Smoke & Primary Entrypoints
-# Note: Single smoke gate freezing the 2 authoritative source exports (Phase 3).
+# Note: Single smoke gate freezing the 2 authoritative source exports.
 # ==============================================================================
 
 
@@ -58,13 +58,22 @@ def test_source_record_category_tokens() -> None:
 
 
 @pytest.mark.unit
-def test_source_record_type_vital_and_probate() -> None:
-    """Verify granular record document type tokens."""
+def test_source_record_type_vital_probate_and_expanded_tokens() -> None:
+    """Verify granular and expanded SourceRecordType tokens and retired member removal."""
     assert SourceRecordType.BIRTH_CERTIFICATE == "BIRTH_CERTIFICATE"
     assert SourceRecordType.DEATH_CERTIFICATE == "DEATH_CERTIFICATE"
     assert SourceRecordType.MARRIAGE_LICENSE == "MARRIAGE_LICENSE"
     assert SourceRecordType.LAST_WILL_AND_TESTAMENT == "LAST_WILL_AND_TESTAMENT"
     assert SourceRecordType.POPULATION_SCHEDULE == "POPULATION_SCHEDULE"
+
+    assert SourceRecordType.BIBLE_RECORD == "BIBLE_RECORD"
+    assert SourceRecordType.CORRESPONDENCE == "CORRESPONDENCE"
+    assert SourceRecordType.FINANCIAL_RECORD == "FINANCIAL_RECORD"
+    assert SourceRecordType.EPHEMERA_ITEM == "EPHEMERA_ITEM"
+    assert SourceRecordType.MISCELLANEOUS == "MISCELLANEOUS"
+
+    for retired in ("BIBLE", "CORRESP", "FIN", "EPHEM", "MISC"):
+        assert not hasattr(SourceRecordType, retired)
 
 
 # ==============================================================================

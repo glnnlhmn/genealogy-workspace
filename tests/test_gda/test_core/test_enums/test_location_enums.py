@@ -4,8 +4,9 @@ Targeted behavioral test suite verifying location and administrative enums.
 
 Operational Role:
     Validates gda.core.enums.location public exports, civil administrative
-    jurisdictions (JurisdictionCategory), linear administrative_rank hierarchy,
-    and spatial place classifications (LocationType).
+    jurisdictions (JurisdictionCategory), module-level _ADMINISTRATIVE_RANKS
+    MappingProxyType and linear administrative_rank hierarchy, and spatial
+    place classifications (LocationType).
 
 Test Structure & Protocol:
     - Atomized & parametrized tests: 1:1 behavioral contract mapping.
@@ -15,6 +16,8 @@ Test Structure & Protocol:
 
 from __future__ import annotations
 
+from types import MappingProxyType
+
 import pytest
 
 import gda.core.enums.location as location_enums
@@ -23,7 +26,7 @@ from gda.core.enums.location import (
     LocationType,
 )
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 
 # ==============================================================================
@@ -94,14 +97,17 @@ def test_location_type_rejects_invalid_and_untrimmed_values(bad_value: str) -> N
 
 # ==============================================================================
 # GROUP 6: Integrity & Invariants
-# Note: Linear descending administrative_rank hierarchy invariant.
+# Note: Module-level _ADMINISTRATIVE_RANKS proxy and linear rank hierarchy.
 # ==============================================================================
 
 
 @pytest.mark.integrity
 @pytest.mark.unit
 def test_jurisdiction_category_administrative_rank_hierarchy() -> None:
-    """Verify administrative_rank property enforces linear descending hierarchy."""
+    """Verify _ADMINISTRATIVE_RANKS proxy and linear descending administrative_rank hierarchy."""
+    admin_ranks = getattr(location_enums, "_ADMINISTRATIVE_RANKS", None)
+    assert isinstance(admin_ranks, MappingProxyType)
+
     expected_ranks = {
         JurisdictionCategory.COUNTRY: 10,
         JurisdictionCategory.STATOID: 20,
@@ -112,6 +118,7 @@ def test_jurisdiction_category_administrative_rank_hierarchy() -> None:
         JurisdictionCategory.SPECIAL_DISTRICT: 70,
     }
     for category, expected_rank in expected_ranks.items():
+        assert admin_ranks[category] == expected_rank
         assert category.administrative_rank == expected_rank
 
     ordered = list(expected_ranks.keys())

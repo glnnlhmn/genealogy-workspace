@@ -43,7 +43,7 @@ _REGISTRY_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
     {
         SourceRecordType.REGISTER_ENTRY,
         SourceRecordType.CEMETERY_MARKER,
-        SourceRecordType.MISC,
+        SourceRecordType.MISCELLANEOUS,
     }
 )
 

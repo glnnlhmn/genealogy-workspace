@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from gda.core.enums.base import GDAStrEnum
 
-__version__ = "1.0.0+build.3"
+__version__ = "1.0.0+build.4"
 
 __all__ = [
     "SourceRecordCategory",
@@ -166,13 +166,12 @@ class SourceRecordType(GDAStrEnum):
     EXONERATION_LIST = "EXONERATION_LIST"
 
     # Ephemera & Other
-    BIBLE = "BIBLE"
     DIARY = "DIARY"
-    CORRESP = "CORRESP"
-    FIN = "FIN"
-    EPHEM = "EPHEM"
+    CORRESPONDENCE = "CORRESPONDENCE"
+    FINANCIAL_RECORD = "FINANCIAL_RECORD"
+    EPHEMERA_ITEM = "EPHEMERA_ITEM"
     PHOTO = "PHOTO"
     LODGE_RECORD = "LODGE_RECORD"
     MEMBERSHIP_ROSTER = "MEMBERSHIP_ROSTER"
     RECEIPT = "RECEIPT"
-    MISC = "MISC"
+    MISCELLANEOUS = "MISCELLANEOUS"

@@ -60,7 +60,7 @@ def test_newspaper_clip_record_create_and_roundtrip() -> None:
         issue_date=issue_dt,
         news_category="  obituary  ",
         record_category="news",
-        record_type="misc",
+        record_type="miscellaneous",
         parent_source_id=_PARENT_SID,
         pub_code="  concord_monitor  ",
         publication_location_raw="Concord, NH",

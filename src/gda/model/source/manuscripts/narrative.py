@@ -53,7 +53,7 @@ _MANUSCRIPT_RECORD_TYPES: frozenset[SourceRecordType] = frozenset(
         SourceRecordType.INTERVIEW_TRANSCRIPT,
         SourceRecordType.PERSONAL_LETTER,
         SourceRecordType.DIARY,
-        SourceRecordType.CORRESP,
+        SourceRecordType.CORRESPONDENCE,
     }
 )
 
